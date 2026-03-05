@@ -12,6 +12,7 @@
 # knowledge to let the LLM generate context-dependent recommendations.
 #
 # Related ADR: ADR-0004 (Scanner Three-Layer Analysis)
+#              ADR-0008 (Scanner Resilience)
 
 # --- Schema Definition ---
 
@@ -124,6 +125,31 @@ schema:
           Message displayed to the user on constraint violation.
           For source: expert, include methodological rationale.
 
+      # Cross-layer confirmation (ADR-0008)
+      confirmed_by:
+        type: list[string]
+        required: false
+        description: >
+          List of additional layers that confirmed this constraint.
+          Values are the same as source enum (formals_default, rd_description,
+          source_code, expert). Empty or omitted means single-layer only.
+
+      # Confidence grade (ADR-0008)
+      confidence:
+        type: string
+        required: false
+        enum:
+          - high    # confirmed by 2+ layers
+          - medium  # single-layer extraction only
+          - low     # expert or LLM-estimated (source: expert with empty confirmed_by)
+          - gap     # Layer 3 analysis failed; constraint may exist but is unverified
+        description: >
+          Confidence grade based on extraction depth.
+          Grading criteria: high = 2+ layers confirm (e.g., Rd + source_code
+          both list the same valid_values). medium = single layer only.
+          low = expert-added or LLM-estimated. gap = Layer 3 failed and
+          a constraint is suspected but unverified.
+
 # --- Example: meta::metabin ---
 
 example:
@@ -175,6 +201,8 @@ example:
       type: valid_values
       param: sm
       values: ["RR", "OR", "RD", "ASD", "DOR", "VE"]
+      confirmed_by: ["source_code"]
+      confidence: high
 
     - id: valid_method
       source: rd_description
@@ -217,6 +245,7 @@ example:
       type: incompatible
       incompatible: {method: "Peto"}
       condition: "group sample sizes are highly imbalanced"
+      confidence: low
       message: >
         Peto method is biased when group sample sizes differ substantially.
         See Bradburn et al. (2007) Stat Med.

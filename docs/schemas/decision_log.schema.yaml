@@ -1,0 +1,301 @@
+# Decision Log Schema
+#
+# The decision audit log records every node visit during a bridle session as
+# a JSONL file (one JSON object per line). Designed to support:
+#
+# 1. Manual analysis via analyze_log() (Phase 2)
+# 2. Automated evaluation via vitals (Phase 3)
+# 3. LLM-assisted plugin improvement via suggest_improvements() (future)
+#
+# The schema is "C-ready": it contains all information needed for LLM-assisted
+# repair even though only manual analysis is implemented initially.
+#
+# Logging is enabled by default; opt out via bridle_agent(log = FALSE).
+#
+# Related ADR: ADR-0006 (Decision Audit Log)
+
+# --- Schema Definition ---
+
+schema:
+  version: "1.0"
+
+  # Each line in the JSONL file is one entry (one node visit)
+  entry:
+    type: map
+    required: true
+    properties:
+
+      # --- Reproducibility metadata ---
+      meta:
+        type: map
+        required: true
+        properties:
+          session_id:
+            type: string
+            required: true
+            description: "Unique session identifier (UUID)"
+          turn_id:
+            type: integer
+            required: true
+            description: "Sequential node visit counter within the session"
+          plugin_name:
+            type: string
+            required: true
+          plugin_version:
+            type: string
+            required: true
+          graph_version:
+            type: string
+            required: true
+            description: "Hash or version of the decision graph used"
+          timestamp_utc:
+            type: string
+            required: true
+            description: "ISO 8601 timestamp in UTC"
+
+      # --- Node identification ---
+      node_id:
+        type: string
+        required: true
+
+      node_type:
+        type: string
+        required: true
+        enum:
+          - context_gathering
+          - decision
+          - execution
+          - diagnosis
+
+      # --- Transition evaluation trace ---
+      transition_trace:
+        type: map
+        required: true
+        description: >
+          Records evaluation results for ALL candidate transitions, not just
+          the selected one. Makes ADR-0003's two-path evaluation auditable.
+        properties:
+          candidates:
+            type: list
+            required: true
+            items:
+              to:
+                type: string
+                required: true
+              when:
+                type: string | null
+                required: false
+              computable_hint:
+                type: string | null
+                required: false
+              eval_result:
+                type: string
+                required: true
+                enum:
+                  - "true"           # hint evaluated to TRUE
+                  - "false"          # hint evaluated to FALSE
+                  - error            # hint evaluation raised an error
+                  - not_evaluated    # no hint, or variables not in scope
+              fallback_to_llm:
+                type: boolean
+                required: true
+          selected_transition:
+            type: string
+            required: true
+            description: "node_id of the selected target"
+          selection_basis:
+            type: string
+            required: true
+            enum:
+              - hint   # computable_hint determined the transition
+              - llm    # LLM judged from when text
+              - user   # user overrode the suggested transition
+              - rule   # constraint forced the transition
+
+      # --- Constraint application trace ---
+      constraints_trace:
+        type: list
+        required: false
+        items:
+          id:
+            type: string
+            required: true
+          fired:
+            type: boolean
+            required: true
+          forced_values:
+            type: map | null
+            required: false
+
+      # --- Knowledge context ---
+      knowledge_context:
+        type: map
+        required: false
+        properties:
+          entry_ids_presented:
+            type: list[string]
+            required: true
+            description: "IDs of knowledge entries included in the LLM prompt"
+
+      # --- LLM output ---
+      llm_output:
+        type: map
+        required: false
+        properties:
+          recommendation_text:
+            type: string
+            required: true
+            description: "Full text of the LLM's recommendation to the user"
+          suggested_value:
+            type: string | null
+            required: false
+            description: "Parameter value suggested by the LLM (if applicable)"
+
+      # --- User response ---
+      user_response:
+        type: map
+        required: false
+        properties:
+          outcome:
+            type: string
+            required: true
+            enum:
+              - accepted   # user accepted the recommendation
+              - rejected   # user rejected and chose differently
+              - modified   # user accepted with modifications
+              - aborted    # user aborted the session at this node
+          override_value:
+            type: string | null
+            required: false
+            description: "Value chosen by the user when outcome is rejected or modified"
+          user_reason:
+            type: string | null
+            required: false
+            description: "User's stated reason for override (if provided)"
+          quality_signal:
+            type: map
+            required: false
+            properties:
+              needs_review:
+                type: boolean
+                required: true
+                description: "Flag indicating this decision warrants expert review"
+
+      # --- Decision state snapshot ---
+      decision_state:
+        type: map
+        required: false
+        properties:
+          parameters_decided:
+            type: map
+            required: true
+            description: "All parameters decided so far in the session"
+          data_fingerprint:
+            type: map
+            required: false
+            description: "Anonymous data summary (no raw data)"
+            properties:
+              n_studies:
+                type: integer | null
+                required: false
+              column_names:
+                type: list[string]
+                required: false
+              missing_rate:
+                type: map | null
+                required: false
+
+      # --- Policy application ---
+      policy_applied:
+        type: map
+        required: false
+        properties:
+          skipped:
+            type: boolean
+            required: true
+          skip_reason:
+            type: string | null
+            required: false
+            description: "skip_when text if the node was skipped"
+          iteration_count:
+            type: integer | null
+            required: false
+            description: "Current visit count for this node (relevant for loops)"
+
+      # --- Optional fields (defined but not required in initial implementation) ---
+      # model_context:
+      #   provider: string     # e.g., "anthropic", "openai"
+      #   model: string        # e.g., "claude-sonnet-4-20250514"
+      #   temperature: number
+      #   prompt_hash: string  # SHA-256 of the assembled prompt
+      #
+      # cost_metrics:
+      #   latency_ms: integer
+      #   input_tokens: integer
+      #   output_tokens: integer
+      #
+      # error_info:
+      #   class: string        # R condition class
+      #   message: string
+      #   traceback_ref: string  # path to full traceback file
+
+# --- Example: single log entry ---
+
+example:
+  meta:
+    session_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    turn_id: 4
+    plugin_name: "bridle.meta"
+    plugin_version: "0.1.0"
+    graph_version: "sha256:abc123"
+    timestamp_utc: "2026-03-05T14:30:00Z"
+
+  node_id: tau2_estimation
+  node_type: decision
+
+  transition_trace:
+    candidates:
+      - to: ci_method
+        when: null
+        computable_hint: null
+        eval_result: not_evaluated
+        fallback_to_llm: false
+    selected_transition: ci_method
+    selection_basis: hint
+
+  constraints_trace: []
+
+  knowledge_context:
+    entry_ids_presented:
+      - tau2_small_k
+      - tau2_moderate_k
+      - tau2_large_k
+      - tau2_cochrane_default
+
+  llm_output:
+    recommendation_text: >
+      With k=12 studies, REML offers a good balance of bias and efficiency.
+      Consider Hartung-Knapp adjustment for the confidence interval.
+    suggested_value: "REML"
+
+  user_response:
+    outcome: accepted
+    override_value: null
+    user_reason: null
+    quality_signal:
+      needs_review: false
+
+  decision_state:
+    parameters_decided:
+      sm: "RR"
+      method: "Inverse"
+      random: true
+    data_fingerprint:
+      n_studies: 12
+      column_names: ["study", "event_t", "n_t", "event_c", "n_c"]
+      missing_rate: null
+
+  policy_applied:
+    skipped: false
+    skip_reason: null
+    iteration_count: 1

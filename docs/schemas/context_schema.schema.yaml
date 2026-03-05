@@ -1,0 +1,150 @@
+# Context Schema
+#
+# context_schema.yaml defines the variable scope available to computable_hint
+# expressions and the expected data structure for a plugin.
+#
+# Design: hybrid static + dynamic (ADR-0007).
+# - Core statistical quantities (k, I2, tau2) are statically declared with
+#   availability phases and extraction expressions.
+# - Data column names are dynamically detected at runtime via names(data)
+#   and are NOT declared here.
+#
+# validate_plugin() checks only statically declared variables. Hint expressions
+# referencing unknown names are assumed to be dynamic (data columns) and are
+# not flagged as errors.
+#
+# Related ADR: ADR-0007 (Context Variable Scope)
+#              ADR-0003 (When Condition Semantics)
+
+# --- Schema Definition ---
+
+schema:
+  version: "1.0"
+
+  # Statically declared variables available to computable_hint / skip_hint
+  variables:
+    type: list
+    required: true
+    items:
+
+      # Variable name as used in R expressions
+      name:
+        type: string
+        required: true
+        description: "Variable name referenced in computable_hint / skip_hint expressions"
+
+      # Human-readable description
+      description:
+        type: string
+        required: true
+
+      # When this variable becomes available
+      available_from:
+        type: string
+        required: true
+        enum:
+          - data_loaded         # after user data is loaded into the session
+          - parameter_decided   # after a specific parameter decision is made
+          - post_fit            # after model fitting (execution node)
+        description: >
+          Phase when this variable becomes computable. The Graph Engine
+          uses this to determine whether a computable_hint can be evaluated
+          at the current node.
+
+      # Optional: specific node dependency
+      depends_on_node:
+        type: string | null
+        required: false
+        description: >
+          ID of the graph node after which this variable becomes available.
+          More precise than available_from alone. For example, I2 depends
+          on execute_analysis completing, not just any post_fit phase.
+
+      # R expression to extract the variable value
+      source_expression:
+        type: string
+        required: true
+        description: >
+          R expression the runtime evaluates to obtain this variable's value.
+          Evaluated in the session environment where 'data' is the user's
+          dataset and 'result' is the model fit object (when available).
+
+  # Expected data structure (informational)
+  data_expectations:
+    type: list
+    required: false
+    description: >
+      Expected columns in the user's data. Used by context_gathering nodes
+      and validate_plugin() for informational checks. Does not restrict
+      which columns computable_hint may reference.
+    items:
+      column:
+        type: string
+        required: true
+        description: "Expected column name"
+
+      role:
+        type: string
+        required: true
+        enum:
+          - outcome     # event counts or effect sizes
+          - group       # sample sizes or group indicators
+          - study_id    # study identifier
+          - covariate   # moderator / covariate
+          - weight      # user-defined weights
+        description: "Semantic role of this column in the analysis"
+
+      required:
+        type: boolean
+        required: true
+        description: "Whether this column must be present for the analysis to proceed"
+
+# --- Example: meta::metabin ---
+
+example:
+  variables:
+    - name: k
+      description: "number of studies"
+      available_from: data_loaded
+      source_expression: "nrow(data)"
+
+    - name: I2
+      description: "I-squared heterogeneity statistic (%)"
+      available_from: post_fit
+      depends_on_node: execute_analysis
+      source_expression: "result$I2"
+
+    - name: tau2
+      description: "estimated between-study variance"
+      available_from: post_fit
+      depends_on_node: execute_analysis
+      source_expression: "result$tau2"
+
+    - name: method
+      description: "selected pooling method"
+      available_from: parameter_decided
+      depends_on_node: method_selection
+      source_expression: "decisions$method"
+
+    - name: random
+      description: "whether random-effects model is used"
+      available_from: parameter_decided
+      depends_on_node: model_type
+      source_expression: "decisions$random"
+
+  data_expectations:
+    - column: event.e
+      role: outcome
+      required: true
+    - column: n.e
+      role: group
+      required: true
+    - column: event.c
+      role: outcome
+      required: true
+    - column: n.c
+      role: group
+      required: true
+    - column: studlab
+      role: study_id
+      required: false

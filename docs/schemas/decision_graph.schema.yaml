@@ -5,17 +5,42 @@
 # this graph to control the interactive dialogue.
 #
 # Related ADR: ADR-0002 (Decision Graph as Flow Control Mechanism)
+#              ADR-0005 (Graph Policy Layer)
+#              ADR-0009 (Graph Template Composition)
 
 # --- Schema Definition ---
 
 schema:
-  version: "1.0"
+  version: "1.1"
 
   graph:
     # ID of the entry-point node
     entry_node:
       type: string
       required: true
+
+    # Optional template reference for graph composition (ADR-0009)
+    template:
+      type: string
+      required: false
+      description: >
+        ID of a graph template to include. The template's nodes are merged
+        at build time. The function-specific graph connects to the template
+        via entry_point / exit_point defined in the template file.
+
+    # Graph-level default policy (ADR-0005)
+    global_policy:
+      type: map
+      required: false
+      description: >
+        Default policy values for all nodes in this graph. Overrides
+        manifest.yaml policy_defaults; overridden by node-level policy.
+        Resolution order: manifest < graph < node (fixed specification).
+      properties:
+        max_iterations:
+          type: integer
+          required: false
+          description: "Default max node visits per session for all nodes"
 
     nodes:
       type: map
@@ -50,6 +75,34 @@ schema:
           type: string
           required: false
           description: "Brief description of the node's purpose (for humans and AI Drafter)"
+
+        # Node-level policy (ADR-0005)
+        policy:
+          type: map
+          required: false
+          description: >
+            Per-node policy overrides. Takes precedence over graph.global_policy
+            and manifest.policy_defaults.
+          properties:
+            skip_when:
+              type: string
+              required: false
+              description: >
+                Natural-language condition for skipping this node.
+                Follows ADR-0003 semantics: if skip_hint is present and
+                evaluable, use it; otherwise the LLM judges from this text.
+            skip_hint:
+              type: string
+              required: false
+              description: >
+                R expression hint for skip_when. Evaluated when possible;
+                falls back to LLM on skip_when text otherwise.
+            max_iterations:
+              type: integer
+              required: false
+              description: >
+                Max times this node can be visited in a session.
+                Overrides graph.global_policy.max_iterations.
 
         transitions:
           type: list
@@ -93,6 +146,8 @@ schema:
 example:
   graph:
     entry_node: outcome_type
+    global_policy:
+      max_iterations: 3
 
     nodes:
       outcome_type:
@@ -169,6 +224,9 @@ example:
         topic: tau2_estimators
         parameter: method.tau
         description: "Select tau-squared estimator (DL, REML, PM, ML, etc.)"
+        policy:
+          skip_when: "number of studies is very large"
+          skip_hint: "k > 100"
         transitions:
           - to: ci_method
             always: true
@@ -217,6 +275,8 @@ example:
         type: decision
         topic: sensitivity_approaches
         description: "Select sensitivity analysis approach (change tau2 estimator, leave-one-out, etc.)"
+        policy:
+          max_iterations: 2
         transitions:
           - to: execute_analysis
             when: "re-run with different parameters"
