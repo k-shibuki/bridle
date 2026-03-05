@@ -1,0 +1,181 @@
+---
+description: "Debugging or investigating bugs: instrumentation, log analysis, and hypothesis-driven troubleshooting"
+alwaysApply: false
+---
+# Debugging Conventions
+
+## Positioning (Separation of Policy and Procedure)
+
+- This file defines **policies (principles and constraints)**.
+- Specific procedures (checklists, commands) are documented in `@.cursor/commands/debug.md`.
+
+## Purpose
+
+Achieve reproducible and efficient problem resolution. bridle is an R package; debugging focuses on R code paths, S7 class behavior, and integration with ellmer/ragnar/vitals.
+
+**Related**: For **prevention** of integration issues during new feature development, see `@.cursor/rules/integration-design.mdc`.
+
+### Debug Method Priority
+
+1. **reprex** — Create minimal reproducible example with `reprex::reprex()`; isolate the issue
+2. **browser() / debug()** — Interactive inspection when the failure point is known
+3. **rlang::last_error() / last_trace()** — After an error, inspect with `options(error = rlang::entrace)`
+4. **testthat test** — Reproduce failure in `tests/testthat/test-*.R` for deterministic debugging
+
+---
+
+## 0. Task Prefix Convention (Multi-Agent Support)
+
+**Multiple AI agents may debug concurrently.** Use consistent prefixes across all artifacts to avoid conflicts:
+
+| Artifact | Pattern | Example |
+|----------|---------|---------|
+| Docs | `debug/docs/<TASK>_report.md` | `debug/docs/GRAPH_report.md` |
+| Logs | `debug/scripts/<TASK>_debug.log` | `debug/scripts/NODE_debug.log` |
+| Hypothesis IDs | `<TASK>-H1`, `<TASK>-H2`, ... | `GRAPH-H1`, `EVAL-H2` |
+
+### Common Task Prefixes
+
+`GRAPH`, `NODE`, `RULE`, `EVAL`, `LLM`, `MCP`, `SCHEMA`
+
+---
+
+## 1. Basic Debugging Principles
+
+### 1.1 Autonomous Execution Principle
+
+- **AI executes autonomously**: AI directly executes terminal commands and test scripts without asking user to perform operations
+- **Don't fix based on speculation**: Fix based on evidence from logs, `reprex` output, or traceback
+
+### 1.2 Timeout Required
+
+Terminal commands **must always have timeout set** to prevent hangs:
+
+```bash
+# Good: with timeout
+timeout 30 Rscript -e "devtools::test()"
+
+# Bad: no timeout (hang risk)
+Rscript -e "devtools::test()"
+```
+
+**Recommended Timeout Values**:
+
+| Operation | Timeout |
+|-----------|---------|
+| Environment check (make help, etc.) | 30s |
+| make test | 120s |
+| make check | 300s |
+
+### 1.3 Log Verification
+
+**R package logs** (if any):
+
+```bash
+make test    # Run tests
+make check   # Full R CMD check
+```
+
+### 1.4 Hypothesis → Instrumentation → Verification Cycle
+
+1. **Hypothesis Formation**: List possible causes from symptoms (use `<TASK>-H1`, `<TASK>-H2`, ...)
+2. **Instrumentation**: Add `message()` / `cli::cli_inform()` that can verify hypotheses
+3. **Verification**: Reject or adopt hypotheses based on instrumentation results
+4. **Iteration**: If hypothesis is rejected, move to next hypothesis
+
+---
+
+## 2. Instrumentation Guidelines
+
+### 2.1 Philosophy
+
+**No limit on instrumentation count.** Add as many logs as needed to:
+- Track value propagation across function boundaries
+- Identify exact point of divergence (expected vs actual)
+- Debug in **minimum steps** (one reproduction run should provide enough data)
+
+### 2.2 Log File Location
+
+`debug/scripts/<TASK>_debug.log` (NDJSON or plain text)
+
+**PROHIBITED**: `.cursor/debug.log` (system-protected)
+
+### 2.3 Log Clearing
+
+```bash
+echo "" > debug/scripts/<TASK>_debug.log   # Empty overwrite (no user prompt)
+```
+
+### 2.4 Instrumentation Template (R)
+
+```r
+# #region agent log
+cli::cli_inform("H1: {.field location} {.val {value}}", location = "R/foo.R:bar()")
+# or
+message(sprintf("[%s] H1: %s = %s", Sys.time(), "location", value))
+# #endregion
+```
+
+### 2.5 Placement Strategy (Propagation Tracking)
+
+For debugging value propagation issues:
+
+```
+[Entry point] → [Transform 1] → [Transform 2] → [Exit point]
+     ↓               ↓               ↓               ↓
+   H1-L1           H1-L2           H1-L3           H1-L4
+```
+
+| Location | What to log |
+|----------|-------------|
+| Entry point | Raw input values |
+| Each transform | Before/after values, which branch taken |
+| Exit point | Final output values |
+| Error handlers | Exception type, message, context |
+
+### 2.6 Hypothesis ID Convention
+
+- `<TASK>-H1`, `<TASK>-H2`, ... : Main hypotheses
+- `<TASK>-H1a`, `<TASK>-H1b`, ... : Sub-hypotheses
+- Use same hypothesis ID for all logs tracing one propagation path
+
+---
+
+## 3. R-Specific Debugging Notes
+
+### 3.1 NSE (Non-Standard Evaluation)
+
+- When debugging `dplyr`-like or `rlang` idioms, ensure `enquo()` / `{{ }}` are evaluated correctly
+- Use `rlang::last_error()` and `rlang::last_trace()` after `options(error = rlang::entrace)`
+
+### 3.2 S7 Classes
+
+- `@` vs `prop()`: R < 4.3.0 may need `prop()` for property access
+- Validators run at construction; use `browser()` inside validator to inspect failing values
+
+### 3.3 reprex
+
+- `reprex::reprex()` creates minimal reproducible examples
+- Use when the bug is reproducible but the cause is unclear; share output for collaboration
+
+---
+
+## 4. Checklists
+
+### Before Starting Debug
+
+- [ ] Accurately described symptoms (expected vs actual)
+- [ ] Listed hypotheses with task prefix (`<TASK>-H1`, ...)
+
+### During Debug
+
+- [ ] Added timeout to terminal commands
+- [ ] Added region markers to instrumentation (`#region agent log`)
+- [ ] Included hypothesis ID with task prefix in logs
+
+### After Debug Completion
+
+- [ ] Removed instrumentation code
+- [ ] Identified root cause and made minimal fix
+- [ ] Verified fix with tests
+- [ ] Created report at `debug/docs/<TASK>_report.md` (if significant)

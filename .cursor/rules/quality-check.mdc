@@ -1,0 +1,60 @@
+---
+description: "Running lint, format, or R CMD check: fix approaches and prohibited workarounds"
+alwaysApply: false
+---
+# Quality Check Conventions
+
+This rule defines the **policy** applied when executing `/quality-check`.
+Procedures (which commands to run and how) are documented in `@.cursor/commands/quality-check.md`.
+
+## Basic Principle
+
+**Always resolve warnings and errors from the root cause. Don't "silence" them with workarounds.**
+
+## Prohibited Practices (Workarounds)
+
+The following are prohibited in principle (exception only with stated justification):
+
+- Suppressing lint with `# nolint` (except with valid justification)
+- Hiding warnings with `suppressWarnings()` or `suppressMessages()` without documented reason
+- Using `class_any` for S7 properties when a concrete type is known
+- Excessive use of `...` that bypasses validation
+- Side effects in `.onLoad()` beyond package registration (e.g., setting global options that affect user code)
+
+## Correct Fix Approaches
+
+- Add appropriate S7 property types and validators
+- Use `match.arg()` for input validation where applicable
+- Make conditional branches explicit; avoid implicit fallbacks
+- Use `.lintr` configuration for intentional lint exclusions (with comments)
+- Document intentional exceptions in roxygen2 `@details` or inline comments
+
+## Check Targets (Minimum Required Execution)
+
+1. **lintr** — `lintr::lint_package()`: errors and warnings
+2. **styler** — `styler::style_pkg(dry = "on")`: format diffs
+3. **R CMD check** — `devtools::check()`: errors, warnings, and notes
+4. Inappropriate `# nolint` introduction (new additions, propagation)
+5. Clear security issues (authentication/authorization, input validation, data retention)
+
+## About Exceptions (Intentional Lint)
+
+When intentionally violating lint rules, always **state the reason in roxygen2 or comment**.
+
+Example (line length):
+
+```r
+# nolint: line_length_linter. Long URL for documentation.
+url <- "https://example.com/very/long/path/to/resource"
+```
+
+## Definition of Done
+
+Fix existing errors unrelated to changes as well; all of the following must be satisfied:
+
+- `lintr::lint_package()` has **zero errors/warnings**
+- `styler::style_pkg(dry = "on")` has **zero diffs**
+- `devtools::check()` shows **0 errors, 0 warnings, 0 notes**
+- Exceptions (intentional lint) have **documented reasons**
+- No new unjustified `# nolint` added
+- Not hiding problems with `suppressWarnings()` / `suppressMessages()`

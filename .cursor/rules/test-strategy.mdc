@@ -1,0 +1,103 @@
+---
+description: "Creating, reviewing, or modifying tests: test perspectives table, coverage, and mock conventions"
+alwaysApply: false
+---
+# Test Conventions
+
+## 1. Test Perspectives Table (Equivalence Partitioning / Boundary Values)
+
+1. Before starting any test work, first present a Markdown "test perspectives table."
+2. The table must include at least these columns: `Case ID`, `Input / Precondition`, `Perspective (Equivalence / Boundary)`, `Expected Result`, `Notes`.
+3. Rows should cover normal, abnormal, and boundary value cases. For boundary values, include at minimum `0 / min / max / ±1 / empty / NULL`.
+   Boundary value candidates (0 / min / max / ±1 / empty / NULL) that are meaningless per specification may be omitted with reason stated in `Notes`.
+4. If perspective gaps are discovered later, update the table after self-review and add necessary cases.
+5. For minor modifications to existing tests (message adjustments, minor expected value changes) that don't add new branches or constraints, creating/updating the test perspectives table is optional.
+
+### Template Example
+
+| Case ID | Input / Precondition | Perspective (Equivalence / Boundary) | Expected Result                               | Notes |
+|--------|----------------------|---------------------------------------|----------------------------------------------|-------|
+| TC-N-01 | Valid input A        | Equivalence – normal                 | Processing succeeds and returns expected value | -     |
+| TC-A-01 | NULL                 | Boundary – NULL                      | Validation error (required field)            | -     |
+| ...     | ...                  | ...                                   | ...                                          | ...   |
+
+---
+
+## 2. Test Code Implementation Policy
+
+1. Implement **all** cases listed in the above table as automated tests.
+2. Always include **at least as many failure cases** (validation errors, exceptions, external dependency failures) as success cases.
+3. Cover the following perspectives in tests:
+   - Normal cases (main scenarios)
+   - Abnormal cases (validation errors, exception paths)
+   - Boundary values (0, min, max, ±1, empty, NULL)
+   - Invalid type/format inputs
+   - External dependency failures (API, ellmer/ragnar calls, etc., where applicable)
+   - Exception types and error messages
+4. **When adding new parameters/fields, don't complete with just "value verification."** Include at least one (preferably both) of the following so tests fail when added parameters are "not propagated/used anywhere":
+   - **Propagation (wiring) verification**: Assert that downstream function arguments include the added parameter (mock call argument verification, generated request verification, etc.)
+   - **Behavior (effect) verification**: Assert that changing the added parameter value changes output/side effects as specified
+5. Target 100% branch coverage, designing additional cases as needed.
+   100% branch coverage is a "target value"; when not reasonably achievable, cover at least high-business-impact branches and main error paths.
+   When branches remain uncovered, state the reason and impact in `Notes` or PR body.
+
+---
+
+## 3. Given / When / Then Comments
+
+Every test case must have the following comment format:
+
+```r
+# Given: Preconditions
+# When:  Action to execute
+# Then:  Expected result/verification
+```
+
+Write comments directly above test code or within steps, keeping scenarios traceable for readers.
+
+---
+
+## 4. Exception/Error Verification
+
+1. For cases where exceptions occur, explicitly verify exception **type** and **message** (e.g., `expect_error(..., class = "error")`).
+2. For validation-type abnormal cases, also verify error codes and field information if available.
+3. When simulating external dependency failures, use mocks to verify expected exceptions/retries/fallbacks are called.
+
+---
+
+## 5. Execution Commands and Coverage
+
+1. At the end of test implementation, always document **execution commands** and **coverage collection method** at the end of documentation or PR body.
+   - Example: `make test`, `devtools::test()`, `covr::package_coverage()`
+2. Check branch/statement coverage, targeting 100% branch coverage (when not reasonably achievable, prioritize high-business-impact branches and main error paths).
+3. Attach coverage report results (screenshots or summary) where possible.
+
+---
+
+## 6. Operational Notes
+
+1. Reject test diffs that don't comply with this rule in review.
+2. Even without external dependencies, **use mocks to simulate failures** for failure cases.
+3. When new branches or constraints are added to test target specifications, update test perspectives table and test code simultaneously.
+4. When automation is difficult, document reason and alternative means, reaching agreement with reviewer.
+   Alternative means should include at minimum: target feature and risk, manual verification procedure, expected results, and log/screenshot storage method.
+5. As a rule, PRs with meaningful changes to production code (spec additions, bug fixes, refactors affecting behavior) must include corresponding automated test additions or updates.
+6. When test additions/updates are reasonably difficult, document the reason and alternative verification procedure (manual test procedure, etc.) in PR body and reach agreement with reviewer.
+7. Even for refactors not intended to change behavior, verify that change locations are sufficiently covered by existing tests; add tests if insufficient.
+
+---
+
+## 7. Mock/Patch Conventions (R / testthat)
+
+1. **Apply mocks at the use site** with `testthat::local_mocked_bindings()`.
+   - Mock the function as it is used in the code under test (the binding in the package namespace).
+   - Example: If `R/foo.R` calls `ellmer::chat()`, create a wrapper in your package and mock that wrapper, or mock `ellmer::chat` via `local_mocked_bindings(chat = mock_chat)` in the package namespace.
+2. **When tests fail, fix the setup. Don't weaken the test.**
+   - Removing/relaxing assertions to make tests pass conceals bugs and violates wiring/effect principles.
+   - Investigate root cause (incorrect mock target, missing setup, etc.) before fixing.
+3. Use `withr::local_envvar()` and `withr::local_options()` for temporary environment/options changes; they auto-restore after the test.
+4. For external package functions (ellmer, ragnar): create thin wrappers in your package and mock those wrappers, since namespace locking can prevent mocking base/external functions directly.
+
+---
+
+Follow this rule, always self-check for missing perspectives when designing and implementing tests. Also fix existing errors unrelated to changes.
