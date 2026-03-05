@@ -42,3 +42,11 @@ Layer 3 is the most implementation-costly and may not be fully achievable for al
 - **Easier**: Layers are additive, so Layer 3 can be implemented incrementally after Layer 1+2
 - **Harder**: Source code analysis is inherently fragile; `stop()` condition parsing cannot guarantee full accuracy
 - **Harder**: Package internals may change across versions, requiring re-scans
+
+## Addendum: Scanner Resilience (see ADR-0008)
+
+ADR-0008 extends this decision with:
+
+- **Layer 3b** (dry-run fuzzing): When Layer 3a static parsing fails, systematically execute the function with generated parameter combinations, capturing errors/warnings via `withCallingHandlers()` + stack traces. Fills gaps that regex-based parsing misses.
+- **Confidence grading**: Each constraint receives `confidence` (high/medium/low/gap) and `confirmed_by` fields based on how many layers confirmed it. See ADR-0008 for grading criteria.
+- **Interactive review**: `review_scan()` presents gaps for expert resolution. `export_scan()` / `import_scan()` persist corrected results across re-scans.
