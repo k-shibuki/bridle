@@ -1,0 +1,238 @@
+# Decision Graph Schema
+#
+# decision_graph.yaml is the core plugin artifact that defines a decision flow
+# to efficiently narrow the parameter space. The runtime Graph Engine follows
+# this graph to control the interactive dialogue.
+#
+# Related ADR: ADR-0002 (Decision Graph as Flow Control Mechanism)
+
+# --- Schema Definition ---
+
+schema:
+  version: "1.0"
+
+  graph:
+    # ID of the entry-point node
+    entry_node:
+      type: string
+      required: true
+
+    nodes:
+      type: map
+      description: "Map of node definitions keyed by node ID"
+      values:
+        type:
+          type: string
+          required: true
+          enum:
+            - context_gathering  # collect analysis context (data inspection, outcome type)
+            - decision           # parameter selection decision point
+            - execution          # code generation and execution
+            - diagnosis          # post-fit diagnostics and assessment
+
+        topic:
+          type: string
+          required: false
+          description: >
+            String matching the topic field of a knowledge/*.yaml file.
+            When this node is entered, all knowledge entries with a matching
+            topic are retrieved. Typically not needed for execution nodes.
+
+        parameter:
+          type: string | list[string]
+          required: false
+          description: >
+            R package parameter(s) decided at this node. Single parameter
+            or an array of related parameters (e.g., [incr, method.incr, allstudies]).
+            Not needed for context_gathering / execution / diagnosis nodes.
+
+        description:
+          type: string
+          required: false
+          description: "Brief description of the node's purpose (for humans and AI Drafter)"
+
+        transitions:
+          type: list
+          required: true
+          description: "Ordered list of transitions from this node. Evaluated top to bottom."
+          items:
+            to:
+              type: string
+              required: true
+              description: "Target node ID"
+
+            # The following 3 fields are mutually exclusive (specify exactly one)
+            when:
+              type: string
+              required: false
+              description: >
+                Transition condition in natural language. The LLM judges from context.
+                If computable_hint is present, the runtime attempts R expression
+                evaluation first.
+
+            computable_hint:
+              type: string
+              required: false
+              description: >
+                R expression hint for the when condition. The runtime evaluates it
+                if possible; otherwise falls back to LLM judgment on the when text
+                (see ADR-0003).
+
+            always:
+              type: boolean
+              required: false
+              description: "If true, transition unconditionally"
+
+            otherwise:
+              type: boolean
+              required: false
+              description: "If true, transition when no other condition matches (fallback)"
+
+# --- Example: meta::metabin (pairwise binary meta-analysis) ---
+
+example:
+  graph:
+    entry_node: outcome_type
+
+    nodes:
+      outcome_type:
+        type: context_gathering
+        description: "Inspect data structure and confirm binary outcome"
+        transitions:
+          - to: sm_selection
+            always: true
+
+      sm_selection:
+        type: decision
+        topic: effect_measures
+        parameter: sm
+        description: "Select effect measure (RR, OR, RD, ASD, DOR, VE)"
+        transitions:
+          - to: method_selection
+            always: true
+
+      method_selection:
+        type: decision
+        topic: pooling_methods
+        parameter: method
+        description: "Select pooling method (MH, Inverse, Peto, GLMM, LRP, SSW)"
+        transitions:
+          - to: glmm_model
+            when: "GLMM was selected"
+            computable_hint: "method == 'GLMM'"
+          - to: continuity_correction
+            when: "zero cells exist in the data"
+            computable_hint: "any(event.e == 0 | event.c == 0 | event.e == n.e | event.c == n.c)"
+          - to: model_type
+            otherwise: true
+
+      glmm_model:
+        type: decision
+        topic: glmm_models
+        parameter: model.glmm
+        description: "Select GLMM model type (UM.FS, UM.RS, CM.EL, CM.AL)"
+        transitions:
+          - to: continuity_correction
+            when: "zero cells exist in the data"
+            computable_hint: "any(event.e == 0 | event.c == 0)"
+          - to: model_type
+            otherwise: true
+
+      continuity_correction:
+        type: decision
+        topic: zero_cell_handling
+        parameter:
+          - incr
+          - method.incr
+          - allstudies
+        description: "Determine continuity correction approach for zero cells"
+        transitions:
+          - to: model_type
+            always: true
+
+      model_type:
+        type: decision
+        topic: model_selection
+        parameter:
+          - common
+          - random
+        description: "Choose common-effect model, random-effects model, or both"
+        transitions:
+          - to: tau2_estimation
+            when: "random-effects model is used"
+            computable_hint: "random == TRUE"
+          - to: execute_analysis
+            otherwise: true
+
+      tau2_estimation:
+        type: decision
+        topic: tau2_estimators
+        parameter: method.tau
+        description: "Select tau-squared estimator (DL, REML, PM, ML, etc.)"
+        transitions:
+          - to: ci_method
+            always: true
+
+      ci_method:
+        type: decision
+        topic: confidence_interval_methods
+        parameter:
+          - method.random.ci
+          - adhoc.hakn.ci
+        description: "Select confidence interval method for random effects (incl. Hartung-Knapp)"
+        transitions:
+          - to: prediction_interval
+            always: true
+
+      prediction_interval:
+        type: decision
+        topic: prediction_intervals
+        parameter:
+          - prediction
+          - method.predict
+        description: "Decide whether to compute prediction interval and which method to use"
+        transitions:
+          - to: execute_analysis
+            always: true
+
+      execute_analysis:
+        type: execution
+        description: "Run metabin() with selected parameters"
+        transitions:
+          - to: heterogeneity_assessment
+            always: true
+
+      heterogeneity_assessment:
+        type: diagnosis
+        topic: heterogeneity
+        description: "Assess heterogeneity via I-squared, tau-squared, and Q statistics"
+        transitions:
+          - to: sensitivity_analysis
+            when: "heterogeneity is moderate or higher and warrants further investigation"
+            computable_hint: "I2 > 50"
+          - to: publication_bias
+            otherwise: true
+
+      sensitivity_analysis:
+        type: decision
+        topic: sensitivity_approaches
+        description: "Select sensitivity analysis approach (change tau2 estimator, leave-one-out, etc.)"
+        transitions:
+          - to: execute_analysis
+            when: "re-run with different parameters"
+          - to: publication_bias
+            otherwise: true
+
+      publication_bias:
+        type: decision
+        topic: bias_assessment
+        parameter: method.bias
+        description: "Select publication bias test method"
+        transitions:
+          - to: complete
+            always: true
+
+      complete:
+        type: context_gathering
+        description: "Summarize results and generate report"
+        transitions: []

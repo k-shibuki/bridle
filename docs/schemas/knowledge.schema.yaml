@@ -1,0 +1,171 @@
+# Knowledge Entry Schema
+#
+# knowledge/*.yaml files constitute the plugin's knowledge base. Each file
+# corresponds to a single topic (decision point) and links to decision graph
+# nodes via the topic field.
+#
+# Knowledge is descriptive: it holds properties and references, not
+# recommendations. The LLM generates context-dependent recommendations
+# from this descriptive knowledge.
+#
+# Related ADR: ADR-0003 (When Condition Semantics)
+
+# --- Schema Definition ---
+
+schema:
+  version: "1.0"
+
+  # String matching a decision_graph node's topic field
+  topic:
+    type: string
+    required: true
+    description: >
+      The decision point this file's knowledge addresses.
+      When a decision graph node references the same topic,
+      all entries in this file are retrieved in full.
+
+  # Target R package parameter(s) for this topic
+  target_parameter:
+    type: string | list[string]
+    required: true
+    description: >
+      R package parameter name(s) this knowledge addresses.
+      Should match the decision graph node's parameter field.
+
+  # Target package name
+  package:
+    type: string
+    required: true
+
+  # Target function name
+  function:
+    type: string
+    required: true
+
+  # Array of knowledge entries
+  entries:
+    type: list
+    required: true
+    items:
+
+      # Unique entry identifier
+      id:
+        type: string
+        required: true
+        description: "Unique identifier within the plugin (e.g., tau2_small_k)"
+
+      # Applicability condition (natural language)
+      when:
+        type: string
+        required: true
+        description: >
+          Natural-language description of when this entry is relevant.
+          Subject to expert review; must be human-readable.
+          Example: "number of studies is small (fewer than 5)"
+
+      # Optional R expression hint for the when condition
+      computable_hint:
+        type: string | null
+        required: false
+        description: >
+          R expression equivalent of the when condition (optional).
+          The runtime evaluates it when possible; otherwise the LLM
+          judges from the when text. Null or omitted if not applicable.
+          Example: "k < 5"
+
+      # Descriptive knowledge (the entry's core content)
+      properties:
+        type: list[string]
+        required: true
+        description: >
+          Array of descriptive facts. State properties, not recommendations:
+          "X has this property" rather than "recommend X."
+
+      # Related considerations (optional)
+      related:
+        type: list[string]
+        required: false
+        description: >
+          Cross-references to other decision points. Prompts the LLM to
+          consider chained implications.
+          Example: "consider Hartung-Knapp adjustment (method.random.ci)"
+
+      # Competing views (optional; typically added during expert review)
+      competing_views:
+        type: list
+        required: false
+        description: "Divergent recommendations for the same condition"
+        items:
+          view:
+            type: string
+            required: true
+          source:
+            type: string
+            required: true
+            description: "Citation or source for this view"
+
+      # References
+      references:
+        type: list[string]
+        required: false
+        description: >
+          List of citations. Include DOI where available.
+          Format: "Author (Year) Journal" or DOI.
+
+# --- Example: meta::metabin tau2_estimators ---
+
+example:
+  topic: tau2_estimators
+  target_parameter: method.tau
+  package: meta
+  function: metabin
+
+  entries:
+    - id: tau2_small_k
+      when: "number of studies is small (fewer than 5)"
+      computable_hint: "k < 5"
+      properties:
+        - "PM provides robust estimation with small samples"
+        - "REML is prone to convergence issues"
+        - "DL tends to underestimate"
+      related:
+        - "consider Hartung-Knapp adjustment (method.random.ci)"
+      references:
+        - "Veroniki AA, et al. (2016) Res Synth Methods. doi:10.1002/jrsm.1164"
+        - "IntHout J, et al. (2014) BMC Med Res Methodol. doi:10.1186/1471-2288-14-25"
+
+    - id: tau2_moderate_k
+      when: "number of studies is moderate (5 to 30)"
+      computable_hint: "k >= 5 & k <= 30"
+      properties:
+        - "REML offers a good balance of bias and efficiency"
+        - "DL is widely used but known to underestimate"
+        - "PM often performs comparably to REML"
+      related:
+        - "consider Hartung-Knapp adjustment (method.random.ci)"
+      references:
+        - "Langan D, et al. (2019) Stat Med. doi:10.1002/sim.8057"
+        - "Veroniki AA, et al. (2016) Res Synth Methods. doi:10.1002/jrsm.1164"
+
+    - id: tau2_large_k
+      when: "number of studies is large (more than 30)"
+      computable_hint: "k > 30"
+      properties:
+        - "differences between estimators tend to diminish"
+        - "DL, REML, and PM show limited practical differences"
+      references:
+        - "Veroniki AA, et al. (2016) Res Synth Methods. doi:10.1002/jrsm.1164"
+
+    - id: tau2_cochrane_default
+      when: "Cochrane review compliance is required"
+      properties:
+        - "Cochrane Handbook designates DL as the standard"
+        - "however, recent simulation studies tend to favor REML"
+      competing_views:
+        - view: "use DL (Cochrane standard)"
+          source: "Cochrane Handbook for Systematic Reviews §10.10.4"
+        - view: "REML is preferable (simulation evidence)"
+          source: "Langan D, et al. (2019) Stat Med"
+      references:
+        - "Cochrane Handbook for Systematic Reviews of Interventions, Version 6"
+        - "Langan D, et al. (2019) Stat Med. doi:10.1002/sim.8057"
