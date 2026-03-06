@@ -99,35 +99,35 @@ for (path in schema_files) {
   }
 }
 
-# Check: knowledge topics should reference valid decision_graph node topics
+# Check: knowledge example topics should reference valid decision_graph example node topics
 graph_file <- "decision_graph.schema.yaml"
 knowledge_file <- "knowledge.schema.yaml"
 
 if (graph_file %in% names(all_parsed) && knowledge_file %in% names(all_parsed)) {
-  graph_schema <- all_parsed[[graph_file]]
-  knowledge_schema <- all_parsed[[knowledge_file]]
+  graph_data <- all_parsed[[graph_file]]
+  knowledge_data <- all_parsed[[knowledge_file]]
 
-  # Extract node topics from the graph example if present
   graph_nodes <- NULL
-  if (!is.null(graph_schema$schema$graph$nodes)) {
+  if (!is.null(graph_data$example$graph$nodes)) {
     graph_nodes <- vapply(
-      graph_schema$schema$graph$nodes,
-      function(n) n$topic %||% "",
+      graph_data$example$graph$nodes,
+      function(n) if (is.list(n) && !is.null(n$topic)) n$topic else "",
       character(1L)
     )
     graph_nodes <- graph_nodes[nzchar(graph_nodes)]
   }
 
-  # Extract knowledge topic from example if present
-  knowledge_topic <- knowledge_schema$schema$topic %||% NULL
+  knowledge_topic <- if (!is.null(knowledge_data$example$topic)) {
+    knowledge_data$example$topic
+  }
 
   if (!is.null(graph_nodes) && !is.null(knowledge_topic) && length(graph_nodes) > 0L) {
     if (!knowledge_topic %in% graph_nodes) {
       add_error(
         knowledge_file,
         paste0(
-          "Knowledge topic '", knowledge_topic,
-          "' not found in decision_graph node topics: ",
+          "Knowledge example topic '", knowledge_topic,
+          "' not found in decision_graph example node topics: ",
           paste(graph_nodes, collapse = ", ")
         )
       )
