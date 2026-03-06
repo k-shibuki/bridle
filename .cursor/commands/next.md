@@ -158,15 +158,23 @@ When Step 2 identifies any **CI pending** state (Hard Stop #7 — always delegat
 
 2. **Note the subagent transcript path** returned by the Task tool for later completion checking.
 
-3. **Switch to productive work** (exhaust ALL items before monitoring):
-   - **If independent Issues exist**: Create a new feature branch and proceed with `implement`.
-   - **If no independent Issues exist**: Execute the housekeeping checklist below. Each item must be completed or explicitly skipped with a reason. Do not enter the monitoring loop until all items are addressed.
-     1. Delete stale local branches (squash-merged branches where `git branch -d` fails — see `pr-merge.md` "Post-merge cleanup")
-     2. Run `make doctor` to verify environment health (skip if run within this turn)
-     3. Review documentation alignment (`docs-discover` Mode 1 style lightweight check — scan changed files against docs for consistency)
-     4. Pre-read the next Issue's spec and related code for faster future implementation (skip if no open Issues)
-   - **Report the checklist** before entering monitoring: "Housekeeping: (1) done/skipped — reason, (2) done/skipped — reason, ..."
-   - The main agent MUST NOT touch `main` or the merge-target branches while the subagent is working.
+3. **Switch to productive work** (reason first, then act):
+
+   Before doing anything, **explicitly reason** about the current context and decide what the highest-value work is while the subagent handles the blocking operation. Consider:
+   - What is the project's current state? (open Issues, uncommitted changes, recent findings, known gaps)
+   - What can be done in parallel without conflicting with the subagent's work?
+   - What would create the most forward progress per unit of time?
+
+   State your reasoning and chosen action(s) before executing. Examples of productive work (not exhaustive — think beyond this list):
+   - **Independent Issues**: Create a new feature branch and proceed with `implement`.
+   - **Improvements discovered during this session**: If the current work surfaced control-system gaps, doc inconsistencies, or tooling issues — address them now rather than deferring.
+   - **Environment health**: Run `make doctor` if not recently run.
+   - **Documentation alignment**: Check that recent changes are reflected in docs.
+   - **Stale branch cleanup**: Delete squash-merged branches.
+   - **Pre-reading**: Study the next Issue's spec and related code for faster future implementation.
+
+   Do not enter the monitoring loop until you have either exhausted productive work or determined that no safe parallel work exists (state why).
+   The main agent MUST NOT touch `main` or the merge-target branches while the subagent is working.
 
 4. **Completion guarantee** (Hard Stop #7):
    - After productive work is exhausted, check the subagent output file.

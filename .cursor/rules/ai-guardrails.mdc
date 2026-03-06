@@ -147,7 +147,7 @@ The main agent **MUST** delegate all blocking operations (CI polling, sequential
 |---|---|
 | CI pending (any) | Always delegate CI-wait to background subagent |
 | CI pending + independent Issue exists | Delegate + start `implement` on independent Issue |
-| CI pending + no independent Issue | Delegate + do housekeeping (branch cleanup, `make doctor`, docs review, next-Issue planning) |
+| CI pending + no independent Issue | Delegate + reason about highest-value parallel work (see § Productive work during delegation) |
 | Sequential multi-PR merge chain | Delegate entire rebase → CI → merge chain to one subagent |
 | Dependent PR chain (shared commits) | Use "Dependent PR Merge Chain" template with `--onto` rebase (see `subagent-prompts.md`) |
 | Code review, implementation, user interaction | Never delegate — requires main agent judgment |
@@ -164,11 +164,20 @@ For prompt templates (CI-wait, merge chain, CI-only) and completion detection pr
 
 Delegated subagent prompts MUST include: Goal, Steps, Prohibitions (especially git operation bans), Error handling, and Return format.
 
+#### Productive work during delegation
+
+After delegating, the main agent MUST reason about what to do next — not jump to a fixed checklist. Before acting, explicitly state:
+1. **Current context**: What is the project state? (open Issues, uncommitted changes, session findings, known gaps)
+2. **Available options**: What can be done without conflicting with the subagent?
+3. **Decision**: What is the highest-value action per unit of time, and why?
+
+This reasoning step prevents the agent from defaulting to idle monitoring when productive work exists, and from mechanically walking a checklist when a more impactful action is available. The reasoning and chosen action(s) must be stated before execution.
+
 #### Completion guarantee
 
 After launching a background subagent, the main agent MUST follow this lifecycle:
 
-1. Do productive work (implement next Issue, housekeeping)
+1. Reason about and perform productive work (see § Productive work during delegation)
 2. Periodically check the subagent output file between tasks
 3. When productive work is exhausted and the subagent is still running, enter a monitoring loop (read output file → sleep 10-30s → repeat)
 4. When the subagent completes, process the result (report merged PRs, surface errors)
