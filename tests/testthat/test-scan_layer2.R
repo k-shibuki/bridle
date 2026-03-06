@@ -1,53 +1,7 @@
 # Tests for scan_package() Layer 2 (Rd documentation analysis)
 # Follows test-strategy.mdc: Given/When/Then, failure >= success cases
 
-# -- Helpers: mock Rd structures -----------------------------------------------
-
-make_rd_text <- function(text) {
-  structure(text, Rd_tag = "TEXT")
-}
-
-make_rd_item <- function(name, description) {
-  structure(
-    list(
-      list(make_rd_text(name)),
-      list(make_rd_text(description))
-    ),
-    Rd_tag = "\\item"
-  )
-}
-
-make_rd_arguments <- function(...) {
-  structure(list(...), Rd_tag = "\\arguments")
-}
-
-make_rd_references <- function(text) {
-  structure(list(make_rd_text(text)), Rd_tag = "\\references")
-}
-
-make_rd_alias <- function(name) {
-  structure(list(make_rd_text(name)), Rd_tag = "\\alias")
-}
-
-make_mock_rd <- function(alias, arguments = list(), references = NULL) {
-  rd <- list(make_rd_alias(alias))
-  if (length(arguments) > 0L) {
-    items <- lapply(names(arguments), function(nm) {
-      make_rd_item(nm, arguments[[nm]])
-    })
-    rd <- c(rd, list(do.call(make_rd_arguments, items)))
-  }
-  if (!is.null(references)) {
-    rd <- c(rd, list(make_rd_references(references)))
-  }
-  rd
-}
-
-mock_resolve <- function(fn) {
-  function(package, func) fn
-}
-
-mock_version <- function(package) "0.0.0.9999"
+# mock_resolve, mock_version, make_rd_*, make_mock_rd provided by helper-mocks.R
 
 # -- rd_text() ----------------------------------------------------------------
 

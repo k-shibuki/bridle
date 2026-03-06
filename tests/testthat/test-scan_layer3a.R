@@ -1,44 +1,7 @@
 # Tests for scan_package() Layer 3a (source code static analysis)
 # Follows test-strategy.mdc: Given/When/Then, failure >= success cases
 
-# -- Helpers -------------------------------------------------------------------
-
-mock_resolve <- function(fn) {
-  function(package, func) fn
-}
-
-mock_version <- function(package) "0.0.0.9999"
-
-mock_rd_for <- function(func_name, arguments = list(), references = NULL) {
-  make_rd_text <- function(text) structure(text, Rd_tag = "TEXT")
-  make_rd_item <- function(name, desc) {
-    structure(list(list(make_rd_text(name)), list(make_rd_text(desc))),
-      Rd_tag = "\\item"
-    )
-  }
-  make_rd_alias <- function(name) {
-    structure(list(make_rd_text(name)), Rd_tag = "\\alias")
-  }
-
-  rd <- list(make_rd_alias(func_name))
-  if (length(arguments) > 0L) {
-    items <- lapply(names(arguments), function(nm) {
-      make_rd_item(nm, arguments[[nm]])
-    })
-    args_section <- structure(items, Rd_tag = "\\arguments")
-    rd <- c(rd, list(args_section))
-  }
-  if (!is.null(references)) {
-    ref_section <- structure(
-      list(make_rd_text(references)),
-      Rd_tag = "\\references"
-    )
-    rd <- c(rd, list(ref_section))
-  }
-  rd_db <- list()
-  rd_db[[paste0(func_name, ".Rd")]] <- rd
-  rd_db
-}
+# mock_resolve, mock_version, mock_rd_for provided by helper-mocks.R
 
 setup_all_mocks <- function(fn, rd_db = NULL) {
   if (is.null(rd_db)) rd_db <- mock_rd_for("testfn")

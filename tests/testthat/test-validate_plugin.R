@@ -1,72 +1,8 @@
 # Tests for validate_plugin()
 # Follows test-strategy.mdc: Given/When/Then, failure >= success cases
 
-# -- Helpers: minimal valid plugin objects ------------------------------------
-
-# nolint start: object_usage_linter. S7 constructors from same package.
-make_graph <- function(nodes = NULL, entry = "start") {
-  if (is.null(nodes)) {
-    nodes <- list(
-      start = Node(
-        type = "decision",
-        topic = "effect_measure",
-        parameter = "sm",
-        transitions = list(
-          Transition(to = "end", always = TRUE)
-        )
-      ),
-      end = Node(
-        type = "execution",
-        transitions = list()
-      )
-    )
-  }
-  DecisionGraph(entry_node = entry, nodes = nodes)
-}
-
-make_knowledge <- function(topic = "effect_measure",
-                           param = "sm",
-                           pkg = "meta",
-                           func = "metabin") {
-  KnowledgeStore(
-    topic = topic,
-    target_parameter = param,
-    package = pkg,
-    func = func,
-    entries = list(KnowledgeEntry(
-      id = "e1",
-      when = "always",
-      properties = "Use RR for binary outcomes"
-    ))
-  )
-}
-
-make_constraint <- function(param = "sm", pkg = "meta", func = "metabin") {
-  ConstraintSet(
-    package = pkg,
-    func = func,
-    constraints = list(Constraint(
-      id = "c1",
-      source = "formals_default",
-      type = "valid_values",
-      param = param,
-      values = c("RR", "OR", "RD")
-    ))
-  )
-}
-
-make_context <- function(vars = NULL) {
-  if (is.null(vars)) {
-    vars <- list(ContextVariable(
-      name = "k",
-      description = "number of studies",
-      available_from = "data_loaded",
-      source_expression = "nrow(data)"
-    ))
-  }
-  ContextSchema(variables = vars)
-}
-# nolint end
+# make_graph, make_knowledge, make_constraint, make_context
+# provided by helper-mocks.R
 
 # -- ValidationResult --------------------------------------------------------
 

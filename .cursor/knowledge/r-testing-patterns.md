@@ -122,6 +122,32 @@ local_mocked_bindings(
 
 ---
 
+## Helper File Pattern
+
+testthat auto-sources `helper-*.R` files before each test file. Use `tests/testthat/helper-mocks.R` for shared mock value factories.
+
+**Key constraint**: `local_mocked_bindings()` cannot be extracted into a helper function (see "local_mocked_bindings Scope Constraint" above). Helpers provide **values** that are passed to `local_mocked_bindings()` inline:
+
+```r
+# In helper-mocks.R — provides the mock function value
+mock_resolve <- function(fn) {
+  function(package, func) fn
+}
+
+# In test file — applies the mock inline (required for correct scoping)
+test_that("my test", {
+  local_mocked_bindings(resolve_function = mock_resolve(my_fn))
+  # ... test code ...
+})
+```
+
+**When to add to helper vs keep in test file**:
+
+- **Helper**: Mock pattern used in 2+ test files (e.g., `mock_resolve`, `mock_version`, Rd structure builders)
+- **Test file**: Mock pattern specific to one file (e.g., `mock_llm_yaml_response` in `test-draft_knowledge.R`)
+
+---
+
 ## S7 Constructor Testing
 
 When testing S7 classes:

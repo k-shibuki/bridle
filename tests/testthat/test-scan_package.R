@@ -2,13 +2,7 @@
 # Follows test-strategy.mdc: Given/When/Then, failure >= success cases
 # Uses local_mocked_bindings to avoid dependency on external packages
 
-# -- Helper: mock resolve_function -------------------------------------------
-
-mock_resolve <- function(fn) {
-  function(package, func) fn
-}
-
-mock_version <- function(package) "0.0.0.9999"
+# mock_resolve, mock_version provided by helper-mocks.R
 
 mock_empty_rd_db <- function(package) {
   rd <- list(structure(

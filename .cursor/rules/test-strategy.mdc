@@ -118,4 +118,28 @@ For R-specific testing gotchas (mock scoping constraints, NULL assignment trap, 
 
 ---
 
+## 8. Test Helper Conventions
+
+### Helper files (`tests/testthat/helper-*.R`)
+
+testthat automatically sources all `helper-*.R` files before running tests. Use them for **shared mock value factories** and **test data builders**.
+
+- **`helper-mocks.R`**: Contains mock value factories (e.g., `mock_resolve()`, `mock_version()`, `make_mock_rd()`, `mock_crossref_response()`) and test data builders (e.g., `make_graph()`, `make_knowledge()`).
+- Helpers provide **values only**. `local_mocked_bindings()` must always be called inline in each `test_that` block due to scope constraints (see §7.1).
+- When adding new mock patterns, check `helper-mocks.R` first. Add to the helper if the pattern will be reused across multiple test files. Keep file-specific helpers in the test file itself.
+
+### Setup file (`tests/testthat/setup.R`)
+
+Sourced once before all tests. Use for prerequisites like `skip_if_not_installed()` and global test options. Do not define test data or mock values here.
+
+### Naming conventions
+
+| File | Purpose | Auto-sourced |
+|------|---------|-------------|
+| `helper-mocks.R` | Shared mock factories and test builders | Yes, before each test file |
+| `setup.R` | One-time prerequisites and skip conditions | Yes, once before all tests |
+| Test-file-local helpers | Helpers specific to one test file | Defined at top of test file |
+
+---
+
 Follow this rule, always self-check for missing perspectives when designing and implementing tests. Also fix existing errors unrelated to changes.
