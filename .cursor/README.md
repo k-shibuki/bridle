@@ -12,6 +12,7 @@ Start here to find the right information quickly.
 | ADRs (design decisions) | [`docs/adr/`](../docs/adr/) — referenced from [`docs/README.md`](../docs/README.md) |
 | YAML schemas (data contracts) | [`docs/schemas/`](../docs/schemas/) — referenced from [`docs/README.md`](../docs/README.md) |
 | S7 class implementations | `R/` (empty until first implementation) |
+| Subagent delegation policy | `ai-guardrails.mdc` § Subagent Delegation |
 | Development workflow + commands | This file (below) |
 | Command details (procedures) | `.cursor/commands/*.md` |
 | Policy rules | `.cursor/rules/*.mdc` |
@@ -48,7 +49,20 @@ doctor → issue-create → implement ─────────→ test-create
                                                   commit → pr-create → [CI] → pr-review → pr-merge
 ```
 
-- **`next`** can be invoked at any point to assess the current state and propose the appropriate next command. After approval, it delegates to the command and loops back for the next step.
+When CI is pending and independent work exists, `next` delegates the CI-wait + merge to a background subagent and starts the next Issue in parallel:
+
+```
+                         ┌──────────────────────────────────────────────┐
+                         │  Background subagent (fast)                  │
+pr-create → [CI pending] ┤  CI poll → merge → rebase next → CI poll... │
+                         └──────────────────────────────────────────────┘
+                         │
+            Main agent   │  implement (next Issue) → test-create → ...
+                         │
+                         └→ next re-assessment checks subagent transcript
+```
+
+- **`next`** can be invoked at any point to assess the current state and propose the appropriate next command. After approval, it delegates to the command and loops back for the next step. When blocking operations (CI polling) are detected, `next` delegates them to background subagents (see `ai-guardrails.mdc` § Subagent Delegation).
 - `implement` auto-selects the next Issue when no Issue number is provided (analyzes dependencies, priority, and blocked status).
 - `docs-discover` runs twice: **Mode 1** during `implement` (early discovery) and **Mode 2** before `commit` (apply doc updates).
 
@@ -104,7 +118,7 @@ Rules define policies; commands define procedures.
 | Rule | Scope | Commands |
 |------|-------|----------|
 | `v5_bridle.mdc` (always) | Core coding assistance | All |
-| `ai-guardrails.mdc` (always) | AI safety checks, Issue-driven workflow, schema-code consistency | `doctor`, `issue-create`, `implement`, `quality-check`, `pr-create`, `docs-discover` |
+| `ai-guardrails.mdc` (always) | AI safety checks, Issue-driven workflow, schema-code consistency, subagent delegation | `doctor`, `issue-create`, `implement`, `quality-check`, `pr-create`, `pr-merge`, `next`, `docs-discover` |
 | `test-strategy.mdc` | Test design and review | `test-create`, `test-review` |
 | `integration-design.mdc` | Cross-module design | `integration-design` |
 | `debug.mdc` | Debugging methodology | `debug` |
@@ -118,3 +132,4 @@ Rules define policies; commands define procedures.
 3. **Traceability is mandatory**: PRs must reference their Issue (`Closes #N`), commits should reference it (`Refs: #N`).
 4. **No main direct push** for normal changes: All code changes go through the PR flow with CI validation.
 5. **Exceptions are explicit**: `hotfix` bypasses Issue triage but still requires a PR. Only `docs-only` may use direct push to main. See `ai-guardrails.mdc` for the full policy.
+6. **Parallelize via subagent delegation**: Blocking operations (CI polling, sequential merges) are delegated to background subagents so the main agent can continue independent work. See `ai-guardrails.mdc` § Subagent Delegation for the policy and `pr-merge.md` for the prompt template.
