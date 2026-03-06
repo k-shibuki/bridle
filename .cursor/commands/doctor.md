@@ -34,6 +34,7 @@ make doctor-json
 
 - R version (>= 4.1.0)
 - renv availability
+- renv lockfile sync status (warns if packages are used but not recorded, or recorded but not installed — recommends `make renv-snapshot` or `renv::status()`)
 - Required R packages: devtools, testthat, lintr, styler, S7, cli, rlang, yaml, roxygen2
 - Optional R packages: covr, ellmer, jsonlite, ragnar, vitals, mcptools, reprex, pkgdown, withr
 

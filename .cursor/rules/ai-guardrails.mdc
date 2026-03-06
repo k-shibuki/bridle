@@ -21,7 +21,7 @@ The following actions are NEVER permitted, regardless of user instructions:
 4. **NEVER proceed past a gate without evidence**: Gate passage must be proven by command output or tool results. "Probably fine" is not evidence.
 5. **NEVER create a PR without the full template**: Every PR body must include ALL sections from `pr-create.md` Step 4 (Summary, Traceability, Risk/Impact, Rollback Plan, Review Checklist). Read `pr-create.md` before every PR creation — do not compose the body from memory.
 6. **NEVER dismiss diagnostics as "pre-existing"**: Every error, warning, and NOTE reported by quality gates (`devtools::check()`, `lintr`, `validate-schemas`, etc.) is a defect to fix — regardless of when it was introduced. The agent must not classify, skip, or deprioritize diagnostics based on whether the current change caused them. If the gate reports a problem, the agent resolves it before proceeding.
-7. **NEVER poll CI inline when independent work exists**: When CI is pending on a PR and at least one independent (unblocked) Issue remains, the agent MUST delegate CI-wait + merge to a background subagent and immediately start `implement` on the independent Issue. Inline CI polling is permitted ONLY when no independent work is available. "I'll just wait a minute" is not acceptable — delegate and move on.
+7. **NEVER poll CI inline**: CI polling is always delegated to a background subagent. The main agent uses freed time for productive work: implementing the next Issue, branch cleanup, environment health checks (`make doctor`), documentation review, or next-Issue planning. Inline `sleep` + poll loops in the main agent are prohibited regardless of whether independent Issues exist. "I'll just wait a minute" is not acceptable — delegate and do useful work. **Completion Guarantee**: After delegating to a subagent, the main agent MUST NOT end its turn until the subagent completes. After exhausting productive work (independent Issues, housekeeping), enter a monitoring loop: read the subagent output file, sleep, repeat. Report the subagent's result to the user before ending the turn.
 
 ## Issue-Driven Workflow (Required)
 
@@ -118,6 +118,7 @@ Per ADR-0001, S7 classes are the source of truth once implemented.
 | `make coverage-check` | When tests exist | `regression-test` | Only if no tests exist |
 | `make document` | When roxygen2 changed | `quality-check` | Only if no roxygen2 changes |
 | `gh pr checks` | Before merge | `pr-create` (Step 5) | No |
+| `make doctor` | Always (includes renv sync) | `quality-check` | No |
 
 Even when no R code changed (Makefile, docs, CI only), `make validate-schemas` must still run. There is no case where verification can be entirely skipped.
 
@@ -138,15 +139,17 @@ For every PR/commit, verify:
 
 ### Subagent Delegation Pattern
 
-When a blocking operation occurs (CI polling, sequential PR merges, long builds) and independent work is available, the main agent **MUST** delegate the blocking operation to a background subagent rather than polling inline (see Hard Stop #7).
+The main agent **MUST** delegate all blocking operations (CI polling, sequential PR merges, long builds) to a background subagent (see Hard Stop #7). This applies unconditionally — not only when independent Issues exist.
 
 #### When to delegate
 
 | Situation | Action |
 |---|---|
-| CI pending + independent Issue exists | Delegate CI-wait + merge to background subagent; start `implement` on independent Issue |
+| CI pending (any) | Always delegate CI-wait to background subagent |
+| CI pending + independent Issue exists | Delegate + start `implement` on independent Issue |
+| CI pending + no independent Issue | Delegate + do housekeeping (branch cleanup, `make doctor`, docs review, next-Issue planning) |
 | Sequential multi-PR merge chain | Delegate entire rebase → CI → merge chain to one subagent |
-| CI pending + no other work | Fall back to inline polling (no delegation benefit) |
+| Dependent PR chain (shared commits) | Use "Dependent PR Merge Chain" template with `--onto` rebase (see `subagent-prompts.md`) |
 | Code review, implementation, user interaction | Never delegate — requires main agent judgment |
 
 #### Subagent configuration
@@ -160,6 +163,18 @@ When a blocking operation occurs (CI polling, sequential PR merges, long builds)
 For prompt templates (CI-wait, merge chain, CI-only) and completion detection procedures, see `@.cursor/knowledge/subagent-prompts.md`.
 
 Delegated subagent prompts MUST include: Goal, Steps, Prohibitions (especially git operation bans), Error handling, and Return format.
+
+#### Completion guarantee
+
+After launching a background subagent, the main agent MUST follow this lifecycle:
+
+1. Do productive work (implement next Issue, housekeeping)
+2. Periodically check the subagent output file between tasks
+3. When productive work is exhausted and the subagent is still running, enter a monitoring loop (read output file → sleep 10-30s → repeat)
+4. When the subagent completes, process the result (report merged PRs, surface errors)
+5. Report to the user, THEN end the turn
+
+Ending the turn while a subagent is still running is prohibited. See `@.cursor/knowledge/subagent-prompts.md` § Completion Detection for the monitoring procedure.
 
 #### Git conflict prevention
 

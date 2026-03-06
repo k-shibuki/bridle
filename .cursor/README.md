@@ -65,7 +65,7 @@ doctor → issue-create → implement ─────────→ test-create
                                                   commit → pr-create → [CI] → pr-review → pr-merge
 ```
 
-When CI is pending and independent work exists, `next` delegates the CI-wait + merge to a background subagent and starts the next Issue in parallel:
+When CI is pending, `next` always delegates the CI-wait + merge to a background subagent (Hard Stop #7). The main agent proceeds with independent Issues or housekeeping:
 
 ```
                          ┌──────────────────────────────────────────────┐
@@ -148,4 +148,4 @@ Rules define enforceable MUST/MUST NOT policies. Commands define procedures. Kno
 3. **Traceability is mandatory**: PRs must reference their Issue (`Closes #N`), commits should reference it (`Refs: #N`).
 4. **No main direct push** for normal changes: All code changes go through the PR flow with CI validation.
 5. **Exceptions are explicit**: `hotfix` bypasses Issue triage but still requires a PR. Only `docs-only` may use direct push to main. See `ai-guardrails.mdc` for the full policy.
-6. **Parallelize via subagent delegation**: Blocking operations (CI polling, sequential merges) are delegated to background subagents so the main agent can continue independent work. See `ai-guardrails.mdc` § Subagent Delegation for the policy and `pr-merge.md` for the prompt template.
+6. **Parallelize via subagent delegation**: Blocking operations (CI polling, sequential merges) are always delegated to background subagents so the main agent can continue productive work (independent Issues, branch cleanup, environment health, doc review). Inline CI polling is prohibited. See `ai-guardrails.mdc` § Subagent Delegation for the policy and `subagent-prompts.md` for prompt templates.

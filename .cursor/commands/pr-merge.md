@@ -94,6 +94,17 @@ If the local feature branch still exists after the GitHub merge, delete it:
 git branch -d <branch-name> 2>/dev/null || true
 ```
 
+**Squash merge caveat**: After a squash merge, `git branch -d` may fail with "not fully merged" because git does not recognize the squashed commit as an ancestor. Use force-delete only after confirming the PR is merged:
+
+```bash
+pr_state=$(gh pr list --head <branch-name> --state merged --json number -q '.[0].number')
+if [ -n "$pr_state" ]; then
+  git branch -D <branch-name> 2>/dev/null || true
+fi
+```
+
+See `@.cursor/knowledge/git-recovery.md` "Squash merge creates conflicts for dependent branches" for related patterns.
+
 ## Local merge (docs-only exception flow only)
 
 For `docs-only` changes that bypassed the PR flow. **`hotfix` changes must use the GitHub PR merge flow above** — direct push / local merge is not permitted for code changes.
@@ -119,45 +130,26 @@ After `--squash`, you must run `git commit` with a message following `commit-mes
 
 ## Delegated merge (background subagent)
 
-When called from `next` with CI still pending and independent work available, the CI-wait + merge can be delegated to a background subagent. This frees the main agent to work on other Issues.
+CI polling is always delegated to a background subagent (Hard Stop #7). This frees the main agent for productive work — whether implementing the next Issue or performing housekeeping.
 
 ### When to use
 
-- `pr-review` already concluded "Mergeable", but CI is still running
+- CI is still running on a PR (always — inline polling is prohibited)
 - Multiple PRs need sequential merge (rebase → CI → merge chain)
-- Independent work exists for the main agent to do in parallel
+- Dependent PRs with shared commit history need `--onto` rebase after squash merge
 
 ### How to delegate
 
-Launch a `shell` subagent with `model: "fast"` and `run_in_background: true`. Use the following prompt template, filling in the specifics:
+Launch a `shell` subagent with `model: "fast"` and `run_in_background: true`.
 
-```
-You need to merge GitHub PR(s) sequentially, waiting for CI to pass on each.
+Choose the appropriate template from `@.cursor/knowledge/subagent-prompts.md`:
 
-## PRs to merge (in order)
-- PR #<N>: <branch-name> (strategy: squash)
-[repeat for each PR]
-
-## For each PR:
-1. Poll `gh pr checks <N>` every 30 seconds until all checks show `pass`
-   (ignore `skipping` status). Use `sleep 30` between polls.
-2. Merge: `gh pr merge <N> --squash --delete-branch`
-3. If merge fails with "not mergeable" (base branch changed):
-   a. `git checkout main && git pull origin main`
-   b. `git checkout <branch> && git rebase main`
-   c. Resolve NAMESPACE conflicts by keeping all export lines alphabetically
-   d. `git add . && GIT_EDITOR=true git rebase --continue`
-   e. `git push --force-with-lease origin <branch>`
-   f. Go back to step 1
-
-## After all PRs merged:
-1. `git checkout main && git pull origin main && git fetch --prune origin`
-2. Delete local feature branches: `git branch -d <branch> 2>/dev/null || true`
-
-## Return
-Report: which PRs were merged, commit hashes on main (`git log --oneline -<N>`),
-any errors encountered.
-```
+| Scenario | Template |
+|----------|----------|
+| Single PR, CI pending | "CI-Wait + Merge" |
+| Multiple independent PRs | "Sequential PR Merge Chain" |
+| PRs with shared commits (branched from each other) | "Dependent PR Merge Chain" (includes `--onto` rebase) |
+| CI monitoring only (no merge) | "CI-Wait Only" |
 
 ### Completion detection
 

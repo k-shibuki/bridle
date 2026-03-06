@@ -47,7 +47,8 @@ check_r_pkg() {
   local pkg="$1" required="${2:-true}"
   local out
   if out=$($RUNTIME exec -w /home/rstudio/bridle "$CONTAINER_NAME" \
-      Rscript -e "cat(requireNamespace('$pkg', quietly = TRUE))" 2>/dev/null) \
+      Rscript -e "cat(requireNamespace('$pkg', quietly = TRUE))" 2>/dev/null \
+      | tail -1) \
       && [[ "$out" == "TRUE" ]]; then
     record "R pkg: $pkg" "ok"
   elif [[ "$required" == "true" ]]; then
@@ -107,7 +108,8 @@ if $container_running; then
   $JSON_MODE || echo ""
 
   # R version
-  r_ver=$($RUNTIME exec "$CONTAINER_NAME" Rscript -e "cat(paste(R.version\$major, R.version\$minor, sep='.'))" 2>/dev/null || echo "unknown")
+  r_ver=$($RUNTIME exec "$CONTAINER_NAME" Rscript -e "cat(paste(R.version\$major, R.version\$minor, sep='.'))" 2>/dev/null | tail -1)
+  r_ver="${r_ver:-unknown}"
   if [[ "$r_ver" != "unknown" ]]; then
     if printf '%s\n%s\n' "$MIN_R_VERSION" "$r_ver" | sort -V | head -1 | grep -q "^${MIN_R_VERSION}$"; then
       record "R $r_ver (>= $MIN_R_VERSION)" "ok"
@@ -122,11 +124,23 @@ if $container_running; then
 
   # renv status
   if $RUNTIME exec -w /home/rstudio/bridle "$CONTAINER_NAME" \
-      Rscript -e "cat(requireNamespace('renv', quietly = TRUE))" 2>/dev/null | grep -q TRUE; then
+      Rscript -e "cat(requireNamespace('renv', quietly = TRUE))" 2>/dev/null \
+      | tail -1 | grep -q TRUE; then
     record "renv" "ok"
   else
     record "renv" "fail" "not installed in container"
     errors=$((errors + 1))
+  fi
+
+  # renv sync status
+  renv_issues=$($RUNTIME exec -w /home/rstudio/bridle "$CONTAINER_NAME" \
+      Rscript -e "s <- renv::status(dev=TRUE); n <- length(s\$library\$Packages) + length(s\$lockfile\$Packages); cat(n)" 2>/dev/null \
+      | tail -1)
+  if [[ "$renv_issues" == "0" ]]; then
+    record "renv sync" "ok"
+  else
+    record "renv sync" "warn" "out of sync (run 'make renv-snapshot' or 'renv::status()' for details)"
+    warnings=$((warnings + 1))
   fi
 
   # Required R packages

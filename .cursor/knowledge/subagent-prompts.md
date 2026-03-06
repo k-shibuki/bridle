@@ -107,22 +107,75 @@ Report: "CI PASSED: all checks green for PR #<N>" or "CI FAILED: <check-name> fa
 
 ---
 
+## Template: Dependent PR Merge Chain (rebase-enabled)
+
+Use when PRs share commit history (e.g., PR #B was branched from PR #A's feature branch) and squash merge of #A creates conflicts for #B's normal rebase. Requires `git rebase --onto` to skip the already-merged commits.
+
+```
+## Goal
+Merge PRs #<A> and #<B> sequentially. #<B> was branched from #<A>, so after
+squash-merging #<A>, use `git rebase --onto` to rebase #<B> cleanly.
+
+## Steps
+
+1. Poll CI for PR #<A>: `gh pr checks <A>` every 30s until all pass.
+2. Merge PR #<A>: `gh pr merge <A> --squash --delete-branch`
+3. Verify: `gh pr view <A> --json state -q '.state'` → "MERGED"
+4. Check PR #<B> mergeability: `gh pr view <B> --json mergeable -q '.mergeable'`
+5. If CONFLICTING, rebase #<B> onto updated main:
+   a. `git fetch origin main`
+   b. `git checkout <branch-B>`
+   c. Identify commits to keep (only #<B>'s own commits, not #<A>'s):
+      `git log --oneline origin/main..<branch-B>`
+   d. Find the boundary (last commit from #<A>):
+      The commit just before #<B>'s first unique commit.
+   e. `git rebase --onto origin/main <boundary-commit> <branch-B>`
+   f. `git push --force-with-lease origin <branch-B>`
+6. Poll CI for PR #<B>: `gh pr checks <B>` every 30s until all pass.
+7. Merge PR #<B>: `gh pr merge <B> --squash --delete-branch`
+8. Verify: `gh pr view <B> --json state -q '.state'` → "MERGED"
+
+## Git operations allowed (scoped)
+- `git fetch origin main` — read-only sync
+- `git checkout <branch-B>` — only the specific branch listed above
+- `git rebase --onto origin/main <commit> <branch-B>` — targeted rebase
+- `git push --force-with-lease origin <branch-B>` — only the rebased branch
+- NEVER push to main directly
+
+## Error handling
+- If CI fails on either PR: stop, report which check failed and the details URL
+- If rebase --onto has conflicts: abort rebase (`git rebase --abort`), report the conflicting files
+- If merge fails: report the error, do NOT retry
+
+## Return format
+Report:
+- PR #<A>: merged (yes/no), merge SHA
+- PR #<B>: merged (yes/no), merge SHA
+- Any errors encountered
+```
+
+---
+
 ## Subagent Configuration Reference
 
 | Use case | `subagent_type` | `model` | `run_in_background` |
 |----------|-----------------|---------|---------------------|
 | CI poll + merge | `shell` | `fast` | `true` |
 | Sequential merge chain | `shell` | `fast` | `true` |
+| Dependent PR chain (rebase) | `shell` | `fast` | `true` |
 | CI poll only | `shell` | `fast` | `true` |
 
 ---
 
 ## Completion Detection
 
-The main agent detects subagent completion by reading the subagent transcript `.jsonl` file:
+**When**: The main agent MUST confirm subagent completion before ending its turn. Do not defer to "the next re-assessment" or the next user message — confirm within the same turn that launched the subagent. See `@.cursor/rules/ai-guardrails.mdc` § Completion guarantee for the enforceable lifecycle.
 
-1. Read the last few lines of the transcript file
-2. Parse the last `assistant` message for a result summary
-3. If still running (no final summary): note "background task in progress", continue independent work
-4. If completed successfully: incorporate results and proceed
-5. If error encountered: report to the user
+**How**: The main agent detects subagent completion by reading the subagent output file:
+
+1. Read the last portion of the output file (check for `exit_code` footer or final result message)
+2. If still running (no completion indicator): continue productive work, then re-check
+3. When productive work is exhausted and the subagent is still running: enter monitoring loop (read output file → `sleep 15` → repeat)
+4. If completed successfully: incorporate results (e.g., "MERGED: PR #N") and report to user
+5. If error encountered: report the error details to the user
+6. Only after confirming completion may the main agent end its turn
