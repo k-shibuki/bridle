@@ -2,7 +2,6 @@
 # Follows test-strategy.mdc: Given/When/Then, failure >= success cases
 
 test_that("Transition: valid unconditional transition", {
-
   # Given: a target node ID with always = TRUE
   # When:  constructing a Transition
   # Then:  object is created with correct properties
@@ -16,7 +15,6 @@ test_that("Transition: valid unconditional transition", {
 })
 
 test_that("Transition: valid conditional transition with when + computable_hint", {
-
   # Given: when text and a computable_hint
 
   # When:  constructing a Transition

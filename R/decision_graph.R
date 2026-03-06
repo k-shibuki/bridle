@@ -5,6 +5,7 @@
 #' to efficiently narrow the parameter space (ADR-0002).
 #'
 #' @name decision_graph
+#' @importFrom rlang %||%
 NULL
 
 # -- Transition ---------------------------------------------------------------
