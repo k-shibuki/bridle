@@ -37,6 +37,7 @@ Collate:
     'constraints.R'
     'context_schema.R'
     'decision_graph.R'
+    'decision_logger.R'
     'draft_knowledge.R'
     'fetch_references.R'
     'hint_evaluator.R'
