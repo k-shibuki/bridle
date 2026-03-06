@@ -117,6 +117,52 @@ Refs: #<issue-number>"
 
 After `--squash`, you must run `git commit` with a message following `commit-message-format.mdc`.
 
+## Delegated merge (background subagent)
+
+When called from `next` with CI still pending and independent work available, the CI-wait + merge can be delegated to a background subagent. This frees the main agent to work on other Issues.
+
+### When to use
+
+- `pr-review` already concluded "Mergeable", but CI is still running
+- Multiple PRs need sequential merge (rebase → CI → merge chain)
+- Independent work exists for the main agent to do in parallel
+
+### How to delegate
+
+Launch a `shell` subagent with `model: "fast"` and `run_in_background: true`. Use the following prompt template, filling in the specifics:
+
+```
+You need to merge GitHub PR(s) sequentially, waiting for CI to pass on each.
+
+## PRs to merge (in order)
+- PR #<N>: <branch-name> (strategy: squash)
+[repeat for each PR]
+
+## For each PR:
+1. Poll `gh pr checks <N>` every 30 seconds until all checks show `pass`
+   (ignore `skipping` status). Use `sleep 30` between polls.
+2. Merge: `gh pr merge <N> --squash --delete-branch`
+3. If merge fails with "not mergeable" (base branch changed):
+   a. `git checkout main && git pull origin main`
+   b. `git checkout <branch> && git rebase main`
+   c. Resolve NAMESPACE conflicts by keeping all export lines alphabetically
+   d. `git add . && GIT_EDITOR=true git rebase --continue`
+   e. `git push --force-with-lease origin <branch>`
+   f. Go back to step 1
+
+## After all PRs merged:
+1. `git checkout main && git pull origin main && git fetch --prune origin`
+2. Delete local feature branches: `git branch -d <branch> 2>/dev/null || true`
+
+## Return
+Report: which PRs were merged, commit hashes on main (`git log --oneline -<N>`),
+any errors encountered.
+```
+
+### Completion detection
+
+The main agent checks the subagent transcript at the next `next` re-assessment cycle. See `ai-guardrails.mdc` "Completion detection" for the protocol.
+
 ## Constraints
 
 - Use non-interactive git flags (`--no-edit`, `--no-pager`) to avoid hangs.

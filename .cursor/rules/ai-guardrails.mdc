@@ -146,9 +146,61 @@ For every PR/commit, verify:
 - [ ] `make ci` passes locally
 - [ ] PR body contains all required sections (see Hard Stop #5)
 
-## Multi-Agent Coordination
+## Subagent Delegation & Multi-Agent Coordination
 
-When multiple AI agents work concurrently:
+### Subagent Delegation Pattern
+
+When a blocking operation occurs (CI polling, sequential PR merges, long builds) and independent work is available, the main agent **SHOULD** delegate the blocking operation to a background subagent rather than polling inline.
+
+#### When to delegate
+
+| Situation | Action |
+|---|---|
+| CI pending + independent Issue exists | Delegate CI-wait + merge to background subagent; start `implement` on independent Issue |
+| Sequential multi-PR merge chain | Delegate entire rebase → CI → merge chain to one subagent |
+| CI pending + no other work | Fall back to inline polling (no delegation benefit) |
+| Code review, implementation, user interaction | Never delegate — requires main agent judgment |
+
+#### Subagent configuration
+
+- **Type**: `subagent_type: "shell"` for CI polling, merge, rebase, and other git/CLI operations
+- **Model**: `model: "fast"` for routine operations (CI poll, merge, rebase). Omit `model` (inherit parent) for tasks requiring judgment. Never hardcode specific model names — they are environment-dependent.
+- **Background**: `run_in_background: true` to avoid blocking the main agent
+
+#### Prompt structure for delegated tasks
+
+Delegated subagent prompts must include:
+
+1. **Goal**: One-sentence summary of what the subagent should accomplish
+2. **Steps**: Numbered steps with exact shell commands
+3. **Error handling**: What to do on failure (e.g., merge conflict resolution, CI failure)
+4. **Return format**: What the subagent should report on completion (e.g., merged PR numbers, commit hashes, errors encountered)
+
+#### Completion detection
+
+The main agent detects subagent completion by reading the subagent transcript `.jsonl` file during state re-assessment (e.g., `next` Step 1):
+
+1. Read the last few lines of the transcript file
+2. Parse the last `assistant` message for a result summary
+3. If the subagent is still running (no final summary), note "background task in progress" and continue with independent work
+4. If the subagent completed successfully, incorporate the results and proceed
+5. If the subagent encountered an error, report to the user
+
+#### Git conflict prevention
+
+When a subagent is handling merge operations:
+
+- The subagent owns ALL git operations on the merge-target branches
+- The main agent MUST work on a **different branch** (e.g., a new feature branch for the independent Issue)
+- Do not run `git checkout main` or `git pull` on the main agent while the subagent is merging
+
+#### Fallback (backward compatibility)
+
+If the environment does not support subagents (e.g., non-Cursor environment, manual command execution), all commands fall back to sequential inline execution. Commands must remain fully functional without subagent delegation.
+
+### Multi-Agent Safety Rules
+
+When multiple AI agents (or a main agent + subagents) work concurrently:
 
 - Use task prefixes (see `@.cursor/rules/debug.mdc` Section 0) for all artifacts
 - Check `git status` before starting work to detect concurrent changes
