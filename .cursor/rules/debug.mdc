@@ -4,6 +4,17 @@ alwaysApply: false
 ---
 # Debugging Conventions
 
+## Prerequisite: Read Knowledge Before Starting
+
+Before starting any debug or investigation work, the agent MUST read `@.cursor/knowledge/r-debugging-patterns.md`. This file provides:
+
+- R instrumentation templates (`message()`, `cli::cli_inform()` patterns)
+- Placement strategy for propagation tracking across function boundaries
+- R-specific debugging tools (`browser()`, `rlang::last_trace()`, `reprex`)
+- Common R debugging pitfalls and their solutions
+
+Do not rely on memory — read the file every time. See also `@.cursor/rules/ai-guardrails.mdc` § Knowledge Consultation Triggers.
+
 ## Positioning (Separation of Policy and Procedure)
 
 - This file defines **policies (principles and constraints)**.

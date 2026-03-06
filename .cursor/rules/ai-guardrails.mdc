@@ -91,6 +91,18 @@ Before writing any code:
 4. **Read relevant schema(s)** from `docs/schemas/` if the change touches data structures
 5. **Check existing patterns** in `R/` to maintain consistency
 
+## Knowledge Consultation Triggers
+
+Certain task types require reading a specific knowledge file **before** starting work. This is not optional — the knowledge files capture hard-won patterns that prevent recurring bugs.
+
+| Task type | Knowledge file | Referenced by |
+|---|---|---|
+| Debugging / investigation | `@.cursor/knowledge/r-debugging-patterns.md` | `debug.mdc` |
+| Writing / reviewing tests | `@.cursor/knowledge/r-testing-patterns.md` | `test-strategy.mdc` |
+| Fixing lint / format issues | `@.cursor/knowledge/r-lint-patterns.md` | `quality-check.mdc` |
+
+**Rule**: When the agent enters one of these task types, it MUST read the corresponding knowledge file as its first action. Do not rely on memory from previous sessions — knowledge files may have been updated.
+
 ## Type Strictness (S7)
 
 - All S7 properties **MUST** have explicit types. `class_any` is **prohibited** unless the property genuinely accepts multiple unrelated types with no common interface.

@@ -4,6 +4,20 @@ alwaysApply: false
 ---
 # Test Conventions
 
+## Prerequisite: Read Knowledge Before Starting
+
+Before writing, reviewing, or modifying any test code, the agent MUST read `@.cursor/knowledge/r-testing-patterns.md`. This file documents R-specific testing gotchas that cause recurring bugs:
+
+- `local_mocked_bindings()` scoping constraints (mock leaks across tests)
+- NULL assignment trap (`x$field <- NULL` silently removes the field)
+- Primitive function `body()` returns NULL (cannot mock via body replacement)
+- Helper colocation rule (why `# nolint` is wrong for cross-helper references)
+- Layered mock strategy for S7 classes
+
+Do not rely on memory — read the file every time. See also `@.cursor/rules/ai-guardrails.mdc` § Knowledge Consultation Triggers.
+
+---
+
 ## 0. Relationship Between Issue Test Plan and Test Implementation
 
 The Issue's Test Plan section serves as the **initial test matrix** — a set of concrete, self-contained test cases created at planning time. The `test-create` workflow builds on this foundation:
