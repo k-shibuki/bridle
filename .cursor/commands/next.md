@@ -26,7 +26,7 @@ This is a **meta-command** that orchestrates all other commands. It does not imp
 When the user instructs continuous execution ("keep going", "do everything", "till close all issues", etc.):
 
 1. **Execute every step of every command in full**. "Never skip commands" means both "do not skip commands in the workflow" AND "do not skip steps within each command". Speed is never a justification for omitting verification.
-2. **Parallelize via subagent delegation, not by skipping gates**: When CI is pending on a PR and independent work exists, **Hard Stop #7 applies** — delegate the CI-wait + merge to a background subagent and immediately start `implement` for the next independent Issue. Never merge until CI passes. Never poll inline when independent work exists.
+2. **Parallelize via subagent delegation, not by skipping gates**: When CI is pending on a PR, **Hard Stop #7 applies** — always delegate CI-wait + merge to a background subagent. If independent Issues exist, start `implement` immediately. If not, perform housekeeping (see Step 6). Never merge until CI passes. Never poll inline.
 3. **Report progress at each gate**: Print a one-line summary at each workflow transition (e.g., "PR #13 created, CI pending — delegated to background. Starting #9.") so the user can track progress.
 4. **User's "hurry up" does not exempt safety checks**: Achieve speed by reducing unnecessary explanation, delegating blocking operations to subagents, and batching tool calls. Never by skipping `make ci-fast`, `gh pr checks`, or any verification step.
 
@@ -67,6 +67,10 @@ gh pr list --state open --json number,title,headRefName,statusCheckRollup --limi
 
 # Environment state
 make doctor 2>&1 | tail -5
+
+# Stale branch check (squash-merged branches linger after PR merge)
+git branch --merged origin/main | grep -v '^\*\|main$' || true
+git branch --no-merged origin/main --format='%(refname:short) %(upstream:track)' | grep '\[gone\]' || true
 ```
 
 **Background task check**: If a background subagent was previously launched (e.g., for CI-wait + merge), check its transcript file for completion. See `ai-guardrails.mdc` "Completion detection" for the protocol. Incorporate results into the state assessment.
@@ -85,8 +89,9 @@ Use the evidence to classify the current state into one of these positions:
 | On feature branch, tests pass, docs not reviewed | **Tests pass** | `docs-discover` (Mode 2) |
 | On feature branch, docs OK, uncommitted changes | **Docs OK** | `commit` |
 | On feature branch, committed, no PR | **Committed** | `pr-create` |
-| Open PR, CI still running, independent Issue exists | **CI pending (parallel)** | **Hard Stop #7**: MUST delegate CI-wait + merge to background subagent, then immediately start `implement` on independent Issue. Inline wait is prohibited. |
-| Open PR, CI still running, no independent Issue | **CI pending (solo)** | Inline wait (poll `gh pr checks` every 30s). This is the only case where inline CI polling is permitted. |
+| Open PR, CI still running, independent Issue exists | **CI pending (parallel)** | **Hard Stop #7**: Delegate CI-wait + merge to background subagent, then start `implement` on independent Issue. |
+| Open PR, CI still running, no independent Issue | **CI pending (housekeeping)** | **Hard Stop #7**: Delegate CI-wait to background subagent, then do housekeeping (see Step 6). |
+| Stale local branches detected | **Cleanup needed** | Delete stale branches (see `pr-merge.md` "Post-merge cleanup"). Can be done during housekeeping. |
 | Background subagent running | **Background task in progress** | Check transcript for completion; continue independent work |
 | Open PR, CI all green | **CI green** | `pr-review` |
 | Open PR, CI failed | **CI failure** | `debug` or fix + re-push |
@@ -142,17 +147,25 @@ If the user modifies the choice (e.g., "do #8 instead of #7"), adjust and procee
 
 ### Step 6: Subagent delegation for blocking operations
 
-When Step 2 identifies a **CI pending (parallel)** state (independent work exists — Hard Stop #7 applies):
+When Step 2 identifies any **CI pending** state (Hard Stop #7 — always delegate):
 
 1. **Delegate the blocking operation** to a background subagent:
    - Use `subagent_type: "shell"`, `model: "fast"`, `run_in_background: true`
    - Prompt must include: goal, numbered steps with exact commands, error handling, return format
    - For sequential multi-PR merges, include the full rebase → CI-poll → merge chain in one subagent prompt
+   - For dependent PRs with shared commits, use the "Dependent PR Merge Chain" template (see `subagent-prompts.md`)
    - See `pr-merge.md` "Delegated merge" section for the prompt template
 
 2. **Note the subagent transcript path** returned by the Task tool for later completion checking.
 
-3. **Switch to independent work**: Create a new feature branch for the next Issue and proceed with `implement`. The main agent MUST NOT touch `main` or the merge-target branches while the subagent is working.
+3. **Switch to productive work**:
+   - **If independent Issues exist**: Create a new feature branch and proceed with `implement`.
+   - **If no independent Issues exist**: Perform housekeeping tasks (in priority order):
+     1. Delete stale local branches (squash-merged branches where `git branch -d` fails — see `pr-merge.md` "Post-merge cleanup")
+     2. Run `make doctor` to verify environment health
+     3. Review documentation alignment (`docs-discover` Mode 1 style lightweight check)
+     4. Pre-read the next Issue's spec and related code for faster future implementation
+   - The main agent MUST NOT touch `main` or the merge-target branches while the subagent is working.
 
 4. **On re-assessment** (next loop of Step 1): Check the subagent transcript for completion before proposing the next action. If the subagent succeeded, report the merged PRs. If it failed, report the error to the user.
 
