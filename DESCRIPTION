@@ -48,6 +48,7 @@ Collate:
     'knowledge_retriever.R'
     'llm_utils.R'
     'prompt_assembler.R'
+    'response_parser.R'
     'scan_package.R'
     'scan_result.R'
     'validate_plugin.R'

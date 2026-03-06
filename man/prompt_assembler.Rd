@@ -5,6 +5,6 @@
 \title{Prompt Assembler}
 \description{
 Pure function that constructs prompt strings from knowledge entries,
-constraints, context, and transition queries. Does NOT call the LLM —
+constraints, context, and transition queries. Does NOT call the LLM --
 the caller (REPL #62) handles invocation.
 }
