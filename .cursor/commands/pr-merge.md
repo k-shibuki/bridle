@@ -9,6 +9,22 @@ Execute a merge — either via GitHub (for PR flow) or locally (for exception fl
 - After `pr-review` concludes "Mergeable" (standard PR flow)
 - After `commit` and successful quality/tests (exception flow: hotfix/docs-only on local branch)
 
+## Mandatory Preconditions (verify before ANY merge)
+
+These checks are the first step of `pr-merge` and cannot be skipped:
+
+1. **CI must be green**:
+   ```bash
+   gh pr checks <PR-number>
+   ```
+   If any check is not `pass`, **STOP**. Do not merge. Fix the failure or wait for completion.
+
+2. **One of the following must be true**:
+   - `pr-review` concluded "Mergeable"
+   - User explicitly instructed to merge
+
+If either precondition is not met, do not proceed to merge. Report the blocking condition instead.
+
 ## Inputs
 
 - PR number (for GitHub merge) or branch name (for local merge) (required)

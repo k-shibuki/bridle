@@ -16,9 +16,19 @@ This is a **meta-command** that orchestrates all other commands. It does not imp
 ## Constraints
 
 - **Never skip commands**: Always follow the defined workflow order. Do not jump from `implement` to `pr-create` without going through `test-create`, `quality-check`, `regression-test`, `docs-discover`, and `commit`.
+- **Never skip steps within commands**: Following the command chain is not enough. Each command's full specification (every step) must be executed. "Called the command" does not mean "followed its steps".
 - **Never act without approval**: Present the proposed action and wait for user confirmation before executing.
 - **Delegate, don't duplicate**: Once the next command is determined, invoke it by following its full specification (`.cursor/commands/<command>.md`). Do not reimplement the command's logic inline.
 - **State assessment must be evidence-based**: Use `git status`, `gh issue list`, `make doctor`, etc. to determine state. Do not guess.
+
+## Continuous Execution Mode
+
+When the user instructs continuous execution ("keep going", "do everything", "till close all issues", etc.):
+
+1. **Execute every step of every command in full**. "Never skip commands" means both "do not skip commands in the workflow" AND "do not skip steps within each command". Speed is never a justification for omitting verification.
+2. **Parallelize via independent Issues, not by skipping gates**: While waiting for CI on one PR, start `implement` for an independent Issue. But never merge until CI passes.
+3. **Report progress at each gate**: Print a one-line summary at each workflow transition (e.g., "PR #13 created, CI pending. Starting #9 in parallel.") so the user can track progress.
+4. **User's "hurry up" does not exempt safety checks**: Achieve speed by reducing unnecessary explanation, parallelizing independent work, and batching tool calls. Never by skipping `make ci-fast`, `gh pr checks`, or any verification step.
 
 ## Steps
 
@@ -54,11 +64,12 @@ Use the evidence to classify the current state into one of these positions:
 | On feature branch, tests pass, docs not reviewed | **Tests pass** | `docs-discover` (Mode 2) |
 | On feature branch, docs OK, uncommitted changes | **Docs OK** | `commit` |
 | On feature branch, committed, no PR | **Committed** | `pr-create` |
-| Open PR, CI running or passed | **PR open** | `pr-review` |
+| Open PR, CI still running | **CI pending** | Wait (or start parallel independent Issue) |
+| Open PR, CI all green | **CI green** | `pr-review` |
+| Open PR, CI failed | **CI failure** | `debug` or fix + re-push |
 | PR reviewed, mergeable | **Review done** | `pr-merge` |
 | PR merged, back on `main` | **Cycle complete** | `implement` (next Issue) or `issue-create` |
 | Environment not ready | **Environment issue** | `doctor` |
-| CI failed on open PR | **CI failure** | `debug` or fix + re-push |
 | On `main`, hotfix needed | **Exception flow** | `implement` → exception path |
 
 ### Step 3: Refine with context

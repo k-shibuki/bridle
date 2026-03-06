@@ -11,6 +11,15 @@ This rule supplements `v5_bridle.mdc` with safety measures specific to AI-driven
 
 For the full command workflow (Issue-driven), see `@.cursor/README.md`.
 
+## Hard Stops (Absolute Prohibitions)
+
+The following actions are NEVER permitted, regardless of user instructions:
+
+1. **NEVER merge a PR without CI green**: Run `gh pr checks <N>` and confirm all checks pass before executing `gh pr merge`. No exceptions.
+2. **NEVER skip local verification**: Run at minimum `make ci-fast` before committing. Even when no R code changed (Makefile, docs, CI only), run `make validate-schemas`.
+3. **NEVER skip workflow steps for speed**: When told to "do everything", "hurry up", or "till close all issues", execute every step of every command in full. Achieve speed through parallel work on independent Issues, not by skipping verification.
+4. **NEVER proceed past a gate without evidence**: Gate passage must be proven by command output or tool results. "Probably fine" is not evidence.
+
 ## Issue-Driven Workflow (Required)
 
 All implementation work must be traceable to a GitHub Issue:
@@ -92,12 +101,16 @@ Per ADR-0001, S7 classes are the source of truth once implemented.
 
 ## Mandatory Verification After Changes
 
-After every implementation:
+| Verification | Minimum gate | Executed during | Skippable? |
+|---|---|---|---|
+| `make validate-schemas` | Always | `quality-check` | No |
+| `make ci-fast` | Always | `quality-check` | No |
+| `make test` | When tests exist | `regression-test` | Only if no tests exist |
+| `make check` | Before commit | `quality-check` | No |
+| `make document` | When roxygen2 changed | `quality-check` | Only if no roxygen2 changes |
+| `gh pr checks` | Before merge | `pr-create` (Step 5) | No |
 
-1. `make ci-fast` (minimum: schema validation + lint)
-2. `make test` (if tests exist for the changed area)
-3. `make check` (before commit)
-4. `make document` (if roxygen2 tags were added or changed)
+Even when no R code changed (Makefile, docs, CI only), `make validate-schemas` must still run. There is no case where verification can be entirely skipped.
 
 ## Change Safety Checklist
 
