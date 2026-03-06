@@ -42,7 +42,18 @@ If there are uncommitted changes, commit them following `@.cursor/rules/commit-m
 git status --short
 ```
 
-### 3. Push branch to remote
+### 3. Local verification gate (REQUIRED before push)
+
+Run the following locally and confirm zero issues before pushing:
+
+```bash
+make ci-fast        # validate-schemas + lint
+make format-check   # styler dry-run
+```
+
+If either fails, fix before proceeding. Do NOT push with the intent of "CI will catch it."
+
+### 3b. Push branch to remote
 
 ```bash
 git push -u origin HEAD
@@ -176,15 +187,25 @@ EOF
 
 Poll CI checks until all jobs reach a terminal state (pass / fail / skipping).
 
+**Polling strategy** (do NOT use long `sleep` waits):
+
+1. First check at **15 seconds** after push (catches fast jobs like `check-policy`, `changes`).
+2. Then poll every **20–30 seconds** until all jobs are terminal (pass / fail / skipping).
+3. **Maximum 10 polls** (roughly 5 minutes). If CI is still pending after 10 polls, report status to the user and stop polling — do not burn context with indefinite waits.
+4. **Never use `sleep` longer than 30 seconds** in a single wait. Prefer `sleep 20` between polls.
+
 ```bash
+# Preferred: gh pr checks --watch (if available and not timing out)
 gh pr checks --watch
+
+# Fallback: manual polling
+gh pr checks <PR_NUMBER>
 ```
 
-If `--watch` is unavailable or times out, poll manually:
-
-```bash
-gh pr checks
-```
+**Infrastructure failures** (e.g., renv download, network timeouts in setup steps):
+- If the failure log shows package download / setup errors (not code errors), re-trigger once with `gh run rerun <RUN_ID> --failed`.
+- Poll the rerun with the same strategy above.
+- If it fails again on infrastructure, report to the user immediately — do not retry indefinitely.
 
 ### 6. If CI fails: diagnose, fix, re-push
 
