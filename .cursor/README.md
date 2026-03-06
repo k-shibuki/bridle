@@ -111,6 +111,7 @@ Use when: change is documentation only (README, ADR, comments, Cursor rules/comm
 | **Meta** | **`next`** | **Assess state, propose next action, drive workflow autonomously** |
 | Planning | `doctor` | Check development environment |
 | Planning | `issue-create` | Create GitHub Issue with spec, DoD, and test plan |
+| Planning | `issue-review` | Review open Issues for quality, consistency, and implementability |
 | Development | `implement` | Select next Issue (or specify one) and write code (no tests) |
 | Development | `scaffold-class` | Generate S7 class from YAML schema |
 | Development | `test-create` | Design and implement tests |

@@ -82,6 +82,7 @@ Use the evidence to classify the current state into one of these positions:
 | State signals | Workflow position | Next command |
 |---------------|-------------------|--------------|
 | No open Issues | **No work planned** | `issue-create` |
+| Open Issues exist, on `main`, no uncommitted changes, Issues not yet reviewed | **Pre-flight review needed** | `issue-review` |
 | Open Issues exist, on `main`, no uncommitted changes | **Ready to start** | `implement` (auto-select) |
 | On feature branch, uncommitted R/ changes, no tests | **Implementation done** | `test-create` |
 | On feature branch, tests exist, not yet checked | **Tests done** | `quality-check` |
