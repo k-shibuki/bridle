@@ -158,13 +158,14 @@ When Step 2 identifies any **CI pending** state (Hard Stop #7 — always delegat
 
 2. **Note the subagent transcript path** returned by the Task tool for later completion checking.
 
-3. **Switch to productive work**:
+3. **Switch to productive work** (exhaust ALL items before monitoring):
    - **If independent Issues exist**: Create a new feature branch and proceed with `implement`.
-   - **If no independent Issues exist**: Perform housekeeping tasks (in priority order):
+   - **If no independent Issues exist**: Execute the housekeeping checklist below. Each item must be completed or explicitly skipped with a reason. Do not enter the monitoring loop until all items are addressed.
      1. Delete stale local branches (squash-merged branches where `git branch -d` fails — see `pr-merge.md` "Post-merge cleanup")
-     2. Run `make doctor` to verify environment health
-     3. Review documentation alignment (`docs-discover` Mode 1 style lightweight check)
-     4. Pre-read the next Issue's spec and related code for faster future implementation
+     2. Run `make doctor` to verify environment health (skip if run within this turn)
+     3. Review documentation alignment (`docs-discover` Mode 1 style lightweight check — scan changed files against docs for consistency)
+     4. Pre-read the next Issue's spec and related code for faster future implementation (skip if no open Issues)
+   - **Report the checklist** before entering monitoring: "Housekeeping: (1) done/skipped — reason, (2) done/skipped — reason, ..."
    - The main agent MUST NOT touch `main` or the merge-target branches while the subagent is working.
 
 4. **Completion guarantee** (Hard Stop #7):
