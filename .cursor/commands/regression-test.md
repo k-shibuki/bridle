@@ -2,12 +2,13 @@
 
 ## Purpose
 
-Run tests in two stages to detect regressions efficiently:
+Run tests in three stages to detect regressions efficiently:
 
 1. Run tests for files changed in this session (fast, scoped)
 2. Run the full test suite (final gate)
+3. Verify coverage meets the threshold
 
-**Both stages are required.** Stage 1 alone is not sufficient—always run Stage 2 as the final gate.
+**All three stages are required.** Stage 1 alone is not sufficient—always run Stages 2 and 3 as the final gates.
 
 ## When to use
 
@@ -45,13 +46,23 @@ Run the full test suite to catch regressions outside your local change surface:
 make test
 ```
 
-With coverage (optional):
+> **IMPORTANT:** If any test fails in Stage 2, you must fix it before proceeding. Do not ignore failures even if they appear unrelated to your changes. See "Failure handling policy" below.
+
+### Stage 3: coverage gate
+
+After all tests pass, verify that line coverage meets the project threshold (default 80%):
 
 ```bash
-make coverage
+make coverage-check
 ```
 
-> **IMPORTANT:** If any test fails in Stage 2, you must fix it before proceeding. Do not ignore failures even if they appear unrelated to your changes. See "Failure handling policy" below.
+To override the threshold (e.g., during initial adoption):
+
+```bash
+make coverage-check COVERAGE_THRESHOLD=70
+```
+
+If coverage is below the threshold, add tests before proceeding. Do not lower the threshold to pass the gate.
 
 ## Output (response format)
 

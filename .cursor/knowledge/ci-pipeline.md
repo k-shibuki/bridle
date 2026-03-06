@@ -23,6 +23,14 @@ Independent jobs (can run in parallel): `validate-schemas`, `format-check`, `lin
 Sequential jobs: `test` depends on setup; `check` and `coverage` depend on `test`
 Final gate: `ci-pass` depends on all above
 
+### Coverage Gate
+
+The `coverage` job enforces a minimum line coverage threshold (80%). It runs `covr::package_coverage()`, uploads results to Codecov, and then fails if coverage is below the threshold. This is independent of Codecov's own status checks — the CI gate works even if Codecov is not configured.
+
+Local equivalent: `make coverage-check` (default threshold 80%, override with `COVERAGE_THRESHOLD=N`).
+
+Configuration: `codecov.yml` at repo root defines project target (80%), patch target (90%), and ignored paths.
+
 Additional checks (PR-only): `check-policy`, `dependency-review`
 Skippable: `ci-config`, `auto-merge`
 

@@ -255,7 +255,13 @@ jobs:
 
       - name: Test coverage
         run: |
-          covr::codecov(quiet = FALSE)
+          cov <- covr::package_coverage()
+          pct <- covr::percent_coverage(cov)
+          cat(sprintf("Line coverage: %.1f%%\n", pct))
+          covr::codecov(coverage = cov, quiet = FALSE)
+          if (pct < 80) {
+            stop(sprintf("Coverage %.1f%% is below the 80%% threshold", pct))
+          }
         shell: Rscript {0}
 
   # Required status check that always runs.

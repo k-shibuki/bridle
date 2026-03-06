@@ -115,6 +115,7 @@ Per ADR-0001, S7 classes are the source of truth once implemented.
 | `make ci-fast` | Always | `quality-check` | No |
 | `make test` | When tests exist | `regression-test` | Only if no tests exist |
 | `make check` | Before commit | `quality-check` | No |
+| `make coverage-check` | When tests exist | `regression-test` | Only if no tests exist |
 | `make document` | When roxygen2 changed | `quality-check` | Only if no roxygen2 changes |
 | `gh pr checks` | Before merge | `pr-create` (Step 5) | No |
 

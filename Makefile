@@ -26,7 +26,7 @@ endif
 .PHONY: help \
 	container-build container-up container-down container-shell rstudio \
 	renv-init renv-restore renv-snapshot \
-	check check-fast test lint format format-check document coverage site install clean \
+	check check-fast test lint format format-check document coverage coverage-check site install clean \
 	ci ci-fast ci-pr pr-ready doctor doctor-json validate-schemas \
 	changed-lint changed-test test-json lint-json scaffold-test scaffold-class \
 	status new-branch
@@ -110,6 +110,15 @@ document: _require_container ## Generate documentation with roxygen2
 
 coverage: _require_container ## Measure test coverage
 	$(RSCRIPT) -e "print(covr::package_coverage())"
+
+COVERAGE_THRESHOLD ?= 80
+
+coverage-check: _require_container ## Verify test coverage meets threshold (default 80%)
+	$(RSCRIPT) -e "\
+	  cov <- covr::package_coverage(); \
+	  pct <- covr::percent_coverage(cov); \
+	  cat(sprintf('Line coverage: %.1f%% (threshold: $(COVERAGE_THRESHOLD)%%)\n', pct)); \
+	  if (pct < $(COVERAGE_THRESHOLD)) stop(sprintf('Coverage %.1f%% is below threshold $(COVERAGE_THRESHOLD)%%', pct))"
 
 site: _require_container ## Build pkgdown site
 	$(RSCRIPT) -e "pkgdown::build_site()"

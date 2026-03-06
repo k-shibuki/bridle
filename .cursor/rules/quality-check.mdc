@@ -38,8 +38,9 @@ The following are prohibited in principle (exception only with stated justificat
 1. **lintr** — `lintr::lint_package()`: errors and warnings
 2. **styler** — `styler::style_pkg(dry = "on")`: format diffs
 3. **R CMD check** — `devtools::check()`: errors, warnings, and notes
-4. Inappropriate `# nolint` introduction (new additions, propagation)
-5. Clear security issues (authentication/authorization, input validation, data retention)
+4. **coverage** — `covr::package_coverage()`: line coverage >= 80% (via `make coverage-check`)
+5. Inappropriate `# nolint` introduction (new additions, propagation)
+6. Clear security issues (authentication/authorization, input validation, data retention)
 
 ## About Exceptions (Intentional Lint)
 
