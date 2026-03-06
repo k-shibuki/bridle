@@ -108,6 +108,16 @@ jobs:
               errors.push('**Traceability**: Section is missing from the PR body.');
             }
 
+            // --- 5. PR title format (Conventional Commits) ---
+            const titleRegex = /^(feat|fix|refactor|perf|test|docs|build|ci|chore|style|revert)(\(.+\))?!?:\s.+$/;
+            if (!titleRegex.test(pr.title)) {
+              errors.push(
+                '**PR title**: Must follow Conventional Commits format: ' +
+                '`<type>(<scope>): <summary>`. ' +
+                'Valid types: feat, fix, refactor, perf, test, docs, build, ci, chore, style, revert'
+              );
+            }
+
             // --- Report ---
             if (errors.length > 0) {
               const report = [
