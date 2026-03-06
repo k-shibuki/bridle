@@ -28,7 +28,7 @@ endif
 	renv-init renv-restore renv-snapshot \
 	check check-fast test lint format format-check document coverage site install clean \
 	ci ci-fast ci-pr pr-ready doctor doctor-json validate-schemas \
-	changed-lint changed-test test-json lint-json scaffold-test \
+	changed-lint changed-test test-json lint-json scaffold-test scaffold-class \
 	status new-branch
 
 # === Help ===
@@ -123,6 +123,10 @@ check-fast: _require_container ## Quick R CMD check (no manual/vignettes)
 scaffold-test: _require_container ## Create test skeleton (usage: make scaffold-test FILE=R/foo.R)
 	@if [ -z "$(FILE)" ]; then echo "Usage: make scaffold-test FILE=R/foo.R"; exit 1; fi
 	$(RSCRIPT) -e "usethis::use_test('$$(basename $(FILE) .R)')"
+
+scaffold-class: _require_container ## Generate S7 class from schema (usage: make scaffold-class SCHEMA=docs/schemas/foo.schema.yaml)
+	@if [ -z "$(SCHEMA)" ]; then echo "Usage: make scaffold-class SCHEMA=docs/schemas/foo.schema.yaml"; exit 1; fi
+	$(RSCRIPT) tools/scaffold-class.R $(SCHEMA)
 
 # === Integrated CI Targets ===
 

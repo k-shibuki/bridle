@@ -15,7 +15,24 @@ Generate S7 class boilerplate from a YAML schema definition, following ADR-0001.
 - `@docs/adr/0001-use-s7-class-system.md` (recommended)
 - Related ADRs for the specific schema (recommended)
 
-## Steps
+## Automated Tool
+
+Use the automated scaffold tool for the initial boilerplate:
+
+```bash
+make scaffold-class SCHEMA=docs/schemas/<name>.schema.yaml
+```
+
+This runs `tools/scaffold-class.R` which generates:
+- `R/{name}.R` — S7 class with typed properties, roxygen2 docs, and validator skeleton
+- `tests/testthat/test-{name}.R` — test skeleton
+
+The generated code is a starting point. Review and refine:
+- Nested structures are typed as `class_list` with TODO comments — consider dedicated S7 classes
+- Validators contain enum checks but need manual cross-field constraint logic
+- Test skeletons need concrete test cases
+
+## Manual Steps (when refining generated code)
 
 1. **Read the schema**: identify all fields, their types, and constraints.
 2. **Map to S7 properties**: translate YAML field types to S7 property types.
