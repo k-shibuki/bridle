@@ -21,17 +21,23 @@
 <url><loc>/reference/ParameterInfo.html</loc></url>
 <url><loc>/reference/ScanResult.html</loc></url>
 <url><loc>/reference/Transition.html</loc></url>
+<url><loc>/reference/ValidationResult.html</loc></url>
 <url><loc>/reference/build_dependency_graph.html</loc></url>
+<url><loc>/reference/check_availability.html</loc></url>
 <url><loc>/reference/classify_parameter.html</loc></url>
+<url><loc>/reference/collect_node_hints.html</loc></url>
+<url><loc>/reference/compute_node_order.html</loc></url>
 <url><loc>/reference/constraints.html</loc></url>
 <url><loc>/reference/context_schema.html</loc></url>
 <url><loc>/reference/decision_graph.html</loc></url>
 <url><loc>/reference/extract_formals_constraints.html</loc></url>
+<url><loc>/reference/extract_hint_variables.html</loc></url>
 <url><loc>/reference/get_package_version.html</loc></url>
 <url><loc>/reference/index.html</loc></url>
 <url><loc>/reference/is_conditional_default.html</loc></url>
 <url><loc>/reference/is_deprecation_expr.html</loc></url>
 <url><loc>/reference/is_formal_missing.html</loc></url>
+<url><loc>/reference/is_valid.html</loc></url>
 <url><loc>/reference/knowledge.html</loc></url>
 <url><loc>/reference/read_constraints.html</loc></url>
 <url><loc>/reference/read_context_schema.html</loc></url>
@@ -42,6 +48,7 @@
 <url><loc>/reference/safe_formals.html</loc></url>
 <url><loc>/reference/scan_package.html</loc></url>
 <url><loc>/reference/scan_result.html</loc></url>
+<url><loc>/reference/validate_plugin.html</loc></url>
 <url><loc>/reference/walk_ast_symbols.html</loc></url>
 </urlset>
 
