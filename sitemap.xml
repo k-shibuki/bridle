@@ -7,6 +7,8 @@
 <url><loc>/authors.html</loc></url>
 <url><loc>/index.html</loc></url>
 <url><loc>/reference/CompetingView.html</loc></url>
+<url><loc>/reference/Constraint.html</loc></url>
+<url><loc>/reference/ConstraintSet.html</loc></url>
 <url><loc>/reference/DecisionGraph.html</loc></url>
 <url><loc>/reference/GlobalPolicy.html</loc></url>
 <url><loc>/reference/KnowledgeEntry.html</loc></url>
@@ -14,9 +16,11 @@
 <url><loc>/reference/Node.html</loc></url>
 <url><loc>/reference/NodePolicy.html</loc></url>
 <url><loc>/reference/Transition.html</loc></url>
+<url><loc>/reference/constraints.html</loc></url>
 <url><loc>/reference/decision_graph.html</loc></url>
 <url><loc>/reference/index.html</loc></url>
 <url><loc>/reference/knowledge.html</loc></url>
+<url><loc>/reference/read_constraints.html</loc></url>
 <url><loc>/reference/read_decision_graph.html</loc></url>
 <url><loc>/reference/read_knowledge.html</loc></url>
 </urlset>
