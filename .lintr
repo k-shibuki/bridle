@@ -4,4 +4,4 @@ linters:
     object_name_linter(styles = c("snake_case", "symbols"))
   )
 exclusions:
-  list("renv" = list(linters = "all"))
+  list("renv")

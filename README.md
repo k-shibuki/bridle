@@ -394,12 +394,12 @@ Run `make help` for all available targets.
 
 ## Development Status
 
-> **Currently Phase 0: Design and YAML schema formalization**
+> **Currently Phase 1: Package scanner + AI drafter**
 
 | Phase | Content | Status |
 |---|---|---|
-| Phase 0 | Design and YAML schema formalization | In progress |
-| Phase 1 | Package scanner + AI drafter (plugin generation pipeline) | Not started |
+| Phase 0 | Design and YAML schema formalization | **Done** |
+| Phase 1 | Package scanner + AI drafter (plugin generation pipeline) | **In progress** |
 | Phase 2 | Runtime engine (REPL) | Not started |
 | Phase 3 | vitals evaluation suite | Not started |
 | Phase 4 | MCP server | Not started |
