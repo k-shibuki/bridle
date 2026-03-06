@@ -167,7 +167,11 @@ When Step 2 identifies any **CI pending** state (Hard Stop #7 — always delegat
      4. Pre-read the next Issue's spec and related code for faster future implementation
    - The main agent MUST NOT touch `main` or the merge-target branches while the subagent is working.
 
-4. **On re-assessment** (next loop of Step 1): Check the subagent transcript for completion before proposing the next action. If the subagent succeeded, report the merged PRs. If it failed, report the error to the user.
+4. **Completion guarantee** (Hard Stop #7):
+   - After productive work is exhausted, check the subagent output file.
+   - If still running: enter monitoring loop (read output file → `sleep 15` → read again → repeat).
+   - If completed: incorporate result into state assessment, report to user, then proceed to next action or end turn.
+   - **NEVER end the turn while a delegated subagent is still running.**
 
 **Fallback**: If the environment does not support background subagents, fall back to inline CI polling as before.
 

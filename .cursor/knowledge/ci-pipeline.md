@@ -9,19 +9,46 @@ CI job dependencies, polling strategies, and failure classification for the brid
 ## Job Dependency Graph
 
 ```
-changes ──┬── validate-schemas
-          ├── format-check
-          ├── lint
+changes ──┬── validate-schemas  (r_source OR schemas)
+          ├── format-check      (r_source)
+          ├── lint              (r_source)
+          │     │
+          │     └── test        (r_source)
+          │           │
+          │           ├── check    (r_source OR r_deps; runs even if test was skipped)
+          │           │
+          │           └── coverage (r_source)
           │
-          └── test ──┬── check
-                     └── coverage
-                              │
-                         ci-pass (final gate)
+          └── ci-config         (ci_config)
+                    │
+               ci-pass (final gate, always runs)
 ```
 
-Independent jobs (can run in parallel): `validate-schemas`, `format-check`, `lint`
-Sequential jobs: `test` depends on setup; `check` and `coverage` depend on `test`
-Final gate: `ci-pass` depends on all above
+Independent jobs (can run in parallel): `validate-schemas`, `format-check`, `lint`, `ci-config`
+Sequential chain: `lint` → `test` → `check` → `coverage`
+Special case: `check` uses `always()` so it runs when `test` is skipped (r_deps-only changes)
+Final gate: `ci-pass` depends on all above; skipped jobs are treated as passing
+
+### Filter Categories
+
+| Filter | Paths | Meaning |
+|--------|-------|---------|
+| `r_source` | `R/**`, `tests/**`, `DESCRIPTION`, `NAMESPACE` | R source code or test changes |
+| `r_deps` | `renv.lock`, `.Rbuildignore` | Dependency or build-config changes |
+| `schemas` | `docs/schemas/**`, `tools/validate-schemas.R` | Schema file changes |
+| `ci_config` | `Makefile`, `tools/**`, `.github/workflows/**`, `containers/**`, `.pre-commit-config.yaml`, `.lintr` | CI/build infrastructure changes |
+
+### Job Trigger Conditions
+
+| Job | Condition | Rationale |
+|-----|-----------|-----------|
+| `format-check` | `r_source` | Formatting applies only to R source files |
+| `lint` | `r_source` | Linting applies only to R source files |
+| `test` | `r_source` | Tests run only when source or tests change |
+| `check` | `r_source OR r_deps` | R CMD check is affected by dependency and .Rbuildignore changes |
+| `coverage` | `r_source` | Coverage only changes when source code changes |
+| `validate-schemas` | `schemas OR r_source` | Schema-code consistency requires both sides |
+| `ci-config` | `ci_config` | CI infrastructure validation |
 
 ### Coverage Gate
 

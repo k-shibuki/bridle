@@ -169,10 +169,13 @@ Report:
 
 ## Completion Detection
 
-The main agent detects subagent completion by reading the subagent transcript `.jsonl` file:
+**When**: The main agent MUST confirm subagent completion before ending its turn. Do not defer to "the next re-assessment" or the next user message — confirm within the same turn that launched the subagent. See `@.cursor/rules/ai-guardrails.mdc` § Completion guarantee for the enforceable lifecycle.
 
-1. Read the last few lines of the transcript file
-2. Parse the last `assistant` message for a result summary
-3. If still running (no final summary): note "background task in progress", continue independent work
-4. If completed successfully: incorporate results and proceed
-5. If error encountered: report to the user
+**How**: The main agent detects subagent completion by reading the subagent output file:
+
+1. Read the last portion of the output file (check for `exit_code` footer or final result message)
+2. If still running (no completion indicator): continue productive work, then re-check
+3. When productive work is exhausted and the subagent is still running: enter monitoring loop (read output file → `sleep 15` → repeat)
+4. If completed successfully: incorporate results (e.g., "MERGED: PR #N") and report to user
+5. If error encountered: report the error details to the user
+6. Only after confirming completion may the main agent end its turn

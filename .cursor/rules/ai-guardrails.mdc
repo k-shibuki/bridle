@@ -21,7 +21,7 @@ The following actions are NEVER permitted, regardless of user instructions:
 4. **NEVER proceed past a gate without evidence**: Gate passage must be proven by command output or tool results. "Probably fine" is not evidence.
 5. **NEVER create a PR without the full template**: Every PR body must include ALL sections from `pr-create.md` Step 4 (Summary, Traceability, Risk/Impact, Rollback Plan, Review Checklist). Read `pr-create.md` before every PR creation — do not compose the body from memory.
 6. **NEVER dismiss diagnostics as "pre-existing"**: Every error, warning, and NOTE reported by quality gates (`devtools::check()`, `lintr`, `validate-schemas`, etc.) is a defect to fix — regardless of when it was introduced. The agent must not classify, skip, or deprioritize diagnostics based on whether the current change caused them. If the gate reports a problem, the agent resolves it before proceeding.
-7. **NEVER poll CI inline**: CI polling is always delegated to a background subagent. The main agent uses freed time for productive work: implementing the next Issue, branch cleanup, environment health checks (`make doctor`), documentation review, or next-Issue planning. Inline `sleep` + poll loops in the main agent are prohibited regardless of whether independent Issues exist. "I'll just wait a minute" is not acceptable — delegate and do useful work.
+7. **NEVER poll CI inline**: CI polling is always delegated to a background subagent. The main agent uses freed time for productive work: implementing the next Issue, branch cleanup, environment health checks (`make doctor`), documentation review, or next-Issue planning. Inline `sleep` + poll loops in the main agent are prohibited regardless of whether independent Issues exist. "I'll just wait a minute" is not acceptable — delegate and do useful work. **Completion Guarantee**: After delegating to a subagent, the main agent MUST NOT end its turn until the subagent completes. After exhausting productive work (independent Issues, housekeeping), enter a monitoring loop: read the subagent output file, sleep, repeat. Report the subagent's result to the user before ending the turn.
 
 ## Issue-Driven Workflow (Required)
 
@@ -163,6 +163,18 @@ The main agent **MUST** delegate all blocking operations (CI polling, sequential
 For prompt templates (CI-wait, merge chain, CI-only) and completion detection procedures, see `@.cursor/knowledge/subagent-prompts.md`.
 
 Delegated subagent prompts MUST include: Goal, Steps, Prohibitions (especially git operation bans), Error handling, and Return format.
+
+#### Completion guarantee
+
+After launching a background subagent, the main agent MUST follow this lifecycle:
+
+1. Do productive work (implement next Issue, housekeeping)
+2. Periodically check the subagent output file between tasks
+3. When productive work is exhausted and the subagent is still running, enter a monitoring loop (read output file → sleep 10-30s → repeat)
+4. When the subagent completes, process the result (report merged PRs, surface errors)
+5. Report to the user, THEN end the turn
+
+Ending the turn while a subagent is still running is prohibited. See `@.cursor/knowledge/subagent-prompts.md` § Completion Detection for the monitoring procedure.
 
 #### Git conflict prevention
 
