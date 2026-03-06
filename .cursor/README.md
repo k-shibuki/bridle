@@ -13,6 +13,7 @@ Start here to find the right information quickly.
 | YAML schemas (data contracts) | [`docs/schemas/`](../docs/schemas/) — referenced from [`docs/README.md`](../docs/README.md) |
 | S7 class implementations | `R/` (empty until first implementation) |
 | Subagent delegation policy | `ai-guardrails.mdc` § Subagent Delegation |
+| Known lint/format patterns (S7, styler/lintr) | `quality-check.mdc` § Known Patterns |
 | Development workflow + commands | This file (below) |
 | Command details (procedures) | `.cursor/commands/*.md` |
 | Policy rules | `.cursor/rules/*.mdc` |

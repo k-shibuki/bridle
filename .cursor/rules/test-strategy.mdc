@@ -115,4 +115,69 @@ Write comments directly above test code or within steps, keeping scenarios trace
 
 ---
 
+## 8. R-Specific Testing Gotchas
+
+### 8.1 Missing Formals and the `NULL` Assignment Trap
+
+R function formals can be "missing" (no default value). `formals()` returns these as empty symbols, which cause errors when passed to other functions via `lapply` or similar.
+
+**Problem**: `list[[name]] <- NULL` removes the element from the list instead of setting it to `NULL`.
+
+```r
+# Dangerous: silently removes the element
+result[["param"]] <- NULL
+length(result)  # one fewer element
+
+# Safe: preserves the element with NULL value
+result["param"] <- list(NULL)
+```
+
+**Recommended pattern**: When iterating over `formals()`, use a sentinel object to distinguish "no default" from "default is NULL":
+
+```r
+.missing_sentinel <- structure(list(), class = "my_pkg_missing_formal")
+
+safe_formals <- function(fmls) {
+  result <- vector("list", length(fmls))
+  names(result) <- names(fmls)
+  for (nm in names(fmls)) {
+    val <- fmls[[nm]]
+    if (is.symbol(val) && identical(deparse(val), "")) {
+      result[nm] <- list(.missing_sentinel)
+    } else {
+      result[nm] <- list(val)
+    }
+  }
+  result
+}
+```
+
+### 8.2 Mocking System and External Functions
+
+Functions like `utils::packageVersion()`, `base::system()`, or external package functions cannot be directly mocked due to namespace locking.
+
+**Pattern**: Create a thin wrapper in your package and mock the wrapper.
+
+```r
+# In R/helpers.R
+get_package_version <- function(pkg) {
+  utils::packageVersion(pkg)
+}
+
+# In tests
+local_mocked_bindings(
+  get_package_version = function(pkg) package_version("1.0.0")
+)
+```
+
+### 8.3 S7 Constructor Testing
+
+When testing S7 classes:
+
+- **Validator error messages**: Use `expect_error(..., "expected substring")` to verify the validator produces the right message. S7 validators typically use `sprintf()` or `paste()` for messages; match a stable substring.
+- **Property type constraints**: Test that assigning a wrong type produces a clear error. S7 enforces types at construction time, so `expect_error(MyClass(field = wrong_type))` is sufficient.
+- **Default values**: Explicitly test that omitted properties take the documented default. Do not assume defaults are correct without verification.
+
+---
+
 Follow this rule, always self-check for missing perspectives when designing and implementing tests. Also fix existing errors unrelated to changes.

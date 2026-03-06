@@ -26,9 +26,25 @@ This is a **meta-command** that orchestrates all other commands. It does not imp
 When the user instructs continuous execution ("keep going", "do everything", "till close all issues", etc.):
 
 1. **Execute every step of every command in full**. "Never skip commands" means both "do not skip commands in the workflow" AND "do not skip steps within each command". Speed is never a justification for omitting verification.
-2. **Parallelize via subagent delegation, not by skipping gates**: When CI is pending on a PR and independent work exists, delegate the CI-wait + merge to a background subagent (see "Subagent Delegation for Blocking Operations" below) and start `implement` for the next independent Issue. Never merge until CI passes.
+2. **Parallelize via subagent delegation, not by skipping gates**: When CI is pending on a PR and independent work exists, **Hard Stop #7 applies** — delegate the CI-wait + merge to a background subagent and immediately start `implement` for the next independent Issue. Never merge until CI passes. Never poll inline when independent work exists.
 3. **Report progress at each gate**: Print a one-line summary at each workflow transition (e.g., "PR #13 created, CI pending — delegated to background. Starting #9.") so the user can track progress.
 4. **User's "hurry up" does not exempt safety checks**: Achieve speed by reducing unnecessary explanation, delegating blocking operations to subagents, and batching tool calls. Never by skipping `make ci-fast`, `gh pr checks`, or any verification step.
+
+**Typical parallel execution pattern** (multi-Issue batch):
+
+```
+Issue A: implement → test → quality → commit → pr-create
+                                                    │
+                                          CI pending on PR #X
+                                                    │
+                    ┌───────────────────────────────┤
+                    │ Background subagent            │ Main agent
+                    │ poll CI → merge PR #X          │ Issue B: implement → test → ...
+                    │                                │
+                    └───────────────────────────────┤
+                                                    │
+                    next re-assessment: check subagent transcript
+```
 
 ## Steps
 
@@ -69,7 +85,8 @@ Use the evidence to classify the current state into one of these positions:
 | On feature branch, tests pass, docs not reviewed | **Tests pass** | `docs-discover` (Mode 2) |
 | On feature branch, docs OK, uncommitted changes | **Docs OK** | `commit` |
 | On feature branch, committed, no PR | **Committed** | `pr-create` |
-| Open PR, CI still running | **CI pending** | Delegate CI-wait + merge to background subagent (see below), then start independent Issue. If no independent work: inline wait. |
+| Open PR, CI still running, independent Issue exists | **CI pending (parallel)** | **Hard Stop #7**: MUST delegate CI-wait + merge to background subagent, then immediately start `implement` on independent Issue. Inline wait is prohibited. |
+| Open PR, CI still running, no independent Issue | **CI pending (solo)** | Inline wait (poll `gh pr checks` every 30s). This is the only case where inline CI polling is permitted. |
 | Background subagent running | **Background task in progress** | Check transcript for completion; continue independent work |
 | Open PR, CI all green | **CI green** | `pr-review` |
 | Open PR, CI failed | **CI failure** | `debug` or fix + re-push |
@@ -125,7 +142,7 @@ If the user modifies the choice (e.g., "do #8 instead of #7"), adjust and procee
 
 ### Step 6: Subagent delegation for blocking operations
 
-When Step 2 identifies a **CI pending** state and independent work exists:
+When Step 2 identifies a **CI pending (parallel)** state (independent work exists — Hard Stop #7 applies):
 
 1. **Delegate the blocking operation** to a background subagent:
    - Use `subagent_type: "shell"`, `model: "fast"`, `run_in_background: true`
