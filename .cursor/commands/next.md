@@ -158,23 +158,11 @@ When Step 2 identifies any **CI pending** state (Hard Stop #7 — always delegat
 
 2. **Note the subagent transcript path** returned by the Task tool for later completion checking.
 
-3. **Switch to productive work** (reason first, then act):
-
-   Before doing anything, **explicitly reason** about the current context and decide what the highest-value work is while the subagent handles the blocking operation. Consider:
-   - What is the project's current state? (open Issues, uncommitted changes, recent findings, known gaps)
-   - What can be done in parallel without conflicting with the subagent's work?
-   - What would create the most forward progress per unit of time?
-
-   State your reasoning and chosen action(s) before executing. Examples of productive work (not exhaustive — think beyond this list):
-   - **Independent Issues**: Create a new feature branch and proceed with `implement`.
-   - **Improvements discovered during this session**: If the current work surfaced control-system gaps, doc inconsistencies, or tooling issues — address them now rather than deferring.
-   - **Environment health**: Run `make doctor` if not recently run.
-   - **Documentation alignment**: Check that recent changes are reflected in docs.
-   - **Stale branch cleanup**: Delete squash-merged branches.
-   - **Pre-reading**: Study the next Issue's spec and related code for faster future implementation.
-
-   Do not enter the monitoring loop until you have either exhausted productive work or determined that no safe parallel work exists (state why).
-   The main agent MUST NOT touch `main` or the merge-target branches while the subagent is working.
+3. **Run the Two-Tier Gate** (see `@.cursor/rules/ai-guardrails.mdc` § Productive work during delegation):
+   - Tier 1: Signal scan (`git status`, `gh issue list`, `git stash list`, session-findings) — parallel, ~2-3 s.
+   - If all clear → proceed directly to step 4.
+   - If any signal fires → Tier 2: reason about highest-value action, execute, then proceed to step 4.
+   - The main agent MUST NOT touch `main` or the merge-target branches while the subagent is working.
 
 4. **Completion guarantee** (Hard Stop #7):
    - After productive work is exhausted, check the subagent output file.
