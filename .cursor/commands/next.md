@@ -34,9 +34,12 @@ When the user instructs continuous execution ("keep going", "do everything", "ti
 
 ### Step 1: Assess current state
 
-Gather evidence from multiple sources in parallel:
+Sync remote tracking information first, then gather evidence from multiple sources in parallel:
 
 ```bash
+# Sync local tracking refs with remote (prune deleted branches)
+git fetch --prune origin
+
 # Git state
 git branch --show-current
 git status --short

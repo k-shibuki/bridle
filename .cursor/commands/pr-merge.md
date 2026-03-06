@@ -76,11 +76,22 @@ gh pr merge <PR-number> --squash --delete-branch
 gh pr merge <PR-number> --merge --delete-branch
 ```
 
-After merge, update local main:
+After merge, sync local tracking information:
 
 ```bash
 git checkout main
 git pull origin main
+git fetch --prune origin
+```
+
+`--prune` removes local remote-tracking references (e.g. `origin/feat/...`) for branches that have been deleted on the remote (typically by `--delete-branch` above).
+
+### Clean up local feature branch
+
+If the local feature branch still exists after the GitHub merge, delete it:
+
+```bash
+git branch -d <branch-name> 2>/dev/null || true
 ```
 
 ## Local merge (exception flow only)
