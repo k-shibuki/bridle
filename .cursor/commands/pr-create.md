@@ -202,21 +202,24 @@ gh pr checks --watch
 gh pr checks <PR_NUMBER>
 ```
 
-**Infrastructure failures** (e.g., renv download, network timeouts in setup steps):
-- If the failure log shows package download / setup errors (not code errors), re-trigger once with `gh run rerun <RUN_ID> --failed`.
-- Poll the rerun with the same strategy above.
-- If it fails again on infrastructure, report to the user immediately — do not retry indefinitely.
-
 ### 6. If CI fails: diagnose, fix, re-push
 
-Repeat until CI passes or the issue requires user intervention.
+**The agent must autonomously diagnose and fix CI failures.** Do not merely report failures to the user — investigate the root cause, fix it, and re-push. Escalate to the user only after a genuine fix attempt has failed.
 
 1. **Identify the failed job(s)** from `gh pr checks` output.
 2. **Fetch failure logs**:
    ```bash
    gh run view <run_id> --log-failed
    ```
-3. **Fix the root cause** — choose the right fix based on the failure type:
+3. **Classify the failure** — infrastructure vs code:
+
+   **Infrastructure failures** (setup steps, package downloads, network timeouts):
+   - Read the full error context (not just the error line — check 10+ lines around it).
+   - Identify the root cause: missing env var, wrong config, transient network issue, etc.
+   - **If fixable** (e.g., missing `RENV_CONFIG_AUTOLOADER_ENABLED`, wrong CI config): fix the workflow/config file, commit, push. One retry with `gh run rerun <RUN_ID> --failed` is allowed only for genuinely transient issues (e.g., CDN outage) that cannot be fixed by code changes.
+   - **If the same infrastructure failure recurs**: it is NOT transient — investigate deeper (compare with passing jobs, check env vars, check config differences).
+
+   **Code failures** — choose the right fix:
 
    | Failed job | Likely cause | Fix method |
    |------------|-------------|------------|
@@ -239,7 +242,7 @@ Repeat until CI passes or the issue requires user intervention.
    ```
 5. **Return to Step 5** (monitor CI again).
 
-If a failure is clearly outside your control (e.g. infrastructure flake, third-party service outage), report it to the user rather than retrying indefinitely.
+Escalate to the user only when: (a) you have diagnosed the root cause, (b) attempted a fix, and (c) the fix did not resolve the issue. Include the diagnosis, what you tried, and why it didn't work.
 
 ### 7. Report status
 
