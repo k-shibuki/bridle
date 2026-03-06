@@ -147,7 +147,7 @@ If the user explicitly specifies a different approach (e.g., "just design first"
 
 - **R CMD check (devtools::check())**:
   - The primary quality gate. Target **0 errors, 0 warnings, 0 notes**.
-  - Resolve errors you introduced on the spot where possible.
+  - Resolve **all** errors, warnings, and notes — whether newly introduced or pre-existing. There is no "pre-existing so it's acceptable" exception. Every diagnostic present in the output is a defect to fix.
   - If causes are complex and immediate resolution isn't possible, state so while reverting to a safe state or limiting impact.
 - **Prohibited practices (R-specific)**:
   - Avoid passing `...` through without validation when it affects behavior.

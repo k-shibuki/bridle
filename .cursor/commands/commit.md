@@ -113,4 +113,4 @@ Refs: #<issue-number>"
 - `@.cursor/rules/commit-message-format.mdc`
 - `@.cursor/commands/docs-discover.md` (Mode 2: pre-commit doc alignment)
 - `@.cursor/commands/pr-create.md` (next step: PR flow)
-- `@.cursor/commands/push.md` (exception flow only: hotfix/docs-only)
+- `@.cursor/commands/push.md` (exception flow only: docs-only direct push)

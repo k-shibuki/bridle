@@ -11,6 +11,10 @@ Procedures (which commands to run and how) are documented in `@.cursor/commands/
 
 **Always resolve warnings and errors from the root cause. Don't "silence" them with workarounds.**
 
+### Zero-Tolerance for Pre-existing Issues
+
+"Pre-existing" is **never** a valid reason to leave a diagnostic unresolved. Every error, warning, and NOTE present in the output of `devtools::check()`, `lintr::lint_package()`, `make validate-schemas`, or any other quality gate is a defect that must be fixed — regardless of when it was introduced. The agent must not classify, skip, or deprioritize diagnostics based on whether the current change caused them. If a quality gate reports a problem, the agent fixes it before proceeding.
+
 ## Prohibited Practices (Workarounds)
 
 The following are prohibited in principle (exception only with stated justification):
@@ -50,11 +54,14 @@ url <- "https://example.com/very/long/path/to/resource"
 
 ## Definition of Done
 
-Fix existing errors unrelated to changes as well; all of the following must be satisfied:
+All of the following must be satisfied — no exception for pre-existing issues:
 
 - `lintr::lint_package()` has **zero errors/warnings**
 - `styler::style_pkg(dry = "on")` has **zero diffs**
 - `devtools::check()` shows **0 errors, 0 warnings, 0 notes**
+- `make validate-schemas` shows **zero errors and zero actionable warnings**
 - Exceptions (intentional lint) have **documented reasons**
 - No new unjustified `# nolint` added
 - Not hiding problems with `suppressWarnings()` / `suppressMessages()`
+
+If any diagnostic is present, it must be resolved before the gate is considered passed. "It was already there" is not a valid reason to proceed.

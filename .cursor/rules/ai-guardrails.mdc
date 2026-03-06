@@ -16,10 +16,11 @@ For the full command workflow (Issue-driven), see `@.cursor/README.md`.
 The following actions are NEVER permitted, regardless of user instructions:
 
 1. **NEVER merge a PR without CI green**: Run `gh pr checks <N>` and confirm all checks pass before executing `gh pr merge`. No exceptions.
-2. **NEVER skip local verification**: Run at minimum `make ci-fast` before committing. Even when no R code changed (Makefile, docs, CI only), run `make validate-schemas`.
+2. **NEVER skip local verification**: Run `make ci-fast` AND `make format-check` before every `git push`. This applies to every branch (feature, hotfix, main). Even when no R code changed (Makefile, docs, CI only), run `make validate-schemas`. Pushing without local verification is prohibited — "CI will catch it" is not acceptable.
 3. **NEVER skip workflow steps for speed**: When told to "do everything", "hurry up", or "till close all issues", execute every step of every command in full. Achieve speed through parallel work on independent Issues, not by skipping verification.
 4. **NEVER proceed past a gate without evidence**: Gate passage must be proven by command output or tool results. "Probably fine" is not evidence.
 5. **NEVER create a PR without the full template**: Every PR body must include ALL sections from `pr-create.md` Step 4 (Summary, Traceability, Risk/Impact, Rollback Plan, Review Checklist). Read `pr-create.md` before every PR creation — do not compose the body from memory.
+6. **NEVER dismiss diagnostics as "pre-existing"**: Every error, warning, and NOTE reported by quality gates (`devtools::check()`, `lintr`, `validate-schemas`, etc.) is a defect to fix — regardless of when it was introduced. The agent must not classify, skip, or deprioritize diagnostics based on whether the current change caused them. If the gate reports a problem, the agent resolves it before proceeding.
 
 ## Issue-Driven Workflow (Required)
 
@@ -32,15 +33,33 @@ All implementation work must be traceable to a GitHub Issue:
 5. **PRs close Issues**: Include `Closes #<issue>` in every PR body.
 6. **No main direct push** for normal changes: All code changes go through the PR flow with CI validation.
 
+### fix vs hotfix Decision Criteria
+
+| Type | Urgency | Issue | Flow | When to use |
+|------|---------|-------|------|-------------|
+| `fix` | Normal | Required | Standard PR (`pr-create`) | Bug that can wait for the next development cycle |
+| `hotfix` | Critical | Not required | Exception PR (`pr-create` exception path) | main is broken, users are blocked, or CI is non-functional — cannot wait for Issue triage |
+
+**Key distinction**: `fix` and `hotfix` differ in **urgency**, not in the kind of change. A bug fix is `fix` unless it meets the hotfix threshold below.
+
+**Hotfix threshold** (ALL must be true):
+1. The defect is on `main` and actively blocks users or CI
+2. The fix cannot wait for normal Issue triage (hours, not days)
+3. The scope is small and well-understood (no exploratory work needed)
+
+If any condition is not met, use the standard `fix` + Issue flow.
+
 ### Exception Policy
 
 The following exception types may bypass the Issue-driven flow:
 
-| Label | When to use |
-|-------|-------------|
-| `hotfix` | Critical production fix that cannot wait for Issue triage |
-| `docs-only` | Documentation-only change with no code impact |
-| `no-issue` | Other justified exceptions (e.g., meta-implementation of workflow itself) |
+| Label | When to use | Delivery method |
+|-------|-------------|-----------------|
+| `hotfix` | Critical fix meeting the hotfix threshold above | **Exception PR** (via `pr-create` exception path) |
+| `docs-only` | Documentation-only change with no code impact | **Direct push** (via `push`) or exception PR |
+| `no-issue` | Other justified exceptions (e.g., meta-implementation of workflow itself) | **Exception PR** (via `pr-create` exception path) |
+
+**All code changes — including hotfix — MUST go through a PR.** Direct push to `main` is permitted only for `docs-only` changes. This ensures CI validation and an auditable merge record for every code change.
 
 **Exception requirements** (enforced by CI):
 

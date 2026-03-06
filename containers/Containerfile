@@ -8,6 +8,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install renv globally
 RUN R -e "install.packages('renv', repos = 'https://cloud.r-project.org')"
 
+# Standardize on UTC for reproducible timestamps across environments
+ENV TZ=UTC
+
 # Enable renv global cache (persisted via named volume)
 ENV RENV_PATHS_CACHE=/home/rstudio/.cache/R/renv
 

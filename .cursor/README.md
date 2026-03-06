@@ -54,13 +54,25 @@ doctor → issue-create → implement ─────────→ test-create
 
 Use for: all feature work, bug fixes, refactors, and multi-file changes.
 
-### Exception Flow (main direct, restricted)
+### Exception Flow (restricted)
+
+Two exception types exist, with different delivery methods:
+
+#### hotfix (critical production fix → exception PR)
 
 ```
-doctor → implement → quality-check → regression-test → docs-discover (Mode 2) → commit → push
+doctor → implement → quality-check → regression-test → docs-discover (Mode 2) → commit → pr-create (exception path) → [CI] → pr-review → pr-merge
 ```
 
-Use **only** for: `hotfix` (critical production fixes) or `docs-only` (documentation-only changes with no code impact). Must be justified in the commit message.
+Use when: main is broken, users are blocked, or CI is non-functional. Issue not required, but must be justified in PR body. **All code changes go through PR — direct push to main is never permitted.**
+
+#### docs-only (documentation change → direct push)
+
+```
+doctor → implement → commit → push
+```
+
+Use when: change is documentation only (README, ADR, comments, Cursor rules/commands text) with no code impact. May also use a PR if preferred.
 
 ## Commands
 
@@ -82,7 +94,7 @@ Use **only** for: `hotfix` (critical production fixes) or `docs-only` (documenta
 | Git | `pr-create` | Create feature branch + PR (with `Closes #<issue>`) |
 | Git | `pr-review` | Review PR and produce merge recommendation |
 | Git | `pr-merge` | Execute merge (GitHub or local) |
-| Git | `push` | Push main to origin (**exception flow only**) |
+| Git | `push` | Push main to origin (**docs-only exception only**) |
 | Debug | `debug` | Hypothesis-driven debugging |
 
 ## Rules
@@ -105,4 +117,4 @@ Rules define policies; commands define procedures.
 2. **1 Issue ≈ 1 PR**: Each Issue should be implementable in a single PR. Large tasks are split into child Issues.
 3. **Traceability is mandatory**: PRs must reference their Issue (`Closes #N`), commits should reference it (`Refs: #N`).
 4. **No main direct push** for normal changes: All code changes go through the PR flow with CI validation.
-5. **Exceptions are explicit**: `hotfix` and `docs-only` changes may bypass the PR flow but must justify the exception.
+5. **Exceptions are explicit**: `hotfix` bypasses Issue triage but still requires a PR. Only `docs-only` may use direct push to main. See `ai-guardrails.mdc` for the full policy.

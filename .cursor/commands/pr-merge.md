@@ -6,8 +6,8 @@ Execute a merge — either via GitHub (for PR flow) or locally (for exception fl
 
 ## When to use
 
-- After `pr-review` concludes "Mergeable" (standard PR flow)
-- After `commit` and successful quality/tests (exception flow: hotfix/docs-only on local branch)
+- After `pr-review` concludes "Mergeable" (standard PR flow, including hotfix exception PRs)
+- After `commit` and successful quality/tests (docs-only exception flow on local branch)
 
 ## Mandatory Preconditions (verify before ANY merge)
 
@@ -94,9 +94,9 @@ If the local feature branch still exists after the GitHub merge, delete it:
 git branch -d <branch-name> 2>/dev/null || true
 ```
 
-## Local merge (exception flow only)
+## Local merge (docs-only exception flow only)
 
-For hotfix/docs-only changes that bypassed the PR flow:
+For `docs-only` changes that bypassed the PR flow. **`hotfix` changes must use the GitHub PR merge flow above** — direct push / local merge is not permitted for code changes.
 
 ### Normal merge
 
@@ -137,5 +137,5 @@ After `--squash`, you must run `git commit` with a message following `commit-mes
 ## Related
 
 - `@.cursor/commands/pr-review.md` (previous step in PR flow)
-- `@.cursor/commands/push.md` (exception flow: hotfix/docs-only)
+- `@.cursor/commands/push.md` (exception flow: docs-only direct push)
 - `@.cursor/rules/commit-message-format.mdc` (for squash commit messages)

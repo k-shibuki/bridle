@@ -42,7 +42,18 @@ If there are uncommitted changes, commit them following `@.cursor/rules/commit-m
 git status --short
 ```
 
-### 3. Push branch to remote
+### 3. Local verification gate (REQUIRED before push)
+
+Run the following locally and confirm zero issues before pushing:
+
+```bash
+make ci-fast        # validate-schemas + lint
+make format-check   # styler dry-run
+```
+
+If either fails, fix before proceeding. Do NOT push with the intent of "CI will catch it."
+
+### 3b. Push branch to remote
 
 ```bash
 git push -u origin HEAD
@@ -116,7 +127,9 @@ EOF
 )"
 ```
 
-#### Exception path (no Issue)
+#### Exception path (hotfix / no-issue / docs-only)
+
+This is the **required delivery method for all code changes that bypass the Issue-driven flow**, including `hotfix`. Direct push to `main` is not permitted for code changes — only `docs-only` may use `push` instead.
 
 When the user explicitly confirms an exception, add a label and fill the `## Exception` section instead of `Closes #`.
 
@@ -174,26 +187,39 @@ EOF
 
 Poll CI checks until all jobs reach a terminal state (pass / fail / skipping).
 
+**Polling strategy** (do NOT use long `sleep` waits):
+
+1. First check at **15 seconds** after push (catches fast jobs like `check-policy`, `changes`).
+2. Then poll every **20–30 seconds** until all jobs are terminal (pass / fail / skipping).
+3. **Maximum 10 polls** (roughly 5 minutes). If CI is still pending after 10 polls, report status to the user and stop polling — do not burn context with indefinite waits.
+4. **Never use `sleep` longer than 30 seconds** in a single wait. Prefer `sleep 20` between polls.
+
 ```bash
+# Preferred: gh pr checks --watch (if available and not timing out)
 gh pr checks --watch
-```
 
-If `--watch` is unavailable or times out, poll manually:
-
-```bash
-gh pr checks
+# Fallback: manual polling
+gh pr checks <PR_NUMBER>
 ```
 
 ### 6. If CI fails: diagnose, fix, re-push
 
-Repeat until CI passes or the issue requires user intervention.
+**The agent must autonomously diagnose and fix CI failures.** Do not merely report failures to the user — investigate the root cause, fix it, and re-push. Escalate to the user only after a genuine fix attempt has failed.
 
 1. **Identify the failed job(s)** from `gh pr checks` output.
 2. **Fetch failure logs**:
    ```bash
    gh run view <run_id> --log-failed
    ```
-3. **Fix the root cause** — choose the right fix based on the failure type:
+3. **Classify the failure** — infrastructure vs code:
+
+   **Infrastructure failures** (setup steps, package downloads, network timeouts):
+   - Read the full error context (not just the error line — check 10+ lines around it).
+   - Identify the root cause: missing env var, wrong config, transient network issue, etc.
+   - **If fixable** (e.g., missing `RENV_CONFIG_AUTOLOADER_ENABLED`, wrong CI config): fix the workflow/config file, commit, push. One retry with `gh run rerun <RUN_ID> --failed` is allowed only for genuinely transient issues (e.g., CDN outage) that cannot be fixed by code changes.
+   - **If the same infrastructure failure recurs**: it is NOT transient — investigate deeper (compare with passing jobs, check env vars, check config differences).
+
+   **Code failures** — choose the right fix:
 
    | Failed job | Likely cause | Fix method |
    |------------|-------------|------------|
@@ -216,7 +242,7 @@ Repeat until CI passes or the issue requires user intervention.
    ```
 5. **Return to Step 5** (monitor CI again).
 
-If a failure is clearly outside your control (e.g. infrastructure flake, third-party service outage), report it to the user rather than retrying indefinitely.
+Escalate to the user only when: (a) you have diagnosed the root cause, (b) attempted a fix, and (c) the fix did not resolve the issue. Include the diagnosis, what you tried, and why it didn't work.
 
 ### 7. Report status
 
