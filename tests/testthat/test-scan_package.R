@@ -2,28 +2,8 @@
 # Follows test-strategy.mdc: Given/When/Then, failure >= success cases
 # Uses local_mocked_bindings to avoid dependency on external packages
 
-# -- Helper: mock resolve_function -------------------------------------------
-
-mock_resolve <- function(fn) {
-  function(package, func) fn
-}
-
-mock_version <- function(package) "0.0.0.9999"
-
-mock_empty_rd_db <- function(package) {
-  rd <- list(structure(
-    list(structure("testfn", Rd_tag = "TEXT")),
-    Rd_tag = "\\alias"
-  ))
-  list("testfn.Rd" = rd)
-}
-
-with_scan_mocks <- function(fn, code) {
-  local_mocked_bindings(resolve_function = mock_resolve(fn)) # nolint: object_usage_linter.
-  local_mocked_bindings(get_package_version = mock_version) # nolint: object_usage_linter.
-  local_mocked_bindings(get_rd_db = mock_empty_rd_db) # nolint: object_usage_linter.
-  code
-}
+# with_scan_mocks, mock_resolve, mock_version, mock_empty_rd_db
+# provided by helper-mocks.R
 
 # -- scan_package() input validation ------------------------------------------
 

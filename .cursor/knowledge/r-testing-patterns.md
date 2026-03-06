@@ -122,6 +122,42 @@ local_mocked_bindings(
 
 ---
 
+## Helper File Pattern
+
+testthat auto-sources `helper-*.R` files before each test file. Use `tests/testthat/helper-mocks.R` for shared mock value factories.
+
+**Key constraint**: `local_mocked_bindings()` cannot be extracted into a helper function (see "local_mocked_bindings Scope Constraint" above). Helpers provide **values** that are passed to `local_mocked_bindings()` inline:
+
+```r
+# In helper-mocks.R — provides the mock function value
+mock_resolve <- function(fn) {
+  function(package, func) fn
+}
+
+# In test file — applies the mock inline (required for correct scoping)
+test_that("my test", {
+  local_mocked_bindings(resolve_function = mock_resolve(my_fn))
+  # ... test code ...
+})
+```
+
+**When to add to helper vs keep in test file**:
+
+- **Helper**: Mock pattern used in 2+ test files (e.g., `mock_resolve`, `mock_version`, Rd structure builders)
+- **Test file**: Mock pattern specific to one file (e.g., `mock_llm_yaml_response` in `test-draft_knowledge.R`)
+
+### Helper Colocation (lintr resolution)
+
+`object_usage_linter` resolves references within a single file only. When a helper function references another helper (e.g., `setup_all_mocks` calls `mock_resolve`), both must live in the same `helper-*.R` file.
+
+**Rule**: If a function's body references globals from `helper-mocks.R`, that function belongs in `helper-mocks.R` — not in the test file.
+
+**Why not `# nolint`?**: `# nolint` suppresses the diagnostic but does not prove the reference is valid. Co-location makes the dependency explicit and verifiable by the linter.
+
+This applies even to functions that call `local_mocked_bindings()`. The scope of `local_mocked_bindings` is determined by the runtime call stack (the calling frame), not by the source file where the function is defined. A mock-applying wrapper like `with_scan_mocks` works correctly from `helper-mocks.R` because its `code` argument is lazily evaluated within the wrapper's frame where mocks are active.
+
+---
+
 ## S7 Constructor Testing
 
 When testing S7 classes:

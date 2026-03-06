@@ -25,12 +25,13 @@ Design and implement tests for the implemented change.
 ## Steps
 
 1. Produce a test matrix (equivalence partitions + boundary cases) in Markdown.
-2. Implement tests based on that matrix.
-3. For any new parameter/field, add at least one **wiring/effect** test so the suite fails if the parameter is validated but not propagated/used:
+2. Check `tests/testthat/helper-mocks.R` for existing mock factories. Reuse shared helpers where possible; add new shared patterns to the helper if they will be used across multiple test files.
+3. Implement tests based on that matrix.
+4. For any new parameter/field, add at least one **wiring/effect** test so the suite fails if the parameter is validated but not propagated/used:
    - Wiring: assert downstream call args / generated request includes the new parameter.
    - Effect: change the parameter value and assert behavior/output changes per requirements.
-4. Add Given/When/Then comments.
-5. Ensure exceptions include both type and message assertions when meaningful.
+5. Add Given/When/Then comments.
+6. Ensure exceptions include both type and message assertions when meaningful.
 
 ## Test matrix template
 

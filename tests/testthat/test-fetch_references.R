@@ -2,7 +2,7 @@
 # Follows test-strategy.mdc: Given/When/Then, failure >= success cases
 # All HTTP calls mocked via local_mocked_bindings on thin wrappers
 
-# -- Helpers -------------------------------------------------------------------
+# mock_crossref_response provided by helper-mocks.R
 
 make_scan_result_with_refs <- function(refs) {
   ScanResult( # nolint: object_usage_linter. S7 class in R/scan_result.R
@@ -17,32 +17,6 @@ make_scan_result_with_refs <- function(refs) {
       timestamp = "2026-01-01T00:00:00+0000",
       package_version = "0.0.1"
     )
-  )
-}
-
-mock_crossref_response <- function(doi = "10.1234/test",
-                                   title = "Test Paper",
-                                   authors = list(
-                                     list(given = "John", family = "Doe")
-                                   ),
-                                   abstract = "An abstract.",
-                                   journal = "Test Journal",
-                                   year = 2020L) {
-  body <- list(
-    message = list(
-      DOI = doi,
-      title = list(title),
-      author = authors,
-      abstract = abstract,
-      `container-title` = list(journal),
-      `published-print` = list(
-        `date-parts` = list(list(year))
-      )
-    )
-  )
-  structure(
-    list(body = body),
-    class = "httr2_response"
   )
 }
 
