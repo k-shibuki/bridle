@@ -258,6 +258,69 @@ test_that("KnowledgeStore: error when func is empty", {
   )
 })
 
+# -- Boundary cases -----------------------------------------------------------
+
+test_that("KnowledgeEntry: single-character properties accepted", {
+  # Given: minimal valid properties (single character)
+  # When:  constructing a KnowledgeEntry
+  # Then:  accepted
+  entry <- KnowledgeEntry(id = "e1", when = "always", properties = "x")
+  expect_equal(entry@properties, "x")
+})
+
+test_that("KnowledgeEntry: many properties accepted", {
+  # Given: large number of properties
+  # When:  constructing a KnowledgeEntry
+  # Then:  all stored
+  props <- paste("prop", seq_len(50))
+  entry <- KnowledgeEntry(id = "e1", when = "always", properties = props)
+  expect_length(entry@properties, 50L)
+})
+
+test_that("KnowledgeEntry: empty competing_views list accepted", {
+  # Given: explicitly empty competing_views
+  # When:  constructing a KnowledgeEntry
+  # Then:  empty list stored
+  entry <- KnowledgeEntry(
+    id = "e1", when = "always", properties = "fact",
+    competing_views = list()
+  )
+  expect_equal(entry@competing_views, list())
+})
+
+test_that("KnowledgeStore: single entry accepted", {
+  # Given: exactly one entry (minimum valid)
+  # When:  constructing a KnowledgeStore
+  # Then:  valid store
+  ks <- KnowledgeStore(
+    topic = "t",
+    target_parameter = "p",
+    package = "meta",
+    func = "metabin",
+    entries = list(
+      KnowledgeEntry(id = "e1", when = "c", properties = "f")
+    )
+  )
+  expect_length(ks@entries, 1L)
+})
+
+test_that("KnowledgeStore: NULL target_parameter rejected", {
+  # Given: NULL target_parameter
+  # When:  constructing a KnowledgeStore
+  # Then:  type error
+  expect_error(
+    KnowledgeStore(
+      topic = "t",
+      target_parameter = NULL,
+      package = "meta",
+      func = "metabin",
+      entries = list(
+        KnowledgeEntry(id = "e1", when = "c", properties = "f")
+      )
+    )
+  )
+})
+
 # -- YAML Reader --------------------------------------------------------------
 
 test_that("read_knowledge: valid YAML round-trip", {

@@ -291,6 +291,97 @@ test_that("DecisionGraph: error with dangling transition target", {
   )
 })
 
+# -- Boundary cases -----------------------------------------------------------
+
+test_that("DecisionGraph: single-node graph (terminal)", {
+  # Given: exactly one node with no transitions (minimum valid)
+  # When:  constructing a DecisionGraph
+  # Then:  valid graph with single node
+  dg <- DecisionGraph(
+    entry_node = "only",
+    nodes = list(only = Node(type = "execution", transitions = list()))
+  )
+  expect_length(dg@nodes, 1L)
+  expect_equal(dg@entry_node, "only")
+})
+
+test_that("DecisionGraph: self-referencing transition rejected", {
+  # Given: a node that transitions to itself
+  # When:  constructing a DecisionGraph
+  # Then:  valid (cycles are allowed in decision graphs)
+  dg <- DecisionGraph(
+    entry_node = "loop",
+    nodes = list(
+      loop = Node(
+        type = "decision",
+        transitions = list(Transition(to = "loop", always = TRUE))
+      )
+    )
+  )
+  expect_equal(dg@nodes[["loop"]]@transitions[[1]]@to, "loop")
+})
+
+test_that("Node: empty parameter accepted for non-decision types", {
+  # Given: context_gathering node with no parameter
+  # When:  constructing a Node
+  # Then:  valid with empty parameter
+  n <- Node(type = "context_gathering", transitions = list())
+  expect_equal(n@parameter, character(0))
+})
+
+test_that("Transition: long when condition accepted", {
+  # Given: very long when string (boundary)
+  # When:  constructing a Transition
+  # Then:  stored as-is
+  long_cond <- paste(rep("condition", 100), collapse = " AND ")
+  t <- Transition(to = "next", when = long_cond)
+  expect_equal(t@when, long_cond)
+})
+
+test_that("has_value: empty character returns FALSE", {
+  # Given: empty character vector
+  # When:  checking has_value
+  # Then:  returns FALSE
+  expect_false(bridle:::has_value(character(0)))
+})
+
+test_that("has_value: single non-NA returns TRUE", {
+  # Given: single element vector
+  # When:  checking has_value
+  # Then:  returns TRUE
+  expect_true(bridle:::has_value("something"))
+})
+
+test_that("has_value: all-NA vector returns FALSE", {
+  # Given: vector of all NAs
+  # When:  checking has_value
+  # Then:  returns FALSE
+  expect_false(bridle:::has_value(c(NA, NA, NA)))
+})
+
+test_that("has_value: mixed NA and value returns TRUE", {
+  # Given: vector with some NA and some values
+  # When:  checking has_value
+  # Then:  returns TRUE
+  expect_true(bridle:::has_value(c(NA, "value", NA)))
+})
+
+test_that("has_value: NULL returns FALSE", {
+  # Given: NULL input
+  # When:  checking has_value
+  # Then:  returns FALSE (length 0)
+  expect_false(bridle:::has_value(NULL))
+})
+
+test_that("has_value: single NA returns FALSE", {
+  # Given: single NA
+  # When:  checking has_value
+  # Then:  returns FALSE
+  expect_false(bridle:::has_value(NA))
+})
+
+# -- YAML Reader --------------------------------------------------------------
+
 test_that("read_decision_graph: valid YAML round-trip", {
   # Given: the metabin example fixture
   # When:  reading the YAML file
