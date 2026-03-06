@@ -1,0 +1,129 @@
+# PR policy gate: verifies Issue linkage, required sections, and traceability.
+# Runs on every PR to main/master regardless of file changes.
+#
+# Exception contract:
+#   When a PR has no Issue link (Closes #N), it must:
+#   1. Have one of the exception labels: no-issue, hotfix, docs-only
+#   2. Have a "## Exception" section with:
+#      - Type: <no-issue / hotfix / docs-only>
+#      - Justification: <reason, min 20 chars>
+#   The canonical format is defined in ai-guardrails.mdc and PULL_REQUEST_TEMPLATE.md.
+on:
+  pull_request:
+    branches: [main, master]
+    types: [opened, edited, synchronize, labeled, unlabeled]
+
+name: PR Policy
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  check-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check PR policy compliance
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || '';
+            const labels = pr.labels.map(l => l.name);
+            const errors = [];
+            const warnings = [];
+
+            const EXCEPTION_LABELS = ['no-issue', 'hotfix', 'docs-only'];
+            const isException = EXCEPTION_LABELS.some(l => labels.includes(l));
+
+            // --- 1. Issue linkage ---
+            const hasIssueLink = /(?:closes|fixes|resolves)\s+#\d+/gi.test(body);
+
+            if (!hasIssueLink) {
+              if (isException) {
+                const exceptionMatch = body.match(/## Exception[^]*?(?=\n## |$)/i);
+                const exceptionBlock = exceptionMatch ? exceptionMatch[0] : '';
+
+                const justMatch = exceptionBlock.match(/Justification:\s*(.+)/i);
+                const justification = justMatch ? justMatch[1].replace(/<!--[^]*?-->/g, '').trim() : '';
+
+                if (justification.length < 20) {
+                  errors.push(
+                    '**Issue linkage**: Exception label is set but justification is missing or too short. ' +
+                    'Fill in the `## Exception` section with `- Justification: <reason>` (min 20 chars).'
+                  );
+                } else {
+                  warnings.push(
+                    '**Issue linkage**: Exception — no Issue linked. Justification accepted.'
+                  );
+                }
+              } else {
+                errors.push(
+                  '**Issue linkage**: PR body must contain `Closes #<number>` ' +
+                  '(or `Fixes #N` / `Resolves #N`). ' +
+                  'If this is an exception, add a label (`no-issue` / `hotfix` / `docs-only`) ' +
+                  'and fill in the `## Exception` section.'
+                );
+              }
+            }
+
+            // --- 2. Risk / Impact section ---
+            const riskMatch = body.match(/## Risk \/ Impact[^]*?(?=\n## |$)/i);
+            const riskContent = riskMatch
+              ? riskMatch[0].replace(/## Risk \/ Impact/i, '').replace(/<!--[^]*?-->/g, '').trim()
+              : '';
+
+            if (!riskMatch) {
+              errors.push('**Risk / Impact**: Section is missing from the PR body.');
+            } else if (riskContent.length < 5) {
+              errors.push(
+                '**Risk / Impact**: Section exists but appears empty. ' +
+                'Describe what could go wrong and who/what is affected.'
+              );
+            }
+
+            // --- 3. Rollback Plan section ---
+            const changeType = body.match(/- \[x\] (feat|fix|refactor|ci|chore)/i);
+            const isDocsOrTestOnly = /- \[x\] (docs|test):/i.test(body) && !changeType;
+
+            const rollbackMatch = body.match(/## Rollback Plan[^]*?(?=\n## |$)/i);
+            const rollbackContent = rollbackMatch
+              ? rollbackMatch[0].replace(/## Rollback Plan/i, '').replace(/<!--[^]*?-->/g, '').trim()
+              : '';
+
+            if (!isDocsOrTestOnly) {
+              if (!rollbackMatch) {
+                errors.push('**Rollback Plan**: Section is missing from the PR body.');
+              } else if (rollbackContent.length < 3 || rollbackContent === '-') {
+                errors.push(
+                  '**Rollback Plan**: Section exists but appears empty. ' +
+                  'Describe how to revert if something goes wrong.'
+                );
+              }
+            }
+
+            // --- 4. Traceability section ---
+            if (!/## Traceability/i.test(body)) {
+              errors.push('**Traceability**: Section is missing from the PR body.');
+            }
+
+            // --- Report ---
+            if (errors.length > 0) {
+              const report = [
+                '## PR Policy Check Failed',
+                '',
+                '### Errors (must fix)',
+                ...errors.map(e => `- ${e}`),
+              ];
+              if (warnings.length > 0) {
+                report.push('', '### Warnings', ...warnings.map(w => `- ${w}`));
+              }
+              report.push(
+                '',
+                'See [PR template](/.github/PULL_REQUEST_TEMPLATE.md) for required sections.',
+              );
+              core.setFailed(report.join('\n'));
+            } else if (warnings.length > 0) {
+              core.warning(warnings.join('\n'));
+            }

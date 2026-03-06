@@ -2,8 +2,9 @@
 
 ## Purpose
 
-Review a pull request: inspect the diff, verify CI status, and produce a merge recommendation.
-Merge execution is delegated to `merge`.
+Review a pull request: inspect the diff, verify CI status, check Issue DoD fulfillment, and produce a merge recommendation.
+
+**This command produces a judgment only.** Merge execution is handled by `pr-merge`.
 
 ## When to use
 
@@ -14,7 +15,7 @@ Merge execution is delegated to `merge`.
 
 1. Read all user-attached `@...` context first (PR description, diff, requirements).
 2. If required context is missing, ask for the exact `@...` files/info and stop.
-3. If the review conclusion is "Mergeable", execute the merge (Step 6).
+3. Do NOT execute merge. Always delegate merge to `pr-merge`.
 4. Do not assume other Cursor commands exist; if you mention them, they must be optional.
 
 ## Inputs (ask if missing)
@@ -30,13 +31,29 @@ Merge execution is delegated to `merge`.
 gh pr view <PR-number> --json title,body,files,commits,reviews,checks
 ```
 
-### 2. Inspect the diff
+### 2. Verify Issue linkage
+
+Check that the PR body contains `Closes #<issue>` or `Fixes #<issue>`. If missing and no exception label (`no-issue`) is present, flag this as a required change.
+
+```bash
+gh pr view <PR-number> --json body --jq '.body'
+```
+
+### 3. Retrieve the linked Issue's DoD
+
+```bash
+gh issue view <issue-number>
+```
+
+Extract the acceptance criteria / Definition of Done from the Issue.
+
+### 4. Inspect the diff
 
 ```bash
 gh pr diff <PR-number>
 ```
 
-### 3. Verify CI status
+### 5. Verify CI status
 
 ```bash
 gh pr checks <PR-number>
@@ -44,17 +61,20 @@ gh pr checks <PR-number>
 
 All required checks must pass. If any check fails, the PR is not ready for merge.
 
-### 4. Code review
+### 6. Code review
 
 | Category | What to check |
 |---------|---------------|
+| **Issue DoD** | all acceptance criteria from the Issue are met |
 | **Change overview** | files changed, diff size |
 | **Code quality** | readability, naming, duplication |
 | **Spec alignment** | aligns with ADRs (`docs/adr/`) |
 | **Type safety** | S7 properties have explicit types, no `class_any` |
 | **Tests** | tests exist, negative cases covered |
+| **Traceability** | `Closes #<issue>` present, `Refs: #<issue>` in commits |
+| **Risk / Rollback** | risk assessment and rollback plan documented in PR |
 
-### 5. Produce merge recommendation
+### 7. Produce merge recommendation
 
 ```text
 ## Merge decision
@@ -62,7 +82,11 @@ All required checks must pass. If any check fails, the PR is not ready for merge
 ### Conclusion: Mergeable / Changes required
 
 ### Merge strategy: squash / merge
-- Reason: (e.g., "Cloud agent branch with many micro-commits")
+- Reason: (e.g., "AI-created PR with many micro-commits")
+
+### Issue DoD check
+- [ ] Criterion 1: met / not met
+- [ ] Criterion 2: met / not met
 
 ### Reasons
 - <evidence for each criterion>
@@ -72,37 +96,22 @@ All required checks must pass. If any check fails, the PR is not ready for merge
 2. Add yyy
 ```
 
-### 6. Execute merge (if Mergeable)
+If the conclusion is "Mergeable", recommend running `pr-merge` as the next step.
 
-If the review conclusion is "Mergeable" and CI is green, merge the PR using the recommended strategy (see `@.cursor/commands/pr-merge.md` for strategy selection).
-
-```bash
-# Squash (default for AI-created PRs with many commits)
-gh pr merge <PR-number> --squash --delete-branch
-
-# or normal merge (for well-organized human commits)
-gh pr merge <PR-number> --merge --delete-branch
-```
-
-Then update local main:
-
-```bash
-git checkout main
-git pull origin main
-```
-
-If the conclusion is "Changes required", list the required changes and stop. Do not merge.
+If the conclusion is "Changes required", list the required changes and stop.
 
 ## Output (response format)
 
 - **PR summary**: title, branch, files changed, diff size
+- **Issue**: `#<number>` linked, DoD fulfillment status
 - **CI status**: pass / fail (with details)
 - **Review findings**: grouped by category
-- **Merge decision**: mergeable (strategy, result) / changes required (list)
+- **Merge decision**: mergeable (recommended strategy) / changes required (list)
+- **Next step**: `pr-merge` (if mergeable) / fix and re-push (if changes required)
 
 ## Related
 
-- `@.cursor/commands/pr-merge.md` (merge strategy reference)
+- `@.cursor/commands/pr-merge.md` (next step when mergeable)
 - `@.cursor/commands/pr-create.md` (PR creation)
 - `@.cursor/rules/test-strategy.mdc`
 - `@.cursor/rules/commit-message-format.mdc`

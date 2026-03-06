@@ -16,6 +16,16 @@ Follow the commit message policy here:
 
 This command intentionally avoids duplicating the policy (format/prefixes/language). Keep `commit-message-format.mdc` as the single source of truth.
 
+## Issue reference (required)
+
+Every commit must reference its tracking Issue in the footer:
+
+```
+Refs: #<issue-number>
+```
+
+**Exceptions**: `hotfix` or `docs-only` changes that bypass the Issue-driven flow may omit the Issue reference, but must state the justification in the commit body.
+
 ## Atomic commits (recommended)
 
 Split changes into **logically cohesive, minimal commits** when beneficial:
@@ -58,42 +68,45 @@ git diff
 
 ```bash
 git add -A
-git commit -m "<message>"
+git commit -m "<type>(<scope>): <summary>
+
+- Change item 1
+- Change item 2
+
+Refs: #<issue-number>"
 ```
 
 ### Multiple commits (when splitting)
 
 ```bash
-# Commit 1: e.g., refactor
-git add <specific-files-or-hunks>
-git commit -m "<message-1>"
+git add <specific-files>
+git commit -m "<type>(<scope>): <summary-1>
 
-# Commit 2: e.g., feature
-git add <specific-files-or-hunks>
-git commit -m "<message-2>"
+- Change item
+Refs: #<issue-number>"
 
-# ... repeat as needed
+git add <specific-files>
+git commit -m "<type>(<scope>): <summary-2>
+
+- Change item
+Refs: #<issue-number>"
 ```
-
-**Useful commands for selective staging**:
-
-- `git add -p` — interactive hunk selection
-- `git add <file>` — stage specific file
-- `git diff --cached` — review staged changes before commit
 
 ## Constraints
 
 - Do **not** open an interactive editor (`git commit` without `-m`).
 - Keep messages **English only**.
+- Include `Refs: #<issue>` in every commit (except hotfix/docs-only exceptions).
 
 ## Output (response format)
 
 - **Branch**: current branch name
+- **Issue**: `#<number>` being referenced
 - **Commits**: list of commits created (message + short hash for each)
 - **Summary**: `git log --oneline -n <count>` showing the new commits
 
 ## Related
 
 - `@.cursor/rules/commit-message-format.mdc`
-- `@.cursor/commands/push.md` (next step: main direct flow)
 - `@.cursor/commands/pr-create.md` (next step: PR flow)
+- `@.cursor/commands/push.md` (exception flow only: hotfix/docs-only)

@@ -27,7 +27,7 @@ endif
 	container-build container-up container-down container-shell rstudio \
 	renv-init renv-restore renv-snapshot \
 	check check-fast test lint format document coverage site install clean \
-	ci ci-fast doctor doctor-json validate-schemas \
+	ci ci-fast ci-pr doctor doctor-json validate-schemas \
 	changed-lint changed-test test-json lint-json scaffold-test
 
 # === Help ===
@@ -126,6 +126,8 @@ ci: validate-schemas lint test check ## Full CI: validate-schemas + lint + test 
 
 ci-fast: validate-schemas lint ## Fast gate: validate-schemas + lint
 
+ci-pr: ci document ## PR-ready gate: full CI + document (run before pr-create)
+
 doctor: ## Check development environment
 	@bash tools/doctor.sh
 
@@ -145,14 +147,16 @@ changed-lint: _require_container ## Lint only changed R files
 		echo "No changed R files to lint"; \
 	fi
 
-changed-test: _require_container ## Run tests related to changed files
+changed-test: _require_container ## Run tests related to changed files (falls back to full suite)
 	@filter=$$(bash tools/changed-files.sh "R/*.R" "tests/testthat/*.R" \
 		| sed -n 's|.*/test-\(.*\)\.R$$|\1|p' \
 		| paste -sd'|'); \
 	if [ -n "$$filter" ]; then \
+		echo "Running scoped tests: $$filter"; \
 		$(RSCRIPT) -e "devtools::test(filter = '$$filter')"; \
 	else \
-		echo "No changed test files detected"; \
+		echo "No changed test files detected -- running full test suite"; \
+		$(RSCRIPT) -e "devtools::test()"; \
 	fi
 
 test-json: _require_container ## Run tests with JUnit XML output
