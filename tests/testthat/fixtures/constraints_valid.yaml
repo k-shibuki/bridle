@@ -1,0 +1,54 @@
+package: meta
+function: metabin
+
+constraints:
+  - id: peto_forces_or
+    source: formals_default
+    type: forces
+    condition: "method == 'Peto'"
+    forces: {sm: "OR"}
+    message: "Peto method is only available for odds ratio"
+
+  - id: glmm_forces_or
+    source: formals_default
+    type: forces
+    condition: "method == 'GLMM'"
+    forces: {sm: "OR"}
+    message: "GLMM is only available for odds ratio"
+
+  - id: valid_sm
+    source: rd_description
+    type: valid_values
+    param: sm
+    values: ["RR", "OR", "RD", "ASD", "DOR", "VE"]
+    confirmed_by: ["source_code"]
+    confidence: high
+
+  - id: valid_method
+    source: rd_description
+    type: valid_values
+    param: method
+    values: ["Inverse", "MH", "Peto", "GLMM", "LRP", "SSW"]
+
+  - id: model_glmm_conditional
+    source: rd_description
+    type: conditional
+    param: model.glmm
+    enabled_when: "method == 'GLMM'"
+    message: "model.glmm is only effective when method = 'GLMM'"
+
+  - id: allstudies_only_for_ratio
+    source: source_code
+    type: conditional
+    param: allstudies
+    enabled_when: "sm %in% c('RR', 'OR', 'DOR')"
+    message: "allstudies applies only when sm is RR, OR, or DOR"
+
+  - id: peto_not_for_imbalanced
+    source: expert
+    type: incompatible
+    incompatible: {method: "Peto"}
+    condition: "group sample sizes are highly imbalanced"
+    confidence: low
+    message: >
+      Peto method is biased when group sample sizes differ substantially.
