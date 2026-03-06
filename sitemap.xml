@@ -9,6 +9,9 @@
 <url><loc>/reference/CompetingView.html</loc></url>
 <url><loc>/reference/Constraint.html</loc></url>
 <url><loc>/reference/ConstraintSet.html</loc></url>
+<url><loc>/reference/ContextSchema.html</loc></url>
+<url><loc>/reference/ContextVariable.html</loc></url>
+<url><loc>/reference/DataExpectation.html</loc></url>
 <url><loc>/reference/DecisionGraph.html</loc></url>
 <url><loc>/reference/GlobalPolicy.html</loc></url>
 <url><loc>/reference/KnowledgeEntry.html</loc></url>
@@ -17,10 +20,12 @@
 <url><loc>/reference/NodePolicy.html</loc></url>
 <url><loc>/reference/Transition.html</loc></url>
 <url><loc>/reference/constraints.html</loc></url>
+<url><loc>/reference/context_schema.html</loc></url>
 <url><loc>/reference/decision_graph.html</loc></url>
 <url><loc>/reference/index.html</loc></url>
 <url><loc>/reference/knowledge.html</loc></url>
 <url><loc>/reference/read_constraints.html</loc></url>
+<url><loc>/reference/read_context_schema.html</loc></url>
 <url><loc>/reference/read_decision_graph.html</loc></url>
 <url><loc>/reference/read_knowledge.html</loc></url>
 </urlset>
