@@ -50,6 +50,20 @@ git push -u origin HEAD
 
 ### 4. Create PR
 
+#### Pre-flight checklist (REQUIRED before `gh pr create`)
+
+Before running `gh pr create`, verify the body contains ALL required sections. Missing sections cause `check-policy` CI failure.
+
+| Section | Required? | Notes |
+|---------|-----------|-------|
+| `## Summary` | Always | 1-3 bullet points |
+| `## Traceability` | Always | `Closes #N` or Exception block |
+| `## Risk / Impact` | Always | Affected area, breaking change, data impact |
+| `## Rollback Plan` | Non-docs/test | How to revert; `N/A` for docs/test only |
+| `## Review Checklist` | Always | Verification checkboxes |
+
+Do NOT compose the PR body from memory. Use the template below exactly.
+
 #### Standard path (Issue exists)
 
 The PR body **must** include `Closes #<issue>` for automatic Issue closure on merge. Delete the `## Exception` section.
@@ -177,15 +191,30 @@ Repeat until CI passes or the issue requires user intervention.
 1. **Identify the failed job(s)** from `gh pr checks` output.
 2. **Fetch failure logs**:
    ```bash
-   gh run view <run_id> --job <job_id> --log-failed
+   gh run view <run_id> --log-failed
    ```
-3. **Fix the root cause** in the local working tree.
-4. **Commit the fix** (follow `@.cursor/rules/commit-message-format.mdc`, use `fix(scope):` prefix, include `Refs: #<issue>`).
-5. **Push**:
+3. **Fix the root cause** — choose the right fix based on the failure type:
+
+   | Failed job | Likely cause | Fix method |
+   |------------|-------------|------------|
+   | `check-policy` | PR body missing required sections | Edit PR body via `gh api repos/{owner}/{repo}/pulls/<N> -X PATCH -f body="..."` |
+   | `ci-config` | YAML/Makefile syntax error | Fix in working tree, commit, push |
+   | `format-check` | Unformatted R code | Run `make format`, commit, push |
+   | `lint` | Lint errors | Fix code, commit, push |
+   | `test` / `check` | Test failure or R CMD check error | Fix code, commit, push |
+   | `validate-schemas` | Schema/code inconsistency | Fix schema or S7 class, commit, push |
+
+   **For `check-policy` failures** (PR body issues): Update the PR body directly without a new commit:
+   ```bash
+   gh api repos/{owner}/{repo}/pulls/<N> -X PATCH -f body="<corrected body>"
+   ```
+   This triggers a `check-policy` re-run without polluting the commit history.
+
+4. **For code fixes**: Commit the fix (follow `@.cursor/rules/commit-message-format.mdc`, use `fix(scope):` prefix, include `Refs: #<issue>`), then push:
    ```bash
    git push
    ```
-6. **Return to Step 5** (monitor CI again).
+5. **Return to Step 5** (monitor CI again).
 
 If a failure is clearly outside your control (e.g. infrastructure flake, third-party service outage), report it to the user rather than retrying indefinitely.
 

@@ -19,6 +19,7 @@ The following actions are NEVER permitted, regardless of user instructions:
 2. **NEVER skip local verification**: Run at minimum `make ci-fast` before committing. Even when no R code changed (Makefile, docs, CI only), run `make validate-schemas`.
 3. **NEVER skip workflow steps for speed**: When told to "do everything", "hurry up", or "till close all issues", execute every step of every command in full. Achieve speed through parallel work on independent Issues, not by skipping verification.
 4. **NEVER proceed past a gate without evidence**: Gate passage must be proven by command output or tool results. "Probably fine" is not evidence.
+5. **NEVER create a PR without the full template**: Every PR body must include ALL sections from `pr-create.md` Step 4 (Summary, Traceability, Risk/Impact, Rollback Plan, Review Checklist). Read `pr-create.md` before every PR creation — do not compose the body from memory.
 
 ## Issue-Driven Workflow (Required)
 
@@ -123,6 +124,7 @@ For every PR/commit, verify:
 - [ ] S7 properties have explicit types (no `class_any`)
 - [ ] Tests added/updated for new functionality
 - [ ] `make ci` passes locally
+- [ ] PR body contains all required sections (see Hard Stop #5)
 
 ## Multi-Agent Coordination
 
