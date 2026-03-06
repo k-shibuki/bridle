@@ -129,6 +129,25 @@ git push --force-with-lease origin feature-B
 
 ---
 
+## Scenario 6: PR Auto-Closed by Base Branch Deletion
+
+**Symptom**: A PR targeting `feat/A-branch` is auto-closed by GitHub when
+PR #A is merged with `--delete-branch`.
+
+**Cause**: GitHub auto-closes PRs whose base branch is deleted. This happens
+when `--base feat/A-branch` was used in `gh pr create`.
+
+**Prevention**: Always use `--base main` (see `pr-create.md` Step 3c and
+ai-guardrails.mdc Hard Stop #9).
+
+**Recovery**:
+1. Rebase the orphaned branch onto `origin/main`
+2. Force push: `git push --force-with-lease origin <branch>`
+3. Create a new PR with `--base main`
+4. Close the auto-closed PR with a comment: "Superseded by #XX"
+
+---
+
 ## Prevention Checklist
 
 - [ ] Subagent prompts explicitly prohibit `git checkout`, `git switch`, `git rebase` (exception: "Dependent PR Merge Chain" template allows scoped `--onto` rebase)
@@ -136,3 +155,4 @@ git push --force-with-lease origin feature-B
 - [ ] Before starting work, run `git status` to detect unexpected state
 - [ ] After subagent completion, verify branch state before continuing
 - [ ] Use `--force-with-lease` (never `--force`) when force-pushing
+- [ ] PRs always target `main` (never `--base feat/<branch>`)

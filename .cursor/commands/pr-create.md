@@ -59,6 +59,25 @@ If either fails, fix before proceeding. Do NOT push with the intent of "CI will 
 git push -u origin HEAD
 ```
 
+### 3c. Verify base branch (REQUIRED)
+
+**Always use `main` as the PR base branch.** Do not use `--base feat/<branch>`.
+
+| Situation | Base | Rationale |
+|---|---|---|
+| Independent PR | `main` | Standard |
+| Dependent PR (dep not yet merged) | `main` | Feature-base PRs auto-close when base is deleted on merge |
+
+When developing on a branch that depends on unmerged work:
+1. Develop locally by merging/rebasing the dependency branch
+2. Before `git push`, rebase onto `origin/main`
+3. Create the PR with `--base main` (default)
+4. Document the dependency in the PR body under "Related ADR / Issue"
+
+The dependency's code may be missing on `main` during CI. This is acceptable —
+the PR will be merged **after** the dependency PR, at which point CI re-runs on
+a main that already contains the prerequisite code.
+
 ### 4. Create PR
 
 #### Pre-flight checklist (REQUIRED before `gh pr create`)
