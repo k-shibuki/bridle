@@ -125,15 +125,19 @@ When multiple AI agents work concurrently:
 | Target | Purpose | When to use |
 |---|---|---|
 | `make doctor` | Environment health check | Before starting work |
+| `make status` | Git + container status | Quick state check |
 | `make ci-fast` | Schema validation + lint | After implementation |
 | `make ci` | Full local CI | Before commit |
 | `make ci-pr` | PR-ready gate (local) | Before `pr-create` |
+| `make pr-ready` | Full pre-PR gate (format-check + CI + docs) | Final gate before PR |
 | `make test` | Run tests | After implementation |
 | `make check` | R CMD check | Before commit |
 | `make check-fast` | Quick R CMD check | During iteration |
 | `make validate-schemas` | YAML schema check | After schema changes |
 | `make document` | Regenerate NAMESPACE/man | After roxygen2 changes |
 | `make format` | Auto-format with styler | Before lint |
+| `make format-check` | Format dry-run (no file changes) | CI / pre-PR validation |
 | `make changed-lint` | Lint changed files only | During iteration |
 | `make changed-test` | Test changed areas only | During iteration |
 | `make scaffold-test` | Create test skeleton | When adding tests |
+| `make new-branch` | Create Issue-driven branch | Starting new feature work |
