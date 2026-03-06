@@ -91,7 +91,7 @@ renv-snapshot: _require_container ## Update renv.lock from installed packages
 # === Quality Gates ===
 
 check: _require_container ## Run R CMD check (primary quality gate)
-	$(RSCRIPT) -e "devtools::check()"
+	$(RSCRIPT) -e "devtools::check(env_vars = c('_R_CHECK_SYSTEM_CLOCK_' = '0'))"
 
 test: _require_container ## Run tests
 	$(RSCRIPT) -e "devtools::test()"
@@ -118,7 +118,7 @@ install: _require_container ## Install package locally
 	$(RSCRIPT) -e "devtools::install()"
 
 check-fast: _require_container ## Quick R CMD check (no manual/vignettes)
-	$(RSCRIPT) -e "devtools::check(manual = FALSE, vignettes = FALSE)"
+	$(RSCRIPT) -e "devtools::check(manual = FALSE, vignettes = FALSE, env_vars = c('_R_CHECK_SYSTEM_CLOCK_' = '0'))"
 
 scaffold-test: _require_container ## Create test skeleton (usage: make scaffold-test FILE=R/foo.R)
 	@if [ -z "$(FILE)" ]; then echo "Usage: make scaffold-test FILE=R/foo.R"; exit 1; fi

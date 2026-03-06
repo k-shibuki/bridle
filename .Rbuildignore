@@ -10,3 +10,6 @@
 ^renv$
 ^renv\.lock$
 ^\.Rprofile$
+^\.lintr$
+^CODEOWNERS$
+^CONTRIBUTING\.md$

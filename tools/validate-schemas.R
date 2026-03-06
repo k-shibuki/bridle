@@ -263,6 +263,23 @@ if (length(r_files) == 0L) {
     schema_fields <- schema_data$schema
     schema_fields$version <- NULL
 
+    # For schemas with nested structure (e.g., decision_graph has graph.*),
+    # drill into the nested section so B1/B2 check sub-fields as S7 properties.
+    matched_rule <- NULL
+    for (rule in schema_rules) {
+      if (grepl(rule$pattern, basename(spath), fixed = TRUE)) {
+        matched_rule <- rule
+        break
+      }
+    }
+    if (!is.null(matched_rule$nested) &&
+        matched_rule$nested %in% names(schema_fields)) {
+      nested_section <- schema_fields[[matched_rule$nested]]
+      if (is.list(nested_section)) {
+        schema_fields <- nested_section
+      }
+    }
+
     # B1: Schema fields present as S7 properties
     for (fname in names(schema_fields)) {
       sname <- safe_prop_name(fname)
@@ -289,10 +306,18 @@ if (length(r_files) == 0L) {
       expected_kw <- s7_type_keyword(field$type)
       actual_type <- s7_props[[sname]]
       if (!grepl(expected_kw, actual_type, fixed = TRUE)) {
-        add_phase_b(basename(spath), "B2", "warning", paste0(
-          "Type mismatch for '", fname, "': schema '", field$type,
-          "' expects S7 ", expected_kw, " but found '", actual_type, "' in ", r_path
-        ))
+        # A custom S7 class (e.g., new_property(GlobalPolicy, ...)) is a valid
+        # and preferred implementation for schema map/list types. Only flag when
+        # the S7 type uses a *different* built-in class (e.g., class_character
+        # where class_list was expected).
+        uses_custom_s7_class <- grepl("new_property\\(", actual_type) &&
+          !grepl("class_", actual_type, fixed = TRUE)
+        if (!uses_custom_s7_class) {
+          add_phase_b(basename(spath), "B2", "warning", paste0(
+            "Type mismatch for '", fname, "': schema '", field$type,
+            "' expects S7 ", expected_kw, " but found '", actual_type, "' in ", r_path
+          ))
+        }
       }
     }
   }

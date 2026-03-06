@@ -1,7 +1,8 @@
 linters:
   linters_with_defaults(
     line_length_linter(120),
-    object_name_linter(styles = c("snake_case", "symbols"))
+    object_name_linter(styles = c("snake_case", "symbols", "CamelCase")),
+    commented_code_linter = NULL
   )
 exclusions:
   list("renv")

@@ -20,6 +20,7 @@ The following actions are NEVER permitted, regardless of user instructions:
 3. **NEVER skip workflow steps for speed**: When told to "do everything", "hurry up", or "till close all issues", execute every step of every command in full. Achieve speed through parallel work on independent Issues, not by skipping verification.
 4. **NEVER proceed past a gate without evidence**: Gate passage must be proven by command output or tool results. "Probably fine" is not evidence.
 5. **NEVER create a PR without the full template**: Every PR body must include ALL sections from `pr-create.md` Step 4 (Summary, Traceability, Risk/Impact, Rollback Plan, Review Checklist). Read `pr-create.md` before every PR creation — do not compose the body from memory.
+6. **NEVER dismiss diagnostics as "pre-existing"**: Every error, warning, and NOTE reported by quality gates (`devtools::check()`, `lintr`, `validate-schemas`, etc.) is a defect to fix — regardless of when it was introduced. The agent must not classify, skip, or deprioritize diagnostics based on whether the current change caused them. If the gate reports a problem, the agent resolves it before proceeding.
 
 ## Issue-Driven Workflow (Required)
 
