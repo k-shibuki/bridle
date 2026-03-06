@@ -10,9 +10,18 @@ mock_resolve <- function(fn) {
 
 mock_version <- function(package) "0.0.0.9999"
 
+mock_empty_rd_db <- function(package) {
+  rd <- list(structure(
+    list(structure("testfn", Rd_tag = "TEXT")),
+    Rd_tag = "\\alias"
+  ))
+  list("testfn.Rd" = rd)
+}
+
 with_scan_mocks <- function(fn, code) {
   local_mocked_bindings(resolve_function = mock_resolve(fn)) # nolint: object_usage_linter.
   local_mocked_bindings(get_package_version = mock_version) # nolint: object_usage_linter.
+  local_mocked_bindings(get_rd_db = mock_empty_rd_db) # nolint: object_usage_linter.
   code
 }
 
@@ -89,6 +98,7 @@ test_that("scan_package: extracts parameters from simple function", {
   mock_fn <- function(x, y = 10) NULL
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
+  local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
   sr <- scan_package("testpkg", "testfn")
 
@@ -114,9 +124,10 @@ test_that("scan_package: metadata includes layer1 and timestamp", {
   mock_fn <- function(x) NULL
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
+  local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
   sr <- scan_package("testpkg", "testfn")
-  expect_equal(sr@scan_metadata[["layers_completed"]], "layer1_formals")
+  expect_true("layer1_formals" %in% sr@scan_metadata[["layers_completed"]])
   expect_true(nchar(sr@scan_metadata[["timestamp"]]) > 0L)
 })
 
@@ -131,6 +142,7 @@ test_that("scan_package: dependency graph from ifelse default", {
   }
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
+  local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
   sr <- scan_package("testpkg", "testfn")
   expect_true("sm" %in% names(sr@dependency_graph))
@@ -144,6 +156,7 @@ test_that("scan_package: no dependency for independent params", {
   mock_fn <- function(a = 1, b = "hello") NULL
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
+  local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
   sr <- scan_package("testpkg", "testfn")
   expect_length(sr@dependency_graph, 0L)
@@ -156,6 +169,7 @@ test_that("scan_package: multi-param dependency detected", {
   mock_fn <- function(a = 1, b = 2, c = a + b) NULL
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
+  local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
   sr <- scan_package("testpkg", "testfn")
   expect_true("c" %in% names(sr@dependency_graph))
@@ -172,6 +186,7 @@ test_that("scan_package: self-reference excluded from dep graph", {
   mock_fn <- function(x = x + 1) NULL
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
+  local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
   sr <- scan_package("testpkg", "testfn")
   expect_false("x" %in% names(sr@dependency_graph))
@@ -188,6 +203,7 @@ test_that("scan_package: data_input classification for data params", {
   # nolint end
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
+  local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
   sr <- scan_package("testpkg", "testfn")
   classes <- vapply(sr@parameters, function(p) p@classification, character(1))
@@ -204,6 +220,7 @@ test_that("scan_package: statistical_decision classification", {
   mock_fn <- function(method = "MH", sm = "OR", random = FALSE) NULL
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
+  local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
   sr <- scan_package("testpkg", "testfn")
   classes <- vapply(sr@parameters, function(p) p@classification, character(1))
@@ -220,6 +237,7 @@ test_that("scan_package: presentation classification", {
   mock_fn <- function(digits = 2, label.e = "exp", title = "My plot") NULL # nolint: object_name_linter.
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
+  local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
   sr <- scan_package("testpkg", "testfn")
   classes <- vapply(sr@parameters, function(p) p@classification, character(1))
@@ -236,6 +254,7 @@ test_that("scan_package: dots classified as unknown", {
   mock_fn <- function(x, ...) NULL
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
+  local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
   sr <- scan_package("testpkg", "testfn")
   dots_param <- Filter(
@@ -257,6 +276,7 @@ test_that("scan_package: constraint extracted from ifelse default", {
   }
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
+  local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
   sr <- scan_package("testpkg", "testfn")
   expect_true(length(sr@constraints) >= 1L)
@@ -274,6 +294,7 @@ test_that("scan_package: no constraints for literal defaults", {
   mock_fn <- function(a = 1, b = "hello") NULL
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
+  local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
   sr <- scan_package("testpkg", "testfn")
   expect_length(sr@constraints, 0L)
@@ -291,6 +312,7 @@ test_that("scan_package: constraint from switch default", {
   formals(mock_fn)$val <- switch_default
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
+  local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
   sr <- scan_package("testpkg", "testfn")
   expect_true(length(sr@constraints) >= 1L)
@@ -308,6 +330,7 @@ test_that("scan_package: function with no formals", {
   mock_fn <- function() NULL
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
+  local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
   sr <- scan_package("testpkg", "testfn")
   expect_s3_class(sr, "bridle::ScanResult")
@@ -327,6 +350,7 @@ test_that("scan_package: deeply nested conditional default", {
   }
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
+  local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
   sr <- scan_package("testpkg", "testfn")
   expect_true("b" %in% names(sr@dependency_graph))

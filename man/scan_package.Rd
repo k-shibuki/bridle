@@ -19,6 +19,7 @@ Analyzes an R package function to produce a \link{ScanResult}. Layer 1 extracts
 parameter names, default expressions, AST-parsed dependency graphs, and
 automatic parameter classification (ADR-0004).
 
-Entry point for the plugin generation scanner. Currently implements Layer 1
-(formals analysis). Layers 2 and 3 will be added in subsequent Issues.
+Entry point for the plugin generation scanner. Implements Layer 1
+(formals analysis) and Layer 2 (Rd documentation analysis).
+Layer 3 will be added in subsequent Issues.
 }

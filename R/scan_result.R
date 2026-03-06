@@ -75,6 +75,8 @@ ParameterInfo <- S7::new_class("ParameterInfo",
 #' @param constraints A list of [Constraint] objects extracted from scanning.
 #' @param valid_values Named list mapping parameter names to character vectors
 #'   of valid values (populated by Layer 2+).
+#' @param descriptions Named list mapping parameter names to description text
+#'   (populated by Layer 2 Rd analysis).
 #' @param references Character vector of bibliography entries (from Layer 2+).
 #' @param scan_metadata Named list with scanner metadata: `layers_completed`
 #'   (character vector), `timestamp` (character), `package_version` (character).
@@ -88,6 +90,7 @@ ScanResult <- S7::new_class("ScanResult",
     dependency_graph = S7::new_property(S7::class_list, default = list()),
     constraints = S7::new_property(S7::class_list, default = list()),
     valid_values = S7::new_property(S7::class_list, default = list()),
+    descriptions = S7::new_property(S7::class_list, default = list()),
     references = S7::new_property(S7::class_character, default = character(0)),
     scan_metadata = S7::class_list
   ),

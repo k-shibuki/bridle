@@ -18,6 +18,9 @@ character vector of parameter names that the key depends on.}
 \item{valid_values}{Named list mapping parameter names to character vectors
 of valid values (populated by Layer 2+).}
 
+\item{descriptions}{Named list mapping parameter names to description text
+(populated by Layer 2 Rd analysis).}
+
 \item{references}{Character vector of bibliography entries (from Layer 2+).}
 
 \item{scan_metadata}{Named list with scanner metadata: \code{layers_completed}
