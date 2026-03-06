@@ -44,10 +44,13 @@ Split changes into **logically cohesive, minimal commits** when beneficial:
 
 ## Documentation alignment (required)
 
-Before committing, ensure documentation is aligned with the change.
+Before committing, run **docs-discover (Mode 2)** to ensure documentation is aligned with the change:
 
-- Update any relevant documents as needed.
-- If no docs changes are needed, explicitly state "No docs updates needed" and proceed.
+1. Review the finalized diff against the doc impact list from `implement` (Mode 1).
+2. Apply any necessary doc updates (ADRs, README, Cursor commands/rules, DESCRIPTION, etc.).
+3. If no docs changes are needed, explicitly state "No docs updates needed" and proceed.
+
+See `@.cursor/commands/docs-discover.md` for the full procedure.
 
 ## Workflow
 
@@ -108,5 +111,6 @@ Refs: #<issue-number>"
 ## Related
 
 - `@.cursor/rules/commit-message-format.mdc`
+- `@.cursor/commands/docs-discover.md` (Mode 2: pre-commit doc alignment)
 - `@.cursor/commands/pr-create.md` (next step: PR flow)
 - `@.cursor/commands/push.md` (exception flow only: hotfix/docs-only)
