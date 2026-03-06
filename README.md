@@ -366,6 +366,17 @@ A custom REPL loop based on `readline()`. The harness holds the initiative for f
 **Interface B — MCP Server**
 Exposes bridle as an MCP server via mcptools, allowing LLM clients (Cursor, Claude Code, etc.) to call it as a tool. The LLM uses harness functions as tools. Added after Interface A stabilizes.
 
+## AI-Driven Development
+
+This project uses an **Issue-driven AI workflow**. AI agents autonomously select, implement, test, and submit changes through a structured command chain.
+
+- **Workflow entry point**: [`.cursor/README.md`](.cursor/README.md) — commands, rules, and knowledge map
+- **Available commands**: `make help` for build targets; `.cursor/commands/` for AI workflow commands
+- **Design documents**: [`docs/`](docs/) — ADRs and YAML schemas
+- **Open tasks**: `gh issue list --state open`
+
+See [`.cursor/README.md`](.cursor/README.md) for the full development workflow.
+
 ## Development Environment
 
 Development uses a containerized R environment. No local R installation is required.

@@ -2,6 +2,8 @@
 
 This directory contains architecture decision records (ADRs) and YAML schema definitions.
 
+**Workflow context**: ADRs and schemas are the primary design references for implementation. Before working on any Issue, check which ADRs govern the change (listed in the Issue body). For the full development workflow, see [`.cursor/README.md`](../.cursor/README.md).
+
 ## Architecture Decision Records (`adr/`)
 
 ADRs document significant architectural decisions, their context, and trade-offs.
