@@ -165,3 +165,48 @@ When testing S7 classes:
 - **Validator error messages**: Use `expect_error(..., "expected substring")` to verify the validator produces the right message. S7 validators typically use `sprintf()` or `paste()` for messages; match a stable substring.
 - **Property type constraints**: Test that assigning a wrong type produces a clear error. S7 enforces types at construction time, so `expect_error(MyClass(field = wrong_type))` is sufficient.
 - **Default values**: Explicitly test that omitted properties take the documented default. Do not assume defaults are correct without verification.
+
+---
+
+## Snapshot Testing
+
+testthat 3 supports snapshot tests via `expect_snapshot()` and `expect_snapshot_error()`. Snapshots capture exact output and compare against stored baseline files in `tests/testthat/_snaps/`.
+
+**When to use**:
+
+```r
+test_that("validate_plugin reports all errors", {
+  expect_snapshot_error(validate_plugin(bad_plugin))
+})
+
+test_that("ScanResult prints correctly", {
+  result <- ScanResult(...)
+  expect_snapshot(print(result))
+})
+```
+
+**Gotchas**:
+
+- `_snaps/` files must be committed — they are the expected baseline.
+- Running `testthat::snapshot_accept()` updates all snapshots. Review diffs before accepting.
+- Snapshot tests are environment-sensitive (locale, R version can affect output). Use `transform` argument to normalize volatile parts.
+
+---
+
+## Internal Function Testing via `:::`
+
+R packages can test non-exported functions using `pkg:::function_name`. This is standard practice for testing critical internal logic directly.
+
+```r
+test_that("safe_formals handles missing args", {
+  fn <- function(x, y = 1) NULL
+  result <- bridle:::safe_formals(formals(fn))
+  expect_true(inherits(result$x, "bridle_missing_formal"))
+})
+```
+
+**Guidelines**:
+
+- Test internal functions directly when they contain non-trivial logic (parsing, graph traversal, constraint collection).
+- Place internal function tests in `test-internals.R` to keep them separate from public API tests.
+- Accept that `:::` tests couple to internal API — rename/remove requires test updates. This trade-off is acceptable for critical internal logic.

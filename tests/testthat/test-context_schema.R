@@ -238,6 +238,82 @@ test_that("ContextSchema: error with non-DataExpectation in data_expectations", 
   )
 })
 
+# -- Boundary cases -----------------------------------------------------------
+
+test_that("ContextVariable: NULL name rejected", {
+  # Given: NULL as name
+  # When:  constructing a ContextVariable
+  # Then:  type error
+  expect_error(
+    ContextVariable(
+      name = NULL,
+      description = "test",
+      available_from = "data_loaded",
+      source_expression = "x"
+    )
+  )
+})
+
+test_that("ContextVariable: whitespace-only description accepted", {
+  # Given: whitespace-only description (non-empty string)
+  # When:  constructing a ContextVariable
+  # Then:  accepted (validator checks length, not content)
+  cv <- ContextVariable(
+    name = "x",
+    description = "   ",
+    available_from = "data_loaded",
+    source_expression = "x"
+  )
+  expect_equal(cv@description, "   ")
+})
+
+test_that("DataExpectation: defaults for required", {
+  # Given: required = TRUE (default boundary)
+  # When:  constructing a DataExpectation
+  # Then:  required is TRUE
+  de <- DataExpectation(column = "x", role = "outcome", required = TRUE)
+  expect_true(de@required)
+})
+
+test_that("ContextSchema: single variable accepted", {
+  # Given: exactly one variable (minimum valid)
+  # When:  constructing a ContextSchema
+  # Then:  valid schema
+  cs <- ContextSchema(
+    variables = list(
+      ContextVariable(
+        name = "k",
+        description = "count",
+        available_from = "data_loaded",
+        source_expression = "nrow(d)"
+      )
+    )
+  )
+  expect_length(cs@variables, 1L)
+})
+
+test_that("ContextSchema: multiple data expectations accepted", {
+  # Given: several data expectations
+  # When:  constructing a ContextSchema
+  # Then:  all stored
+  cs <- ContextSchema(
+    variables = list(
+      ContextVariable(
+        name = "k",
+        description = "count",
+        available_from = "data_loaded",
+        source_expression = "nrow(d)"
+      )
+    ),
+    data_expectations = list(
+      DataExpectation(column = "a", role = "outcome", required = TRUE),
+      DataExpectation(column = "b", role = "group", required = FALSE),
+      DataExpectation(column = "c", role = "study_id", required = TRUE)
+    )
+  )
+  expect_length(cs@data_expectations, 3L)
+})
+
 # -- YAML Reader --------------------------------------------------------------
 
 test_that("read_context_schema: valid YAML round-trip", {

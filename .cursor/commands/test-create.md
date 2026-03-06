@@ -35,10 +35,10 @@ Design and implement tests for the implemented change.
 
 ## Test matrix template
 
-| Case ID | Input / Precondition | Perspective (Equivalence / Boundary) | Expected Result | Notes |
-|---------|---------------------|--------------------------------------|----------------|-------|
-| TC-N-01 | Valid input A       | Equivalence – normal                 | Processing succeeds | - |
-| TC-A-01 | NULL                | Boundary – NULL                     | Validation error | - |
+| Case ID | Input / Precondition | Perspective (Equivalence / Boundary) | Expected Result | Snapshot? | Notes |
+|---------|---------------------|--------------------------------------|----------------|-----------|-------|
+| TC-N-01 | Valid input A       | Equivalence – normal                 | Processing succeeds | - | - |
+| TC-A-01 | NULL                | Boundary – NULL                     | Validation error | Yes | Complex multi-line error |
 
 ## Running tests (recommended)
 
