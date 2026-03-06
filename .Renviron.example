@@ -1,0 +1,32 @@
+# bridle LLM Provider Configuration
+#
+# Copy this file to .Renviron and fill in your credentials:
+#   cp .Renviron.example .Renviron
+#
+# Or use: usethis::edit_r_environ(scope = "project")
+#
+# After editing, restart R for changes to take effect.
+# NEVER commit .Renviron to version control.
+
+# --- GitHub Models (recommended for development) ---
+# Uses your existing GitHub PAT. No additional signup needed.
+# Models: gpt-4o, gpt-4o-mini, etc.
+# See: https://github.com/marketplace/models
+GITHUB_PAT=ghp_your_token_here
+
+# --- Anthropic (Claude) ---
+# Signup: https://platform.claude.com
+# ANTHROPIC_API_KEY=sk-ant-your_key_here
+
+# --- OpenAI ---
+# Signup: https://platform.openai.com
+# OPENAI_API_KEY=sk-your_key_here
+
+# --- Google Gemini (generous free tier) ---
+# Signup: https://aistudio.google.com/apikey
+# GOOGLE_API_KEY=your_key_here
+
+# --- Ollama (local, no key needed) ---
+# Install: https://ollama.com
+# Then: ollama pull llama3.1
+# No environment variable needed - just install and run.

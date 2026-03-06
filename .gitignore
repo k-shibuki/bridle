@@ -1,3 +1,6 @@
+# Secrets (API keys)
+.Renviron
+
 # R package build artifacts
 *.Rcheck/
 *.tar.gz
