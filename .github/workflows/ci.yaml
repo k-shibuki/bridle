@@ -155,10 +155,9 @@ jobs:
       - name: Save lint results
         if: always()
         run: |
-          writeLines(
-            jsonlite::toJSON(lintr::lint_package(), auto_unbox = TRUE),
-            "lint-results.json"
-          )
+          lints <- lintr::lint_package()
+          df <- if (length(lints) > 0L) as.data.frame(lints) else data.frame()
+          writeLines(jsonlite::toJSON(df, auto_unbox = TRUE), "lint-results.json")
         shell: Rscript {0}
 
       - name: Upload lint results
