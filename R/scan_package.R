@@ -28,7 +28,8 @@ scan_package <- function(package, func) {
 
   fn <- resolve_function(package, func)
   result <- scan_layer1(package = package, func_name = func, fn = fn)
-  scan_layer2(result)
+  result <- scan_layer2(result)
+  scan_layer3a(result, fn)
 }
 
 #' Resolve a function from a package namespace
@@ -613,4 +614,309 @@ update_deprecated_params <- function(parameters, deprecated_params) {
     }
   }
   parameters
+}
+
+# -- Layer 3a: Source Code Static Analysis ------------------------------------
+
+#' Enrich a ScanResult with source code static analysis
+#'
+#' Extracts `match.arg()` valid values and `stop()`/`warning()` constraints
+#' from function body AST. Applies confidence grading based on cross-layer
+#' confirmation (ADR-0004, ADR-0008).
+#' @keywords internal
+scan_layer3a <- function(scan_result, fn) {
+  if (is.primitive(fn)) {
+    cli::cli_warn(
+      "Layer 3a: Cannot access source for {.fn {scan_result@func}}."
+    )
+    return(scan_result)
+  }
+  fn_body <- body(fn)
+  if (is.null(fn_body)) {
+    return(scan_result)
+  }
+
+  fmls <- formals(fn)
+  param_names <- names(fmls)
+  if (is.null(param_names)) param_names <- character(0)
+
+  ma_values <- find_match_arg_values(fn_body, fmls, param_names)
+  stop_constraints <- find_stop_constraints(
+    fn_body, param_names,
+    scan_result@package, scan_result@func
+  )
+
+  updated_constraints <- upgrade_confidence(
+    scan_result@constraints, ma_values,
+    scan_result@valid_values, stop_constraints
+  )
+  all_constraints <- c(updated_constraints, stop_constraints)
+
+  merged_valid <- merge_valid_values(scan_result@valid_values, ma_values)
+
+  layers <- c(
+    scan_result@scan_metadata[["layers_completed"]], "layer3a_source"
+  )
+  metadata <- scan_result@scan_metadata
+  metadata[["layers_completed"]] <- layers
+
+  ScanResult( # nolint: object_usage_linter. S7 class in R/scan_result.R
+    package = scan_result@package,
+    func = scan_result@func,
+    parameters = scan_result@parameters,
+    dependency_graph = scan_result@dependency_graph,
+    constraints = all_constraints,
+    valid_values = merged_valid,
+    descriptions = scan_result@descriptions,
+    references = scan_result@references,
+    scan_metadata = metadata
+  )
+}
+
+#' Find match.arg() calls and extract valid values
+#' @keywords internal
+find_match_arg_values <- function(fn_body, fmls, param_names) {
+  calls <- collect_calls(fn_body, "match.arg")
+  result <- list()
+  for (cl in calls) {
+    info <- parse_match_arg(cl, fmls, param_names)
+    if (!is.null(info)) {
+      result[[info$param]] <- info$values
+    }
+  }
+  result
+}
+
+#' Parse a single match.arg() call to extract param and choices
+#' @keywords internal
+parse_match_arg <- function(call_expr, fmls, param_names) {
+  args <- as.list(call_expr)[-1L]
+  if (length(args) == 0L) {
+    return(NULL)
+  }
+
+  param_expr <- args[[1L]]
+  param_name <- if (is.symbol(param_expr)) {
+    as.character(param_expr)
+  } else {
+    return(NULL)
+  }
+  if (!param_name %in% param_names) {
+    return(NULL)
+  }
+
+  if (length(args) >= 2L) {
+    choices_expr <- args[[2L]]
+    values <- extract_char_vector(choices_expr)
+    if (length(values) > 0L) {
+      return(list(param = param_name, values = values))
+    }
+  }
+
+  fml_default <- tryCatch(fmls[[param_name]], error = function(e) NULL)
+  if (!is.null(fml_default)) {
+    values <- extract_char_vector(fml_default)
+    if (length(values) > 0L) {
+      return(list(param = param_name, values = values))
+    }
+  }
+  NULL
+}
+
+#' Extract character vector from a c() expression
+#' @keywords internal
+extract_char_vector <- function(expr) {
+  if (is.character(expr)) {
+    return(expr)
+  }
+  if (!is.call(expr)) {
+    return(character(0))
+  }
+  fn <- expr[[1L]]
+  if (!is.symbol(fn) || as.character(fn) != "c") {
+    return(character(0))
+  }
+  args <- as.list(expr)[-1L]
+  values <- character(0)
+  for (a in args) {
+    if (is.character(a) && length(a) == 1L) {
+      values <- c(values, a)
+    }
+  }
+  values
+}
+
+#' Find stop()/warning() calls with parameter-related conditions
+#' @keywords internal
+find_stop_constraints <- function(fn_body, param_names, package, func) {
+  stop_calls <- collect_conditional_stops(fn_body, param_names)
+  constraints <- list()
+  counter <- 0L
+  for (sc in stop_calls) {
+    counter <- counter + 1L
+    cid <- sprintf("%s_%s_stop_%d", package, func, counter)
+    constraints <- c(constraints, list(
+      Constraint( # nolint: object_usage_linter. S7 class in R/constraints.R
+        id = cid,
+        source = "source_code",
+        type = "conditional",
+        param = sc$param,
+        condition = sc$condition,
+        enabled_when = sc$condition,
+        message = sc$message,
+        confirmed_by = "source_code",
+        confidence = "medium"
+      )
+    ))
+  }
+  constraints
+}
+
+#' Collect function calls by name from an AST recursively
+#' @keywords internal
+collect_calls <- function(expr, fn_name) {
+  if (is.null(expr) || is.atomic(expr) || is.symbol(expr)) {
+    return(list())
+  }
+  if (!is.call(expr) && !is.recursive(expr)) {
+    return(list())
+  }
+
+  result <- list()
+  if (is.call(expr)) {
+    fn <- expr[[1L]]
+    if (is.symbol(fn) && as.character(fn) == fn_name) {
+      result <- list(expr)
+    }
+    for (i in seq_along(expr)[-1L]) {
+      result <- c(result, collect_calls(expr[[i]], fn_name))
+    }
+  } else if (is.recursive(expr)) {
+    for (i in seq_along(expr)) {
+      result <- c(result, collect_calls(expr[[i]], fn_name))
+    }
+  }
+  result
+}
+
+#' Collect stop()/warning() calls inside if-conditions referencing params
+#' @keywords internal
+collect_conditional_stops <- function(expr, param_names) {
+  if (is.null(expr) || is.atomic(expr) || is.symbol(expr)) {
+    return(list())
+  }
+  if (!is.call(expr) && !is.recursive(expr)) {
+    return(list())
+  }
+
+  results <- list()
+  if (is.call(expr)) {
+    fn <- expr[[1L]]
+    is_if <- is.symbol(fn) && as.character(fn) == "if"
+    if (is_if && length(expr) >= 3L) {
+      cond <- expr[[2L]]
+      body_expr <- expr[[3L]]
+      cond_params <- intersect(walk_ast_symbols(cond), param_names)
+      if (length(cond_params) > 0L) {
+        stops <- c(
+          collect_calls(body_expr, "stop"),
+          collect_calls(body_expr, "warning")
+        )
+        for (s in stops) {
+          msg <- extract_stop_message(s)
+          for (p in cond_params) {
+            results <- c(results, list(list(
+              param = p,
+              condition = safe_deparse(cond),
+              message = msg
+            )))
+          }
+        }
+      }
+    }
+    for (i in seq_along(expr)[-1L]) {
+      results <- c(results, collect_conditional_stops(expr[[i]], param_names))
+    }
+  } else if (is.recursive(expr)) {
+    for (i in seq_along(expr)) {
+      results <- c(results, collect_conditional_stops(expr[[i]], param_names))
+    }
+  }
+  results
+}
+
+#' Extract message string from a stop() or warning() call
+#' @keywords internal
+extract_stop_message <- function(call_expr) {
+  args <- as.list(call_expr)[-1L]
+  for (a in args) {
+    if (is.character(a) && length(a) == 1L) {
+      return(a)
+    }
+  }
+  safe_deparse(call_expr)
+}
+
+#' Upgrade constraint confidence based on cross-layer confirmation
+#' @keywords internal
+upgrade_confidence <- function(constraints, ma_values,
+                               rd_valid_values, stop_constraints) {
+  for (i in seq_along(constraints)) {
+    cst <- constraints[[i]]
+    param <- cst@param
+
+    confirmed <- cst@confirmed_by
+    has_ma <- param %in% names(ma_values)
+    has_rd <- param %in% names(rd_valid_values)
+
+    if (has_ma && !"source_code" %in% confirmed) {
+      confirmed <- c(confirmed, "source_code")
+    }
+    if (has_rd && !"rd_description" %in% confirmed) {
+      confirmed <- c(confirmed, "rd_description")
+    }
+
+    new_confidence <- if (length(confirmed) >= 2L) {
+      "high"
+    } else if (length(confirmed) == 1L) {
+      "medium"
+    } else {
+      cst@confidence
+    }
+
+    needs_update <- !identical(confirmed, cst@confirmed_by) ||
+      !identical(new_confidence, cst@confidence)
+    if (needs_update) {
+      constraints[[i]] <- Constraint( # nolint: object_usage_linter. S7 class in R/constraints.R
+        id = cst@id,
+        source = cst@source,
+        type = cst@type,
+        param = cst@param,
+        condition = cst@condition,
+        forces = cst@forces,
+        requires = cst@requires,
+        values = cst@values,
+        incompatible = cst@incompatible,
+        enabled_when = cst@enabled_when,
+        message = cst@message,
+        confirmed_by = confirmed,
+        confidence = new_confidence
+      )
+    }
+  }
+  constraints
+}
+
+#' Merge valid values from Layer 3a match.arg into existing values
+#' @keywords internal
+merge_valid_values <- function(existing, new_values) {
+  merged <- existing
+  for (param in names(new_values)) {
+    if (param %in% names(merged)) {
+      merged[[param]] <- unique(c(merged[[param]], new_values[[param]]))
+    } else {
+      merged[[param]] <- new_values[[param]]
+    }
+  }
+  merged
 }
