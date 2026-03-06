@@ -5,6 +5,7 @@
 #' phase (ADR-0007).
 #'
 #' @name session_context
+#' @include context_schema.R
 #' @importFrom rlang %||%
 NULL
 
