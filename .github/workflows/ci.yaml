@@ -123,7 +123,10 @@ jobs:
 
       - name: Run tests
         run: |
-          devtools::test()
+          results <- as.data.frame(devtools::test())
+          if (any(results$warning > 0)) {
+            stop("Tests produced ", sum(results$warning), " warning(s)")
+          }
         shell: Rscript {0}
 
       - name: Upload test results
@@ -152,6 +155,9 @@ jobs:
           extra-packages: any::rcmdcheck
 
       - uses: r-lib/actions/check-r-package@v2
+        with:
+          args: 'c("--no-manual", "--as-cran")'
+          error-on: '"note"'
 
       - name: Upload check results
         if: failure()
