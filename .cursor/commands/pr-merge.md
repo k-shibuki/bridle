@@ -76,8 +76,11 @@ After `--squash`, you must run `git commit` with a message following `commit-mes
 ## Constraints
 
 - Use non-interactive git flags (`--no-edit`, `--no-pager`) to avoid hangs.
-- Always gate merge behind explicit user approval.
 - Do not merge if CI has failures or warnings remain.
+- **Approval model**: Merge is permitted when one of the following is satisfied:
+  - Self-created PR: CI is green (called from `pr-create` Step 7)
+  - External PR: `pr-review` concluded "Mergeable" (called from `pr-review` Step 6)
+  - Explicit user instruction to merge
 
 ## Output (response format)
 

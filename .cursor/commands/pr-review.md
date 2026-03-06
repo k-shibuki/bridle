@@ -14,7 +14,7 @@ Merge execution is delegated to `merge`.
 
 1. Read all user-attached `@...` context first (PR description, diff, requirements).
 2. If required context is missing, ask for the exact `@...` files/info and stop.
-3. Merge/push are **never** executed by this command — hand off to `merge`.
+3. If the review conclusion is "Mergeable", execute the merge (Step 6).
 4. Do not assume other Cursor commands exist; if you mention them, they must be optional.
 
 ## Inputs (ask if missing)
@@ -72,24 +72,37 @@ All required checks must pass. If any check fails, the PR is not ready for merge
 2. Add yyy
 ```
 
-### 6. Hand off to merge
+### 6. Execute merge (if Mergeable)
 
-If mergeable, instruct the user to run `merge`:
+If the review conclusion is "Mergeable" and CI is green, merge the PR using the recommended strategy (see `@.cursor/commands/pr-merge.md` for strategy selection).
 
-```text
-NEXT: /merge (PR #<number>, strategy: squash|merge)
+```bash
+# Squash (default for AI-created PRs with many commits)
+gh pr merge <PR-number> --squash --delete-branch
+
+# or normal merge (for well-organized human commits)
+gh pr merge <PR-number> --merge --delete-branch
 ```
+
+Then update local main:
+
+```bash
+git checkout main
+git pull origin main
+```
+
+If the conclusion is "Changes required", list the required changes and stop. Do not merge.
 
 ## Output (response format)
 
 - **PR summary**: title, branch, files changed, diff size
 - **CI status**: pass / fail (with details)
 - **Review findings**: grouped by category
-- **Merge recommendation**: mergeable / changes required + strategy
+- **Merge decision**: mergeable (strategy, result) / changes required (list)
 
 ## Related
 
-- `@.cursor/commands/merge.md` (merge execution)
+- `@.cursor/commands/pr-merge.md` (merge strategy reference)
 - `@.cursor/commands/pr-create.md` (PR creation)
 - `@.cursor/rules/test-strategy.mdc`
 - `@.cursor/rules/commit-message-format.mdc`

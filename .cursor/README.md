@@ -19,7 +19,7 @@ Use when: single-file fixes, small refactors, documentation updates.
 
 ```
 doctor -> task-plan -> implement -> test-create -> quality-check
-  -> regression-test -> commit -> pr-create -> [CI] -> pr-review -> merge
+  -> regression-test -> commit -> pr-create -> [CI] -> pr-review -> pr-merge
 ```
 
 Use when: new features, multi-file changes, changes that benefit from CI validation.
@@ -42,7 +42,7 @@ Use when: new features, multi-file changes, changes that benefit from CI validat
 | Git | `push` | Push main to origin (main direct flow) |
 | Git | `pr-create` | Create feature branch + PR (PR flow) |
 | Git | `pr-review` | Review PR + merge recommendation |
-| Git | `merge` | Execute merge (GitHub or local) |
+| Git | `pr-merge` | Execute merge (GitHub or local) |
 | Debug | `debug` | Hypothesis-driven debugging |
 | Docs | `docs-discover` | Find and update related docs |
 

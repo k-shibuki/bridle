@@ -101,15 +101,35 @@ Repeat until CI passes or the issue requires user intervention.
 
 If a failure is clearly outside your control (e.g. infrastructure flake, third-party service outage), report it to the user rather than retrying indefinitely.
 
+### 7. Merge the PR
+
+After CI passes, merge using the appropriate strategy (see `@.cursor/commands/pr-merge.md` for strategy selection).
+
+AI-created PRs typically use **squash** to consolidate micro-commits.
+
+```bash
+gh pr merge <PR-number> --squash --delete-branch
+```
+
+Then update local main:
+
+```bash
+git checkout main
+git pull origin main
+```
+
+If the repository requires a review before merge (branch protection), report the CI-green status and stop. The user or another agent can then run `pr-review` to complete the process.
+
 ## Output (response format)
 
 - **Branch**: name
 - **Commits**: list of commits on the branch
 - **PR URL**: link to the created PR
 - **CI result**: all pass / failure details and actions taken
+- **Merge result**: merged (strategy) / blocked (reason)
 
 ## Related
 
 - `@.cursor/rules/commit-message-format.mdc` (commit + branch naming convention)
-- `@.cursor/commands/pr-review.md` (next step: review the PR)
-- `@.cursor/commands/merge.md` (final step: merge the PR)
+- `@.cursor/commands/pr-merge.md` (merge strategy reference)
+- `@.cursor/commands/pr-review.md` (for PRs that require review before merge)
