@@ -158,13 +158,10 @@ When Step 2 identifies any **CI pending** state (Hard Stop #7 — always delegat
 
 2. **Note the subagent transcript path** returned by the Task tool for later completion checking.
 
-3. **Switch to productive work**:
-   - **If independent Issues exist**: Create a new feature branch and proceed with `implement`.
-   - **If no independent Issues exist**: Perform housekeeping tasks (in priority order):
-     1. Delete stale local branches (squash-merged branches where `git branch -d` fails — see `pr-merge.md` "Post-merge cleanup")
-     2. Run `make doctor` to verify environment health
-     3. Review documentation alignment (`docs-discover` Mode 1 style lightweight check)
-     4. Pre-read the next Issue's spec and related code for faster future implementation
+3. **Run the Two-Tier Gate** (see `@.cursor/rules/ai-guardrails.mdc` § Productive work during delegation):
+   - Tier 1: Signal scan (`git status`, `gh issue list`, `git stash list`, session-findings) — parallel, ~2-3 s.
+   - If all clear → proceed directly to step 4.
+   - If any signal fires → Tier 2: reason about highest-value action, execute, then proceed to step 4.
    - The main agent MUST NOT touch `main` or the merge-target branches while the subagent is working.
 
 4. **Completion guarantee** (Hard Stop #7):

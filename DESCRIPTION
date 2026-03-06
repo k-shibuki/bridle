@@ -22,6 +22,7 @@ Imports:
 Suggests:
     covr,
     devtools,
+    ellmer,
     lintr,
     roxygen2,
     styler,

@@ -1,7 +1,13 @@
 .git
+.cursor
+docs
+debug
 renv/library
 renv/staging
 renv/sandbox
+renv/cellar
 *.Rcheck
+*.tar.gz
 check
-debug
+test-results.xml
+lint-results.json
