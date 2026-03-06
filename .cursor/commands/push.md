@@ -2,22 +2,21 @@
 
 ## Purpose
 
-Push `main` to `origin/main` safely. This command is for the **exception flow only**.
+Push `main` to `origin/main` safely. This command is for the **docs-only exception flow only**.
 
-> **IMPORTANT**: This command is restricted to `hotfix` (critical production fixes) and `docs-only` (documentation-only changes with no code impact). For all normal changes, use `pr-create` to push a feature branch and open a PR instead.
+> **IMPORTANT**: This command is restricted to `docs-only` (documentation-only changes with no code impact). All code changes — including `hotfix` — must go through a PR via `pr-create`. Direct push of code to `main` is never permitted.
 
 ## When to use
 
-- **hotfix**: Critical production fix that cannot wait for the full PR flow
-- **docs-only**: Documentation-only changes with no code impact (README, ADR, comments)
+- **docs-only**: Documentation-only changes with no code impact (README, ADR, comments, Cursor rules/commands text)
 
-Do NOT use for: feature work, bug fixes, refactors, CI changes, or any code-impacting change.
+Do NOT use for: feature work, bug fixes (`fix`), hotfixes (`hotfix`), refactors, CI changes, or any code-impacting change. Use `pr-create` (exception path) for those.
 
 ## Preconditions
 
 - You are on `main` with commits to push.
-- Quality checks and tests have passed (via `quality-check` + `regression-test`, or `ci`).
-- The commit message justifies the exception (e.g., "Hotfix: critical regression in production").
+- The change is **documentation only** — no R code, no CI config, no Makefile logic changes.
+- The commit message explains this is a docs-only change.
 
 ## Steps
 
@@ -42,8 +41,9 @@ fi
 ```
 
 2. Verify the exception is justified:
-   - Confirm the change is either `hotfix` or `docs-only`
-   - Confirm the commit body explains why the PR flow was bypassed
+   - Confirm the change is `docs-only` (no code impact whatsoever)
+   - Confirm the commit body explains this is a documentation-only change
+   - **If the change touches any code, CI config, or Makefile logic**: STOP and use `pr-create` instead
 
 3. Push:
 
@@ -60,7 +60,7 @@ git log origin/main..main --oneline
 ## Output (response format)
 
 - **Branch**: current branch
-- **Exception type**: hotfix / docs-only
+- **Exception type**: docs-only
 - **Justification**: why PR flow was bypassed
 - **Commits pushed**: list (or "none")
 - **Push result**: success / failure + error summary if failed
@@ -68,4 +68,4 @@ git log origin/main..main --oneline
 ## Related
 
 - `@.cursor/commands/commit.md` (previous step)
-- `@.cursor/commands/pr-create.md` (standard flow — use this for normal changes)
+- `@.cursor/commands/pr-create.md` (standard flow — use this for all code changes including hotfix)

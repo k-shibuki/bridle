@@ -116,7 +116,9 @@ EOF
 )"
 ```
 
-#### Exception path (no Issue)
+#### Exception path (hotfix / no-issue / docs-only)
+
+This is the **required delivery method for all code changes that bypass the Issue-driven flow**, including `hotfix`. Direct push to `main` is not permitted for code changes — only `docs-only` may use `push` instead.
 
 When the user explicitly confirms an exception, add a label and fill the `## Exception` section instead of `Closes #`.
 

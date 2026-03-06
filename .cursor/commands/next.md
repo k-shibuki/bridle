@@ -73,7 +73,7 @@ Use the evidence to classify the current state into one of these positions:
 | PR reviewed, mergeable | **Review done** | `pr-merge` |
 | PR merged, back on `main` | **Cycle complete** | `implement` (next Issue) or `issue-create` |
 | Environment not ready | **Environment issue** | `doctor` |
-| On `main`, hotfix needed | **Exception flow** | `implement` → exception path |
+| On `main`, hotfix needed | **Exception flow** | `implement` → `pr-create` (exception path) |
 
 ### Step 3: Refine with context
 

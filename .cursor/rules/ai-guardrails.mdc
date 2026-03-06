@@ -33,15 +33,33 @@ All implementation work must be traceable to a GitHub Issue:
 5. **PRs close Issues**: Include `Closes #<issue>` in every PR body.
 6. **No main direct push** for normal changes: All code changes go through the PR flow with CI validation.
 
+### fix vs hotfix Decision Criteria
+
+| Type | Urgency | Issue | Flow | When to use |
+|------|---------|-------|------|-------------|
+| `fix` | Normal | Required | Standard PR (`pr-create`) | Bug that can wait for the next development cycle |
+| `hotfix` | Critical | Not required | Exception PR (`pr-create` exception path) | main is broken, users are blocked, or CI is non-functional — cannot wait for Issue triage |
+
+**Key distinction**: `fix` and `hotfix` differ in **urgency**, not in the kind of change. A bug fix is `fix` unless it meets the hotfix threshold below.
+
+**Hotfix threshold** (ALL must be true):
+1. The defect is on `main` and actively blocks users or CI
+2. The fix cannot wait for normal Issue triage (hours, not days)
+3. The scope is small and well-understood (no exploratory work needed)
+
+If any condition is not met, use the standard `fix` + Issue flow.
+
 ### Exception Policy
 
 The following exception types may bypass the Issue-driven flow:
 
-| Label | When to use |
-|-------|-------------|
-| `hotfix` | Critical production fix that cannot wait for Issue triage |
-| `docs-only` | Documentation-only change with no code impact |
-| `no-issue` | Other justified exceptions (e.g., meta-implementation of workflow itself) |
+| Label | When to use | Delivery method |
+|-------|-------------|-----------------|
+| `hotfix` | Critical fix meeting the hotfix threshold above | **Exception PR** (via `pr-create` exception path) |
+| `docs-only` | Documentation-only change with no code impact | **Direct push** (via `push`) or exception PR |
+| `no-issue` | Other justified exceptions (e.g., meta-implementation of workflow itself) | **Exception PR** (via `pr-create` exception path) |
+
+**All code changes — including hotfix — MUST go through a PR.** Direct push to `main` is permitted only for `docs-only` changes. This ensures CI validation and an auditable merge record for every code change.
 
 **Exception requirements** (enforced by CI):
 

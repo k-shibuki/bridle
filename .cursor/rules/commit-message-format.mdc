@@ -36,7 +36,8 @@ BREAKING CHANGE: <content> (optional)
 Prefix corresponds to `type` in Conventional Commits, using lowercase English words.
 
 - feat: New feature addition
-- fix: Bug fix
+- fix: Bug fix (normal urgency — tracked by an Issue, delivered via standard PR)
+- hotfix: Critical production fix (main is broken / users blocked — delivered via exception PR, Issue not required)
 - refactor: Refactoring (no behavior change)
 - perf: Performance improvement
 - test: Test addition/modification
@@ -49,6 +50,24 @@ Prefix corresponds to `type` in Conventional Commits, using lowercase English wo
 
 Following Conventional Commits, `<Prefix>(scope):` format is also allowed as needed (e.g., `fix(translation): ...`).
 - For detailed specifications, also refer to the [Conventional Commits](https://www.conventionalcommits.org/) official documentation.
+
+### fix vs hotfix
+
+`fix` and `hotfix` differ in **urgency**, not in the kind of change.
+
+| Prefix | Urgency | Issue required | Delivery method | Threshold |
+|--------|---------|----------------|-----------------|-----------|
+| `fix` | Normal | Yes | Standard PR | Can wait for next development cycle |
+| `hotfix` | Critical | No | Exception PR | main is broken, users blocked, or CI non-functional |
+
+Use `hotfix` only when ALL of the following are true:
+1. The defect is on `main` and actively blocks users or CI
+2. The fix cannot wait for normal Issue triage
+3. The scope is small and well-understood
+
+If any condition is not met, use `fix`. When in doubt, use `fix`.
+
+Both `fix` and `hotfix` **always go through a PR** — direct push to `main` is not permitted for code changes. See `@.cursor/rules/ai-guardrails.mdc` for the full policy.
 
 ## Summary (First Line)
 
@@ -75,7 +94,7 @@ Following Conventional Commits, `<Prefix>(scope):` format is also allowed as nee
 - **Closes: #N**: Use in the final commit or PR body to auto-close the Issue on merge.
 - **BREAKING CHANGE**: Explicitly describe content if there are backward-incompatible changes (or use `!` notation in Prefix like `fix!: ...`).
 
-**Exception**: `hotfix` or `docs-only` commits that bypass the Issue-driven flow may omit `Refs:` but must include a justification in the body (e.g., "Hotfix: critical regression in production").
+**Exception**: `hotfix` or `docs-only` commits that bypass the Issue-driven flow may omit `Refs:` but must include a justification in the body (e.g., "Hotfix: critical regression in production"). Both still require a PR for code changes; only `docs-only` may use direct push.
 
 ## Examples
 
@@ -126,4 +145,4 @@ Examples:
 
 The prefix must be one of the Prefix types listed above.
 
-**Exception**: `hotfix` branches that bypass the Issue-driven flow may omit the Issue number: `hotfix/<short-description>`.
+**Exception**: `hotfix` branches that bypass the Issue-driven flow may omit the Issue number: `hotfix/<short-description>`. Hotfix branches are still delivered via PR (`pr-create` exception path), never via direct push to `main`.
