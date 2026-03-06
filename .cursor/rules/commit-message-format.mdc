@@ -27,7 +27,7 @@ alwaysApply: false
 - Change item 2 (bullet point)
 - ...
 
-Refs: #<Issue number> (optional)
+Refs: #<Issue number>
 BREAKING CHANGE: <content> (optional)
 ```
 
@@ -69,10 +69,13 @@ Following Conventional Commits, `<Prefix>(scope):` format is also allowed as nee
 - Write in the same language as the summary (the `language` defined in this rule file). Technical terms may be in English as needed.
 - Where possible, add bullet points for "impact scope," "migration steps," "risks," "rollback methods," etc.
 
-## Footer (Optional)
+## Footer (Issue Reference Required)
 
-- Refs/Closes: Indicate related Issues or PRs with `Refs: #123` / `Closes: #123`.
-- BREAKING CHANGE: Explicitly describe content if there are backward-incompatible changes (or use `!` notation in Prefix like `fix!: ...`).
+- **Refs: #N** (required): Every commit must reference the tracking Issue with `Refs: #<issue-number>`.
+- **Closes: #N**: Use in the final commit or PR body to auto-close the Issue on merge.
+- **BREAKING CHANGE**: Explicitly describe content if there are backward-incompatible changes (or use `!` notation in Prefix like `fix!: ...`).
+
+**Exception**: `hotfix` or `docs-only` commits that bypass the Issue-driven flow may omit `Refs:` but must include a justification in the body (e.g., "Hotfix: critical regression in production").
 
 ## Examples
 
@@ -107,18 +110,20 @@ refactor: Consolidate duplicate validation logic into common function
 
 ## Branch Naming Convention
 
-Feature branches use the same prefix as commits, followed by a short kebab-case description:
+Feature branches include the Issue number for traceability:
 
 ```
-<prefix>/<short-description>
+<prefix>/<issue-number>-<short-description>
 ```
 
 Examples:
 
-- `feat/decision-graph-engine`
-- `fix/schema-validation-error`
-- `refactor/scanner-layer-split`
-- `ci/ai-driven-guardrails`
-- `docs/adr-0010-protocol-layer`
+- `feat/42-decision-graph-engine`
+- `fix/15-schema-validation-error`
+- `refactor/33-scanner-layer-split`
+- `ci/50-ai-driven-guardrails`
+- `docs/8-adr-0010-protocol-layer`
 
 The prefix must be one of the Prefix types listed above.
+
+**Exception**: `hotfix` branches that bypass the Issue-driven flow may omit the Issue number: `hotfix/<short-description>`.

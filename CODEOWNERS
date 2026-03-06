@@ -1,0 +1,32 @@
+# CODEOWNERS -- Defines ownership for required review assignment.
+# GitHub will automatically request reviews from owners when their areas are changed.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything not covered below
+*                         @statuser
+
+# R package source code
+/R/                       @statuser
+
+# Tests
+/tests/                   @statuser
+
+# YAML schemas (high-risk: affects S7 class contracts)
+/docs/schemas/            @statuser
+
+# ADRs (architecture decisions)
+/docs/adr/                @statuser
+
+# CI/CD workflows (high-risk: affects build/deploy pipeline)
+/.github/workflows/       @statuser
+
+# Container configuration
+/containers/              @statuser
+
+# Build and development tooling
+/Makefile                 @statuser
+/tools/                   @statuser
+
+# Cursor AI rules and commands (high-risk: affects AI agent behavior)
+/.cursor/rules/           @statuser
+/.cursor/commands/        @statuser

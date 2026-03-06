@@ -53,8 +53,8 @@ make help    # Show available commands
 make test    # Run tests
 make check   # R CMD check (full validation)
 make lint    # Lint check
-make ci-fast # Quick gate: lint + test
-make ci      # Full gate: lint + test + check
+make ci-fast # Quick gate: validate-schemas + lint
+make ci      # Full gate: validate-schemas + lint + test + check
 ```
 
 ---

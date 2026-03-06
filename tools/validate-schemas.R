@@ -1,7 +1,8 @@
 #!/usr/bin/env Rscript
-# tools/validate-schemas.R -- Lightweight YAML schema checker
+# tools/validate-schemas.R -- YAML schema checker
 #
-# Phase A: syntax + top-level structure only.
+# Phase A: syntax + top-level structure
+# Phase B: type/required/enum structural validation on schema contents
 # After WP3b (S7 validators), this script delegates to S7 constructors.
 #
 # Usage: Rscript tools/validate-schemas.R [--json]
@@ -86,6 +87,47 @@ for (path in schema_files) {
       basename_f,
       "Unrecognised schema type (no matching rule for filename pattern)"
     )
+  }
+
+  # 4. Structural validation (Phase B): type checks on schema contents
+  if (!is.null(parsed) && "schema" %in% names(parsed)) {
+    schema_block <- parsed$schema
+
+    if (!is.null(schema_block$version) && !is.character(schema_block$version)) {
+      add_error(basename_f, "'schema.version' must be a character string")
+    }
+
+    validate_properties <- function(props, path_prefix) {
+      if (!is.list(props)) return()
+      for (prop_name in names(props)) {
+        prop <- props[[prop_name]]
+        prop_path <- paste0(path_prefix, ".", prop_name)
+        if (!is.list(prop)) next
+
+        if (!is.null(prop$type) && !is.character(prop$type)) {
+          add_error(basename_f, paste0("'", prop_path, ".type' must be a string"))
+        }
+
+        if (!is.null(prop$required) && !is.logical(prop$required)) {
+          add_error(basename_f, paste0("'", prop_path, ".required' must be logical"))
+        }
+
+        if (!is.null(prop$enum) && !is.list(prop$enum) && !is.character(prop$enum)) {
+          add_error(basename_f, paste0("'", prop_path, ".enum' must be a list or character vector"))
+        }
+
+        if (!is.null(prop$properties)) {
+          validate_properties(prop$properties, prop_path)
+        }
+      }
+    }
+
+    for (section_name in names(schema_block)) {
+      section <- schema_block[[section_name]]
+      if (is.list(section) && !is.null(section$properties)) {
+        validate_properties(section$properties, paste0("schema.", section_name))
+      }
+    }
   }
 }
 

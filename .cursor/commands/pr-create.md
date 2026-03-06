@@ -2,41 +2,43 @@
 
 ## Purpose
 
-Create a feature branch (if needed), commit, push, and open a pull request on GitHub.
+Create a feature branch (if needed), commit, push, and open a pull request on GitHub that closes the tracking Issue.
 
 ## When to use
 
-- After `quality-check` / `regression-test` pass, when the change warrants a PR
-- When CI validation via GitHub Actions is desired before merging
+- After `quality-check` / `regression-test` pass, when the change is ready for CI validation and review
 
 ## Preconditions
 
 - `gh` CLI is authenticated (`gh auth status`)
 - Changes are either already committed, or staged/unstaged and ready to commit
+- A tracking Issue exists for this change
+
+## Inputs (ask if missing)
+
+- **Issue number** (required): the GitHub Issue this PR closes (e.g., `#42`)
 
 ## Steps
 
 ### 1. Ensure you are on a feature branch
 
-If on `main`, create a feature branch first. Branch names follow the convention in `@.cursor/rules/commit-message-format.mdc`.
+If on `main`, create a feature branch. Branch names follow the convention: `<prefix>/<issue-number>-<short-description>`.
 
 ```bash
 current_branch=$(git branch --show-current)
 
 if [ "$current_branch" = "main" ]; then
     echo "On main -- creating feature branch."
-    # Branch name: <type>/<short-description>
-    git checkout -b <type>/<short-description>
+    git checkout -b <prefix>/<issue-number>-<short-description>
 fi
 ```
 
 ### 2. Commit changes (if uncommitted)
 
-If there are uncommitted changes, commit them following `@.cursor/rules/commit-message-format.mdc`.
+If there are uncommitted changes, commit them following `@.cursor/rules/commit-message-format.mdc`. Include `Refs: #<issue>` in the footer.
 
 ```bash
 git status --short
-# If changes exist, commit (follow /commit procedure)
 ```
 
 ### 3. Push branch to remote
@@ -47,22 +49,53 @@ git push -u origin HEAD
 
 ### 4. Create PR
 
-```bash
-gh pr create --fill
-```
-
-If the auto-filled title/body is insufficient, use the PR template:
+The PR body **must** include `Closes #<issue>` for automatic Issue closure on merge.
 
 ```bash
-gh pr create --title "<type>: <description>" --body "$(cat <<'EOF'
+gh pr create --title "<type>(<scope>): <description>" --body "$(cat <<'EOF'
 ## Summary
 
 - <change summary>
 
+## Traceability
+
+Closes #<issue-number>
+
 ## Related ADR / Issue
 
 - ADR: <if applicable>
-- Issue: <if applicable>
+
+## Schema Impact
+
+- [ ] No schema impact
+- [ ] Schema updated
+- [ ] S7 class updated
+- [ ] Both updated (consistency verified)
+
+## Test Evidence
+
+- [ ] `make test` passes
+- [ ] `make check` passes
+- [ ] New tests added for new functionality
+
+## Risk / Impact
+
+<!-- What could go wrong? Who/what is affected? -->
+
+-
+
+## Rollback Plan
+
+<!-- How to revert if something goes wrong? -->
+
+-
+
+## Review Checklist
+
+- [ ] Code follows project conventions
+- [ ] No prohibited patterns
+- [ ] ADR compliance verified
+- [ ] Issue DoD criteria met
 
 EOF
 )"
@@ -79,10 +112,10 @@ gh pr checks --watch
 If `--watch` is unavailable or times out, poll manually:
 
 ```bash
-gh pr checks          # repeat until no "pending" remains
+gh pr checks
 ```
 
-### 6. If CI fails: diagnose → fix → re-push
+### 6. If CI fails: diagnose, fix, re-push
 
 Repeat until CI passes or the issue requires user intervention.
 
@@ -92,7 +125,7 @@ Repeat until CI passes or the issue requires user intervention.
    gh run view <run_id> --job <job_id> --log-failed
    ```
 3. **Fix the root cause** in the local working tree.
-4. **Commit the fix** (follow `@.cursor/rules/commit-message-format.mdc`, use `fix(scope):` prefix).
+4. **Commit the fix** (follow `@.cursor/rules/commit-message-format.mdc`, use `fix(scope):` prefix, include `Refs: #<issue>`).
 5. **Push**:
    ```bash
    git push
@@ -101,35 +134,22 @@ Repeat until CI passes or the issue requires user intervention.
 
 If a failure is clearly outside your control (e.g. infrastructure flake, third-party service outage), report it to the user rather than retrying indefinitely.
 
-### 7. Merge the PR
+### 7. Report status
 
-After CI passes, merge using the appropriate strategy (see `@.cursor/commands/pr-merge.md` for strategy selection).
+After CI passes, report the PR status. Merge is handled by `pr-review` + `pr-merge`.
 
-AI-created PRs typically use **squash** to consolidate micro-commits.
-
-```bash
-gh pr merge <PR-number> --squash --delete-branch
-```
-
-Then update local main:
-
-```bash
-git checkout main
-git pull origin main
-```
-
-If the repository requires a review before merge (branch protection), report the CI-green status and stop. The user or another agent can then run `pr-review` to complete the process.
+If the repository requires a review before merge (branch protection), report the CI-green status and stop.
 
 ## Output (response format)
 
+- **Issue**: `#<number>` being closed by this PR
 - **Branch**: name
 - **Commits**: list of commits on the branch
 - **PR URL**: link to the created PR
 - **CI result**: all pass / failure details and actions taken
-- **Merge result**: merged (strategy) / blocked (reason)
 
 ## Related
 
 - `@.cursor/rules/commit-message-format.mdc` (commit + branch naming convention)
+- `@.cursor/commands/pr-review.md` (next step: review)
 - `@.cursor/commands/pr-merge.md` (merge strategy reference)
-- `@.cursor/commands/pr-review.md` (for PRs that require review before merge)

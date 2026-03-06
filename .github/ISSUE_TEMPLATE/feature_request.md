@@ -32,6 +32,30 @@ labels: enhancement
 
 <!-- Optional: how would you implement this? -->
 
-## Acceptance Criteria
+## Acceptance Criteria (Definition of Done)
+
+<!-- Concrete, verifiable criteria. The PR reviewer will check these. -->
 
 - [ ]
+- [ ]
+
+## Test Plan
+
+<!-- Key test scenarios: at minimum, one normal case and one error case. -->
+
+| Scenario | Input | Expected Result |
+|----------|-------|-----------------|
+| Normal case | | |
+| Error case | | |
+
+## Sub-issues
+
+<!-- For large tasks, list child Issues here after decomposition. -->
+
+<!-- - [ ] #child-issue-1 -->
+<!-- - [ ] #child-issue-2 -->
+
+## Priority / Affected Area
+
+- Priority: <!-- high / medium / low -->
+- Affected area: <!-- e.g., R/, docs/schemas/, tests/ -->

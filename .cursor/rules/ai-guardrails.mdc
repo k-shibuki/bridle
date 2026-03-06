@@ -1,5 +1,5 @@
 ---
-description: "AI-driven implementation: mandatory checks, schema-code consistency, and change safety verification"
+description: "AI-driven implementation: Issue-driven workflow, mandatory checks, schema-code consistency, and change safety verification"
 alwaysApply: true
 ---
 # AI-Driven Development Guardrails
@@ -9,7 +9,19 @@ alwaysApply: true
 Additional guardrails for AI agents implementing code in the bridle project.
 This rule supplements `v5_bridle.mdc` with safety measures specific to AI-driven development.
 
-For the full command workflow (main direct vs PR flow), see `@.cursor/README.md`.
+For the full command workflow (Issue-driven), see `@.cursor/README.md`.
+
+## Issue-Driven Workflow (Required)
+
+All implementation work must be traceable to a GitHub Issue:
+
+1. **Every task starts as an Issue**: Use `issue-create` to create a structured Issue with DoD and test plan.
+2. **1 Issue ≈ 1 PR**: Each Issue should be implementable in a single PR. Large tasks are split into child Issues.
+3. **Commits reference Issues**: Include `Refs: #<issue>` in every commit footer.
+4. **PRs close Issues**: Include `Closes #<issue>` in every PR body.
+5. **No main direct push** for normal changes: All code changes go through the PR flow with CI validation.
+
+**Exceptions**: `hotfix` (critical production fixes) and `docs-only` (documentation-only changes) may bypass the Issue-driven flow but must justify the exception in the commit body.
 
 ## Container Prerequisite
 
@@ -24,10 +36,11 @@ Before any R-related work:
 
 Before writing any code:
 
-1. **Run `make doctor`** to verify the development environment
-2. **Read relevant ADR(s)** from `docs/adr/` for the feature being implemented
-3. **Read relevant schema(s)** from `docs/schemas/` if the change touches data structures
-4. **Check existing patterns** in `R/` to maintain consistency (see Phase-Aware Guidelines below)
+1. **Confirm the target Issue**: `gh issue view <number>` to retrieve spec, DoD, and test plan
+2. **Run `make doctor`** to verify the development environment
+3. **Read relevant ADR(s)** from `docs/adr/` for the feature being implemented
+4. **Read relevant schema(s)** from `docs/schemas/` if the change touches data structures
+5. **Check existing patterns** in `R/` to maintain consistency (see Phase-Aware Guidelines below)
 
 ## Phase-Aware Guidelines
 
@@ -72,6 +85,7 @@ After every implementation:
 
 For every PR/commit, verify:
 
+- [ ] Issue reference present (`Refs: #N` in commits, `Closes #N` in PR)
 - [ ] ADR reference identified (or "no ADR applies" stated)
 - [ ] Schema-code consistency maintained
 - [ ] No prohibited patterns introduced (see `@.cursor/rules/quality-check.mdc`)
@@ -95,6 +109,7 @@ When multiple AI agents work concurrently:
 | `make doctor` | Environment health check | Before starting work |
 | `make ci-fast` | Schema validation + lint | After implementation |
 | `make ci` | Full local CI | Before commit |
+| `make ci-pr` | PR-ready gate (local) | Before `pr-create` |
 | `make test` | Run tests | After implementation |
 | `make check` | R CMD check | Before commit |
 | `make check-fast` | Quick R CMD check | During iteration |

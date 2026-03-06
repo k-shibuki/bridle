@@ -26,6 +26,7 @@ jobs:
     outputs:
       r_code: ${{ steps.filter.outputs.r_code }}
       schemas: ${{ steps.filter.outputs.schemas }}
+      ci_config: ${{ steps.filter.outputs.ci_config }}
     steps:
       - uses: dorny/paths-filter@v3
         id: filter
@@ -40,6 +41,44 @@ jobs:
             schemas:
               - 'docs/schemas/**'
               - 'tools/validate-schemas.R'
+            ci_config:
+              - 'Makefile'
+              - 'tools/**'
+              - '.github/workflows/**'
+              - 'containers/**'
+              - '.pre-commit-config.yaml'
+              - '.lintr'
+
+  ci-config:
+    needs: changes
+    if: needs.changes.outputs.ci_config == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate workflow YAML syntax
+        run: |
+          for f in .github/workflows/*.yaml .github/workflows/*.yml; do
+            [ -f "$f" ] || continue
+            echo "Checking $f..."
+            python3 -c "import yaml, sys; yaml.safe_load(open(sys.argv[1]))" "$f"
+          done
+
+      - name: Check Makefile syntax
+        run: make -n help >/dev/null 2>&1
+
+      - name: Shellcheck tools scripts
+        run: |
+          if command -v shellcheck >/dev/null 2>&1; then
+            for f in tools/*.sh; do
+              [ -f "$f" ] || continue
+              echo "Checking $f..."
+              shellcheck "$f" || true
+            done
+          else
+            echo "shellcheck not available, skipping"
+          fi
 
   validate-schemas:
     needs: changes
@@ -188,9 +227,33 @@ jobs:
           covr::codecov(quiet = FALSE)
         shell: Rscript {0}
 
+  # Required status check that always runs.
+  # Use this as the single required check in branch protection settings.
+  # It passes when all relevant jobs pass or are correctly skipped.
+  ci-pass:
+    if: always()
+    needs: [ci-config, validate-schemas, lint, test, check, coverage]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all jobs passed or were skipped
+        run: |
+          results=("${{ needs.ci-config.result }}" \
+                   "${{ needs.validate-schemas.result }}" \
+                   "${{ needs.lint.result }}" \
+                   "${{ needs.test.result }}" \
+                   "${{ needs.check.result }}" \
+                   "${{ needs.coverage.result }}")
+          for r in "${results[@]}"; do
+            if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
+              echo "Job failed or was cancelled: $r"
+              exit 1
+            fi
+          done
+          echo "All jobs passed or were correctly skipped."
+
   ci-summary:
     if: always()
-    needs: [validate-schemas, lint, test, check, coverage]
+    needs: [ci-config, validate-schemas, lint, test, check, coverage]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -201,6 +264,7 @@ jobs:
         with:
           script: |
             const jobs = {
+              'ci-config': '${{ needs.ci-config.result }}',
               'validate-schemas': '${{ needs.validate-schemas.result }}',
               'lint': '${{ needs.lint.result }}',
               'test': '${{ needs.test.result }}',
