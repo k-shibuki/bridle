@@ -146,6 +146,16 @@ test_that("my test", {
 - **Helper**: Mock pattern used in 2+ test files (e.g., `mock_resolve`, `mock_version`, Rd structure builders)
 - **Test file**: Mock pattern specific to one file (e.g., `mock_llm_yaml_response` in `test-draft_knowledge.R`)
 
+### Helper Colocation (lintr resolution)
+
+`object_usage_linter` resolves references within a single file only. When a helper function references another helper (e.g., `setup_all_mocks` calls `mock_resolve`), both must live in the same `helper-*.R` file.
+
+**Rule**: If a function's body references globals from `helper-mocks.R`, that function belongs in `helper-mocks.R` — not in the test file.
+
+**Why not `# nolint`?**: `# nolint` suppresses the diagnostic but does not prove the reference is valid. Co-location makes the dependency explicit and verifiable by the linter.
+
+This applies even to functions that call `local_mocked_bindings()`. The scope of `local_mocked_bindings` is determined by the runtime call stack (the calling frame), not by the source file where the function is defined. A mock-applying wrapper like `with_scan_mocks` works correctly from `helper-mocks.R` because its `code` argument is lazily evaluated within the wrapper's frame where mocks are active.
+
 ---
 
 ## S7 Constructor Testing

@@ -1,18 +1,8 @@
 # Tests for scan_package() Layer 3a (source code static analysis)
 # Follows test-strategy.mdc: Given/When/Then, failure >= success cases
 
-# mock_resolve, mock_version, mock_rd_for provided by helper-mocks.R
-
-# nolint start: object_usage_linter. Functions defined in helper-mocks.R.
-setup_all_mocks <- function(fn, rd_db = NULL) {
-  if (is.null(rd_db)) rd_db <- mock_rd_for("testfn")
-  list(
-    resolve = mock_resolve(fn),
-    version = mock_version,
-    rd = function(pkg) rd_db
-  )
-}
-# nolint end
+# setup_all_mocks, mock_resolve, mock_version, mock_rd_for
+# provided by helper-mocks.R
 
 # -- collect_calls() ----------------------------------------------------------
 

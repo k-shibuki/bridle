@@ -75,6 +75,35 @@ mock_rd_for <- function(func_name, arguments = list(), references = NULL) {
   rd_db
 }
 
+# -- Scanner composite helpers ------------------------------------------------
+# These depend on mock_resolve, mock_version, mock_rd_for above.
+# Co-located here so lintr's object_usage_linter resolves all references
+# within a single file (see r-testing-patterns.md "Helper Colocation").
+
+mock_empty_rd_db <- function(package) {
+  rd <- list(structure(
+    list(structure("testfn", Rd_tag = "TEXT")),
+    Rd_tag = "\\alias"
+  ))
+  list("testfn.Rd" = rd)
+}
+
+with_scan_mocks <- function(fn, code) {
+  testthat::local_mocked_bindings(resolve_function = mock_resolve(fn))
+  testthat::local_mocked_bindings(get_package_version = mock_version)
+  testthat::local_mocked_bindings(get_rd_db = mock_empty_rd_db)
+  code
+}
+
+setup_all_mocks <- function(fn, rd_db = NULL) {
+  if (is.null(rd_db)) rd_db <- mock_rd_for("testfn")
+  list(
+    resolve = mock_resolve(fn),
+    version = mock_version,
+    rd = function(pkg) rd_db
+  )
+}
+
 # -- HTTP mock factories (used by fetch_references) ----------------------------
 
 mock_crossref_response <- function(doi = "10.1234/test",

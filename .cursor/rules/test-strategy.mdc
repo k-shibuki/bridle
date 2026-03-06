@@ -127,6 +127,7 @@ testthat automatically sources all `helper-*.R` files before running tests. Use 
 - **`helper-mocks.R`**: Contains mock value factories (e.g., `mock_resolve()`, `mock_version()`, `make_mock_rd()`, `mock_crossref_response()`) and test data builders (e.g., `make_graph()`, `make_knowledge()`).
 - Helpers provide **values only**. `local_mocked_bindings()` must always be called inline in each `test_that` block due to scope constraints (see §7.1).
 - When adding new mock patterns, check `helper-mocks.R` first. Add to the helper if the pattern will be reused across multiple test files. Keep file-specific helpers in the test file itself.
+- **Colocation rule**: If a helper function references other helpers from `helper-mocks.R` (including mock-applying wrappers like `with_scan_mocks`), it MUST be defined in `helper-mocks.R` — not in the test file. This ensures `object_usage_linter` can resolve all references without `# nolint`. See `r-testing-patterns.md` "Helper Colocation" for rationale.
 
 ### Setup file (`tests/testthat/setup.R`)
 
