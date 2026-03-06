@@ -3,6 +3,7 @@
 
 # mock_resolve, mock_version, mock_rd_for provided by helper-mocks.R
 
+# nolint start: object_usage_linter. Functions defined in helper-mocks.R.
 setup_all_mocks <- function(fn, rd_db = NULL) {
   if (is.null(rd_db)) rd_db <- mock_rd_for("testfn")
   list(
@@ -11,6 +12,7 @@ setup_all_mocks <- function(fn, rd_db = NULL) {
     rd = function(pkg) rd_db
   )
 }
+# nolint end
 
 # -- collect_calls() ----------------------------------------------------------
 
