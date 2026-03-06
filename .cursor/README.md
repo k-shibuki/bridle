@@ -1,6 +1,16 @@
 # Cursor AI Configuration
 
-This directory contains rules (policies) and commands (procedures) for AI-assisted development of bridle.
+This directory contains the AI control system for bridle development, organized into three layers.
+
+## Three-Layer Control System
+
+| Layer | Location | Content | Enforcement |
+|---|---|---|---|
+| **Rules** | `.cursor/rules/*.mdc` | MUST / MUST NOT policies | Hard stop on violation |
+| **Commands** | `.cursor/commands/*.md` | Step-by-step procedures | No step skipping |
+| **Knowledge** | `.cursor/knowledge/*.md` | Patterns, playbooks, reference | Advisory (referenced by rules/commands) |
+
+**Hierarchy**: Rules constrain commands; commands reference knowledge. No reverse dependencies. Each piece of information exists in exactly one place (Single Source of Truth).
 
 ## Project Knowledge Map
 
@@ -11,9 +21,14 @@ Start here to find the right information quickly.
 | What bridle is, architecture, tech stack | [`README.md`](../README.md) (root) |
 | ADRs (design decisions) | [`docs/adr/`](../docs/adr/) — referenced from [`docs/README.md`](../docs/README.md) |
 | YAML schemas (data contracts) | [`docs/schemas/`](../docs/schemas/) — referenced from [`docs/README.md`](../docs/README.md) |
-| S7 class implementations | `R/` (empty until first implementation) |
+| S7 class implementations | `R/` |
 | Subagent delegation policy | `ai-guardrails.mdc` § Subagent Delegation |
-| Known lint/format patterns (S7, styler/lintr) | `quality-check.mdc` § Known Patterns |
+| Subagent prompt templates | `knowledge/subagent-prompts.md` |
+| Lint/format patterns (S7, styler/lintr) | `knowledge/r-lint-patterns.md` |
+| R testing gotchas (mocks, NULL trap) | `knowledge/r-testing-patterns.md` |
+| R debugging tools and templates | `knowledge/r-debugging-patterns.md` |
+| CI job dependencies and polling strategy | `knowledge/ci-pipeline.md` |
+| Git recovery playbooks | `knowledge/git-recovery.md` |
 | Development workflow + commands | This file (below) |
 | Command details (procedures) | `.cursor/commands/*.md` |
 | Policy rules | `.cursor/rules/*.mdc` |
@@ -114,17 +129,17 @@ Use when: change is documentation only (README, ADR, comments, Cursor rules/comm
 
 ## Rules
 
-Rules define policies; commands define procedures.
+Rules define enforceable MUST/MUST NOT policies. Commands define procedures. Knowledge provides advisory patterns.
 
-| Rule | Scope | Commands |
-|------|-------|----------|
-| `v5_bridle.mdc` (always) | Core coding assistance | All |
-| `ai-guardrails.mdc` (always) | AI safety checks, Issue-driven workflow, schema-code consistency, subagent delegation | `doctor`, `issue-create`, `implement`, `quality-check`, `pr-create`, `pr-merge`, `next`, `docs-discover` |
-| `test-strategy.mdc` | Test design and review | `test-create`, `test-review` |
-| `integration-design.mdc` | Cross-module design | `integration-design` |
-| `debug.mdc` | Debugging methodology | `debug` |
-| `quality-check.mdc` | Lint/format/check policy | `quality-check`, `validate-schemas` |
-| `commit-message-format.mdc` | Commit message format, branch naming | `commit`, `pr-create` |
+| Rule | Scope | Related Knowledge |
+|------|-------|-------------------|
+| `v5_bridle.mdc` (always) | Core coding assistance | — |
+| `ai-guardrails.mdc` (always) | AI safety, Issue workflow, subagent delegation | `subagent-prompts.md`, `git-recovery.md`, `ci-pipeline.md` |
+| `test-strategy.mdc` | Test design and review | `r-testing-patterns.md` |
+| `integration-design.mdc` | Cross-module design | — |
+| `debug.mdc` | Debugging methodology | `r-debugging-patterns.md` |
+| `quality-check.mdc` | Lint/format/check policy | `r-lint-patterns.md` |
+| `commit-message-format.mdc` | Commit message format, branch naming | — |
 
 ## Issue-Driven Workflow Principles
 

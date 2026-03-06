@@ -19,15 +19,7 @@ General-purpose debugging command. Policy: `@.cursor/rules/debug.mdc`
 
 ## Task Prefix Convention
 
-**Multiple AI agents may debug concurrently.** Use consistent prefixes:
-
-| Artifact | Pattern | Example |
-|----------|---------|---------|
-| Docs | `debug/docs/<TASK>_report.md` | `debug/docs/GRAPH_report.md` |
-| Logs | `debug/scripts/<TASK>_debug.log` | `debug/scripts/NODE_debug.log` |
-| Hypothesis IDs | `<TASK>-H1`, `<TASK>-H2`, ... | `GRAPH-H1`, `EVAL-H2` |
-
-Common prefixes: `GRAPH`, `NODE`, `RULE`, `EVAL`, `LLM`, `MCP`, `SCHEMA`
+See `@.cursor/rules/debug.mdc` § 0 for the authoritative Task Prefix Convention.
 
 ---
 
@@ -59,79 +51,9 @@ make ci      # Full gate: validate-schemas + lint + test + check
 
 ---
 
-## R Debugging Tools
+## R Debugging Tools and Patterns
 
-### reprex
-
-```r
-reprex::reprex({
-  # Minimal code that reproduces the bug
-  x <- something_that_fails()
-})
-```
-
-### browser()
-
-```r
-# Add to code where you want to pause
-browser()
-# Then: n (next), c (continue), Q (quit)
-```
-
-### rlang error inspection
-
-```r
-options(error = rlang::entrace)
-# Run failing code, then:
-rlang::last_error()
-rlang::last_trace()
-```
-
----
-
-## Phase-specific Debugging (bridle layers)
-
-| Layer | Goal | Check |
-|-------|------|-------|
-| Layer 1: Framework | S7 classes, decision_graph/node/rule | `make test`, `make check` |
-| Layer 2: Schema | Parameter extraction, formals() | Unit tests for schema functions |
-| Layer 3: Domain graph | Plugin integration | Integration tests |
-
----
-
-## Instrumentation
-
-### Philosophy
-
-**No limit on log count.** Add enough to track propagation and debug in one run.
-
-### Log location
-
-`debug/scripts/<TASK>_debug.log` — **NOT** `.cursor/debug.log`
-
-### Template (R)
-
-```r
-# #region agent log
-cli::cli_inform("H1: {.field key} = {.val {value}}")
-# #endregion
-```
-
-### Cleanup
-
-```bash
-grep -rn "# #region agent log" R/
-```
-
----
-
-## References
-
-| Path | Purpose |
-|------|---------|
-| `docs/adr/` | Architecture decisions |
-| `debug/docs/` | Past debug reports |
-| `R/` | Package source code |
+For R-specific debugging tools (reprex, browser, rlang), instrumentation templates, placement strategy, and phase-specific debugging guidance, see `@.cursor/knowledge/r-debugging-patterns.md`.
 
 ---
 

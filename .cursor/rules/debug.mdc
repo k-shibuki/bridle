@@ -15,15 +15,6 @@ Achieve reproducible and efficient problem resolution. bridle is an R package; d
 
 **Related**: For **prevention** of integration issues during new feature development, see `@.cursor/rules/integration-design.mdc`.
 
-### Debug Method Priority
-
-1. **reprex** — Create minimal reproducible example with `reprex::reprex()`; isolate the issue
-2. **browser() / debug()** — Interactive inspection when the failure point is known
-3. **rlang::last_error() / last_trace()** — After an error, inspect with `options(error = rlang::entrace)`
-4. **testthat test** — Reproduce failure in `tests/testthat/test-*.R` for deterministic debugging
-
----
-
 ## 0. Task Prefix Convention (Multi-Agent Support)
 
 **Multiple AI agents may debug concurrently.** Use consistent prefixes across all artifacts to avoid conflicts:
@@ -33,10 +24,6 @@ Achieve reproducible and efficient problem resolution. bridle is an R package; d
 | Docs | `debug/docs/<TASK>_report.md` | `debug/docs/GRAPH_report.md` |
 | Logs | `debug/scripts/<TASK>_debug.log` | `debug/scripts/NODE_debug.log` |
 | Hypothesis IDs | `<TASK>-H1`, `<TASK>-H2`, ... | `GRAPH-H1`, `EVAL-H2` |
-
-### Common Task Prefixes
-
-`GRAPH`, `NODE`, `RULE`, `EVAL`, `LLM`, `MCP`, `SCHEMA`
 
 ---
 
@@ -106,34 +93,11 @@ make check   # Full R CMD check
 echo "" > debug/scripts/<TASK>_debug.log   # Empty overwrite (no user prompt)
 ```
 
-### 2.4 Instrumentation Template (R)
+### 2.4 Instrumentation Templates and Placement
 
-```r
-# #region agent log
-cli::cli_inform("H1: {.field location} {.val {value}}", location = "R/foo.R:bar()")
-# or
-message(sprintf("[%s] H1: %s = %s", Sys.time(), "location", value))
-# #endregion
-```
+For R instrumentation templates, placement strategy (propagation tracking), and R-specific debugging tools, see `@.cursor/knowledge/r-debugging-patterns.md`.
 
-### 2.5 Placement Strategy (Propagation Tracking)
-
-For debugging value propagation issues:
-
-```
-[Entry point] → [Transform 1] → [Transform 2] → [Exit point]
-     ↓               ↓               ↓               ↓
-   H1-L1           H1-L2           H1-L3           H1-L4
-```
-
-| Location | What to log |
-|----------|-------------|
-| Entry point | Raw input values |
-| Each transform | Before/after values, which branch taken |
-| Exit point | Final output values |
-| Error handlers | Exception type, message, context |
-
-### 2.6 Hypothesis ID Convention
+### 2.5 Hypothesis ID Convention
 
 - `<TASK>-H1`, `<TASK>-H2`, ... : Main hypotheses
 - `<TASK>-H1a`, `<TASK>-H1b`, ... : Sub-hypotheses
@@ -141,26 +105,7 @@ For debugging value propagation issues:
 
 ---
 
-## 3. R-Specific Debugging Notes
-
-### 3.1 NSE (Non-Standard Evaluation)
-
-- When debugging `dplyr`-like or `rlang` idioms, ensure `enquo()` / `{{ }}` are evaluated correctly
-- Use `rlang::last_error()` and `rlang::last_trace()` after `options(error = rlang::entrace)`
-
-### 3.2 S7 Classes
-
-- `@` vs `prop()`: R < 4.3.0 may need `prop()` for property access
-- Validators run at construction; use `browser()` inside validator to inspect failing values
-
-### 3.3 reprex
-
-- `reprex::reprex()` creates minimal reproducible examples
-- Use when the bug is reproducible but the cause is unclear; share output for collaboration
-
----
-
-## 4. Checklists
+## 3. Checklists
 
 ### Before Starting Debug
 
