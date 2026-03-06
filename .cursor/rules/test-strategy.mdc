@@ -104,79 +104,17 @@ Write comments directly above test code or within steps, keeping scenarios trace
 
 ## 7. Mock/Patch Conventions (R / testthat)
 
-1. **Apply mocks at the use site** with `testthat::local_mocked_bindings()`.
+1. **MUST apply mocks at the use site** with `testthat::local_mocked_bindings()`.
    - Mock the function as it is used in the code under test (the binding in the package namespace).
-   - Example: If `R/foo.R` calls `ellmer::chat()`, create a wrapper in your package and mock that wrapper, or mock `ellmer::chat` via `local_mocked_bindings(chat = mock_chat)` in the package namespace.
-2. **When tests fail, fix the setup. Don't weaken the test.**
+2. **MUST NOT weaken tests to make them pass.**
    - Removing/relaxing assertions to make tests pass conceals bugs and violates wiring/effect principles.
    - Investigate root cause (incorrect mock target, missing setup, etc.) before fixing.
-3. Use `withr::local_envvar()` and `withr::local_options()` for temporary environment/options changes; they auto-restore after the test.
-4. For external package functions (ellmer, ragnar): create thin wrappers in your package and mock those wrappers, since namespace locking can prevent mocking base/external functions directly.
+3. **MUST use `withr::local_envvar()` and `withr::local_options()`** for temporary environment/options changes; they auto-restore after the test.
+4. **MUST create thin wrappers** for external package functions (ellmer, ragnar) and mock those wrappers, since namespace locking can prevent mocking base/external functions directly.
 
----
+## R-Specific Patterns
 
-## 8. R-Specific Testing Gotchas
-
-### 8.1 Missing Formals and the `NULL` Assignment Trap
-
-R function formals can be "missing" (no default value). `formals()` returns these as empty symbols, which cause errors when passed to other functions via `lapply` or similar.
-
-**Problem**: `list[[name]] <- NULL` removes the element from the list instead of setting it to `NULL`.
-
-```r
-# Dangerous: silently removes the element
-result[["param"]] <- NULL
-length(result)  # one fewer element
-
-# Safe: preserves the element with NULL value
-result["param"] <- list(NULL)
-```
-
-**Recommended pattern**: When iterating over `formals()`, use a sentinel object to distinguish "no default" from "default is NULL":
-
-```r
-.missing_sentinel <- structure(list(), class = "my_pkg_missing_formal")
-
-safe_formals <- function(fmls) {
-  result <- vector("list", length(fmls))
-  names(result) <- names(fmls)
-  for (nm in names(fmls)) {
-    val <- fmls[[nm]]
-    if (is.symbol(val) && identical(deparse(val), "")) {
-      result[nm] <- list(.missing_sentinel)
-    } else {
-      result[nm] <- list(val)
-    }
-  }
-  result
-}
-```
-
-### 8.2 Mocking System and External Functions
-
-Functions like `utils::packageVersion()`, `base::system()`, or external package functions cannot be directly mocked due to namespace locking.
-
-**Pattern**: Create a thin wrapper in your package and mock the wrapper.
-
-```r
-# In R/helpers.R
-get_package_version <- function(pkg) {
-  utils::packageVersion(pkg)
-}
-
-# In tests
-local_mocked_bindings(
-  get_package_version = function(pkg) package_version("1.0.0")
-)
-```
-
-### 8.3 S7 Constructor Testing
-
-When testing S7 classes:
-
-- **Validator error messages**: Use `expect_error(..., "expected substring")` to verify the validator produces the right message. S7 validators typically use `sprintf()` or `paste()` for messages; match a stable substring.
-- **Property type constraints**: Test that assigning a wrong type produces a clear error. S7 enforces types at construction time, so `expect_error(MyClass(field = wrong_type))` is sufficient.
-- **Default values**: Explicitly test that omitted properties take the documented default. Do not assume defaults are correct without verification.
+For R-specific testing gotchas (mock scoping constraints, NULL assignment trap, primitive function `body()`, layered mock strategy, S7 constructor testing), see `@.cursor/knowledge/r-testing-patterns.md`.
 
 ---
 

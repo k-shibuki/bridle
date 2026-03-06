@@ -53,21 +53,9 @@ Following Conventional Commits, `<Prefix>(scope):` format is also allowed as nee
 
 ### fix vs hotfix
 
-`fix` and `hotfix` differ in **urgency**, not in the kind of change.
+`fix` and `hotfix` differ in **urgency**, not in the kind of change. For the full decision criteria and hotfix threshold, see `@.cursor/rules/ai-guardrails.mdc` § fix vs hotfix Decision Criteria.
 
-| Prefix | Urgency | Issue required | Delivery method | Threshold |
-|--------|---------|----------------|-----------------|-----------|
-| `fix` | Normal | Yes | Standard PR | Can wait for next development cycle |
-| `hotfix` | Critical | No | Exception PR | main is broken, users blocked, or CI non-functional |
-
-Use `hotfix` only when ALL of the following are true:
-1. The defect is on `main` and actively blocks users or CI
-2. The fix cannot wait for normal Issue triage
-3. The scope is small and well-understood
-
-If any condition is not met, use `fix`. When in doubt, use `fix`.
-
-Both `fix` and `hotfix` **always go through a PR** — direct push to `main` is not permitted for code changes. See `@.cursor/rules/ai-guardrails.mdc` for the full policy.
+Both `fix` and `hotfix` **always go through a PR** — direct push to `main` is not permitted for code changes.
 
 ## Summary (First Line)
 

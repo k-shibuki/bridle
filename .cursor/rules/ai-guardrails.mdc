@@ -89,21 +89,7 @@ Before writing any code:
 2. **Run `make doctor`** to verify the development environment
 3. **Read relevant ADR(s)** from `docs/adr/` for the feature being implemented
 4. **Read relevant schema(s)** from `docs/schemas/` if the change touches data structures
-5. **Check existing patterns** in `R/` to maintain consistency (see Phase-Aware Guidelines below)
-
-## Phase-Aware Guidelines
-
-### First implementation (R/ is empty or has very few files)
-
-- YAML schemas (`docs/schemas/`) and ADRs (`docs/adr/`) are the primary references.
-- Create the first S7 class following ADR-0001 strictly.
-- Establish naming/style conventions that subsequent code will follow.
-- Use `scaffold-class` command to generate boilerplate from schemas.
-
-### After initial classes exist
-
-- Check existing patterns in `R/` for consistency before adding new code.
-- Follow established naming conventions, error handling patterns, and documentation style.
+5. **Check existing patterns** in `R/` to maintain consistency
 
 ## Type Strictness (S7)
 
@@ -168,24 +154,11 @@ When a blocking operation occurs (CI polling, sequential PR merges, long builds)
 - **Model**: `model: "fast"` for routine operations (CI poll, merge, rebase). Omit `model` (inherit parent) for tasks requiring judgment. Never hardcode specific model names — they are environment-dependent.
 - **Background**: `run_in_background: true` to avoid blocking the main agent
 
-#### Prompt structure for delegated tasks
+#### Prompt structure and completion detection
 
-Delegated subagent prompts must include:
+For prompt templates (CI-wait, merge chain, CI-only) and completion detection procedures, see `@.cursor/knowledge/subagent-prompts.md`.
 
-1. **Goal**: One-sentence summary of what the subagent should accomplish
-2. **Steps**: Numbered steps with exact shell commands
-3. **Error handling**: What to do on failure (e.g., merge conflict resolution, CI failure)
-4. **Return format**: What the subagent should report on completion (e.g., merged PR numbers, commit hashes, errors encountered)
-
-#### Completion detection
-
-The main agent detects subagent completion by reading the subagent transcript `.jsonl` file during state re-assessment (e.g., `next` Step 1):
-
-1. Read the last few lines of the transcript file
-2. Parse the last `assistant` message for a result summary
-3. If the subagent is still running (no final summary), note "background task in progress" and continue with independent work
-4. If the subagent completed successfully, incorporate the results and proceed
-5. If the subagent encountered an error, report to the user
+Delegated subagent prompts MUST include: Goal, Steps, Prohibitions (especially git operation bans), Error handling, and Return format.
 
 #### Git conflict prevention
 
@@ -194,6 +167,8 @@ When a subagent is handling merge operations:
 - The subagent owns ALL git operations on the merge-target branches
 - The main agent MUST work on a **different branch** (e.g., a new feature branch for the independent Issue)
 - Do not run `git checkout main` or `git pull` on the main agent while the subagent is merging
+
+For recovery procedures when git state is corrupted (branch interference, lost commits, PR consolidation), see `@.cursor/knowledge/git-recovery.md`.
 
 #### Fallback (backward compatibility)
 
@@ -208,24 +183,6 @@ When multiple AI agents (or a main agent + subagents) work concurrently:
 - Keep changes scoped to minimize merge conflicts
 - Do not modify the same file from multiple agents simultaneously
 
-## Makefile Quick Reference
+## Makefile Reference
 
-| Target | Purpose | When to use |
-|---|---|---|
-| `make doctor` | Environment health check | Before starting work |
-| `make status` | Git + container status | Quick state check |
-| `make ci-fast` | Schema validation + lint | After implementation |
-| `make ci` | Full local CI | Before commit |
-| `make ci-pr` | PR-ready gate (local) | Before `pr-create` |
-| `make pr-ready` | Full pre-PR gate (format-check + CI + docs) | Final gate before PR |
-| `make test` | Run tests | After implementation |
-| `make check` | R CMD check | Before commit |
-| `make check-fast` | Quick R CMD check | During iteration |
-| `make validate-schemas` | YAML schema check | After schema changes |
-| `make document` | Regenerate NAMESPACE/man | After roxygen2 changes |
-| `make format` | Auto-format with styler | Before lint |
-| `make format-check` | Format dry-run (no file changes) | CI / pre-PR validation |
-| `make changed-lint` | Lint changed files only | During iteration |
-| `make changed-test` | Test changed areas only | During iteration |
-| `make scaffold-test` | Create test skeleton | When adding tests |
-| `make new-branch` | Create Issue-driven branch | Starting new feature work |
+Run `make help` for all available targets and their descriptions.
