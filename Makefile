@@ -26,9 +26,10 @@ endif
 .PHONY: help \
 	container-build container-up container-down container-shell rstudio \
 	renv-init renv-restore renv-snapshot \
-	check check-fast test lint format document coverage site install clean \
-	ci ci-fast ci-pr doctor doctor-json validate-schemas \
-	changed-lint changed-test test-json lint-json scaffold-test
+	check check-fast test lint format format-check document coverage site install clean \
+	ci ci-fast ci-pr pr-ready doctor doctor-json validate-schemas \
+	changed-lint changed-test test-json lint-json scaffold-test \
+	status new-branch
 
 # === Help ===
 
@@ -101,6 +102,9 @@ lint: _require_container ## Run lintr
 format: _require_container ## Auto-format with styler
 	$(RSCRIPT) -e "styler::style_pkg()"
 
+format-check: _require_container ## Check formatting without modifying files (dry-run)
+	$(RSCRIPT) -e "out <- styler::style_pkg(dry = 'on'); if (any(out[['changed']])) stop('Formatting issues found')"
+
 document: _require_container ## Generate documentation with roxygen2
 	$(RSCRIPT) -e "devtools::document()"
 
@@ -128,6 +132,8 @@ ci-fast: validate-schemas lint ## Fast gate: validate-schemas + lint
 
 ci-pr: ci document ## PR-ready gate: full CI + document (run before pr-create)
 
+pr-ready: validate-schemas format-check lint test check document ## Full pre-PR gate (format-check + CI + docs)
+
 doctor: ## Check development environment
 	@bash tools/doctor.sh
 
@@ -136,6 +142,17 @@ doctor-json: ## Check development environment (JSON output)
 
 validate-schemas: _require_container ## Validate YAML schemas
 	$(RSCRIPT) tools/validate-schemas.R
+
+# === Project Status / Branch Management ===
+
+status: ## Show git + container status
+	@echo "=== Git ===" && git status --short --branch
+	@echo "=== Container ===" && $(RUNTIME) inspect $(CONTAINER_NAME) --format '{{.State.Status}}' 2>/dev/null || echo "not found"
+
+new-branch: ## Create feature branch (usage: make new-branch PREFIX=feat ISSUE=42 DESC=short-description)
+	@if [ -z "$(ISSUE)" ] || [ -z "$(DESC)" ]; then \
+		echo "Usage: make new-branch PREFIX=feat ISSUE=42 DESC=short-description"; exit 1; fi
+	git checkout -b $(or $(PREFIX),feat)/$(ISSUE)-$(DESC)
 
 # === Differential / Machine-Readable Targets ===
 

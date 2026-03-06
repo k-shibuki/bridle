@@ -98,7 +98,13 @@ If the change touches interfaces/contracts across modules (APIs, schemas, reques
 
 ### Step 5: Verify environment
 
-Verify the development container is running (`make doctor`). If not, start it with `make container-up`.
+Quick check: `make status` (shows git branch + container state in one command).
+Full check: `make doctor`. If the container is not running, start it with `make container-up`.
+
+To create a feature branch for the Issue:
+```bash
+make new-branch PREFIX=feat ISSUE=<number> DESC=<short-description>
+```
 
 ### Step 6: Implement
 

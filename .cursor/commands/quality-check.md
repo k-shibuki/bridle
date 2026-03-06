@@ -26,10 +26,14 @@ make ci-fast
 # Full CI: validate-schemas + lint + test + check
 make ci
 
+# Full pre-PR gate: validate-schemas + format-check + lint + test + check + document
+make pr-ready
+
 # Individual targets
 make validate-schemas   # Validate YAML schemas
 make lint               # Lint check (lintr)
 make format             # Format (auto-fix with styler)
+make format-check       # Format dry-run (exits non-zero if unformatted)
 make check              # R CMD check (primary quality gate)
 
 # Differential (changed files only, faster iteration)
@@ -47,7 +51,7 @@ The container must be running (`make container-up`). See `make doctor` to verify
 
 ## Definition of Done
 
-- `make check` passes with **0 errors, 0 warnings, 0 notes**
+- `make pr-ready` passes (or at minimum `make check` passes with **0 errors, 0 warnings, 0 notes**)
 
 ## Related rules
 
