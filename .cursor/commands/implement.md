@@ -31,9 +31,10 @@ Implement the selected task (code changes only; no tests in this step).
    - Related modules and dependencies
    - Coding conventions used in the project
 3. If the change touches interfaces/contracts across modules (APIs, schemas, request/response shapes, new parameters that must propagate), consider switching to `NEXT_COMMAND: /integration-design` to design and verify the flow.
-3. Identify the minimal set of files to change.
-4. Implement the change.
-5. Do a quick sanity check (basic execution path review; avoid long-running processes unless requested).
+3. Verify the development container is running (`make doctor`). If not, start it with `make container-up`.
+4. Identify the minimal set of files to change.
+5. Implement the change.
+6. Do a quick sanity check (basic execution path review; avoid long-running processes unless requested).
 
 ## Output (response format)
 

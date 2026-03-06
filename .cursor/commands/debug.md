@@ -46,11 +46,15 @@ Common prefixes: `GRAPH`, `NODE`, `RULE`, `EVAL`, `LLM`, `MCP`, `SCHEMA`
 
 ## Make Commands
 
+All R commands run inside the development container. Ensure it is running (`make container-up`).
+
 ```bash
 make help    # Show available commands
 make test    # Run tests
 make check   # R CMD check (full validation)
 make lint    # Lint check
+make ci-fast # Quick gate: lint + test
+make ci      # Full gate: lint + test + check
 ```
 
 ---

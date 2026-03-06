@@ -1,0 +1,79 @@
+---
+description: "AI-driven implementation: mandatory checks, schema-code consistency, and change safety verification"
+alwaysApply: true
+---
+# AI-Driven Development Guardrails
+
+## Purpose
+
+Additional guardrails for AI agents implementing code in the bridle project.
+This rule supplements `v5_bridle.mdc` with safety measures specific to AI-driven development.
+
+## Container Prerequisite
+
+All R commands run inside the Podman container `bridle-dev`.
+Before any R-related work:
+
+1. Verify the container is running: `make doctor`
+2. If not running: `make container-up`
+3. If first time: `make container-build && make container-up && make renv-init`
+
+## Pre-Implementation Checks (Required)
+
+Before writing any code:
+
+1. **Run `make doctor`** to verify the development environment
+2. **Read relevant ADR(s)** from `docs/adr/` for the feature being implemented
+3. **Read relevant schema(s)** from `docs/schemas/` if the change touches data structures
+4. **Check existing patterns** in `R/` to maintain consistency
+
+## Schema-Code Consistency (Critical)
+
+YAML schemas (`docs/schemas/`) and S7 classes (`R/`) must remain consistent.
+Per ADR-0001, S7 classes are the source of truth once implemented.
+
+- When creating/modifying an S7 class, verify it matches the corresponding YAML schema
+- When modifying a schema, update the corresponding S7 class (or create a follow-up task)
+- Run `make validate-schemas` after any schema-related change
+
+## Mandatory Verification After Changes
+
+After every implementation:
+
+1. `make ci-fast` (minimum: schema validation + lint)
+2. `make test` (if tests exist for the changed area)
+3. `make check` (before commit)
+4. `make document` (if roxygen2 tags were added or changed)
+
+## Change Safety Checklist
+
+For every PR/commit, verify:
+
+- [ ] ADR reference identified (or "no ADR applies" stated)
+- [ ] Schema-code consistency maintained
+- [ ] No prohibited patterns introduced (see `@.cursor/rules/quality-check.mdc`)
+- [ ] Tests added/updated for new functionality
+- [ ] `make ci` passes locally
+
+## Multi-Agent Coordination
+
+When multiple AI agents work concurrently:
+
+- Use task prefixes (see `@.cursor/rules/debug.mdc` Section 0) for all artifacts
+- Check `git status` before starting work to detect concurrent changes
+- Keep changes scoped to minimize merge conflicts
+- Do not modify the same file from multiple agents simultaneously
+
+## Makefile Quick Reference
+
+| Target | Purpose | When to use |
+|---|---|---|
+| `make doctor` | Environment health check | Before starting work |
+| `make ci-fast` | Schema validation + lint | After implementation |
+| `make ci` | Full local CI | Before commit |
+| `make test` | Run tests | After implementation |
+| `make check` | R CMD check | Before commit |
+| `make validate-schemas` | YAML schema check | After schema changes |
+| `make document` | Regenerate NAMESPACE/man | After roxygen2 changes |
+| `make changed-lint` | Lint changed files only | During iteration |
+| `make changed-test` | Test changed areas only | During iteration |

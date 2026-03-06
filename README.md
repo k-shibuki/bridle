@@ -363,6 +363,21 @@ A custom REPL loop based on `readline()`. The harness holds the initiative for f
 **Interface B — MCP Server**
 Exposes bridle as an MCP server via mcptools, allowing LLM clients (Cursor, Claude Code, etc.) to call it as a tool. The LLM uses harness functions as tools. Added after Interface A stabilizes.
 
+## Development Environment
+
+Development uses a containerized R environment. No local R installation is required.
+
+```bash
+make container-build   # Build container (rocker/tidyverse + renv)
+make container-up      # Start container
+make renv-init         # Initialize renv (first time only)
+make doctor            # Verify environment
+```
+
+R package dependencies are managed by [renv](https://rstudio.github.io/renv/) (`renv.lock` is the single source of truth). RStudio Server is available at `http://localhost:8787` when the container is running.
+
+Run `make help` for all available targets.
+
 ## Development Status
 
 > **Currently Phase 0: Design and YAML schema formalization**

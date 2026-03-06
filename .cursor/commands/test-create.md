@@ -47,7 +47,9 @@ Use `make` commands (run `make help` for all options).
 # Run all tests
 make test
 
-# Run specific test files or filter
+# Run specific test files or filter (via container shell)
+make container-shell
+# then inside the container:
 Rscript -e "devtools::test(filter = 'decision_graph')"
 
 # Run with coverage

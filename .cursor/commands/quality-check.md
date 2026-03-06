@@ -20,18 +20,24 @@ Follow the quality policy here:
 Use `make` commands (run `make help` for all options):
 
 ```bash
-# Lint check (lintr)
-make lint
+# Fast gate: schema validation + lint
+make ci-fast
 
-# Format (auto-fix with styler)
-make style
+# Full CI: validate-schemas + lint + test + check
+make ci
 
-# R CMD check (primary quality gate)
-make check
+# Individual targets
+make validate-schemas   # Validate YAML schemas
+make lint               # Lint check (lintr)
+make style              # Format (auto-fix with styler)
+make check              # R CMD check (primary quality gate)
 
-# Run all: lint + style + check
-make lint && make style && make check
+# Differential (changed files only, faster iteration)
+make changed-lint       # Lint only changed R files
 ```
+
+Note: All `make` targets that invoke R run inside the Podman container.
+The container must be running (`make container-up`). See `make doctor` to verify.
 
 ## Output (response format)
 

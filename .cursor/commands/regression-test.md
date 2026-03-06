@@ -20,6 +20,7 @@ Run tests in two stages to detect regressions efficiently:
 
 ## How to run (recommended)
 
+All R commands execute inside the development container. Ensure it is running (`make container-up`).
 Use `make` commands (run `make help` for all options).
 
 ### Stage 1: session-scoped tests (recommended)
