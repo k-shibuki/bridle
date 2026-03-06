@@ -197,7 +197,7 @@ jobs:
     steps:
       - name: Post failure summary
         if: contains(needs.*.result, 'failure')
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const jobs = {
