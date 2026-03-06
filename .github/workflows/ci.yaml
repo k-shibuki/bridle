@@ -102,6 +102,32 @@ jobs:
       - name: Validate schemas
         run: Rscript tools/validate-schemas.R
 
+  format-check:
+    needs: changes
+    if: needs.changes.outputs.r_code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::styler
+
+      - name: Check formatting
+        run: |
+          out <- styler::style_pkg(dry = "on")
+          if (any(out[["changed"]])) {
+            cat("Files with formatting issues:\n")
+            print(out[out[["changed"]], "file"])
+            stop("Run 'make format' to fix formatting issues.")
+          }
+        shell: Rscript {0}
+
   lint:
     needs: changes
     if: needs.changes.outputs.r_code == 'true'
@@ -162,9 +188,16 @@ jobs:
 
       - name: Run tests
         run: |
-          results <- as.data.frame(devtools::test())
-          if (any(results$warning > 0)) {
-            stop("Tests produced ", sum(results$warning), " warning(s)")
+          results <- devtools::test()
+          df <- as.data.frame(results)
+          if (any(df$failed > 0)) {
+            stop("Tests had ", sum(df$failed), " failure(s)")
+          }
+          if (any(df$error > 0)) {
+            stop("Tests had ", sum(df$error), " error(s)")
+          }
+          if (any(df$warning > 0)) {
+            stop("Tests produced ", sum(df$warning), " warning(s)")
           }
         shell: Rscript {0}
 
@@ -232,13 +265,14 @@ jobs:
   # It passes when all relevant jobs pass or are correctly skipped.
   ci-pass:
     if: always()
-    needs: [ci-config, validate-schemas, lint, test, check, coverage]
+    needs: [ci-config, validate-schemas, format-check, lint, test, check, coverage]
     runs-on: ubuntu-latest
     steps:
       - name: Verify all jobs passed or were skipped
         run: |
           results=("${{ needs.ci-config.result }}" \
                    "${{ needs.validate-schemas.result }}" \
+                   "${{ needs.format-check.result }}" \
                    "${{ needs.lint.result }}" \
                    "${{ needs.test.result }}" \
                    "${{ needs.check.result }}" \
@@ -253,7 +287,7 @@ jobs:
 
   ci-summary:
     if: always()
-    needs: [ci-config, validate-schemas, lint, test, check, coverage]
+    needs: [ci-config, validate-schemas, format-check, lint, test, check, coverage]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -266,6 +300,7 @@ jobs:
             const jobs = {
               'ci-config': '${{ needs.ci-config.result }}',
               'validate-schemas': '${{ needs.validate-schemas.result }}',
+              'format-check': '${{ needs.format-check.result }}',
               'lint': '${{ needs.lint.result }}',
               'test': '${{ needs.test.result }}',
               'check': '${{ needs.check.result }}',
