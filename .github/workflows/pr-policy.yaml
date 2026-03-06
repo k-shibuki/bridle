@@ -37,9 +37,9 @@ jobs:
 
             if (!hasIssueLink) {
               if (isException) {
-                // Exception: check for justification
-                const exceptionSection = body.match(/exception justification[^]*?(?=\n##|\n$|$)/i);
-                const justification = exceptionSection ? exceptionSection[0].trim() : '';
+                // Exception: check for justification (flexible: "exception justification" or "**Exception**:" or "Exception:")
+                const exceptionSection = body.match(/(?:exception justification|(?:\*\*)?exception\s*:)[^]*?(?=\n##|\n$|$)/i);
+                const justification = exceptionSection ? exceptionSection[0].replace(/^(?:\*\*)?exception\s*:\s*/i, '').replace(/^exception justification\s*:\s*/i, '').trim() : '';
                 if (justification.length < 20) {
                   errors.push(
                     '**Issue linkage**: No `Closes #N` found and exception label is set, ' +
