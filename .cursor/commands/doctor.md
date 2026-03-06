@@ -24,11 +24,10 @@ make doctor-json
 
 ### Host side (no R required)
 
-- `podman` command availability
-- `podman compose` availability
+- `podman` (or `docker`) command availability
+- `podman-compose` (or `docker compose`) availability
 - `git` availability
 - Container `bridle-dev` running status
-- RStudio Server responsiveness (http://localhost:8787)
 
 ### Container side (via podman exec)
 

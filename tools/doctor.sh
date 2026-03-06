@@ -79,14 +79,14 @@ else
   errors=$((errors + 1))
 fi
 
-# Compose support (optional -- direct build/run works as fallback)
-if [[ -n "$RUNTIME" ]]; then
-  if $RUNTIME compose version &>/dev/null 2>&1; then
-    record "$RUNTIME compose" "ok"
-  else
-    record "$RUNTIME compose" "warn" "not available (direct build/run used as fallback)"
-    warnings=$((warnings + 1))
-  fi
+# Compose tool: podman-compose (standalone) or docker compose (V2 subcommand)
+if command -v podman-compose &>/dev/null; then
+  record "podman-compose" "ok"
+elif docker compose version &>/dev/null 2>&1; then
+  record "docker compose" "ok"
+else
+  record "compose" "warn" "not available (direct build/run used as fallback; renv cache volume not mounted)"
+  warnings=$((warnings + 1))
 fi
 
 # Container running?
@@ -132,11 +132,11 @@ if $container_running; then
     errors=$((errors + 1))
   fi
 
-  # renv sync status
-  renv_issues=$($RUNTIME exec -w /home/rstudio/bridle "$CONTAINER_NAME" \
-      Rscript -e "s <- renv::status(dev=TRUE); n <- length(s\$library\$Packages) + length(s\$lockfile\$Packages); cat(n)" 2>/dev/null \
+  # renv sync status (capture text output; "No issues found" means clean)
+  renv_ok=$($RUNTIME exec -w /home/rstudio/bridle "$CONTAINER_NAME" \
+      Rscript -e "out <- capture.output(renv::status(dev=TRUE)); cat(any(grepl('No issues found', out)))" 2>/dev/null \
       | tail -1)
-  if [[ "$renv_issues" == "0" ]]; then
+  if [[ "$renv_ok" == "TRUE" ]]; then
     record "renv sync" "ok"
   else
     record "renv sync" "warn" "out of sync (run 'make renv-snapshot' or 'renv::status()' for details)"

@@ -7,8 +7,11 @@ RUNTIME := $(or \
   $(shell command -v podman >/dev/null 2>&1 && echo podman),\
   $(shell command -v docker >/dev/null 2>&1 && echo docker))
 
-# Compose support detection (optional; targets have direct fallbacks)
-HAS_COMPOSE := $(shell $(RUNTIME) compose version >/dev/null 2>&1 && echo 1 || echo 0)
+# Compose tool detection: podman-compose (standalone) or docker compose (V2 subcommand)
+COMPOSE := $(or \
+  $(shell command -v podman-compose >/dev/null 2>&1 && echo podman-compose),\
+  $(shell docker compose version >/dev/null 2>&1 && echo docker compose))
+HAS_COMPOSE := $(if $(COMPOSE),1,0)
 
 CONTAINER_NAME := bridle-dev
 IMAGE_NAME     := bridle-dev:latest
@@ -41,14 +44,14 @@ help: ## Show this help
 
 container-build: ## Build development container
 ifeq ($(HAS_COMPOSE),1)
-	$(RUNTIME) compose -f $(CONTAINER_DIR)/compose.yaml build
+	$(COMPOSE) -f $(CONTAINER_DIR)/compose.yaml build
 else
 	$(RUNTIME) build -t $(IMAGE_NAME) -f $(CONTAINER_DIR)/Containerfile .
 endif
 
 container-up: ## Start development container (detached)
 ifeq ($(HAS_COMPOSE),1)
-	$(RUNTIME) compose -f $(CONTAINER_DIR)/compose.yaml up -d
+	$(COMPOSE) -f $(CONTAINER_DIR)/compose.yaml up -d
 else
 	@if $(RUNTIME) inspect $(CONTAINER_NAME) --format '{{.State.Running}}' 2>/dev/null | grep -q true; then \
 		echo "Container '$(CONTAINER_NAME)' is already running."; \
@@ -65,7 +68,7 @@ endif
 
 container-down: ## Stop development container
 ifeq ($(HAS_COMPOSE),1)
-	$(RUNTIME) compose -f $(CONTAINER_DIR)/compose.yaml down
+	$(COMPOSE) -f $(CONTAINER_DIR)/compose.yaml down
 else
 	-$(RUNTIME) stop $(CONTAINER_NAME) 2>/dev/null
 	-$(RUNTIME) rm $(CONTAINER_NAME) 2>/dev/null
