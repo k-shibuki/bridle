@@ -68,18 +68,45 @@ EOF
 )"
 ```
 
-### 5. Verify CI started
+### 5. Monitor CI until completion
+
+Poll CI checks until all jobs reach a terminal state (pass / fail / skipping).
 
 ```bash
-gh pr checks
+gh pr checks --watch
 ```
+
+If `--watch` is unavailable or times out, poll manually:
+
+```bash
+gh pr checks          # repeat until no "pending" remains
+```
+
+### 6. If CI fails: diagnose → fix → re-push
+
+Repeat until CI passes or the issue requires user intervention.
+
+1. **Identify the failed job(s)** from `gh pr checks` output.
+2. **Fetch failure logs**:
+   ```bash
+   gh run view <run_id> --job <job_id> --log-failed
+   ```
+3. **Fix the root cause** in the local working tree.
+4. **Commit the fix** (follow `@.cursor/rules/commit-message-format.mdc`, use `fix(scope):` prefix).
+5. **Push**:
+   ```bash
+   git push
+   ```
+6. **Return to Step 5** (monitor CI again).
+
+If a failure is clearly outside your control (e.g. infrastructure flake, third-party service outage), report it to the user rather than retrying indefinitely.
 
 ## Output (response format)
 
 - **Branch**: name
 - **Commits**: list of commits on the branch
 - **PR URL**: link to the created PR
-- **CI status**: pending / running
+- **CI result**: all pass / failure details and actions taken
 
 ## Related
 
