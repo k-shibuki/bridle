@@ -1,0 +1,7 @@
+.git
+renv/library
+renv/staging
+renv/sandbox
+*.Rcheck
+check
+debug

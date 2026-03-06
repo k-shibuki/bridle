@@ -1,0 +1,12 @@
+^\.cursor$
+^\.github$
+^\.pre-commit-config\.yaml$
+^containers$
+^Makefile$
+^LICENSE\.md$
+^docs$
+^tools$
+^debug$
+^renv$
+^renv\.lock$
+^\.Rprofile$

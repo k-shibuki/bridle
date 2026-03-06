@@ -1,0 +1,14 @@
+FROM docker.io/rocker/tidyverse:latest
+
+# System dependencies for bridle and its future deps (ellmer, S7, etc.)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libyaml-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install renv globally
+RUN R -e "install.packages('renv', repos = 'https://cloud.r-project.org')"
+
+# Enable renv global cache (persisted via named volume)
+ENV RENV_PATHS_CACHE=/home/rstudio/.cache/R/renv
+
+WORKDIR /home/rstudio/bridle

@@ -1,0 +1,16 @@
+services:
+  dev:
+    build:
+      context: ..
+      dockerfile: containers/Containerfile
+    container_name: bridle-dev
+    ports:
+      - "8787:8787"
+    volumes:
+      - ..:/home/rstudio/bridle:Z
+      - renv-cache:/home/rstudio/.cache/R/renv
+    environment:
+      - DISABLE_AUTH=true
+
+volumes:
+  renv-cache:
