@@ -31,6 +31,9 @@ make ci-fast
 
 # Step 4: Full CI (adds test + R CMD check)
 make ci
+
+# Step 5: Coverage gate (verify line coverage >= threshold)
+make coverage-check
 ```
 
 Skipping Step 1 and going directly to `make ci-fast` will cause lint failures on code that styler would have auto-fixed.
@@ -55,6 +58,7 @@ make lint               # Lint check (lintr)
 make format             # Format (auto-fix with styler)
 make format-check       # Format dry-run (exits non-zero if unformatted)
 make check              # R CMD check (primary quality gate)
+make coverage-check     # Coverage gate (line coverage >= 80%)
 
 # Differential (changed files only, faster iteration)
 make changed-lint       # Lint only changed R files
