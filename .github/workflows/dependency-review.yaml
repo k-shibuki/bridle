@@ -11,9 +11,17 @@ on:
 
 name: Dependency Review
 
+permissions:
+  contents: read
+
+concurrency:
+  group: dep-review-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   dependency-review:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 

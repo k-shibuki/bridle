@@ -1,5 +1,8 @@
 # bridle
 
+[![CI](https://github.com/k-shibuki/bridle/actions/workflows/ci.yaml/badge.svg)](https://github.com/k-shibuki/bridle/actions/workflows/ci.yaml)
+[![R-CMD-check](https://github.com/k-shibuki/bridle/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/k-shibuki/bridle/actions/workflows/R-CMD-check.yaml)
+
 AI knowledge harness generation framework for R statistical packages
 
 ---

@@ -104,3 +104,21 @@ refactor: Consolidate duplicate validation logic into common function
 ## scope (Optional)
 - Use module/directory name of the change target
 - Can be omitted (when changes are wide-ranging)
+
+## Branch Naming Convention
+
+Feature branches use the same prefix as commits, followed by a short kebab-case description:
+
+```
+<prefix>/<short-description>
+```
+
+Examples:
+
+- `feat/decision-graph-engine`
+- `fix/schema-validation-error`
+- `refactor/scanner-layer-split`
+- `ci/ai-driven-guardrails`
+- `docs/adr-0010-protocol-layer`
+
+The prefix must be one of the Prefix types listed above.

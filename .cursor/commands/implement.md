@@ -43,6 +43,9 @@ Implement the selected task (code changes only; no tests in this step).
 - **Context discovered**: key files/patterns found via search (if relevant)
 - **Notes**: any trade-offs, follow-ups, or risks
 
-## Related rules
+## Related
 
+- `@.cursor/commands/task-plan.md` (previous step)
+- `@.cursor/commands/test-create.md` (next step)
+- `@.cursor/rules/ai-guardrails.mdc`
 - `@.cursor/rules/integration-design.mdc` (when changes span module boundaries / contracts)

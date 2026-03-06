@@ -7,7 +7,6 @@ Create git commit(s) with **English message(s)** in the project's standard forma
 ## When to use
 
 - After tests pass and you're ready to record changes (typically after `regression-test`)
-- For WIP commits, prefer `suspend`
 
 ## Policy (rules)
 
@@ -93,6 +92,8 @@ git commit -m "<message-2>"
 - **Commits**: list of commits created (message + short hash for each)
 - **Summary**: `git log --oneline -n <count>` showing the new commits
 
-## Related rules
+## Related
 
 - `@.cursor/rules/commit-message-format.mdc`
+- `@.cursor/commands/push.md` (next step: main direct flow)
+- `@.cursor/commands/pr-create.md` (next step: PR flow)

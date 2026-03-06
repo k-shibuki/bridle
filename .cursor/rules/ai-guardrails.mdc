@@ -9,6 +9,8 @@ alwaysApply: true
 Additional guardrails for AI agents implementing code in the bridle project.
 This rule supplements `v5_bridle.mdc` with safety measures specific to AI-driven development.
 
+For the full command workflow (main direct vs PR flow), see `@.cursor/README.md`.
+
 ## Container Prerequisite
 
 All R commands run inside the Podman container `bridle-dev`.
@@ -25,7 +27,28 @@ Before writing any code:
 1. **Run `make doctor`** to verify the development environment
 2. **Read relevant ADR(s)** from `docs/adr/` for the feature being implemented
 3. **Read relevant schema(s)** from `docs/schemas/` if the change touches data structures
-4. **Check existing patterns** in `R/` to maintain consistency
+4. **Check existing patterns** in `R/` to maintain consistency (see Phase-Aware Guidelines below)
+
+## Phase-Aware Guidelines
+
+### First implementation (R/ is empty or has very few files)
+
+- YAML schemas (`docs/schemas/`) and ADRs (`docs/adr/`) are the primary references.
+- Create the first S7 class following ADR-0001 strictly.
+- Establish naming/style conventions that subsequent code will follow.
+- Use `scaffold-class` command to generate boilerplate from schemas.
+
+### After initial classes exist
+
+- Check existing patterns in `R/` for consistency before adding new code.
+- Follow established naming conventions, error handling patterns, and documentation style.
+
+## Type Strictness (S7)
+
+- All S7 properties **MUST** have explicit types. `class_any` is **prohibited** unless the property genuinely accepts multiple unrelated types with no common interface.
+- Use `S7::new_union(class_character, class_integer)` for known union types rather than falling back to `class_any`.
+- Validators must check constraints that types alone cannot express (e.g., value ranges, cross-field dependencies, format patterns).
+- Use `match.arg()` for enum-like parameters.
 
 ## Schema-Code Consistency (Critical)
 
@@ -52,6 +75,7 @@ For every PR/commit, verify:
 - [ ] ADR reference identified (or "no ADR applies" stated)
 - [ ] Schema-code consistency maintained
 - [ ] No prohibited patterns introduced (see `@.cursor/rules/quality-check.mdc`)
+- [ ] S7 properties have explicit types (no `class_any`)
 - [ ] Tests added/updated for new functionality
 - [ ] `make ci` passes locally
 
@@ -73,7 +97,10 @@ When multiple AI agents work concurrently:
 | `make ci` | Full local CI | Before commit |
 | `make test` | Run tests | After implementation |
 | `make check` | R CMD check | Before commit |
+| `make check-fast` | Quick R CMD check | During iteration |
 | `make validate-schemas` | YAML schema check | After schema changes |
 | `make document` | Regenerate NAMESPACE/man | After roxygen2 changes |
+| `make format` | Auto-format with styler | Before lint |
 | `make changed-lint` | Lint changed files only | During iteration |
 | `make changed-test` | Test changed areas only | During iteration |
+| `make scaffold-test` | Create test skeleton | When adding tests |

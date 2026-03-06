@@ -2,19 +2,21 @@
 
 ## Purpose
 
-Push `main` to `origin/main` safely.
+Push `main` to `origin/main` safely. This command is for the **main direct flow only**.
+
+For the PR flow, use `pr-create` to push a feature branch instead.
 
 ## When to use
 
-- After merging to `main` (typically after `merge`)
-- When local `main` is ahead of `origin/main`
+- After `commit` (main direct flow for small changes)
+- After local `merge` when main has new commits
 
 ## Preconditions
 
-- If this is immediately after `merge`, quality/tests are typically already done.
-- If running directly, run quality checks and regression tests first.
+- You are on `main` with commits to push.
+- Quality checks and tests have passed (via `quality-check` + `regression-test`, or `ci`).
 
-## Steps (non-interactive)
+## Steps
 
 1. Confirm you are on `main` and there are commits to push:
 
@@ -23,7 +25,8 @@ current_branch=$(git branch --show-current)
 echo "Current branch: $current_branch"
 
 if [ "$current_branch" != "main" ]; then
-    git checkout main
+    echo "ERROR: Not on main. For feature branches, use pr-create instead."
+    exit 1
 fi
 
 echo "=== Commits to push ==="
@@ -50,6 +53,10 @@ git log origin/main..main --oneline
 ## Output (response format)
 
 - **Branch**: current branch
-- **Commits pushed**: list (or “none”)
-- **Pre-push checks**: warnings/trailing whitespace status
-- **Push result**: success/failure + error summary if failed
+- **Commits pushed**: list (or "none")
+- **Push result**: success / failure + error summary if failed
+
+## Related
+
+- `@.cursor/commands/commit.md` (previous step)
+- `@.cursor/commands/pr-create.md` (alternative: PR flow)
