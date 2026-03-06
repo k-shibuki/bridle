@@ -17,6 +17,7 @@ concurrency:
 env:
   GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
   BRIDLE_IN_CONTAINER: 1
+  RENV_CONFIG_AUTOLOADER_ENABLED: "FALSE"
 
 jobs:
   changes:
@@ -85,8 +86,6 @@ jobs:
     if: needs.changes.outputs.schemas == 'true' || needs.changes.outputs.r_code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      RENV_CONFIG_AUTOLOADER_ENABLED: 'FALSE'
     steps:
       - uses: actions/checkout@v6
 
