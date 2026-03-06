@@ -479,7 +479,7 @@
 <h2 id="development-status">Development Status<a class="anchor" aria-label="anchor" href="#development-status"></a>
 </h2>
 <blockquote>
-<p><strong>Currently Phase 1: Package scanner + AI drafter</strong></p>
+<p><strong>Phase 1 complete — Phase 2 (Runtime Engine) is next</strong></p>
 </blockquote>
 <table class="table">
 <colgroup>
@@ -501,7 +501,7 @@
 <tr class="even">
 <td>Phase 1</td>
 <td>Package scanner + AI drafter (plugin generation pipeline)</td>
-<td><strong>In progress</strong></td>
+<td><strong>Done</strong></td>
 </tr>
 <tr class="odd">
 <td>Phase 2</td>
@@ -520,6 +520,22 @@
 </tr>
 </tbody>
 </table>
+<div class="section level3">
+<h3 id="phase-1-deliverables">Phase 1 Deliverables<a class="anchor" aria-label="anchor" href="#phase-1-deliverables"></a>
+</h3>
+<ul>
+<li>
+<strong>S7 domain classes</strong>: <code>DecisionGraph</code>, <code>KnowledgeStore</code>, <code>ConstraintSet</code>, <code>ContextSchema</code>, <code>ScanResult</code> with YAML readers and validators</li>
+<li>
+<strong>Three-layer scanner</strong>: <code><a href="reference/scan_package.html">scan_package()</a></code> — Layer 1 (formals analysis), Layer 2 (Rd documentation), Layer 3a (source code static analysis)</li>
+<li>
+<strong>Reference fetcher</strong>: <code><a href="reference/fetch_references.html">fetch_references()</a></code> — CrossRef API + PubMed fallback</li>
+<li>
+<strong>AI drafter</strong>: <code><a href="reference/draft_knowledge.html">draft_knowledge()</a></code> — ellmer-based LLM integration for generating decision graph, knowledge, and constraint YAML drafts</li>
+<li>
+<strong>Plugin validator</strong>: <code><a href="reference/validate_plugin.html">validate_plugin()</a></code> — coverage, consistency, constraint, and reachability checks</li>
+</ul>
+</div>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
