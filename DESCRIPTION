@@ -43,6 +43,7 @@ Collate:
     'draft_knowledge.R'
     'fetch_references.R'
     'hint_evaluator.R'
+    'graph_engine.R'
     'knowledge.R'
     'knowledge_retriever.R'
     'scan_package.R'
