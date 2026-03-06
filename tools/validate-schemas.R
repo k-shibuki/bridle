@@ -188,7 +188,9 @@ add_phase_b <- function(file, check, severity, message) {
 }
 
 safe_prop_name <- function(name) {
-  reserved <- c("function", "if", "else", "for", "while", "repeat",
+  aliases <- c("function" = "func")
+  if (name %in% names(aliases)) return(aliases[[name]])
+  reserved <- c("if", "else", "for", "while", "repeat",
                 "in", "next", "break", "TRUE", "FALSE", "NULL")
   if (name %in% reserved) paste0(name, "_name") else name
 }
@@ -275,7 +277,11 @@ if (length(r_files) == 0L) {
     if (!is.null(matched_rule$nested) &&
         matched_rule$nested %in% names(schema_fields)) {
       nested_section <- schema_fields[[matched_rule$nested]]
-      if (is.list(nested_section)) {
+      # Only drill into the nested section if it is a structural container
+      # (has named sub-fields like entry_node, nodes, ...) rather than a
+      # single field definition (has type/required/description metadata).
+      is_field_def <- is.list(nested_section) && !is.null(nested_section$type)
+      if (is.list(nested_section) && !is_field_def) {
         schema_fields <- nested_section
       }
     }
