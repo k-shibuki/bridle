@@ -9,7 +9,6 @@ on:
       - 'DESCRIPTION'
       - 'NAMESPACE'
       - '_pkgdown.yml'
-      - 'README.md'
   release:
     types: [published]
   workflow_dispatch:
@@ -42,6 +41,9 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::pkgdown
+
+      - name: Install package
+        run: Rscript -e 'devtools::install()'
 
       - name: Deploy package
         run: |
