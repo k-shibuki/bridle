@@ -1,0 +1,101 @@
+graph:
+  entry_node: outcome_type
+  global_policy:
+    max_iterations: 3
+
+  nodes:
+    outcome_type:
+      type: context_gathering
+      description: "Inspect data structure and confirm binary outcome"
+      transitions:
+        - to: sm_selection
+          always: true
+
+    sm_selection:
+      type: decision
+      topic: effect_measures
+      parameter: sm
+      description: "Select effect measure"
+      transitions:
+        - to: method_selection
+          always: true
+
+    method_selection:
+      type: decision
+      topic: pooling_methods
+      parameter: method
+      transitions:
+        - to: continuity_correction
+          when: "zero cells exist in the data"
+          computable_hint: "any(event.e == 0)"
+        - to: model_type
+          otherwise: true
+
+    continuity_correction:
+      type: decision
+      topic: zero_cell_handling
+      parameter:
+        - incr
+        - method.incr
+        - allstudies
+      transitions:
+        - to: model_type
+          always: true
+
+    model_type:
+      type: decision
+      topic: model_selection
+      parameter:
+        - common
+        - random
+      transitions:
+        - to: tau2_estimation
+          when: "random-effects model is used"
+          computable_hint: "random == TRUE"
+        - to: execute_analysis
+          otherwise: true
+
+    tau2_estimation:
+      type: decision
+      topic: tau2_estimators
+      parameter: method.tau
+      policy:
+        skip_when: "number of studies is very large"
+        skip_hint: "k > 100"
+        max_iterations: 1
+      transitions:
+        - to: execute_analysis
+          always: true
+
+    execute_analysis:
+      type: execution
+      description: "Run metabin() with selected parameters"
+      transitions:
+        - to: heterogeneity_assessment
+          always: true
+
+    heterogeneity_assessment:
+      type: diagnosis
+      topic: heterogeneity
+      transitions:
+        - to: sensitivity_analysis
+          when: "heterogeneity is high"
+          computable_hint: "I2 > 50"
+        - to: complete
+          otherwise: true
+
+    sensitivity_analysis:
+      type: decision
+      topic: sensitivity_approaches
+      policy:
+        max_iterations: 2
+      transitions:
+        - to: execute_analysis
+          when: "re-run with different parameters"
+        - to: complete
+          otherwise: true
+
+    complete:
+      type: context_gathering
+      description: "Summarize results"
+      transitions: []
