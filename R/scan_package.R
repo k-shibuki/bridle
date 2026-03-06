@@ -10,8 +10,9 @@ NULL
 
 #' Scan a Package Function
 #'
-#' Entry point for the plugin generation scanner. Currently implements Layer 1
-#' (formals analysis). Layers 2 and 3 will be added in subsequent Issues.
+#' Entry point for the plugin generation scanner. Implements Layer 1
+#' (formals analysis) and Layer 2 (Rd documentation analysis).
+#' Layer 3 will be added in subsequent Issues.
 #'
 #' @param package Package name (character).
 #' @param func Function name (character).
@@ -26,7 +27,8 @@ scan_package <- function(package, func) {
   }
 
   fn <- resolve_function(package, func)
-  scan_layer1(package = package, func_name = func, fn = fn)
+  result <- scan_layer1(package = package, func_name = func, fn = fn)
+  scan_layer2(result)
 }
 
 #' Resolve a function from a package namespace
@@ -352,4 +354,263 @@ safe_deparse <- function(expr) {
 #' @keywords internal
 get_package_version <- function(package) {
   as.character(utils::packageVersion(package))
+}
+
+# -- Layer 2: Rd Documentation Analysis ---------------------------------------
+
+#' Enrich a ScanResult with Rd documentation analysis
+#'
+#' Extracts valid-value lists, parameter descriptions, references, and
+#' deprecated parameter flags from the package's Rd database.
+#' Gracefully skips if Rd is unavailable.
+#' @keywords internal
+scan_layer2 <- function(scan_result) {
+  rd_db <- tryCatch(
+    get_rd_db(scan_result@package),
+    error = function(e) {
+      cli::cli_warn(
+        "Layer 2: Cannot access Rd for {.pkg {scan_result@package}}."
+      )
+      NULL
+    }
+  )
+  if (is.null(rd_db)) {
+    return(scan_result)
+  }
+
+  rd <- find_function_rd(rd_db, scan_result@func)
+  if (is.null(rd)) {
+    cli::cli_warn(
+      "Layer 2: No Rd documentation for {.fn {scan_result@func}}."
+    )
+    return(scan_result)
+  }
+
+  param_descs <- extract_rd_param_descriptions(rd)
+  valid_vals <- extract_rd_valid_values(param_descs)
+  refs <- extract_rd_references(rd)
+  deprecated <- detect_rd_deprecated(param_descs)
+
+  updated_params <- update_deprecated_params(
+    scan_result@parameters, deprecated
+  )
+
+  layers <- c(scan_result@scan_metadata[["layers_completed"]], "layer2_rd")
+  metadata <- scan_result@scan_metadata
+  metadata[["layers_completed"]] <- layers
+
+  ScanResult( # nolint: object_usage_linter. S7 class in R/scan_result.R
+    package = scan_result@package,
+    func = scan_result@func,
+    parameters = updated_params,
+    dependency_graph = scan_result@dependency_graph,
+    constraints = scan_result@constraints,
+    valid_values = valid_vals,
+    descriptions = param_descs,
+    references = refs,
+    scan_metadata = metadata
+  )
+}
+
+#' Get Rd database for a package (mockable wrapper)
+#' @keywords internal
+get_rd_db <- function(package) {
+  tools::Rd_db(package)
+}
+
+#' Find the Rd object for a specific function by name or alias
+#' @keywords internal
+find_function_rd <- function(rd_db, func_name) {
+  rd_name <- paste0(func_name, ".Rd")
+  if (rd_name %in% names(rd_db)) {
+    return(rd_db[[rd_name]])
+  }
+  for (rd in rd_db) {
+    aliases <- get_rd_aliases(rd)
+    if (func_name %in% aliases) {
+      return(rd)
+    }
+  }
+  NULL
+}
+
+#' Extract alias names from an Rd object
+#' @keywords internal
+get_rd_aliases <- function(rd) {
+  aliases <- character(0)
+  for (section in rd) {
+    tag <- attr(section, "Rd_tag")
+    if (identical(tag, "\\alias")) {
+      aliases <- c(aliases, rd_text(section))
+    }
+  }
+  aliases
+}
+
+#' Get a specific section from an Rd object by tag
+#' @keywords internal
+get_rd_section <- function(rd, tag_name) {
+  for (section in rd) {
+    tag <- attr(section, "Rd_tag")
+    if (identical(tag, tag_name)) {
+      return(section)
+    }
+  }
+  NULL
+}
+
+#' Convert Rd content to plain text recursively
+#' @keywords internal
+rd_text <- function(x) {
+  if (is.character(x)) {
+    return(paste(x, collapse = ""))
+  }
+  if (is.list(x)) {
+    parts <- vapply(x, rd_text, character(1))
+    return(paste(parts, collapse = ""))
+  }
+  ""
+}
+
+#' Extract parameter descriptions from the \\arguments section
+#' @keywords internal
+extract_rd_param_descriptions <- function(rd) {
+  args_section <- get_rd_section(rd, "\\arguments")
+  if (is.null(args_section)) {
+    return(list())
+  }
+
+  descriptions <- list()
+  for (item in args_section) {
+    tag <- attr(item, "Rd_tag")
+    if (!identical(tag, "\\item")) next
+    if (length(item) < 2L) next
+
+    param_name <- trimws(rd_text(item[[1L]]))
+    desc_text <- trimws(rd_text(item[[2L]]))
+    if (nchar(param_name) > 0L) {
+      descriptions[[param_name]] <- desc_text
+    }
+  }
+  descriptions
+}
+
+#' Extract valid values from parameter descriptions
+#'
+#' Scans description text for enumeration patterns such as
+#' "one of X, Y, Z" or "must be X or Y".
+#' @keywords internal
+extract_rd_valid_values <- function(descriptions) {
+  valid_values <- list()
+  for (param in names(descriptions)) {
+    values <- extract_values_from_text(descriptions[[param]])
+    if (length(values) > 0L) {
+      valid_values[[param]] <- values
+    }
+  }
+  valid_values
+}
+
+#' Extract enumerated values from a text string
+#' @keywords internal
+extract_values_from_text <- function(text) {
+  patterns <- c(
+    "(?i)\\bone of\\b\\s+(.+?)(?:\\.|;|\\n|$)",
+    "(?i)\\bmust be\\b\\s+(.+?)(?:\\.|;|\\n|$)",
+    "(?i)(?:possible|allowed|valid)\\s+values?\\s*(?:are|:)?\\s+(.+?)(?:\\.|;|\\n|$)"
+  )
+  for (pat in patterns) {
+    m <- regmatches(text, regexec(pat, text, perl = TRUE))[[1L]]
+    if (length(m) >= 2L) {
+      values <- extract_quoted_values(m[[2L]])
+      if (length(values) > 0L) {
+        return(values)
+      }
+      values <- extract_unquoted_values(m[[2L]])
+      if (length(values) > 0L) {
+        return(values)
+      }
+    }
+  }
+  character(0)
+}
+
+#' Extract values enclosed in quotes from text
+#' @keywords internal
+extract_quoted_values <- function(text) {
+  m <- gregexpr('["\']([^"\']+)["\']', text, perl = TRUE)
+  raw <- regmatches(text, m)[[1L]]
+  if (length(raw) == 0L) {
+    return(character(0))
+  }
+  gsub('^["\']|["\']$', "", raw)
+}
+
+#' Extract comma/or-separated bare values from text
+#' @keywords internal
+extract_unquoted_values <- function(text) {
+  text <- trimws(text)
+  parts <- strsplit(text, "\\s*,\\s*|\\s+or\\s+|\\s+and\\s+", perl = TRUE)[[1L]]
+  parts <- trimws(parts)
+  parts <- gsub('^["\']|["\']$', "", parts)
+  parts <- parts[nchar(parts) > 0L & nchar(parts) < 50L]
+  if (length(parts) >= 2L) {
+    return(parts)
+  }
+  character(0)
+}
+
+#' Extract references from the \\references section
+#' @keywords internal
+extract_rd_references <- function(rd) {
+  ref_section <- get_rd_section(rd, "\\references")
+  if (is.null(ref_section)) {
+    return(character(0))
+  }
+
+  text <- trimws(rd_text(ref_section))
+  if (nchar(text) == 0L) {
+    return(character(0))
+  }
+
+  refs <- strsplit(text, "\n\\s*\n+")[[1L]]
+  refs <- trimws(refs)
+  refs[nchar(refs) > 0L]
+}
+
+#' Detect deprecated parameters from Rd descriptions
+#' @keywords internal
+detect_rd_deprecated <- function(descriptions) {
+  deprecated <- character(0)
+  for (param in names(descriptions)) {
+    desc <- descriptions[[param]]
+    is_deprecated <- grepl(
+      "(?i)\\bdeprecated\\b", desc,
+      perl = TRUE
+    )
+    if (is_deprecated) {
+      deprecated <- c(deprecated, param)
+    }
+  }
+  deprecated
+}
+
+#' Update parameter classifications for deprecated params detected by Rd
+#' @keywords internal
+update_deprecated_params <- function(parameters, deprecated_params) {
+  if (length(deprecated_params) == 0L) {
+    return(parameters)
+  }
+  for (i in seq_along(parameters)) {
+    p <- parameters[[i]]
+    if (p@name %in% deprecated_params && p@classification != "deprecated") {
+      parameters[[i]] <- ParameterInfo( # nolint: object_usage_linter. S7 class in R/scan_result.R
+        name = p@name,
+        has_default = p@has_default,
+        default_expression = p@default_expression,
+        classification = "deprecated"
+      )
+    }
+  }
+  parameters
 }
