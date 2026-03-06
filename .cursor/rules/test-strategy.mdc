@@ -4,6 +4,21 @@ alwaysApply: false
 ---
 # Test Conventions
 
+## 0. Relationship Between Issue Test Plan and Test Implementation
+
+The Issue's Test Plan section serves as the **initial test matrix** — a set of concrete, self-contained test cases created at planning time. The `test-create` workflow builds on this foundation:
+
+1. **Start from the Issue**: Import the test cases from the Issue's Test Plan as the baseline rows of the test perspectives table.
+2. **Expand systematically**: Add equivalence partitions, boundary values, and implementation-specific cases that weren't apparent at Issue creation time.
+3. **Maintain traceability**: Each Issue Test Plan scenario should map to at least one implemented test. If an Issue scenario is dropped or merged, note the reason in the table.
+
+The Issue Test Plan is intentionally detailed (concrete inputs, expected outputs) so that:
+- The Issue is **self-contained** — anyone can understand what to test without consulting other documents
+- Implementation and review can proceed independently
+- Test coverage gaps are visible early, before code is written
+
+---
+
 ## 1. Test Perspectives Table (Equivalence Partitioning / Boundary Values)
 
 1. Before starting any test work, first present a Markdown "test perspectives table."

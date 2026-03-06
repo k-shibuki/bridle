@@ -26,10 +26,11 @@ The following actions are NEVER permitted, regardless of user instructions:
 All implementation work must be traceable to a GitHub Issue:
 
 1. **Every task starts as an Issue**: Use `issue-create` to create a structured Issue with DoD and test plan.
-2. **1 Issue ≈ 1 PR**: Each Issue should be implementable in a single PR. Large tasks are split into child Issues.
-3. **Commits reference Issues**: Include `Refs: #<issue>` in every commit footer.
-4. **PRs close Issues**: Include `Closes #<issue>` in every PR body.
-5. **No main direct push** for normal changes: All code changes go through the PR flow with CI validation.
+2. **Test Plan must be self-contained**: Each Issue's Test Plan must include concrete test cases with specific input values and expected outputs — not vague placeholders like "valid input / succeeds". The Issue should be independently actionable without consulting other documents. See `issue-create.md` Test Plan Guidelines for requirements.
+3. **1 Issue ≈ 1 PR**: Each Issue should be implementable in a single PR. Large tasks are split into child Issues.
+4. **Commits reference Issues**: Include `Refs: #<issue>` in every commit footer.
+5. **PRs close Issues**: Include `Closes #<issue>` in every PR body.
+6. **No main direct push** for normal changes: All code changes go through the PR flow with CI validation.
 
 ### Exception Policy
 

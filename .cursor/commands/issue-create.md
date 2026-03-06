@@ -50,8 +50,36 @@ Structure the Issue using the project's Issue template. At minimum, include:
 - **Related ADR**: which ADR(s) govern this change
 - **Schema Impact**: which schemas or S7 classes are affected
 - **Acceptance Criteria (Definition of Done)**: 2-5 concrete, verifiable criteria
-- **Test Plan**: key test scenarios (normal + error cases)
+- **Test Plan**: concrete test cases that make the Issue self-contained (see Test Plan Guidelines below)
 - **Risks / Open Questions**: anything that needs clarification
+
+#### Test Plan Guidelines
+
+The Test Plan must include **specific, executable test case examples** — not vague placeholders.
+The goal is for the Issue to be self-contained: anyone reading it can understand exactly what to test without consulting other documents.
+
+Each test case must specify:
+
+| Column | Required | Description |
+|--------|----------|-------------|
+| Scenario | Yes | Descriptive name (e.g., "Valid 3-node linear graph") |
+| Input / Precondition | Yes | **Concrete values** — not "valid input" but actual data (e.g., `nodes = list("A", "B"), edges = list(c("A", "B"))`) |
+| Expected Result | Yes | **Specific outcome** — not "succeeds" but what exactly happens (e.g., "Returns DecisionGraph with 2 nodes and 1 edge") |
+| Notes | Optional | Edge case rationale, boundary justification, related acceptance criteria |
+
+Minimum coverage:
+
+- At least **2 normal cases** with distinct inputs
+- At least **2 error/validation cases** (e.g., NULL input, type mismatch, constraint violation)
+- At least **1 boundary case** where applicable (e.g., empty collection, single element, max length)
+
+**Anti-patterns to avoid**:
+
+- `| Normal case | valid input | succeeds |` — too vague to be actionable
+- `| Error case | invalid input | fails |` — does not specify what is invalid or how it fails
+- Omitting the Test Plan entirely with "will be decided during implementation"
+
+The Issue's Test Plan serves as the **initial test matrix** for the `test-create` command, which will expand it with additional equivalence partitions, boundary values, and implementation-specific cases.
 
 ### 4. Create the Issue on GitHub
 

@@ -53,12 +53,25 @@ make doctor output here
 
 ## Regression Test Plan
 
-<!-- How to verify the fix prevents recurrence? -->
+<!--
+Include CONCRETE test cases with specific input values and expected outputs.
+The Issue should be self-contained — a reader can verify the fix without other docs.
 
-| Scenario | Input | Expected Result |
-|----------|-------|-----------------|
-| Original bug | (steps above) | No longer fails |
-| Edge case | | |
+Requirements:
+- Original bug scenario with exact reproduction inputs and the now-correct expected result
+- At least 1 edge case near the bug boundary
+- At least 1 error/validation case if the fix changes error handling
+
+Anti-patterns (DO NOT use):
+- "valid input" / "invalid input" without specifics
+- "succeeds" / "fails" without describing the outcome
+-->
+
+| Scenario | Input / Precondition | Expected Result | Notes |
+|----------|---------------------|-----------------|-------|
+| Original bug reproduced | <!-- exact inputs from Steps to Reproduce --> | <!-- correct behavior after fix --> | Regression guard |
+| <!-- e.g., Similar input that was NOT broken --> | <!-- concrete values --> | <!-- still works correctly --> | Ensures no side effects |
+| <!-- e.g., Edge case near bug boundary --> | <!-- concrete values --> | <!-- expected behavior --> | Boundary |
 
 ## Priority / Affected Area
 
