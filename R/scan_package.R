@@ -128,8 +128,9 @@ scan_layer1 <- function(package, func_name, fn) {
 #' Walk an expression AST and collect referenced symbols
 #' @keywords internal
 walk_ast_symbols <- function(expr) {
-  if (is.null(expr) || is.numeric(expr) || is.logical(expr) ||
-    is.character(expr) || is.complex(expr)) {
+  is_atomic <- is.null(expr) || is.numeric(expr) || is.logical(expr) ||
+    is.character(expr) || is.complex(expr)
+  if (is_atomic) {
     return(character(0))
   }
   if (is.symbol(expr)) {

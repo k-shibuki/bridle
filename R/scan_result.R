@@ -48,8 +48,9 @@ ParameterInfo <- S7::new_class("ParameterInfo",
     if (length(self@default_expression) != 1L) {
       return("`default_expression` must be a single string")
     }
-    if (length(self@classification) != 1L ||
-      !self@classification %in% .valid_classifications) {
+    valid_cls <- length(self@classification) == 1L &&
+      self@classification %in% .valid_classifications
+    if (!valid_cls) {
       return(sprintf(
         "`classification` must be one of: %s",
         paste(dQuote(.valid_classifications, FALSE), collapse = ", ")

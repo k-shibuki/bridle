@@ -283,12 +283,12 @@ test_that("scan_package: constraint from switch default", {
   # Given: a default using switch()
   # When:  scanning
   # Then:  a forces constraint is created
-  mock_fn <- function(type = "a", val = switch(type,
-                        a = 1,
-                        b = 2
-                      )) {
-    NULL
-  }
+  switch_default <- quote(switch(type,
+    a = 1,
+    b = 2
+  ))
+  mock_fn <- function(type = "a", val = NULL) NULL
+  formals(mock_fn)$val <- switch_default
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
 
