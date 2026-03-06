@@ -21,7 +21,25 @@ All implementation work must be traceable to a GitHub Issue:
 4. **PRs close Issues**: Include `Closes #<issue>` in every PR body.
 5. **No main direct push** for normal changes: All code changes go through the PR flow with CI validation.
 
-**Exceptions**: `hotfix` (critical production fixes) and `docs-only` (documentation-only changes) may bypass the Issue-driven flow but must justify the exception in the commit body.
+### Exception Policy
+
+The following exception types may bypass the Issue-driven flow:
+
+| Label | When to use |
+|-------|-------------|
+| `hotfix` | Critical production fix that cannot wait for Issue triage |
+| `docs-only` | Documentation-only change with no code impact |
+| `no-issue` | Other justified exceptions (e.g., meta-implementation of workflow itself) |
+
+**Exception requirements** (enforced by CI):
+
+- **Commits**: May omit `Refs: #<issue>` but must include justification in the body.
+- **PRs**: Must have an exception label AND a `## Exception` section with:
+  - `- Type:` one of `hotfix` / `docs-only` / `no-issue`
+  - `- Justification:` reason (min 20 characters)
+- **Branch naming**: `hotfix/<description>` (no Issue number required).
+
+This contract is the single source of truth. The PR template, `pr-create` command, and `pr-policy.yaml` workflow all follow this format.
 
 ## Container Prerequisite
 

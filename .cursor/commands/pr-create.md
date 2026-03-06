@@ -12,11 +12,12 @@ Create a feature branch (if needed), commit, push, and open a pull request on Gi
 
 - `gh` CLI is authenticated (`gh auth status`)
 - Changes are either already committed, or staged/unstaged and ready to commit
-- A tracking Issue exists for this change
+- A tracking Issue exists for this change (see Exception path below if not)
 
 ## Inputs (ask if missing)
 
-- **Issue number** (required): the GitHub Issue this PR closes (e.g., `#42`)
+- **Issue number** (required unless exception): the GitHub Issue this PR closes (e.g., `#42`)
+- If no Issue exists, the user must explicitly confirm this is an exception (`hotfix`, `docs-only`, or `no-issue`)
 
 ## Steps
 
@@ -49,7 +50,9 @@ git push -u origin HEAD
 
 ### 4. Create PR
 
-The PR body **must** include `Closes #<issue>` for automatic Issue closure on merge.
+#### Standard path (Issue exists)
+
+The PR body **must** include `Closes #<issue>` for automatic Issue closure on merge. Delete the `## Exception` section.
 
 ```bash
 gh pr create --title "<type>(<scope>): <description>" --body "$(cat <<'EOF'
@@ -80,15 +83,13 @@ Closes #<issue-number>
 
 ## Risk / Impact
 
-<!-- What could go wrong? Who/what is affected? -->
-
--
+- Affected area: <what is affected>
+- Breaking change: no
+- Data impact: none
 
 ## Rollback Plan
 
-<!-- How to revert if something goes wrong? -->
-
--
+<how to revert>
 
 ## Review Checklist
 
@@ -96,6 +97,60 @@ Closes #<issue-number>
 - [ ] No prohibited patterns
 - [ ] ADR compliance verified
 - [ ] Issue DoD criteria met
+
+EOF
+)"
+```
+
+#### Exception path (no Issue)
+
+When the user explicitly confirms an exception, add a label and fill the `## Exception` section instead of `Closes #`.
+
+```bash
+gh pr create --title "<type>(<scope>): <description>" \
+  --label "<no-issue|hotfix|docs-only>" \
+  --body "$(cat <<'EOF'
+## Summary
+
+- <change summary>
+
+## Traceability
+
+<!-- No Issue for this exception PR -->
+
+## Exception
+
+- Type: <no-issue / hotfix / docs-only>
+- Justification: <why this PR bypasses the Issue-driven flow>
+
+## Related ADR / Issue
+
+- ADR: <if applicable>
+
+## Schema Impact
+
+- [ ] No schema impact
+
+## Test Evidence
+
+- [ ] `make test` passes
+- [ ] `make check` passes
+
+## Risk / Impact
+
+- Affected area: <what is affected>
+- Breaking change: no
+- Data impact: none
+
+## Rollback Plan
+
+<how to revert>
+
+## Review Checklist
+
+- [ ] Code follows project conventions
+- [ ] No prohibited patterns
+- [ ] ADR compliance verified
 
 EOF
 )"

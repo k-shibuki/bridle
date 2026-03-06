@@ -7,11 +7,16 @@
 ## Traceability
 
 <!-- Required: link to the Issue this PR closes. Use "Closes #N" for auto-close on merge. -->
-<!-- Exception: if no Issue exists (hotfix/docs-only), explain why below. -->
 
 Closes #<!-- issue number -->
 
-<!-- Exception justification (only if no Issue): -->
+## Exception
+
+<!-- Delete this entire section if Closes # above is filled. -->
+<!-- Required when no Issue is linked. Add label: no-issue, hotfix, or docs-only. -->
+
+- Type: <!-- no-issue / hotfix / docs-only -->
+- Justification: <!-- Why this PR bypasses the Issue-driven flow (min 20 chars) -->
 
 ## Related ADR / Issue
 
