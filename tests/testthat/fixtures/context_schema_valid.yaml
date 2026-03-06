@@ -1,0 +1,46 @@
+variables:
+  - name: k
+    description: "number of studies"
+    available_from: data_loaded
+    source_expression: "nrow(data)"
+
+  - name: I2
+    description: "I-squared heterogeneity statistic (%)"
+    available_from: post_fit
+    depends_on_node: execute_analysis
+    source_expression: "result$I2"
+
+  - name: tau2
+    description: "estimated between-study variance"
+    available_from: post_fit
+    depends_on_node: execute_analysis
+    source_expression: "result$tau2"
+
+  - name: method
+    description: "selected pooling method"
+    available_from: parameter_decided
+    depends_on_node: method_selection
+    source_expression: "decisions$method"
+
+  - name: random
+    description: "whether random-effects model is used"
+    available_from: parameter_decided
+    depends_on_node: model_type
+    source_expression: "decisions$random"
+
+data_expectations:
+  - column: event.e
+    role: outcome
+    required: true
+  - column: n.e
+    role: group
+    required: true
+  - column: event.c
+    role: outcome
+    required: true
+  - column: n.c
+    role: group
+    required: true
+  - column: studlab
+    role: study_id
+    required: false
