@@ -1,5 +1,3 @@
-# Workflow derived from https://github.com/r-lib/actions/tree/master/examples
-# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
 # Full OS/R-version matrix check -- runs on push to main only.
 # PRs use the lighter ci.yaml workflow instead.
 on:
@@ -8,9 +6,17 @@ on:
 
 name: R-CMD-check
 
+permissions:
+  contents: read
+
+concurrency:
+  group: r-cmd-check-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
+    timeout-minutes: 30
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 
@@ -41,7 +47,7 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: rcmdcheck
+          extra-packages: any::rcmdcheck
 
       - uses: r-lib/actions/check-r-package@v2
 

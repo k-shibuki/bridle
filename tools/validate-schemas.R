@@ -89,6 +89,52 @@ for (path in schema_files) {
   }
 }
 
+# --- Phase A+ Cross-reference checks ---
+# Collect parsed schemas for cross-reference validation
+all_parsed <- list()
+for (path in schema_files) {
+  parsed <- tryCatch(yaml::read_yaml(path), error = function(e) NULL)
+  if (!is.null(parsed)) {
+    all_parsed[[basename(path)]] <- parsed
+  }
+}
+
+# Check: knowledge topics should reference valid decision_graph node topics
+graph_file <- "decision_graph.schema.yaml"
+knowledge_file <- "knowledge.schema.yaml"
+
+if (graph_file %in% names(all_parsed) && knowledge_file %in% names(all_parsed)) {
+  graph_schema <- all_parsed[[graph_file]]
+  knowledge_schema <- all_parsed[[knowledge_file]]
+
+  # Extract node topics from the graph example if present
+  graph_nodes <- NULL
+  if (!is.null(graph_schema$schema$graph$nodes)) {
+    graph_nodes <- vapply(
+      graph_schema$schema$graph$nodes,
+      function(n) n$topic %||% "",
+      character(1L)
+    )
+    graph_nodes <- graph_nodes[nzchar(graph_nodes)]
+  }
+
+  # Extract knowledge topic from example if present
+  knowledge_topic <- knowledge_schema$schema$topic %||% NULL
+
+  if (!is.null(graph_nodes) && !is.null(knowledge_topic) && length(graph_nodes) > 0L) {
+    if (!knowledge_topic %in% graph_nodes) {
+      add_error(
+        knowledge_file,
+        paste0(
+          "Knowledge topic '", knowledge_topic,
+          "' not found in decision_graph node topics: ",
+          paste(graph_nodes, collapse = ", ")
+        )
+      )
+    }
+  }
+}
+
 # Output
 if (json_mode) {
   result <- list(

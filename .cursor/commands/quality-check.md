@@ -29,7 +29,7 @@ make ci
 # Individual targets
 make validate-schemas   # Validate YAML schemas
 make lint               # Lint check (lintr)
-make style              # Format (auto-fix with styler)
+make format             # Format (auto-fix with styler)
 make check              # R CMD check (primary quality gate)
 
 # Differential (changed files only, faster iteration)

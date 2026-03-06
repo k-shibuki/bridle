@@ -2,64 +2,93 @@
 
 ## Purpose
 
-Merge the work branch into `main` (non-interactive) and confirm the result.
+Execute a merge — either via GitHub (for PR flow) or locally (for main direct flow).
 
 ## When to use
 
-- After `commit` and successful quality/tests
-- As the final merge step before `push`
+- After `pr-review` recommends merge (PR flow)
+- After `commit` and successful quality/tests (main direct flow, when working on a local branch)
 
 ## Inputs
 
-- Work branch name to merge (required)
-- Merge strategy: normal or squash (see below)
+- PR number (for GitHub merge) or branch name (for local merge) (required)
+- Merge strategy: squash or merge (required)
 
 ## Merge strategy selection
 
-| Source | Commit count | Strategy | Rationale |
-|--------|-------------|----------|-----------|
-| Local development | 1-5 focused commits | Normal merge | Preserves atomic history |
-| Cloud agent (Claude Code, Cursor) | Many micro-commits | **Squash merge** | Consolidates noise |
-| Mixed/uncertain | Check with `git log` | Case-by-case | Review commit quality first |
+| Source | Pattern | Strategy |
+|--------|---------|----------|
+| Local human work | 2-5 meaningful commits | merge (preserves history) |
+| AI agent (Claude Code, Cursor) | Many micro-commits | **squash** (consolidates) |
+| Mixed/uncertain | Review with `git log` | Case-by-case |
 
 **Decision heuristic**:
 
 ```bash
-# Check commit count and quality
-git log main..<branch> --oneline
+# For PRs
+gh pr view <PR-number> --json commits --jq '.commits | length'
+
+# For local branches
+git log main..<branch> --oneline | wc -l
 ```
 
-- If commits are well-organized (2-5, each meaningful) → normal merge
-- If commits are micro-commits (10+, or "wip", "fix typo" chains) → squash merge
+- 2-5 well-organized commits -> merge
+- 10+ commits, or "wip"/"fix typo" chains -> squash
 
-## Normal merge (preserves history)
+## GitHub PR merge (recommended for PR flow)
+
+Merge only after CI passes and review is complete.
+
+```bash
+# Squash merge (consolidates commits)
+gh pr merge <PR-number> --squash --delete-branch
+
+# Normal merge (preserves history)
+gh pr merge <PR-number> --merge --delete-branch
+```
+
+After merge, update local main:
+
+```bash
+git checkout main
+git pull origin main
+```
+
+## Local merge (for main direct flow)
+
+### Normal merge
 
 ```bash
 git checkout main
 git merge --no-edit <branch-name>
 ```
 
-## Squash merge (consolidates commits)
-
-Use when the branch has many micro-commits (typical of cloud agents):
+### Squash merge
 
 ```bash
 git checkout main
 git merge --squash <branch-name>
-# Creates a single staged change; requires explicit commit
 git commit -m "<type>: <description>"
 ```
 
-**Important**: After `--squash`, you must run `git commit` with a proper message.
+After `--squash`, you must run `git commit` with a message following `commit-message-format.mdc`.
 
 ## Constraints
 
 - Use non-interactive git flags (`--no-edit`, `--no-pager`) to avoid hangs.
-- For squash merge, write a consolidated commit message following `commit-message-format.mdc`.
+- Always gate merge behind explicit user approval.
+- Do not merge if CI has failures or warnings remain.
 
 ## Output (response format)
 
-- **Merged branch**: name + merge strategy used (normal/squash)
-- **Merge result**: success/conflicts
+- **Method**: GitHub PR merge / local merge
+- **Strategy**: squash / merge
+- **Result**: success / conflicts
 - **Commit(s)**: resulting commit hash(es)
-- **Notes**: any conflicts and how they were resolved (if applicable)
+- **Notes**: any conflicts and how they were resolved
+
+## Related
+
+- `@.cursor/commands/pr-review.md` (previous step in PR flow)
+- `@.cursor/commands/push.md` (next step in main direct flow)
+- `@.cursor/rules/commit-message-format.mdc` (for squash commit messages)

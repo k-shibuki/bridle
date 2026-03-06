@@ -26,9 +26,9 @@ endif
 .PHONY: help \
 	container-build container-up container-down container-shell rstudio \
 	renv-init renv-restore renv-snapshot \
-	check test lint style document coverage site install clean \
+	check check-fast test lint format document coverage site install clean \
 	ci ci-fast doctor doctor-json validate-schemas \
-	changed-lint changed-test test-json lint-json
+	changed-lint changed-test test-json lint-json scaffold-test
 
 # === Help ===
 
@@ -98,7 +98,7 @@ test: _require_container ## Run tests
 lint: _require_container ## Run lintr
 	$(RSCRIPT) -e "lintr::lint_package()"
 
-style: _require_container ## Auto-format with styler
+format: _require_container ## Auto-format with styler
 	$(RSCRIPT) -e "styler::style_pkg()"
 
 document: _require_container ## Generate documentation with roxygen2
@@ -112,6 +112,13 @@ site: _require_container ## Build pkgdown site
 
 install: _require_container ## Install package locally
 	$(RSCRIPT) -e "devtools::install()"
+
+check-fast: _require_container ## Quick R CMD check (no manual/vignettes)
+	$(RSCRIPT) -e "devtools::check(manual = FALSE, vignettes = FALSE)"
+
+scaffold-test: _require_container ## Create test skeleton (usage: make scaffold-test FILE=R/foo.R)
+	@if [ -z "$(FILE)" ]; then echo "Usage: make scaffold-test FILE=R/foo.R"; exit 1; fi
+	$(RSCRIPT) -e "usethis::use_test('$$(basename $(FILE) .R)')"
 
 # === Integrated CI Targets ===
 
@@ -151,7 +158,7 @@ changed-test: _require_container ## Run tests related to changed files
 test-json: _require_container ## Run tests with JUnit XML output
 	$(RSCRIPT) -e "devtools::test(reporter = testthat::JunitReporter\$$new(file = 'test-results.xml'))"
 
-lint-json: _require_container ## Run lint with JSON output
+lint-json: _require_container ## Lint with JSON output
 	$(RSCRIPT) -e "writeLines(jsonlite::toJSON(lintr::lint_package(), auto_unbox = TRUE), 'lint-results.json')"
 
 # === Cleanup ===
