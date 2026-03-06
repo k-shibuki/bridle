@@ -197,4 +197,23 @@ make_context <- function(vars = NULL) {
   }
   ContextSchema(variables = vars)
 }
+# -- SessionContext mock factory (used by session_context, graph_engine, etc.) --
+
+make_session_context <- function(variables = list(),
+                                 data = NULL,
+                                 parameters = list(),
+                                 schema = NULL) {
+  if (is.null(schema)) {
+    schema <- make_context()
+  }
+  ctx <- SessionContext(schema = schema, variables = variables)
+  if (!is.null(data)) {
+    ctx@data <- data
+  }
+  if (length(parameters) > 0L) {
+    ctx@parameters_decided <- parameters
+  }
+  ctx
+}
+
 # nolint end
