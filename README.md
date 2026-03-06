@@ -394,15 +394,23 @@ Run `make help` for all available targets.
 
 ## Development Status
 
-> **Currently Phase 1: Package scanner + AI drafter**
+> **Phase 1 complete — Phase 2 (Runtime Engine) is next**
 
 | Phase | Content | Status |
 |---|---|---|
 | Phase 0 | Design and YAML schema formalization | **Done** |
-| Phase 1 | Package scanner + AI drafter (plugin generation pipeline) | **In progress** |
+| Phase 1 | Package scanner + AI drafter (plugin generation pipeline) | **Done** |
 | Phase 2 | Runtime engine (REPL) | Not started |
 | Phase 3 | vitals evaluation suite | Not started |
 | Phase 4 | MCP server | Not started |
+
+### Phase 1 Deliverables
+
+- **S7 domain classes**: `DecisionGraph`, `KnowledgeStore`, `ConstraintSet`, `ContextSchema`, `ScanResult` with YAML readers and validators
+- **Three-layer scanner**: `scan_package()` — Layer 1 (formals analysis), Layer 2 (Rd documentation), Layer 3a (source code static analysis)
+- **Reference fetcher**: `fetch_references()` — CrossRef API + PubMed fallback
+- **AI drafter**: `draft_knowledge()` — ellmer-based LLM integration for generating decision graph, knowledge, and constraint YAML drafts
+- **Plugin validator**: `validate_plugin()` — coverage, consistency, constraint, and reachability checks
 
 ## License
 
