@@ -1,0 +1,41 @@
+# Weekly dependency vulnerability scan + lightweight PR check.
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Monday 09:00 UTC
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'DESCRIPTION'
+      - 'renv.lock'
+  workflow_dispatch:
+
+name: Dependency Review
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dependency review (PR only)
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        if: github.event_name != 'pull_request'
+        with:
+          use-public-rspm: true
+
+      - name: Check for outdated packages (scheduled)
+        if: github.event_name != 'pull_request'
+        run: |
+          install.packages("pak", repos = "https://cloud.r-project.org")
+          deps <- pak::pkg_deps("local::.")
+          old <- deps[deps$status == "outdated", ]
+          if (nrow(old) > 0) {
+            cat("Outdated packages found:\n")
+            print(old[, c("package", "version", "new_version")])
+          } else {
+            cat("All dependencies are up to date.\n")
+          }
+        shell: Rscript {0}

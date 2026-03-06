@@ -1,9 +1,9 @@
 # Workflow derived from https://github.com/r-lib/actions/tree/master/examples
 # Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+# Full OS/R-version matrix check -- runs on push to main only.
+# PRs use the lighter ci.yaml workflow instead.
 on:
   push:
-    branches: [main, master]
-  pull_request:
     branches: [main, master]
 
 name: R-CMD-check

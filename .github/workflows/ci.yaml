@@ -1,0 +1,166 @@
+# CI gate for pull requests.
+# Runs schema validation, linting, tests, and R CMD check as separate jobs.
+# Full OS matrix is handled by R-CMD-check.yaml on push to main.
+on:
+  pull_request:
+    branches: [main, master]
+
+name: CI
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+  BRIDLE_IN_CONTAINER: 1
+
+jobs:
+  # Detect which file categories changed to skip unnecessary jobs
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      r_code: ${{ steps.filter.outputs.r_code }}
+      schemas: ${{ steps.filter.outputs.schemas }}
+    steps:
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            r_code:
+              - 'R/**'
+              - 'tests/**'
+              - 'DESCRIPTION'
+              - 'NAMESPACE'
+              - 'renv.lock'
+            schemas:
+              - 'docs/schemas/**'
+
+  validate-schemas:
+    needs: changes
+    if: needs.changes.outputs.schemas == 'true' || needs.changes.outputs.r_code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Install schema validation deps
+        run: |
+          install.packages(c("yaml", "cli", "jsonlite"), repos = "https://cloud.r-project.org")
+        shell: Rscript {0}
+
+      - name: Validate schemas
+        run: Rscript tools/validate-schemas.R
+
+  lint:
+    needs: changes
+    if: needs.changes.outputs.r_code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: lintr
+
+      - name: Lint package
+        run: |
+          lintr::lint_package()
+        shell: Rscript {0}
+
+  test:
+    needs: [changes, lint]
+    if: needs.changes.outputs.r_code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: rcmdcheck
+
+      - name: Run tests
+        run: |
+          testthat::test_package("bridle")
+        shell: Rscript {0}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            tests/testthat/_snaps/
+          retention-days: 7
+
+  check:
+    needs: [changes, test]
+    if: needs.changes.outputs.r_code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: rcmdcheck
+
+      - uses: r-lib/actions/check-r-package@v2
+
+      - name: Upload check results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-results
+          path: check
+          retention-days: 7
+
+  # Post a summary comment on the PR when any job fails
+  ci-summary:
+    if: always()
+    needs: [validate-schemas, lint, test, check]
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Post failure summary
+        if: contains(needs.*.result, 'failure')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jobs = {
+              'validate-schemas': '${{ needs.validate-schemas.result }}',
+              'lint': '${{ needs.lint.result }}',
+              'test': '${{ needs.test.result }}',
+              'check': '${{ needs.check.result }}'
+            };
+            const rows = Object.entries(jobs).map(([name, result]) => {
+              const icon = result === 'success' ? '✅' :
+                           result === 'failure' ? '❌' :
+                           result === 'skipped' ? '⏭️' : '⚠️';
+              return `| ${name} | ${icon} ${result} |`;
+            }).join('\n');
+            const body = `## CI Summary\n\n| Job | Result |\n|---|---|\n${rows}\n\n` +
+              `See [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
