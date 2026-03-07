@@ -8,6 +8,26 @@
 # After editing, restart R for changes to take effect.
 # NEVER commit .Renviron to version control.
 
+# ── Security Best Practices ──────────────────────────────────────
+#
+# 1. Set spending limits on your provider account.
+#    Most providers (OpenAI, Anthropic, Google) allow you to set
+#    monthly spending caps. This is the single most important
+#    protection against accidental or unauthorized usage.
+#
+# 2. If your key has no spending limit (e.g., enterprise keys),
+#    do NOT store it in this file. Instead, use the `keyring`
+#    package to store it in your OS secret store:
+#
+#      keyring::key_set("ANTHROPIC_API_KEY")        # store (once)
+#      Sys.setenv(
+#        ANTHROPIC_API_KEY = keyring::key_get("ANTHROPIC_API_KEY")
+#      )                                            # load per session
+#
+#    See: https://r-lib.github.io/keyring/
+#
+# ─────────────────────────────────────────────────────────────────
+
 # --- GitHub Models (recommended for development) ---
 # Uses your existing GitHub PAT. No additional signup needed.
 # Models: gpt-4o, gpt-4o-mini, etc.

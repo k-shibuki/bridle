@@ -1,4 +1,4 @@
-# Secrets (API keys)
+# Secrets (API keys) — see .Renviron.example for setup guidance
 .Renviron
 
 # R package build artifacts
