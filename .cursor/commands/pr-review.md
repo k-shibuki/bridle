@@ -70,7 +70,7 @@ All required checks must pass. If any check fails, the PR is not ready for merge
 | **Code quality** | readability, naming, duplication |
 | **Spec alignment** | aligns with ADRs (`docs/adr/`) |
 | **Type safety** | S7 properties have explicit types, no `class_any` |
-| **Tests** | tests exist, negative cases covered |
+| **Test quality** | (1) test matrix exists and matches change surface, (2) positive/negative balance acceptable, (3) boundary cases covered (0/min/max/±1/empty/NULL), (4) Given/When/Then comments present, (5) exceptions validate type+message, (6) branch coverage reasonable, (7) new params have wiring/effect tests |
 | **Traceability** | `Closes #<issue>` present, `Refs: #<issue>` in commits |
 | **Risk / Rollback** | risk assessment and rollback plan documented in PR |
 
@@ -113,5 +113,4 @@ If the conclusion is "Changes required", list the required changes and stop.
 
 - `@.cursor/commands/pr-merge.md` (next step when mergeable)
 - `@.cursor/commands/pr-create.md` (PR creation)
-- `@.cursor/rules/test-strategy.mdc`
-- `@.cursor/rules/commit-format.mdc`
+- `@.cursor/rules/test-strategy.mdc` (test quality criteria)

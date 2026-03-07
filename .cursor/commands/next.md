@@ -15,7 +15,7 @@ This is a **meta-command** that orchestrates all other commands. It does not imp
 
 ## Constraints
 
-- **Never skip commands**: Always follow the defined workflow order. Do not jump from `implement` to `pr-create` without going through `test-create`, `quality-check`, `regression-test`, `docs-discover`, and `commit`.
+- **Never skip commands**: Always follow the defined workflow order. Do not jump from `implement` to `pr-create` without going through `test-create`, `quality-check`, `test-regression`, `docs-discover`, and `commit`.
 - **Never skip steps within commands**: Following the command chain is not enough. Each command's full specification (every step) must be executed. "Called the command" does not mean "followed its steps".
 - **Never act without approval**: Present the proposed action and wait for user confirmation before executing.
 - **Delegate, don't duplicate**: Once the next command is determined, invoke it by following its full specification (`.cursor/commands/<command>.md`). Do not reimplement the command's logic inline.
@@ -25,12 +25,10 @@ This is a **meta-command** that orchestrates all other commands. It does not imp
 
 When the user instructs continuous execution ("keep going", "do everything", "till close all issues", etc.):
 
-1. **Execute every step of every command in full**. "Never skip commands" means both "do not skip commands in the workflow" AND "do not skip steps within each command". Speed is never a justification for omitting verification.
-2. **Parallelize via subagent delegation, not by skipping gates**: When CI is pending on a PR, **Hard Stop #7 applies** — always delegate CI-wait + merge to a background subagent. If independent Issues exist, start `implement` immediately. If not, perform housekeeping (see Step 6). Never merge until CI passes. Never poll inline.
-3. **Report progress at each gate**: Print a one-line summary at each workflow transition (e.g., "PR #13 created, CI pending — delegated to background. Starting #9.") so the user can track progress.
-4. **User's "hurry up" does not exempt safety checks**: Achieve speed by reducing unnecessary explanation, delegating blocking operations to subagents, and batching tool calls. Never by skipping `make ci-fast`, `gh pr checks`, or any verification step.
+- All Hard Stops apply (see `@.cursor/rules/agent-safety.mdc`). Speed is achieved through delegation and batching, never by skipping verification.
+- Report progress at each gate with a one-line summary (e.g., "PR #13 created, CI pending — delegated. Starting #9.").
 
-**Typical parallel execution pattern** (multi-Issue batch):
+**Typical parallel execution pattern**:
 
 ```
 Issue A: implement → test → quality → commit → pr-create
@@ -86,7 +84,7 @@ Use the evidence to classify the current state into one of these positions:
 | Open Issues exist, on `main`, no uncommitted changes | **Ready to start** | `implement` (auto-select) |
 | On feature branch, uncommitted R/ changes, no tests | **Implementation done** | `test-create` |
 | On feature branch, tests exist, not yet checked | **Tests done** | `quality-check` |
-| On feature branch, quality OK, tests not run as suite | **Quality OK** | `regression-test` |
+| On feature branch, quality OK, tests not run as suite | **Quality OK** | `test-regression` |
 | On feature branch, tests pass, docs not reviewed | **Tests pass** | `docs-discover` (Mode 2) |
 | On feature branch, docs OK, uncommitted changes | **Docs OK** | `commit` |
 | On feature branch, committed, no PR | **Committed** | `pr-create` |
@@ -148,30 +146,7 @@ If the user modifies the choice (e.g., "do #8 instead of #7"), adjust and procee
 
 ### Step 6: Subagent delegation for blocking operations
 
-When Step 2 identifies any **CI pending** state (Hard Stop #7 — always delegate):
-
-1. **Delegate the blocking operation** to a background subagent:
-   - Use `subagent_type: "shell"`, `model: "fast"`, `run_in_background: true`
-   - Prompt must include: goal, numbered steps with exact commands, error handling, return format
-   - For sequential multi-PR merges, include the full rebase → CI-poll → merge chain in one subagent prompt
-   - For dependent PRs with shared commits, use the "Dependent PR Merge Chain" template (see `agent--delegation-templates.md`)
-   - See `pr-merge.md` "Delegated merge" section for the prompt template
-
-2. **Note the subagent transcript path** returned by the Task tool for later completion checking.
-
-3. **Run the Two-Tier Gate** (see `@.cursor/rules/subagent-policy.mdc` § Productive work during delegation):
-   - Tier 1: Signal scan (`git status`, `gh issue list`, `git stash list`, session-findings) — parallel, ~2-3 s.
-   - If all clear → proceed directly to step 4.
-   - If any signal fires → Tier 2: reason about highest-value action, execute, then proceed to step 4.
-   - The main agent MUST NOT touch `main` or the merge-target branches while the subagent is working.
-
-4. **Completion guarantee** (Hard Stop #7):
-   - After productive work is exhausted, check the subagent output file.
-   - If still running: enter monitoring loop (read output file → `sleep 15` → read again → repeat).
-   - If completed: incorporate result into state assessment, report to user, then proceed to next action or end turn.
-   - **NEVER end the turn while a delegated subagent is still running.**
-
-**Fallback**: If the environment does not support background subagents, fall back to inline CI polling as before.
+When Step 2 identifies any **CI pending** state, delegate to a background subagent per `@.cursor/rules/subagent-policy.mdc` (delegation pattern, Two-Tier Gate, completion guarantee). Use prompt templates from `@.cursor/knowledge/agent--delegation-templates.md`.
 
 ### Step 7: Handle interruptions
 
@@ -209,7 +184,7 @@ If an error or unexpected state occurs during execution:
               └────────────┬────────────┘
                            │
               ┌────────────▼────────────┐
-              │     regression-test     │
+              │     test-regression     │
               └────────────┬────────────┘
                            │
               ┌────────────▼────────────┐

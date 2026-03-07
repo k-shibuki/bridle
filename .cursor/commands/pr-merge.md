@@ -175,5 +175,5 @@ The main agent checks the subagent transcript at the next `next` re-assessment c
 ## Related
 
 - `@.cursor/commands/pr-review.md` (previous step in PR flow)
-- `@.cursor/commands/push.md` (exception flow: docs-only direct push)
+- `@.cursor/commands/commit.md` (exception: docs-only direct push)
 - `@.cursor/rules/commit-format.mdc` (for squash commit messages)

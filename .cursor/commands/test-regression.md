@@ -1,4 +1,4 @@
-# regression-test
+# test-regression
 
 ## Purpose
 

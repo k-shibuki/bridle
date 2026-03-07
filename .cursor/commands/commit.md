@@ -6,7 +6,7 @@ Create git commit(s) with **English message(s)** in the project's standard forma
 
 ## When to use
 
-- After tests pass and you're ready to record changes (typically after `regression-test`)
+- After tests pass and you're ready to record changes (typically after `test-regression`)
 
 ## Policy (rules)
 
@@ -108,9 +108,24 @@ Refs: #<issue-number>"
 - **Commits**: list of commits created (message + short hash for each)
 - **Summary**: `git log --oneline -n <count>` showing the new commits
 
+## Exception: docs-only direct push
+
+For **documentation-only changes** (no R code, no CI config, no Makefile logic), direct push to `main` is permitted instead of the PR flow.
+
+**Preconditions**: On `main`, change is docs-only, commit body explains the exception.
+
+```bash
+# Verify on main with unpushed commits
+git log origin/main..main --oneline
+
+# Push (only after confirming docs-only scope)
+git push origin main
+```
+
+If the change touches **any** code, CI config, or Makefile logic: STOP and use `pr-create` instead.
+
 ## Related
 
 - `@.cursor/rules/commit-format.mdc`
 - `@.cursor/commands/docs-discover.md` (Mode 2: pre-commit doc alignment)
-- `@.cursor/commands/pr-create.md` (next step: PR flow)
-- `@.cursor/commands/push.md` (exception flow only: docs-only direct push)
+- `@.cursor/commands/pr-create.md` (next step: PR flow, or exception path for hotfix/no-issue)
