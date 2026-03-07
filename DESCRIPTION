@@ -34,15 +34,16 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Collate: 
-    'constraints.R'
     'context_schema.R'
+    'session_context.R'
+    'code_sandbox.R'
+    'constraints.R'
     'decision_graph.R'
     'decision_logger.R'
     'draft_knowledge.R'
     'fetch_references.R'
     'hint_evaluator.R'
     'knowledge.R'
-    'session_context.R'
     'knowledge_retriever.R'
     'scan_package.R'
     'scan_result.R'
