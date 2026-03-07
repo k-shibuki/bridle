@@ -12,6 +12,8 @@ This directory contains the AI control system for bridle development, organized 
 
 **Hierarchy**: Rules constrain commands; commands reference knowledge. No reverse dependencies. Each piece of information exists in exactly one place (Single Source of Truth).
 
+The individual components of this system — rule files, command specs, knowledge atoms, README maps, and Makefile targets — are collectively called **controls**. The `controls-review` command audits these controls for structural integrity.
+
 ## Project Knowledge Map
 
 Start here to find the right information quickly.
@@ -123,6 +125,7 @@ Use when: change is documentation only (README, ADR, comments, Cursor rules/comm
 | Planning | `doctor` | Check development environment |
 | Planning | `issue-create` | Create GitHub Issue with spec, DoD, and test plan |
 | Planning | `issue-review` | Review open Issues for quality, consistency, and implementability |
+| Planning | `controls-review` | Audit AI control system for reference integrity, SSOT/DRY, contradictions |
 | Development | `implement` | Select next Issue (or specify one) and write code (no tests) |
 | Development | `scaffold-class` | Generate S7 class from YAML schema |
 | Development | `test-create` | Design and implement tests |

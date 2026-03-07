@@ -97,6 +97,7 @@ Use the evidence to classify the current state into one of these positions:
 | PR reviewed, mergeable | **Review done** | `pr-merge` |
 | PR merged, back on `main` | **Cycle complete** | `implement` (next Issue) or `issue-create` |
 | 2-3 Issues completed since last retro, on `main`, no urgent work | **Session learnings available** | `session-retro` |
+| 3+ PRs modified control files since last audit, on `main` | **Control system audit due** | `controls-review` |
 | Environment not ready | **Environment issue** | `doctor` |
 | On `main`, hotfix needed | **Exception flow** | `implement` → `pr-create` (exception path) |
 
