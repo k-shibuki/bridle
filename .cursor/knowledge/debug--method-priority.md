@@ -1,50 +1,14 @@
-# R Debugging Patterns
-
-R-specific debugging techniques and instrumentation patterns for the bridle project.
-
-**Policy**: See `@.cursor/rules/debug.mdc` for enforceable debugging requirements.
-
 ---
+trigger: debug method, reprex, browser, rlang last_error, last_trace, debug priority
+---
+# Debug Method Priority and R Tools Reference
 
-## Debug Method Priority
+## Priority Order
 
 1. **reprex** — Create minimal reproducible example with `reprex::reprex()`; isolate the issue
 2. **browser() / debug()** — Interactive inspection when the failure point is known
 3. **rlang::last_error() / last_trace()** — After an error, inspect with `options(error = rlang::entrace)`
 4. **testthat test** — Reproduce failure in `tests/testthat/test-*.R` for deterministic debugging
-
----
-
-## Instrumentation Template (R)
-
-```r
-# #region agent log
-cli::cli_inform("H1: {.field location} {.val {value}}", location = "R/foo.R:bar()")
-# or
-message(sprintf("[%s] H1: %s = %s", Sys.time(), "location", value))
-# #endregion
-```
-
----
-
-## Placement Strategy (Propagation Tracking)
-
-For debugging value propagation issues, add instrumentation at each boundary:
-
-```
-[Entry point] → [Transform 1] → [Transform 2] → [Exit point]
-     ↓               ↓               ↓               ↓
-   H1-L1           H1-L2           H1-L3           H1-L4
-```
-
-| Location | What to log |
-|----------|-------------|
-| Entry point | Raw input values |
-| Each transform | Before/after values, which branch taken |
-| Exit point | Final output values |
-| Error handlers | Exception type, message, context |
-
----
 
 ## R Debugging Tools
 
@@ -73,8 +37,6 @@ rlang::last_error()
 rlang::last_trace()
 ```
 
----
-
 ## R-Specific Notes
 
 ### NSE (Non-Standard Evaluation)
@@ -86,13 +48,6 @@ rlang::last_trace()
 
 - `@` vs `prop()`: R < 4.3.0 may need `prop()` for property access
 - Validators run at construction; use `browser()` inside validator to inspect failing values
-
-### reprex best practices
-
-- `reprex::reprex()` creates minimal reproducible examples
-- Use when the bug is reproducible but the cause is unclear; share output for collaboration
-
----
 
 ## Phase-Specific Debugging (bridle layers)
 

@@ -103,7 +103,7 @@ if [ -n "$pr_state" ]; then
 fi
 ```
 
-See `@.cursor/knowledge/git-recovery.md` "Squash merge creates conflicts for dependent branches" for related patterns.
+See `@.cursor/knowledge/git--squash-merge-dependent-branch.md` for related patterns.
 
 ## Local merge (docs-only exception flow only)
 
@@ -142,7 +142,7 @@ CI polling is always delegated to a background subagent (Hard Stop #7). This fre
 
 Launch a `shell` subagent with `model: "fast"` and `run_in_background: true`.
 
-Choose the appropriate template from `@.cursor/knowledge/subagent-prompts.md`:
+Choose the appropriate template from `@.cursor/knowledge/agent--delegation-templates.md`:
 
 | Scenario | Template |
 |----------|----------|

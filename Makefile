@@ -32,7 +32,8 @@ endif
 	check check-fast test lint format format-check document coverage coverage-check site install clean \
 	ci ci-fast ci-pr pr-ready doctor doctor-json validate-schemas \
 	changed-lint changed-test test-json lint-json scaffold-test scaffold-class \
-	status new-branch
+	status new-branch \
+	kb-manifest kb-validate kb-new
 
 # === Help ===
 
@@ -197,6 +198,17 @@ test-json: _require_container ## Run tests with JUnit XML output
 
 lint-json: _require_container ## Lint with JSON output
 	$(RSCRIPT) -e "writeLines(jsonlite::toJSON(lintr::lint_package(), auto_unbox = TRUE), 'lint-results.json')"
+
+# === Knowledge Base Management ===
+
+kb-manifest: ## Regenerate knowledge-index.mdc from atom frontmatter
+	@sh tools/kb-manifest.sh
+
+kb-validate: ## Validate knowledge base consistency (naming, frontmatter, index sync)
+	@sh tools/kb-validate.sh
+
+kb-new: ## Scaffold new knowledge atom (usage: make kb-new NAME=test--new-topic)
+	@sh tools/kb-new.sh NAME=$(NAME)
 
 # === Cleanup ===
 

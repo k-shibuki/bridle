@@ -6,14 +6,12 @@ alwaysApply: false
 
 ## Prerequisite: Read Knowledge Before Starting
 
-Before starting any debug or investigation work, the agent MUST read `@.cursor/knowledge/r-debugging-patterns.md`. This file provides:
+Before starting any debug or investigation work, the agent MUST read these knowledge atoms:
 
-- R instrumentation templates (`message()`, `cli::cli_inform()` patterns)
-- Placement strategy for propagation tracking across function boundaries
-- R-specific debugging tools (`browser()`, `rlang::last_trace()`, `reprex`)
-- Common R debugging pitfalls and their solutions
+- `@.cursor/knowledge/debug--method-priority.md` — debug method priority, R tools reference, phase-specific checks
+- `@.cursor/knowledge/debug--instrumentation-template.md` — R instrumentation template and boundary placement
 
-Do not rely on memory — read the file every time. See also `@.cursor/rules/ai-guardrails.mdc` § Knowledge Consultation Triggers.
+Do not rely on memory — read the atoms every time. See also `@.cursor/rules/ai-guardrails.mdc` § Knowledge Consultation Triggers.
 
 ## Positioning (Separation of Policy and Procedure)
 
@@ -106,7 +104,7 @@ echo "" > debug/scripts/<TASK>_debug.log   # Empty overwrite (no user prompt)
 
 ### 2.4 Instrumentation Templates and Placement
 
-For R instrumentation templates, placement strategy (propagation tracking), and R-specific debugging tools, see `@.cursor/knowledge/r-debugging-patterns.md`.
+For R instrumentation templates and placement strategy (propagation tracking), see `@.cursor/knowledge/debug--instrumentation-template.md`. For R debugging tools and method priority, see `@.cursor/knowledge/debug--method-priority.md`.
 
 ### 2.5 Hypothesis ID Convention
 
