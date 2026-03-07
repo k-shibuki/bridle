@@ -47,16 +47,18 @@ Final gate: `ci-pass` depends on all above; skipped jobs are treated as passing
 
 ## Coverage Gate
 
-The `coverage` job enforces a minimum line coverage threshold (80%). It runs `covr::package_coverage()`, uploads results to Codecov, and then fails if coverage is below the threshold. This is independent of Codecov's own status checks — the CI gate works even if Codecov is not configured.
+The `coverage` job enforces minimum line coverage. Threshold values are defined in `test-strategy.mdc` § Coverage Threshold Policy (SSOT for all coverage numbers). It runs `covr::package_coverage()`, uploads results to Codecov, and then fails if coverage is below the threshold. This is independent of Codecov's own status checks — the CI gate works even if Codecov is not configured.
 
-Local equivalent: `make coverage-check` (default threshold 80%, override with `COVERAGE_THRESHOLD=N`).
+Local equivalent: `make coverage-check` (override with `COVERAGE_THRESHOLD=N`).
 
-Configuration: `codecov.yml` at repo root defines project target (80%), patch target (90%), and ignored paths.
+Configuration: `codecov.yml` at repo root defines project and patch targets and ignored paths.
 
 Additional checks (PR-only): `check-policy`, `dependency-review`
 Skippable: `ci-config`, `auto-merge`
 
-## Adaptive Polling Strategy
+## Adaptive Polling Strategy (SSOT)
+
+This section is the **single source of truth** for CI polling intervals and time budgets. All other files (`pr-create.md`, `agent--delegation-templates.md`, etc.) reference this section instead of restating specific numbers.
 
 Fixed-interval polling wastes time. Use a stage-aware strategy:
 

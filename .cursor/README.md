@@ -89,7 +89,7 @@ Use for: all feature work, bug fixes, refactors, and multi-file changes.
 
 ### Exception Flow (restricted)
 
-Two exception types exist, with different delivery methods:
+Three exception types exist, with different delivery methods (see `workflow-policy.mdc` § Exception Policy for the full contract):
 
 #### hotfix (critical production fix → exception PR)
 
@@ -98,6 +98,14 @@ doctor → implement → quality-check → test-regression → docs-discover (Mo
 ```
 
 Use when: main is broken, users are blocked, or CI is non-functional. Issue not required, but must be justified in PR body. **All code changes go through PR — direct push to main is never permitted.**
+
+#### no-issue (justified exception → exception PR)
+
+```
+doctor → implement → quality-check → test-regression → docs-discover (Mode 2) → commit → pr-create (exception path) → [CI] → pr-review → pr-merge
+```
+
+Use when: justified exception that doesn't fit `hotfix` or `docs-only` (e.g., meta-implementation of workflow itself). Issue not required, but must be justified in PR body.
 
 #### docs-only (documentation change → direct push)
 
@@ -137,7 +145,7 @@ Rules define enforceable MUST/MUST NOT policies. Commands define procedures. Kno
 |------|-------|-------------------|
 | `coding-policy.mdc` (always) | Core coding assistance | — |
 | `agent-safety.mdc` (always) | Hard Stops — absolute prohibitions | — |
-| `workflow-policy.mdc` (always) | Issue-driven workflow, exception policy, pre-implementation checks | — |
+| `workflow-policy.mdc` (always) | Issue-driven workflow, exception policy, knowledge consultation triggers | — |
 | `knowledge-index.mdc` (always) | Trigger-keyword lookup for all knowledge atoms | All atoms in `.cursor/knowledge/` |
 | `subagent-policy.mdc` | Subagent delegation, Two-Tier Gate, CI polling | `agent--*` atoms, `git--*` atoms, `ci--*` atoms |
 | `quality-policy.mdc` | Lint/format/check, S7 type strictness, schema-code consistency, verification gates | `lint--*` atoms, `r--*` atoms |

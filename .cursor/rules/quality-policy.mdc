@@ -1,5 +1,5 @@
 ---
-description: "Quality gates: lint, format, R CMD check, S7 type strictness, schema-code consistency, verification gates, change safety checklist, nolint decision tree"
+description: "Quality gates: lint, format, R CMD check, S7 type strictness, schema-code consistency, verification gates, nolint decision tree"
 alwaysApply: false
 ---
 # Quality Policy
@@ -13,7 +13,7 @@ Procedures (which commands to run and how) are documented in `@.cursor/commands/
 
 ### Zero-Tolerance for Pre-existing Issues
 
-"Pre-existing" is **never** a valid reason to leave a diagnostic unresolved. Every error, warning, and NOTE present in the output of `devtools::check()`, `lintr::lint_package()`, `make validate-schemas`, or any other quality gate is a defect that must be fixed — regardless of when it was introduced. The agent must not classify, skip, or deprioritize diagnostics based on whether the current change caused them. If a quality gate reports a problem, the agent fixes it before proceeding.
+Per `agent-safety.mdc` Hard Stop #6: every diagnostic reported by quality gates must be fixed regardless of when it was introduced. "Pre-existing" is never a valid reason to skip a diagnostic.
 
 ## Prohibited Practices (Workarounds)
 
@@ -30,7 +30,7 @@ The following are prohibited in principle (exception only with stated justificat
 1. **lintr** — `lintr::lint_package()`: errors and warnings
 2. **styler** — `styler::style_pkg(dry = "on")`: format diffs
 3. **R CMD check** — `devtools::check()`: errors, warnings, and notes
-4. **coverage** — `covr::package_coverage()`: line coverage >= 80% (via `make coverage-check`)
+4. **coverage** — `covr::package_coverage()`: line coverage >= threshold (see `test-strategy.mdc` § Coverage Threshold Policy; enforced via `make coverage-check`)
 5. Inappropriate `# nolint` introduction (new additions, propagation)
 6. Clear security issues (authentication/authorization, input validation, data retention)
 
@@ -42,7 +42,7 @@ Before writing `# nolint`, the agent MUST execute the following steps **in order
 
 ### Step 1: Read Knowledge
 
-Read `@.cursor/knowledge/lint--nolint-accepted-patterns.md` and `@.cursor/knowledge/lint--styler-lintr-conflict.md`. If in test code, also read `@.cursor/rules/test-strategy.mdc` §8 (Helper Colocation). Do not rely on memory — always read the files.
+Read `@.cursor/knowledge/lint--nolint-accepted-patterns.md` and `@.cursor/knowledge/lint--styler-lintr-conflict.md`. If in test code, also read `@.cursor/rules/test-strategy.mdc` §7 (Helper Colocation). Do not rely on memory — always read the files.
 
 ### Step 2: Attempt Code Restructuring
 
@@ -60,7 +60,7 @@ If restructuring resolves the lint → done. No `# nolint` needed.
 If the lint is `object_usage_linter` in test/helper code and the referenced function is in another helper file:
 
 - Move the function (or both functions) into the **same** `helper-*.R` file so the linter can resolve the reference.
-- See `@.cursor/rules/test-strategy.mdc` §8 (Helper Colocation).
+- See `@.cursor/rules/test-strategy.mdc` §7 (Helper Colocation).
 
 If co-location resolves the lint → done. No `# nolint` needed.
 

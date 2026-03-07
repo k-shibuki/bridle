@@ -128,4 +128,5 @@ make new-branch PREFIX=feat ISSUE=<number> DESC=<short-description>
 - `@.cursor/commands/test-create.md` (next step)
 - `@.cursor/commands/docs-discover.md` (Mode 1 during Step 3, Mode 2 before commit)
 - `@.cursor/rules/workflow-policy.mdc`
+- `@.cursor/rules/commit-format.mdc` (branch naming convention)
 - `@.cursor/rules/integration-strategy.mdc` (when changes span module boundaries / contracts)

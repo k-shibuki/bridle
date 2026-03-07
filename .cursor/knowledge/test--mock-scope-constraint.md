@@ -28,4 +28,4 @@ test_that("my test", {
 })
 ```
 
-**Exception**: Mock-applying wrappers like `with_scan_mocks` work correctly from `helper-mocks.R` because the `code` argument is lazily evaluated within the wrapper's frame where mocks are active. See `test-strategy.mdc` §8 (Helper Colocation).
+**Exception**: Mock-applying wrappers like `with_scan_mocks` work correctly from `helper-mocks.R` because the `code` argument is lazily evaluated within the wrapper's frame where mocks are active. See `test-strategy.mdc` §7 (Helper Colocation).
