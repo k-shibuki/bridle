@@ -95,9 +95,7 @@ Use the evidence to classify the current state into one of these positions:
 | Open PR, CI all green | **CI green** | `pr-review` |
 | Open PR, CI failed | **CI failure** | `debug` or fix + re-push |
 | PR reviewed, mergeable | **Review done** | `pr-merge` |
-| PR merged, back on `main` | **Cycle complete** | `implement` (next Issue) or `issue-create` |
-| 2-3 Issues completed since last retro, on `main`, no urgent work | **Session learnings available** | `session-retro` |
-| 3+ PRs modified control files since last audit, on `main` | **Control system audit due** | `controls-review` |
+| PR merged, back on `main` | **Cycle complete** | Post-cycle signal scan (see Step 3), then `implement` (next Issue) or `issue-create` |
 | Environment not ready | **Environment issue** | `doctor` |
 | On `main`, hotfix needed | **Exception flow** | `implement` → `pr-create` (exception path) |
 
@@ -109,6 +107,11 @@ Beyond the basic position, consider:
 - **In-progress work**: If uncommitted changes exist on a branch, resuming that work takes priority over starting new Issues.
 - **Failed CI**: If an open PR has failing checks, fixing it takes priority.
 - **Stale PRs**: If a PR is open but not reviewed, suggest `pr-review`.
+- **Post-cycle signal scan**: When the state is **Cycle complete** (PR merged, back on `main`), run a lightweight scan for learning signals before proposing the next action. Follow the Quick Scan procedure in `@.cursor/commands/session-retro.md` § Quick Scan Mode:
+  - Scan `git log` and recent closed Issues/PRs for the 5 signal categories (Friction, Discovery, Gap, Drift, Efficiency)
+  - Do NOT read agent transcripts — that is the full `session-retro`'s job
+  - **"No signals" is the normal result.** Do not manufacture findings. Proceed silently to the next action.
+  - If a high-confidence signal is detected, report it in 1-2 lines within the Step 4 proposal and offer `session-retro` as an alternative to `implement`
 
 ### Step 4: Present proposal
 
@@ -207,6 +210,10 @@ If an error or unexpected state occurs during execution:
                            │
               ┌────────────▼────────────┐
               │      pr-merge           │
+              └────────────┬────────────┘
+                           │
+              ┌────────────▼────────────┐
+              │  retro signal scan      │ (silent if no signals)
               └────────────┬────────────┘
                            │
                     ┌──────▼──────┐

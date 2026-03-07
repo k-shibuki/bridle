@@ -4,11 +4,11 @@
 
 Reflect on the current session to extract learnings and incrementally improve the AI control system. Identify knowledge gaps, propose new atoms, and suggest rule/command improvements based on session activity.
 
-This is a lightweight, frequent retrospective that `next` can trigger during natural workflow pauses (e.g., after completing 2-3 Issues). It complements `controls-review` (the heavyweight structural audit) by capturing incremental, experience-driven improvements.
+The `next` command runs a post-cycle signal scan after every `pr-merge` completion. When the scan detects a learning signal, it proposes this command for full analysis. The command can also be invoked explicitly at any time. It complements `controls-review` (the heavyweight structural audit) by capturing incremental, experience-driven improvements.
 
 ## When to use
 
-- After completing 2-3 Issues in a session (triggered by `next`)
+- When `next` post-cycle signal scan detects a learning signal (see § Quick Scan Mode)
 - At the end of a multi-Issue session before signing off
 - When the agent notices repeated friction or workarounds during implementation
 - When the user explicitly asks for a session retrospective
@@ -61,6 +61,20 @@ For each detected signal, record:
 - **Category**: one of the 5 above
 - **Evidence**: specific commit, transcript excerpt, or command output
 - **Confidence**: high / medium / low (based on signal strength)
+
+### Quick Scan Mode
+
+`next` runs this abbreviated version of Step 2 after every `pr-merge` cycle. The goal is a fast pass/no-pass gate — not a thorough analysis.
+
+**Procedure** (target: seconds, not minutes):
+
+1. Scan `git log --oneline -10` and `gh pr list --state merged --limit 5` for obvious signals:
+   - `revert` commits or force-pushes → Friction
+   - Same file modified in multiple recent commits → possible Gap or Efficiency
+   - `.cursor/` files modified by recent PRs → possible Drift
+2. Do NOT read agent transcripts or knowledge atoms — that is the full retro's job.
+3. **"No signals" is the expected normal result.** Do not manufacture findings. Return silently.
+4. If a high-confidence signal is detected, return a 1-line description. `next` will offer the user a choice between `session-retro` (full analysis) and the default next action.
 
 ### Step 3: Cross-reference with existing knowledge
 
