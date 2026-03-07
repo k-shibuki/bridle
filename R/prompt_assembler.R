@@ -66,8 +66,8 @@ PromptResult <- S7::new_class("PromptResult",
 assemble_runtime_prompt <- function(node, retrieval_result, context,
                                     transition_trace = NULL) {
   node_type <- node@type
-  topic <- node@topic
-  param <- node@parameter
+  topic <- if (length(node@topic) > 0L) node@topic else ""
+  param <- if (length(node@parameter) > 0L) node@parameter else ""
 
   sections <- character(0)
 
