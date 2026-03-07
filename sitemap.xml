@@ -6,6 +6,8 @@
 <url><loc>/PULL_REQUEST_TEMPLATE.html</loc></url>
 <url><loc>/authors.html</loc></url>
 <url><loc>/index.html</loc></url>
+<url><loc>/reference/CodeResult.html</loc></url>
+<url><loc>/reference/CodeSandbox.html</loc></url>
 <url><loc>/reference/CompetingView.html</loc></url>
 <url><loc>/reference/Constraint.html</loc></url>
 <url><loc>/reference/ConstraintSet.html</loc></url>
@@ -28,9 +30,11 @@
 <url><loc>/reference/analyze_log.html</loc></url>
 <url><loc>/reference/assemble_draft_prompt.html</loc></url>
 <url><loc>/reference/bridle_chat.html</loc></url>
+<url><loc>/reference/bridle_eval_code.html</loc></url>
 <url><loc>/reference/build_dependency_graph.html</loc></url>
 <url><loc>/reference/check_availability.html</loc></url>
 <url><loc>/reference/classify_parameter.html</loc></url>
+<url><loc>/reference/code_sandbox.html</loc></url>
 <url><loc>/reference/collect_calls.html</loc></url>
 <url><loc>/reference/collect_conditional_stops.html</loc></url>
 <url><loc>/reference/collect_node_hints.html</loc></url>
