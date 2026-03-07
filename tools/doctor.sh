@@ -79,6 +79,14 @@ else
   errors=$((errors + 1))
 fi
 
+# Git commit template
+if git config --get commit.template &>/dev/null; then
+  record "git commit.template" "ok"
+else
+  record "git commit.template" "warn" "not set (run: git config commit.template .gitmessage)"
+  warnings=$((warnings + 1))
+fi
+
 # Compose tool: podman-compose (standalone) or docker compose (V2 subcommand)
 if command -v podman-compose &>/dev/null; then
   record "podman-compose" "ok"

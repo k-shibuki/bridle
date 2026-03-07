@@ -16,6 +16,8 @@ Follow the commit message policy here:
 
 This command intentionally avoids duplicating the policy (format/prefixes/language). Keep `commit-format.mdc` as the single source of truth.
 
+**Note**: The `commit-msg` hook (`tools/check-commit-msg.sh`) validates format at git level. It fires on `git commit -m` too, so malformed messages are caught even from AI agents.
+
 ## Issue reference (required)
 
 Every commit must reference its tracking Issue in the footer:
