@@ -6,11 +6,11 @@ Comprehensively audit the structural quality of the AI control system: rules, co
 
 ## When to use
 
-- After 3+ PRs that modified control files (triggered by `next`)
+- When `session-retro` escalates a Drift or structural problem
 - After a major reorganization of `.cursor/` files
-- When `session-retro` escalates a structural problem
 - Before a milestone or phase transition
 - Periodically as a hygiene check (monthly or quarterly)
+- When the user explicitly requests a control system audit
 
 ## Inputs
 
