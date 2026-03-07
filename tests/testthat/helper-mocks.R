@@ -216,4 +216,25 @@ make_session_context <- function(variables = list(),
   ctx
 }
 
+# -- GraphEngine mock factory (used by graph_engine, console, integration) -----
+
+make_test_engine <- function(nodes = NULL, entry = "start",
+                             context = NULL, global_policy = NULL) {
+  if (is.null(nodes)) {
+    nodes <- list(
+      start = Node(
+        type = "decision", topic = "effect_measure", parameter = "sm",
+        transitions = list(Transition(to = "end", always = TRUE))
+      ),
+      end = Node(type = "execution", transitions = list())
+    )
+  }
+  gp <- global_policy %||% GlobalPolicy()
+  graph <- DecisionGraph(
+    entry_node = entry, global_policy = gp, nodes = nodes
+  )
+  ctx <- context %||% make_session_context()
+  make_graph_engine(graph, ctx)
+}
+
 # nolint end

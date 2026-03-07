@@ -42,16 +42,56 @@ The following are prohibited in principle (exception only with stated justificat
 5. Inappropriate `# nolint` introduction (new additions, propagation)
 6. Clear security issues (authentication/authorization, input validation, data retention)
 
-## About Exceptions (Intentional Lint)
+## nolint Checkpoint (Hard Stop #8 — Decision Tree)
 
-When intentionally violating lint rules, always **state the reason in roxygen2 or comment**.
+**Trigger**: The agent considers adding `# nolint` to any line of code.
 
-Example (line length):
+Before writing `# nolint`, the agent MUST execute the following steps **in order**. Proceed to the next step only if the previous one does not resolve the issue.
+
+### Step 1: Read Knowledge
+
+Read `@.cursor/knowledge/r-lint-patterns.md` (and `@.cursor/knowledge/r-testing-patterns.md` if in test code). Do not rely on memory — always read the file.
+
+### Step 2: Attempt Code Restructuring
+
+| Lint issue | Restructuring approach |
+|---|---|
+| styler/lintr indentation conflict | Extract condition into named variable; split expression |
+| `object_length_linter` | Shorten name using codebase abbreviations (`rd`, `params`, etc.) |
+| `line_length_linter` | Break expression across lines (unless URL or error message) |
+| Other style lints | Refactor code to satisfy both styler and lintr |
+
+If restructuring resolves the lint → done. No `# nolint` needed.
+
+### Step 3: Attempt Co-location (Test Code Only)
+
+If the lint is `object_usage_linter` in test/helper code and the referenced function is in another helper file:
+
+- Move the function (or both functions) into the **same** `helper-*.R` file so the linter can resolve the reference.
+- See `@.cursor/knowledge/r-testing-patterns.md` § Helper Colocation.
+
+If co-location resolves the lint → done. No `# nolint` needed.
+
+### Step 4: Justified Line-Level Suppression (Last Resort)
+
+Only if Steps 2–3 do not apply, add a **line-level** suppression with **linter name** and **reason**:
 
 ```r
-# nolint: line_length_linter. Long URL for documentation.
-url <- "https://example.com/very/long/path/to/resource"
+result <- ScanResult(...) # nolint: object_usage_linter. S7 class defined in R/scan_result.R
 ```
+
+**Prohibited forms** (always rejected):
+
+| Form | Why prohibited |
+|---|---|
+| `# nolint` (bare) | No linter name, no reason |
+| `# nolint start` / `# nolint end` | Blanket suppression hides multiple issues |
+| `# nolint: object_usage_linter` (no reason) | Reason is required to justify the exception |
+| `# nolint` to avoid fixing code quality issues | Suppression is for tool limitations, not code defects |
+
+### Accepted Justifications
+
+See `@.cursor/knowledge/r-lint-patterns.md` § Justified `# nolint` Usage for the complete table.
 
 ## Known Patterns and Troubleshooting
 
