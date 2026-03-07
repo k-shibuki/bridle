@@ -1,7 +1,7 @@
 #' Prompt Assembler
 #'
 #' Pure function that constructs prompt strings from knowledge entries,
-#' constraints, context, and transition queries. Does NOT call the LLM —
+#' constraints, context, and transition queries. Does NOT call the LLM --
 #' the caller (REPL #62) handles invocation.
 #'
 #' @name prompt_assembler
@@ -189,7 +189,7 @@ assemble_runtime_prompt <- function(node, retrieval_result, context,
     } else {
       "(no condition)"
     }
-    lines <- c(lines, sprintf("%d. Go to `%s` — when: %s", i, cand@to, when_text))
+    lines <- c(lines, sprintf("%d. Go to `%s` -- when: %s", i, cand@to, when_text))
   }
   lines <- c(
     lines,
