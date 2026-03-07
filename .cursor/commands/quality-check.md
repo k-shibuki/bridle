@@ -61,7 +61,7 @@ make lint               # Lint check (lintr)
 make format             # Format (auto-fix with styler)
 make format-check       # Format dry-run (exits non-zero if unformatted)
 make check              # R CMD check (primary quality gate)
-make coverage-check     # Coverage gate (line coverage >= 80%)
+make coverage-check     # Coverage gate (threshold per test-strategy.mdc § Coverage Threshold Policy)
 
 # Differential (changed files only, faster iteration)
 make changed-lint       # Lint only changed R files
@@ -130,7 +130,7 @@ result <- MyClass(...) # nolint: object_usage_linter. S7 class defined in R/my_c
 
 ```bash
 make coverage                 # Print coverage summary
-make coverage-check           # Verify threshold (default 80%)
+make coverage-check           # Verify threshold (see test-strategy.mdc § Coverage Threshold Policy)
 make coverage-check COVERAGE_THRESHOLD=70  # Override threshold (investigation only)
 ```
 

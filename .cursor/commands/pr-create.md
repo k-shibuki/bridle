@@ -23,7 +23,7 @@ Create a feature branch (if needed), commit, push, and open a pull request on Gi
 
 ### 1. Ensure you are on a feature branch
 
-If on `main`, create a feature branch. Branch names follow the convention: `<prefix>/<issue-number>-<short-description>`.
+If on `main`, create a feature branch per `@.cursor/rules/commit-format.mdc` § Branch Naming Convention.
 
 ```bash
 current_branch=$(git branch --show-current)
@@ -148,7 +148,7 @@ EOF
 
 #### Exception path (hotfix / no-issue / docs-only)
 
-This is the **required delivery method for all code changes that bypass the Issue-driven flow**, including `hotfix`. Direct push to `main` is not permitted for code changes — only `docs-only` may use `push` instead.
+This is the **required delivery method for all code changes that bypass the Issue-driven flow**, including `hotfix`. Direct push to `main` is not permitted for code changes — only `docs-only` may use direct push via `commit` (docs-only path).
 
 When the user explicitly confirms an exception, add a label and fill the `## Exception` section instead of `Closes #`.
 
@@ -204,20 +204,14 @@ EOF
 
 ### 5. Monitor CI until completion
 
-Poll CI checks until all jobs reach a terminal state (pass / fail / skipping).
+Per `agent-safety.mdc` Hard Stop #7: CI polling MUST be delegated to a background subagent. The main agent must not poll CI inline with `sleep` loops.
 
-**Polling strategy** (do NOT use long `sleep` waits):
+**Delegation**: Use `@.cursor/rules/subagent-policy.mdc` delegation pattern with prompt templates from `@.cursor/knowledge/agent--delegation-templates.md` (Template 1: CI-Wait + Merge, or Template 3: CI-Wait Only).
 
-1. First check at **15 seconds** after push (catches fast jobs like `check-policy`, `changes`).
-2. Then poll every **20–30 seconds** until all jobs are terminal (pass / fail / skipping).
-3. **Maximum 10 polls** (roughly 5 minutes). If CI is still pending after 10 polls, report status to the user and stop polling — do not burn context with indefinite waits.
-4. **Never use `sleep` longer than 30 seconds** in a single wait. Prefer `sleep 20` between polls.
+**Polling strategy**: The subagent follows the Adaptive Polling Strategy defined in `@.cursor/knowledge/ci--job-dependency-graph.md` § Adaptive Polling Strategy (the SSOT for polling intervals and time budgets).
 
 ```bash
-# Preferred: gh pr checks --watch (if available and not timing out)
-gh pr checks --watch
-
-# Fallback: manual polling
+# Quick initial check (before delegating to subagent)
 gh pr checks <PR_NUMBER>
 ```
 

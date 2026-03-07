@@ -50,7 +50,7 @@ make test
 
 ### Stage 3: coverage gate
 
-After all tests pass, verify that line coverage meets the project threshold (default 80%):
+After all tests pass, verify that line coverage meets the project threshold (see `test-strategy.mdc` § Coverage Threshold Policy for current values):
 
 ```bash
 make coverage-check

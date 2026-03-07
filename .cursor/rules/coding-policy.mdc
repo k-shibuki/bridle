@@ -1,4 +1,5 @@
 ---
+description: "Core coding policy: language, documentation, task classification, tool usage, security"
 alwaysApply: true
 ---
 # Coding Policy (bridle)

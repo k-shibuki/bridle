@@ -13,10 +13,9 @@ Monitor CI for PR #<N> until all checks pass, then merge it.
 
 ## Steps
 
-1. Poll CI status (adaptive intervals, max 5 minutes elapsed):
-   - Early: `sleep 20 && gh pr checks <N>`
-   - After format-check + lint pass: `sleep 15 && gh pr checks <N>`
-   - After test passes: `sleep 10 && gh pr checks <N>`
+1. Poll CI status using Adaptive Polling Strategy from `ci--job-dependency-graph.md` § Adaptive Polling Strategy (SSOT for intervals and time budgets):
+   - Adapt poll intervals based on which jobs have completed
+   - Use elapsed time (max 5 min) as upper bound
 
 2. When all checks pass:
    `gh pr merge <N> --squash --delete-branch`

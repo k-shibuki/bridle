@@ -38,7 +38,7 @@ The following exception types may bypass the Issue-driven flow:
 | Label | When to use | Delivery method |
 |-------|-------------|-----------------|
 | `hotfix` | Critical fix meeting the hotfix threshold above | **Exception PR** (via `pr-create` exception path) |
-| `docs-only` | Documentation-only change with no code impact | **Direct push** (via `push`) or exception PR |
+| `docs-only` | Documentation-only change with no code impact | **Direct push** (via `commit` docs-only path) or exception PR |
 | `no-issue` | Other justified exceptions (e.g., meta-implementation of workflow itself) | **Exception PR** (via `pr-create` exception path) |
 
 **All code changes — including hotfix — MUST go through a PR.** Direct push to `main` is permitted only for `docs-only` changes. This ensures CI validation and an auditable merge record for every code change.
