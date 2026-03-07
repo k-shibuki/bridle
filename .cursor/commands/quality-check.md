@@ -34,6 +34,9 @@ make ci
 
 # Step 5: Coverage gate (verify line coverage >= threshold)
 make coverage-check
+
+# Step 6: Knowledge base validation (if knowledge/ files changed)
+make kb-validate
 ```
 
 Skipping Step 1 and going directly to `make ci-fast` will cause lint failures on code that styler would have auto-fixed.

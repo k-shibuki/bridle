@@ -6,15 +6,14 @@ alwaysApply: false
 
 ## Prerequisite: Read Knowledge Before Starting
 
-Before writing, reviewing, or modifying any test code, the agent MUST read `@.cursor/knowledge/r-testing-patterns.md`. This file documents R-specific testing gotchas that cause recurring bugs:
+Before writing, reviewing, or modifying any test code, the agent MUST read these knowledge atoms:
 
-- `local_mocked_bindings()` scoping constraints (mock leaks across tests)
-- NULL assignment trap (`x$field <- NULL` silently removes the field)
-- Primitive function `body()` returns NULL (cannot mock via body replacement)
-- Helper colocation rule (why `# nolint` is wrong for cross-helper references)
-- Layered mock strategy for S7 classes
+- `@.cursor/knowledge/test--mock-scope-constraint.md` — `local_mocked_bindings()` cannot be extracted into helpers
+- `@.cursor/knowledge/test--mock-external-function.md` — wrapper pattern for mocking system/external functions
+- `@.cursor/knowledge/test--layered-mock-strategy.md` — mock all layer boundaries in integration tests
+- `@.cursor/knowledge/r--null-assignment-trap.md` — `x$field <- NULL` silently removes the field
 
-Do not rely on memory — read the file every time. See also `@.cursor/rules/ai-guardrails.mdc` § Knowledge Consultation Triggers.
+Do not rely on memory — read the atoms every time. See also `@.cursor/rules/ai-guardrails.mdc` § Knowledge Consultation Triggers.
 
 ---
 
@@ -69,6 +68,8 @@ The Issue Test Plan is intentionally detailed (concrete inputs, expected outputs
 5. Target 100% branch coverage, designing additional cases as needed.
    100% branch coverage is a "target value"; when not reasonably achievable, cover at least high-business-impact branches and main error paths.
    When branches remain uncovered, state the reason and impact in `Notes` or PR body.
+6. **S7 constructor testing**: Test validator error messages (match stable substring), property type constraints (`expect_error` on wrong type), and default values explicitly.
+7. **Internal function testing**: Use `bridle:::function_name` for non-exported functions with non-trivial logic. Place in `test-internals.R`.
 
 ---
 
@@ -128,7 +129,7 @@ Write comments directly above test code or within steps, keeping scenarios trace
 
 ## R-Specific Patterns
 
-For R-specific testing gotchas (mock scoping constraints, NULL assignment trap, primitive function `body()`, layered mock strategy, S7 constructor testing), see `@.cursor/knowledge/r-testing-patterns.md`.
+For R-specific testing gotchas (mock scoping constraints, NULL assignment trap, layered mock strategy), read the atoms listed in § Prerequisite above.
 
 ---
 
@@ -141,7 +142,7 @@ testthat automatically sources all `helper-*.R` files before running tests. Use 
 - **`helper-mocks.R`**: Contains mock value factories (e.g., `mock_resolve()`, `mock_version()`, `make_mock_rd()`, `mock_crossref_response()`) and test data builders (e.g., `make_graph()`, `make_knowledge()`).
 - Helpers provide **values only**. `local_mocked_bindings()` must always be called inline in each `test_that` block due to scope constraints (see §7.1).
 - When adding new mock patterns, check `helper-mocks.R` first. Add to the helper if the pattern will be reused across multiple test files. Keep file-specific helpers in the test file itself.
-- **Colocation rule**: If a helper function references other helpers from `helper-mocks.R` (including mock-applying wrappers like `with_scan_mocks`), it MUST be defined in `helper-mocks.R` — not in the test file. This ensures `object_usage_linter` can resolve all references without `# nolint`. See `r-testing-patterns.md` "Helper Colocation" for rationale.
+- **Colocation rule**: If a helper function references other helpers from `helper-mocks.R` (including mock-applying wrappers like `with_scan_mocks`), it MUST be defined in `helper-mocks.R` — not in the test file. This ensures `object_usage_linter` can resolve all references without `# nolint`. `# nolint` suppresses the diagnostic but does not prove the reference is valid — co-location makes the dependency explicit and verifiable by the linter.
 
 ### Setup file (`tests/testthat/setup.R`)
 

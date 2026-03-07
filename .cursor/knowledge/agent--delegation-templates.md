@@ -1,24 +1,11 @@
-# Subagent Prompt Templates
-
-Reusable prompt templates for delegating blocking operations to background subagents.
-
-**Policy**: See `@.cursor/rules/ai-guardrails.mdc` § Subagent Delegation for enforceable requirements.
-
 ---
-
-## Required Prompt Elements
-
-Every delegated subagent prompt MUST include:
-
-1. **Goal**: One-sentence summary
-2. **Steps**: Numbered steps with exact shell commands
-3. **Prohibitions**: Explicit list of forbidden operations
-4. **Error handling**: What to do on failure
-5. **Return format**: What to report on completion
-
+trigger: CI-wait template, merge template, sequential merge, dependent PR merge, delegation template
 ---
+# Subagent Delegation Templates
 
-## Template: CI-Wait + Merge
+Four reusable templates for delegating blocking operations to background subagents.
+
+## Template 1: CI-Wait + Merge
 
 ```
 ## Goal
@@ -51,9 +38,7 @@ Monitor CI for PR #<N> until all checks pass, then merge it.
 Report: "MERGED: PR #<N> squash-merged at <sha>" or "FAILED: <reason>"
 ```
 
----
-
-## Template: Sequential PR Merge Chain
+## Template 2: Sequential PR Merge Chain
 
 ```
 ## Goal
@@ -81,11 +66,7 @@ For each PR in order:
 Report: "COMPLETED: Merged PRs #A, #B, #C" or "STOPPED at PR #X: <reason>"
 ```
 
----
-
-## Template: CI-Wait Only (No Merge)
-
-Use when the main agent wants to merge manually but needs CI monitoring.
+## Template 3: CI-Wait Only (No Merge)
 
 ```
 ## Goal
@@ -105,11 +86,7 @@ Monitor CI for PR #<N> and report when all checks complete.
 Report: "CI PASSED: all checks green for PR #<N>" or "CI FAILED: <check-name> failed — <details>"
 ```
 
----
-
-## Template: Dependent PR Merge Chain (rebase-enabled)
-
-Use when PRs share commit history (e.g., PR #B was branched from PR #A's feature branch) and squash merge of #A creates conflicts for #B's normal rebase. Requires `git rebase --onto` to skip the already-merged commits.
+## Template 4: Dependent PR Merge Chain (rebase-enabled)
 
 ```
 ## Goal
@@ -153,29 +130,3 @@ Report:
 - PR #<B>: merged (yes/no), merge SHA
 - Any errors encountered
 ```
-
----
-
-## Subagent Configuration Reference
-
-| Use case | `subagent_type` | `model` | `run_in_background` |
-|----------|-----------------|---------|---------------------|
-| CI poll + merge | `shell` | `fast` | `true` |
-| Sequential merge chain | `shell` | `fast` | `true` |
-| Dependent PR chain (rebase) | `shell` | `fast` | `true` |
-| CI poll only | `shell` | `fast` | `true` |
-
----
-
-## Completion Detection
-
-**When**: The main agent MUST confirm subagent completion before ending its turn. Do not defer to "the next re-assessment" or the next user message — confirm within the same turn that launched the subagent. See `@.cursor/rules/ai-guardrails.mdc` § Completion guarantee for the enforceable lifecycle.
-
-**How**: The main agent detects subagent completion by reading the subagent output file:
-
-1. Read the last portion of the output file (check for `exit_code` footer or final result message)
-2. If still running (no completion indicator): continue productive work, then re-check
-3. When productive work is exhausted and the subagent is still running: enter monitoring loop (read output file → `sleep 15` → repeat)
-4. If completed successfully: incorporate results (e.g., "MERGED: PR #N") and report to user
-5. If error encountered: report the error details to the user
-6. Only after confirming completion may the main agent end its turn

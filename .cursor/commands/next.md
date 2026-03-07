@@ -154,7 +154,7 @@ When Step 2 identifies any **CI pending** state (Hard Stop #7 — always delegat
    - Use `subagent_type: "shell"`, `model: "fast"`, `run_in_background: true`
    - Prompt must include: goal, numbered steps with exact commands, error handling, return format
    - For sequential multi-PR merges, include the full rebase → CI-poll → merge chain in one subagent prompt
-   - For dependent PRs with shared commits, use the "Dependent PR Merge Chain" template (see `subagent-prompts.md`)
+   - For dependent PRs with shared commits, use the "Dependent PR Merge Chain" template (see `agent--delegation-templates.md`)
    - See `pr-merge.md` "Delegated merge" section for the prompt template
 
 2. **Note the subagent transcript path** returned by the Task tool for later completion checking.

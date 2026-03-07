@@ -22,7 +22,7 @@ The following actions are NEVER permitted, regardless of user instructions:
 5. **NEVER create a PR without the full template**: Every PR body must include ALL sections from `pr-create.md` Step 4 (Summary, Traceability, Risk/Impact, Rollback Plan, Review Checklist). Read `pr-create.md` before every PR creation — do not compose the body from memory.
 6. **NEVER dismiss diagnostics as "pre-existing"**: Every error, warning, and NOTE reported by quality gates (`devtools::check()`, `lintr`, `validate-schemas`, etc.) is a defect to fix — regardless of when it was introduced. The agent must not classify, skip, or deprioritize diagnostics based on whether the current change caused them. If the gate reports a problem, the agent resolves it before proceeding.
 7. **NEVER poll CI inline**: CI polling is always delegated to a background subagent. The main agent uses freed time for productive work: implementing the next Issue, branch cleanup, environment health checks (`make doctor`), documentation review, or next-Issue planning. Inline `sleep` + poll loops in the main agent are prohibited regardless of whether independent Issues exist. "I'll just wait a minute" is not acceptable — delegate and do useful work. **Completion Guarantee**: After delegating to a subagent, the main agent MUST NOT end its turn until the subagent completes. After exhausting productive work (independent Issues, housekeeping), enter a monitoring loop: read the subagent output file, sleep, repeat. Report the subagent's result to the user before ending the turn.
-8. **NEVER add `# nolint` without consulting knowledge first**: Before writing ANY `# nolint` annotation, the agent MUST read `@.cursor/knowledge/r-lint-patterns.md` and follow the nolint decision tree in `@.cursor/rules/quality-check.mdc` § nolint Checkpoint. The required sequence is: (1) attempt code restructuring, (2) attempt co-location for test helpers, (3) only then consider line-level `# nolint: <linter_name>. <reason>`. Blanket `# nolint`, `# nolint start/end`, and `# nolint` without linter name + reason are **always prohibited**. Adding `# nolint` without first reading the knowledge file and exhausting alternatives is prohibited — "the lint error needs suppressing" is not sufficient justification.
+8. **NEVER add `# nolint` without consulting knowledge first**: Before writing ANY `# nolint` annotation, the agent MUST read `@.cursor/knowledge/lint--nolint-accepted-patterns.md` and follow the nolint decision tree in `@.cursor/rules/quality-check.mdc` § nolint Checkpoint. The required sequence is: (1) attempt code restructuring, (2) attempt co-location for test helpers, (3) only then consider line-level `# nolint: <linter_name>. <reason>`. Blanket `# nolint`, `# nolint start/end`, and `# nolint` without linter name + reason are **always prohibited**. Adding `# nolint` without first reading the knowledge file and exhausting alternatives is prohibited — "the lint error needs suppressing" is not sufficient justification.
 9. **NEVER use `--base feat/<branch>` in `gh pr create`**: All PRs must target `main`. Using a feature branch as base causes the PR to be auto-closed when the base branch is deleted on merge. Document dependencies in the PR body, not through the base branch. See `pr-create.md` Step 3c.
 
 ## Issue-Driven Workflow (Required)
@@ -97,13 +97,13 @@ Before writing any code:
 
 Certain task types require reading a specific knowledge file **before** starting work. This is not optional — the knowledge files capture hard-won patterns that prevent recurring bugs.
 
-| Task type | Knowledge file | Referenced by |
+| Task type | Read these atoms | Referenced by |
 |---|---|---|
-| Debugging / investigation | `@.cursor/knowledge/r-debugging-patterns.md` | `debug.mdc` |
-| Writing / reviewing tests | `@.cursor/knowledge/r-testing-patterns.md` | `test-strategy.mdc` |
-| Fixing lint / format issues | `@.cursor/knowledge/r-lint-patterns.md` | `quality-check.mdc` |
+| Debugging / investigation | `debug--method-priority.md`, `debug--instrumentation-template.md` | `debug.mdc` |
+| Writing / reviewing tests | `test--mock-scope-constraint.md`, `test--mock-external-function.md`, `test--layered-mock-strategy.md`, `r--null-assignment-trap.md` | `test-strategy.mdc` |
+| Fixing lint / format issues | `lint--nolint-accepted-patterns.md`, `lint--styler-lintr-conflict.md` | `quality-check.mdc` |
 
-**Rule**: When the agent enters one of these task types, it MUST read the corresponding knowledge file as its first action. Do not rely on memory from previous sessions — knowledge files may have been updated.
+**Rule**: When the agent enters one of these task types, it MUST read the listed atoms as its first action. For unexpected situations (errors not covered above), use `knowledge-index.mdc` as a reactive lookup table. Do not rely on memory from previous sessions — knowledge files may have been updated.
 
 ## Type Strictness (S7)
 
@@ -111,7 +111,7 @@ Certain task types require reading a specific knowledge file **before** starting
 - Use `S7::new_union(class_character, class_integer)` for known union types rather than falling back to `class_any`.
 - Validators must check constraints that types alone cannot express (e.g., value ranges, cross-field dependencies, format patterns).
 - Use `match.arg()` for enum-like parameters.
-- When an S7 property references another S7 class from a different file, the source file **MUST** have `#' @include <dependency>.R` in its roxygen header. Alphabetical file order is not reliable — it changes when files are added or removed (including via rebase). See `@.cursor/knowledge/r-lint-patterns.md` § S7 `@include` Directive.
+- When an S7 property references another S7 class from a different file, the source file **MUST** have `#' @include <dependency>.R` in its roxygen header. Alphabetical file order is not reliable — it changes when files are added or removed (including via rebase). See `@.cursor/knowledge/r--s7-include-directive.md`.
 
 ## Schema-Code Consistency (Critical)
 
@@ -165,7 +165,7 @@ The main agent **MUST** delegate all blocking operations (CI polling, sequential
 | CI pending + independent Issue exists | Delegate + start `implement` on independent Issue |
 | CI pending + no independent Issue | Delegate + run Two-Tier Gate (see § Productive work during delegation) |
 | Sequential multi-PR merge chain | Delegate entire rebase → CI → merge chain to one subagent |
-| Dependent PR chain (shared commits) | Use "Dependent PR Merge Chain" template with `--onto` rebase (see `subagent-prompts.md`) |
+| Dependent PR chain (shared commits) | Use "Dependent PR Merge Chain" template with `--onto` rebase (see `agent--delegation-templates.md`) |
 | Code review, implementation, user interaction | Never delegate — requires main agent judgment |
 
 #### Subagent configuration
@@ -176,7 +176,7 @@ The main agent **MUST** delegate all blocking operations (CI polling, sequential
 
 #### Prompt structure and completion detection
 
-For prompt templates (CI-wait, merge chain, CI-only) and completion detection procedures, see `@.cursor/knowledge/subagent-prompts.md`.
+For prompt templates (CI-wait, merge chain, CI-only), see `@.cursor/knowledge/agent--delegation-templates.md`.
 
 Delegated subagent prompts MUST include: Goal, Steps, Prohibitions (especially git operation bans), Error handling, and Return format.
 
@@ -218,7 +218,7 @@ After launching a background subagent, the main agent MUST follow this lifecycle
 4. When the subagent completes, process the result (report merged PRs, surface errors)
 5. Report to the user, THEN end the turn
 
-Ending the turn while a subagent is still running is prohibited. See `@.cursor/knowledge/subagent-prompts.md` § Completion Detection for the monitoring procedure.
+Ending the turn while a subagent is still running is prohibited.
 
 #### Git conflict prevention
 
@@ -228,7 +228,7 @@ When a subagent is handling merge operations:
 - The main agent MUST work on a **different branch** (e.g., a new feature branch for the independent Issue)
 - Do not run `git checkout main` or `git pull` on the main agent while the subagent is merging
 
-For recovery procedures when git state is corrupted (branch interference, lost commits, PR consolidation), see `@.cursor/knowledge/git-recovery.md`.
+For recovery procedures when git state is corrupted, see the `git--*` atoms in `.cursor/knowledge/` (e.g., `git--subagent-branch-interference.md`, `git--quick-recovery.md`, `git--pr-consolidation-split.md`).
 
 #### Fallback (backward compatibility)
 

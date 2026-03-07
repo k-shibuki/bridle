@@ -1,12 +1,7 @@
-# CI Pipeline Knowledge
-
-CI job dependencies, polling strategies, and failure classification for the bridle project.
-
-**Policy**: See `@.cursor/rules/ai-guardrails.mdc` for CI-related Hard Stops.
-
 ---
-
-## Job Dependency Graph
+trigger: CI job, job dependency, filter category, coverage gate, ci-pass, CI polling, poll interval, adaptive polling, time budget, CI wait
+---
+# CI Job Dependency Graph
 
 ```
 changes ──┬── validate-schemas  (r_source OR schemas)
@@ -29,7 +24,7 @@ Sequential chain: `lint` → `test` → `check` → `coverage`
 Special case: `check` uses `always()` so it runs when `test` is skipped (r_deps-only changes)
 Final gate: `ci-pass` depends on all above; skipped jobs are treated as passing
 
-### Filter Categories
+## Filter Categories
 
 | Filter | Paths | Meaning |
 |--------|-------|---------|
@@ -38,7 +33,7 @@ Final gate: `ci-pass` depends on all above; skipped jobs are treated as passing
 | `schemas` | `docs/schemas/**`, `tools/validate-schemas.R` | Schema file changes |
 | `ci_config` | `Makefile`, `tools/**`, `.github/workflows/**`, `containers/**`, `.pre-commit-config.yaml`, `.lintr` | CI/build infrastructure changes |
 
-### Job Trigger Conditions
+## Job Trigger Conditions
 
 | Job | Condition | Rationale |
 |-----|-----------|-----------|
@@ -50,7 +45,7 @@ Final gate: `ci-pass` depends on all above; skipped jobs are treated as passing
 | `validate-schemas` | `schemas OR r_source` | Schema-code consistency requires both sides |
 | `ci-config` | `ci_config` | CI infrastructure validation |
 
-### Coverage Gate
+## Coverage Gate
 
 The `coverage` job enforces a minimum line coverage threshold (80%). It runs `covr::package_coverage()`, uploads results to Codecov, and then fails if coverage is below the threshold. This is independent of Codecov's own status checks — the CI gate works even if Codecov is not configured.
 
@@ -60,8 +55,6 @@ Configuration: `codecov.yml` at repo root defines project target (80%), patch ta
 
 Additional checks (PR-only): `check-policy`, `dependency-review`
 Skippable: `ci-config`, `auto-merge`
-
----
 
 ## Adaptive Polling Strategy
 
@@ -77,24 +70,3 @@ Fixed-interval polling wastes time. Use a stage-aware strategy:
 **Time budget**: Use elapsed time (max 5 minutes) rather than poll count as the upper bound. Poll count limits (e.g., 10 polls) can expire before long jobs finish.
 
 **Subagent delegation**: When delegating CI-wait to a subagent, include the job dependency graph in the prompt so the subagent can adapt its polling interval.
-
----
-
-## Failure Classification
-
-When a CI check fails, classify the failure before acting:
-
-| Category | Examples | Action |
-|----------|----------|--------|
-| **Code defect** | lint error, test failure, check warning | Fix locally, push, re-run CI |
-| **Format drift** | format-check diff | Run `make format`, commit, push |
-| **Infrastructure** | Runner timeout, network error, container pull failure | Re-run the workflow via GitHub UI or `gh run rerun` |
-| **Policy** | check-policy rejects PR body | Update PR body (missing section, wrong format) |
-| **Flaky** | Intermittent test failure not reproducible locally | Re-run once; if persistent, investigate |
-
-**Key diagnostic commands**:
-
-```bash
-gh pr checks <N>                    # Overview of all checks
-gh run view <run-id> --log-failed   # Failed job logs
-```

@@ -23,15 +23,17 @@ Start here to find the right information quickly.
 | YAML schemas (data contracts) | [`docs/schemas/`](../docs/schemas/) — referenced from [`docs/README.md`](../docs/README.md) |
 | S7 class implementations | `R/` |
 | Subagent delegation policy | `ai-guardrails.mdc` § Subagent Delegation |
-| Subagent prompt templates | `knowledge/subagent-prompts.md` |
-| Lint/format patterns (S7, styler/lintr) | `knowledge/r-lint-patterns.md` |
-| R testing gotchas (mocks, NULL trap) | `knowledge/r-testing-patterns.md` |
-| R debugging tools and templates | `knowledge/r-debugging-patterns.md` |
-| CI job dependencies and polling strategy | `knowledge/ci-pipeline.md` |
-| Git recovery playbooks | `knowledge/git-recovery.md` |
+| **Any specific pattern/gotcha** | **`knowledge-index.mdc`** — trigger-keyword lookup for all atoms |
+| Subagent prompt templates | `knowledge/agent--delegation-templates.md` |
+| Lint/format patterns (S7, styler/lintr) | `knowledge/lint--*.md` atoms |
+| R testing gotchas (mocks, NULL trap) | `knowledge/test--*.md` atoms |
+| R debugging tools and templates | `knowledge/debug--*.md` atoms |
+| CI job dependencies and polling strategy | `knowledge/ci--*.md` atoms |
+| Git recovery playbooks | `knowledge/git--*.md` atoms |
 | Development workflow + commands | This file (below) |
 | Command details (procedures) | `.cursor/commands/*.md` |
 | Policy rules | `.cursor/rules/*.mdc` |
+| Knowledge base management | `make kb-manifest`, `make kb-validate`, `make kb-new` |
 | CI/CD pipeline | [`.github/workflows/`](../.github/workflows/) |
 | Makefile targets | `make help` or [`Makefile`](../Makefile) |
 | Container setup | [`containers/`](../containers/) + `make doctor` |
@@ -42,10 +44,11 @@ Start here to find the right information quickly.
 ### Reading Order for New AI Agents
 
 1. **This file** — understand the workflow and available commands
-2. **`gh issue list --state open`** — see what needs doing
-3. **`docs/README.md`** — understand ADRs and schemas
-4. **Relevant ADR(s)** — before implementing a feature
-5. **`R/`** — check existing patterns (if any code exists)
+2. **`knowledge-index.mdc`** — understand available knowledge atoms (always loaded)
+3. **`gh issue list --state open`** — see what needs doing
+4. **`docs/README.md`** — understand ADRs and schemas
+5. **Relevant ADR(s)** — before implementing a feature
+6. **`R/`** — check existing patterns (if any code exists)
 
 ## Development Workflow (Issue-Driven)
 
@@ -126,6 +129,7 @@ Use when: change is documentation only (README, ADR, comments, Cursor rules/comm
 | Git | `pr-review` | Review PR and produce merge recommendation |
 | Git | `pr-merge` | Execute merge (GitHub or local) |
 | Git | `push` | Push main to origin (**docs-only exception only**) |
+| Knowledge | `knowledge-create` | Capture new pattern/gotcha as atomic knowledge file |
 | Debug | `debug` | Hypothesis-driven debugging |
 
 ## Rules
@@ -135,11 +139,12 @@ Rules define enforceable MUST/MUST NOT policies. Commands define procedures. Kno
 | Rule | Scope | Related Knowledge |
 |------|-------|-------------------|
 | `v5_bridle.mdc` (always) | Core coding assistance | — |
-| `ai-guardrails.mdc` (always) | AI safety, Issue workflow, subagent delegation | `subagent-prompts.md`, `git-recovery.md`, `ci-pipeline.md` |
-| `test-strategy.mdc` | Test design and review | `r-testing-patterns.md` |
+| `ai-guardrails.mdc` (always) | AI safety, Issue workflow, subagent delegation | `agent--*` atoms, `git--*` atoms, `ci--*` atoms |
+| `knowledge-index.mdc` (always) | Trigger-keyword lookup for all knowledge atoms | All atoms in `.cursor/knowledge/` |
+| `test-strategy.mdc` | Test design and review | `test--*` atoms, `r--null-assignment-trap.md` |
 | `integration-design.mdc` | Cross-module design | — |
-| `debug.mdc` | Debugging methodology | `r-debugging-patterns.md` |
-| `quality-check.mdc` | Lint/format/check policy | `r-lint-patterns.md` |
+| `debug.mdc` | Debugging methodology | `debug--*` atoms |
+| `quality-check.mdc` | Lint/format/check policy | `lint--*` atoms, `r--*` atoms |
 | `commit-message-format.mdc` | Commit message format, branch naming | — |
 
 ## Issue-Driven Workflow Principles
@@ -149,4 +154,4 @@ Rules define enforceable MUST/MUST NOT policies. Commands define procedures. Kno
 3. **Traceability is mandatory**: PRs must reference their Issue (`Closes #N`), commits should reference it (`Refs: #N`).
 4. **No main direct push** for normal changes: All code changes go through the PR flow with CI validation.
 5. **Exceptions are explicit**: `hotfix` bypasses Issue triage but still requires a PR. Only `docs-only` may use direct push to main. See `ai-guardrails.mdc` for the full policy.
-6. **Parallelize via subagent delegation**: Blocking operations (CI polling, sequential merges) are always delegated to background subagents so the main agent can continue productive work (independent Issues, branch cleanup, environment health, doc review). Inline CI polling is prohibited. See `ai-guardrails.mdc` § Subagent Delegation for the policy and `subagent-prompts.md` for prompt templates.
+6. **Parallelize via subagent delegation**: Blocking operations (CI polling, sequential merges) are always delegated to background subagents so the main agent can continue productive work (independent Issues, branch cleanup, environment health, doc review). Inline CI polling is prohibited. See `ai-guardrails.mdc` § Subagent Delegation for the policy and `agent--delegation-templates.md` for prompt templates.

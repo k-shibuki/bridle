@@ -50,7 +50,7 @@ Before writing `# nolint`, the agent MUST execute the following steps **in order
 
 ### Step 1: Read Knowledge
 
-Read `@.cursor/knowledge/r-lint-patterns.md` (and `@.cursor/knowledge/r-testing-patterns.md` if in test code). Do not rely on memory — always read the file.
+Read `@.cursor/knowledge/lint--nolint-accepted-patterns.md` and `@.cursor/knowledge/lint--styler-lintr-conflict.md`. If in test code, also read `@.cursor/rules/test-strategy.mdc` §8 (Helper Colocation). Do not rely on memory — always read the files.
 
 ### Step 2: Attempt Code Restructuring
 
@@ -68,7 +68,7 @@ If restructuring resolves the lint → done. No `# nolint` needed.
 If the lint is `object_usage_linter` in test/helper code and the referenced function is in another helper file:
 
 - Move the function (or both functions) into the **same** `helper-*.R` file so the linter can resolve the reference.
-- See `@.cursor/knowledge/r-testing-patterns.md` § Helper Colocation.
+- See `@.cursor/rules/test-strategy.mdc` §8 (Helper Colocation).
 
 If co-location resolves the lint → done. No `# nolint` needed.
 
@@ -91,11 +91,16 @@ result <- ScanResult(...) # nolint: object_usage_linter. S7 class defined in R/s
 
 ### Accepted Justifications
 
-See `@.cursor/knowledge/r-lint-patterns.md` § Justified `# nolint` Usage for the complete table.
+See `@.cursor/knowledge/lint--nolint-accepted-patterns.md` for the complete table of accepted justifications and naming length strategies.
 
 ## Known Patterns and Troubleshooting
 
-For recurring lint/format issues (styler/lintr conflicts, S7 false positives, justified `# nolint` patterns, Suggests package dynamic loading), see `@.cursor/knowledge/r-lint-patterns.md`.
+For recurring lint/format issues, read the relevant atom directly:
+
+- `@.cursor/knowledge/lint--styler-lintr-conflict.md` — styler/lintr indentation disagreements
+- `@.cursor/knowledge/lint--s7-cross-file-reference.md` — S7 constructor false positives
+- `@.cursor/knowledge/lint--nolint-accepted-patterns.md` — justified nolint patterns + naming length
+- `@.cursor/knowledge/r--suggests-dynamic-load.md` — optional dependency loading
 
 ## Definition of Done
 
