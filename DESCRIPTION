@@ -46,6 +46,8 @@ Collate:
     'graph_engine.R'
     'knowledge.R'
     'knowledge_retriever.R'
+    'llm_utils.R'
+    'prompt_assembler.R'
     'scan_package.R'
     'scan_result.R'
     'validate_plugin.R'
