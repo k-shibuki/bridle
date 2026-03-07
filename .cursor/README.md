@@ -41,7 +41,7 @@ Start here to find the right information quickly.
 | Open Issues / next tasks | `gh issue list --state open` |
 | Development status / phases | [`README.md` § Development Status](../README.md#development-status) |
 
-### Reading Order for New AI Agents
+### Reading Order for AI Agents
 
 1. **This file** — understand the workflow and available commands
 2. **`knowledge-index.mdc`** — understand available knowledge atoms (always loaded)
