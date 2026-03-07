@@ -135,6 +135,7 @@ Use when: change is documentation only (README, ADR, comments, Cursor rules/comm
 | Git | `pr-review` | Review PR + test quality and produce merge recommendation |
 | Git | `pr-merge` | Execute merge (GitHub or local) |
 | Knowledge | `knowledge-create` | Capture new pattern/gotcha as atomic knowledge file |
+| Knowledge | `session-retro` | Reflect on session activity, extract learnings, propose control system improvements |
 | Debug | `debug` | Hypothesis-driven debugging |
 
 ## Rules
