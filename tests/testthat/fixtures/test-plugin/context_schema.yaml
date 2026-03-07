@@ -1,0 +1,17 @@
+variables:
+  - name: k
+    description: "number of studies"
+    available_from: data_loaded
+    source_expression: "nrow(data)"
+
+  - name: method
+    description: "selected pooling method"
+    available_from: parameter_decided
+    depends_on_node: choose_method
+    source_expression: "decisions$method"
+
+  - name: I2
+    description: "I-squared heterogeneity statistic"
+    available_from: post_fit
+    depends_on_node: run_analysis
+    source_expression: "result$I2"

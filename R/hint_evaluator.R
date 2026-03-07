@@ -28,13 +28,14 @@ evaluate_hint <- function(expression, variables = list(), timeout_s = 1.0) {
     return(NA)
   }
 
+  verbose <- getOption("bridle.verbose", FALSE)
+
   expr <- tryCatch(
     parse(text = expression),
     error = function(e) {
-      warning(
-        sprintf("Hint parse error in '%s': %s", expression, conditionMessage(e)),
-        call. = FALSE
-      )
+      if (isTRUE(verbose)) {
+        cli::cli_inform("Hint parse error in {.val {expression}}: {conditionMessage(e)}")
+      }
       NULL
     }
   )
@@ -45,16 +46,23 @@ evaluate_hint <- function(expression, variables = list(), timeout_s = 1.0) {
   env <- .make_hint_env(variables)
 
   result <- tryCatch(
-    {
-      setTimeLimit(elapsed = timeout_s, transient = TRUE)
-      on.exit(setTimeLimit(elapsed = Inf), add = TRUE)
-      eval(expr, envir = env)
-    },
+    withCallingHandlers(
+      {
+        setTimeLimit(elapsed = timeout_s, transient = TRUE)
+        on.exit(setTimeLimit(elapsed = Inf), add = TRUE)
+        eval(expr, envir = env)
+      },
+      warning = function(w) {
+        if (isTRUE(verbose)) {
+          cli::cli_inform("Hint warning in {.val {expression}}: {conditionMessage(w)}")
+        }
+        invokeRestart("muffleWarning")
+      }
+    ),
     error = function(e) {
-      warning(
-        sprintf("Hint eval error in '%s': %s", expression, conditionMessage(e)),
-        call. = FALSE
-      )
+      if (isTRUE(verbose)) {
+        cli::cli_inform("Hint eval error in {.val {expression}}: {conditionMessage(e)}")
+      }
       NA
     }
   )

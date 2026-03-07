@@ -280,9 +280,8 @@ evaluate_transitions <- function(engine, node_id) {
       ))
     }
 
-    hint_result <- suppressWarnings(
-      evaluate_hint(hint_expr, variables = vars) # nolint: object_usage_linter. defined in R/hint_evaluator.R
-    )
+    # nolint next: object_usage_linter. evaluate_hint defined in R/hint_evaluator.R
+    hint_result <- evaluate_hint(hint_expr, variables = vars)
 
     if (is.na(hint_result)) {
       return(TransitionCandidate(

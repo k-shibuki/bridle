@@ -1,0 +1,22 @@
+topic: effect_measures
+target_parameter: sm
+package: meta
+function: metabin
+
+entries:
+  - id: rr_default
+    when: "binary outcome data is available"
+    properties:
+      - "Risk Ratio (RR) is the default effect measure for binary outcomes"
+      - "RR is easier to interpret for clinicians"
+    references:
+      - "Cochrane Handbook for Systematic Reviews, Chapter 10"
+
+  - id: or_for_rare
+    when: "event rate is very low"
+    computable_hint: "k < 5"
+    properties:
+      - "Odds Ratio (OR) may be more appropriate for rare events"
+      - "OR has better statistical properties with sparse data"
+    related:
+      - "consider continuity correction settings"

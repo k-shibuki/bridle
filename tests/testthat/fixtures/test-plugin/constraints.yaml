@@ -1,0 +1,17 @@
+package: meta
+function: metabin
+
+constraints:
+  - id: valid_sm_values
+    source: rd_description
+    type: valid_values
+    param: sm
+    values: ["RR", "OR", "RD"]
+    confidence: high
+
+  - id: peto_forces_or
+    source: formals_default
+    type: forces
+    condition: "method == 'Peto'"
+    forces: {sm: "OR"}
+    message: "Peto method only supports Odds Ratio"

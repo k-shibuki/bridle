@@ -164,7 +164,7 @@ retrieve_constraints <- function(constraint_sets, parameter, context) {
   }
 
   # nolint next: object_usage_linter. evaluate_hint in hint_evaluator.R
-  result <- suppressWarnings(evaluate_hint(hint, variables = vars))
+  result <- evaluate_hint(hint, variables = vars)
   if (is.na(result)) {
     return(TRUE)
   }
@@ -188,7 +188,7 @@ retrieve_constraints <- function(constraint_sets, parameter, context) {
   }
 
   # nolint next: object_usage_linter. evaluate_hint in hint_evaluator.R
-  result <- suppressWarnings(evaluate_hint(ew, variables = vars))
+  result <- evaluate_hint(ew, variables = vars)
   if (is.na(result)) {
     return(TRUE)
   }
