@@ -82,4 +82,4 @@ The new atom, updated index, and any changes should be included in the next `com
 ## Related
 
 - `.cursor/rules/knowledge-index.mdc` — auto-generated index (always-apply)
-- `.cursor/rules/ai-guardrails.mdc` § Knowledge Consultation Triggers
+- `.cursor/rules/workflow-policy.mdc` § Knowledge Consultation Triggers

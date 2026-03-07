@@ -1,6 +1,6 @@
 # debug
 
-General-purpose debugging command. Policy: `@.cursor/rules/debug.mdc`
+General-purpose debugging command. Policy: `@.cursor/rules/debug-strategy.mdc`
 
 ## Debug Method Priority
 
@@ -19,7 +19,7 @@ General-purpose debugging command. Policy: `@.cursor/rules/debug.mdc`
 
 ## Task Prefix Convention
 
-See `@.cursor/rules/debug.mdc` § 0 for the authoritative Task Prefix Convention.
+See `@.cursor/knowledge/agent--task-prefix-convention.md` for the naming convention.
 
 ---
 
@@ -57,7 +57,27 @@ For R-specific debugging tools (reprex, browser, rlang), instrumentation templat
 
 ---
 
+## Checklists
+
+### Before Starting Debug
+
+- [ ] Accurately described symptoms (expected vs actual)
+- [ ] Listed hypotheses with task prefix (`<TASK>-H1`, ...)
+
+### During Debug
+
+- [ ] Added timeout to terminal commands
+- [ ] Added region markers to instrumentation (`#region agent log`)
+- [ ] Included hypothesis ID with task prefix in logs
+
+### After Debug Completion
+
+- [ ] Removed instrumentation code
+- [ ] Identified root cause and made minimal fix
+- [ ] Verified fix with tests
+- [ ] Created report at `debug/docs/<TASK>_report.md` (if significant)
+
 ## Related
 
-- `@.cursor/rules/debug.mdc` (policy)
+- `@.cursor/rules/debug-strategy.mdc` (policy)
 - `@.cursor/commands/integration-design.md` (for preventing integration issues during new feature development)

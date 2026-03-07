@@ -13,7 +13,7 @@ Before writing, reviewing, or modifying any test code, the agent MUST read these
 - `@.cursor/knowledge/test--layered-mock-strategy.md` — mock all layer boundaries in integration tests
 - `@.cursor/knowledge/r--null-assignment-trap.md` — `x$field <- NULL` silently removes the field
 
-Do not rely on memory — read the atoms every time. See also `@.cursor/rules/ai-guardrails.mdc` § Knowledge Consultation Triggers.
+Do not rely on memory — read the atoms every time. See also `@.cursor/rules/workflow-policy.mdc` § Knowledge Consultation Triggers.
 
 ---
 
@@ -41,13 +41,7 @@ The Issue Test Plan is intentionally detailed (concrete inputs, expected outputs
 4. If perspective gaps are discovered later, update the table after self-review and add necessary cases.
 5. For minor modifications to existing tests (message adjustments, minor expected value changes) that don't add new branches or constraints, creating/updating the test perspectives table is optional.
 
-### Template Example
-
-| Case ID | Input / Precondition | Perspective (Equivalence / Boundary) | Expected Result                               | Notes |
-|--------|----------------------|---------------------------------------|----------------------------------------------|-------|
-| TC-N-01 | Valid input A        | Equivalence – normal                 | Processing succeeds and returns expected value | -     |
-| TC-A-01 | NULL                 | Boundary – NULL                      | Validation error (required field)            | -     |
-| ...     | ...                  | ...                                   | ...                                          | ...   |
+See `@.cursor/commands/test-create.md` for the template format and execution commands.
 
 ---
 
@@ -95,29 +89,15 @@ Write comments directly above test code or within steps, keeping scenarios trace
 
 ---
 
-## 5. Execution Commands and Coverage
-
-1. At the end of test implementation, always document **execution commands** and **coverage collection method** at the end of documentation or PR body.
-   - Example: `make test`, `devtools::test()`, `covr::package_coverage()`
-2. Check branch/statement coverage, targeting 100% branch coverage (when not reasonably achievable, prioritize high-business-impact branches and main error paths).
-3. Attach coverage report results (screenshots or summary) where possible.
-
----
-
-## 6. Operational Notes
+## 5. Operational Notes
 
 1. Reject test diffs that don't comply with this rule in review.
 2. Even without external dependencies, **use mocks to simulate failures** for failure cases.
-3. When new branches or constraints are added to test target specifications, update test perspectives table and test code simultaneously.
-4. When automation is difficult, document reason and alternative means, reaching agreement with reviewer.
-   Alternative means should include at minimum: target feature and risk, manual verification procedure, expected results, and log/screenshot storage method.
-5. As a rule, PRs with meaningful changes to production code (spec additions, bug fixes, refactors affecting behavior) must include corresponding automated test additions or updates.
-6. When test additions/updates are reasonably difficult, document the reason and alternative verification procedure (manual test procedure, etc.) in PR body and reach agreement with reviewer.
-7. Even for refactors not intended to change behavior, verify that change locations are sufficiently covered by existing tests; add tests if insufficient.
+3. PRs with meaningful changes to production code (spec additions, bug fixes, refactors affecting behavior) must include corresponding automated test additions or updates.
 
 ---
 
-## 7. Mock/Patch Conventions (R / testthat)
+## 6. Mock/Patch Conventions (R / testthat)
 
 1. **MUST apply mocks at the use site** with `testthat::local_mocked_bindings()`.
    - Mock the function as it is used in the code under test (the binding in the package namespace).
@@ -133,14 +113,14 @@ For R-specific testing gotchas (mock scoping constraints, NULL assignment trap, 
 
 ---
 
-## 8. Test Helper Conventions
+## 7. Test Helper Conventions
 
 ### Helper files (`tests/testthat/helper-*.R`)
 
 testthat automatically sources all `helper-*.R` files before running tests. Use them for **shared mock value factories** and **test data builders**.
 
 - **`helper-mocks.R`**: Contains mock value factories (e.g., `mock_resolve()`, `mock_version()`, `make_mock_rd()`, `mock_crossref_response()`) and test data builders (e.g., `make_graph()`, `make_knowledge()`).
-- Helpers provide **values only**. `local_mocked_bindings()` must always be called inline in each `test_that` block due to scope constraints (see §7.1).
+- Helpers provide **values only**. `local_mocked_bindings()` must always be called inline in each `test_that` block due to scope constraints (see §6.1).
 - When adding new mock patterns, check `helper-mocks.R` first. Add to the helper if the pattern will be reused across multiple test files. Keep file-specific helpers in the test file itself.
 - **Colocation rule**: If a helper function references other helpers from `helper-mocks.R` (including mock-applying wrappers like `with_scan_mocks`), it MUST be defined in `helper-mocks.R` — not in the test file. This ensures `object_usage_linter` can resolve all references without `# nolint`. `# nolint` suppresses the diagnostic but does not prove the reference is valid — co-location makes the dependency explicit and verifiable by the linter.
 
@@ -158,29 +138,13 @@ Sourced once before all tests. Use for prerequisites like `skip_if_not_installed
 
 ---
 
-## 9. Snapshot Testing Guidelines
+## 8. Snapshot Testing
 
-Use `expect_snapshot()` and `expect_snapshot_error()` (testthat 3) for:
-
-- **Complex validation messages** where regex matching is fragile (e.g., `validate_plugin()` multi-line error output)
-- **Structured object printing** (e.g., S7 class `print()` output) where exact format matters
-- **Multi-line output** that would require multiple `expect_match()` calls
-
-Do NOT use snapshot tests for:
-
-- Simple string comparisons (`expect_equal()` is more explicit)
-- Frequently changing output (snapshots become maintenance burden)
-
-### Managing `_snaps/` directories
-
-- Snapshot files live in `tests/testthat/_snaps/<test-file-name>/`.
-- They MUST be committed to version control.
-- On snapshot changes, review the diff carefully — snapshot updates should be intentional.
-- Use `testthat::snapshot_review()` to interactively approve changes.
+For snapshot test guidelines (`expect_snapshot`, `_snaps/` management), see `@.cursor/knowledge/test--snapshot-guidelines.md`.
 
 ---
 
-## 10. Coverage Threshold Policy
+## 9. Coverage Threshold Policy
 
 ### Project targets
 
@@ -194,23 +158,8 @@ Do NOT use snapshot tests for:
 2. Do NOT lower the threshold to pass the gate.
 3. If coverage cannot reasonably reach the threshold (e.g., error paths requiring external failures), document the reason in the PR body.
 
-### Overriding locally
-
-```bash
-make coverage-check COVERAGE_THRESHOLD=70
-```
-
-Use only during initial adoption or when investigating — never as a permanent workaround.
-
-### Reading coverage reports
-
-```bash
-make coverage                 # Print coverage summary
-make coverage-check           # Verify threshold (default 80%)
-```
-
-In CI, coverage results are uploaded to Codecov. See `codecov.yml` for configuration.
+For coverage commands and overrides, see `@.cursor/commands/quality-check.md` § Coverage Commands.
 
 ---
 
-Follow this rule, always self-check for missing perspectives when designing and implementing tests. Also fix existing errors unrelated to changes.
+Follow this rule, always self-check for missing perspectives when designing and implementing tests.

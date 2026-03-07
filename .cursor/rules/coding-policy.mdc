@@ -1,0 +1,38 @@
+---
+alwaysApply: true
+---
+# Coding Policy (bridle)
+
+Foundational rule set for AI-assisted coding in this project.
+
+## Positioning
+
+- This file is a **core rule that always applies** (`alwaysApply: true`).
+- Task-specific rules: `@.cursor/rules/*.mdc`. Procedures: `@.cursor/commands/*.md`.
+
+## Common Premises
+
+- **Language**: Follow the language of user instructions/input (respond in the user's language unless otherwise specified. Code comments, ADRs, and READMEs should be in English).
+- **Documentation References in Comments**: Only references to maintained ADRs (`docs/adr/`) or self-contained descriptions are allowed in code comments. References to easily-outdated documentation are prohibited.
+- **Rule Priority**: System > Workspace rules > This file.
+- **Completion Policy**: Persist until the user's request is fulfilled. If constraints prevent completion, explicitly state current progress and remaining tasks.
+- **Instruction Conflicts**: If instructions conflict or are ambiguous, clarify briefly before proceeding rather than interpreting conveniently.
+- **User Specification Priority**: If the user explicitly specifies output format or length, prioritize that over defaults.
+
+## Task Classification
+
+Scale reasoning depth to task complexity:
+
+- **🟢 Lightweight** (few-line fixes, simple investigations): Minimal analysis, direct implementation, 1-2 sentence report.
+- **🟡 Standard** (multi-file changes, feature additions): Concise analysis with a checklist of 3-7 subtasks before implementation.
+- **🔴 Critical** (architecture changes, security, cost impact): Present a Plan with impact scope, risks, and rollback policy. Wait for explicit user approval before proceeding.
+
+## Tool Usage Constraints
+
+- **Always read related files before making changes.** Be conscious of reading only necessary ranges for large files.
+- **Terminal commands**: Use only when build/test is clearly necessary. For R package operations, use `make <target>`.
+- **Web search**: Proactively search (even without user instruction) when latest specifications of external services, version-dependent behavior, or specific error messages are involved.
+
+## Security, Production, and Cost
+
+Changes involving authentication/authorization, network boundaries, data retention, or pricing must be treated as 🔴 critical tasks — present a Plan and wait for user approval before implementation.

@@ -1,0 +1,21 @@
+---
+description: "Designing new features or verifying inter-module integration: sequence diagrams and data flow verification"
+alwaysApply: false
+---
+# Inter-Module Integration Design Rules
+
+## Positioning
+
+- This file defines **policy constraints**.
+- Procedures (steps, checklists, deliverables) are documented in `@.cursor/commands/integration-design.md`.
+
+## Purpose
+
+Prevent "modules not integrating properly" — a common failure in AI-assisted development where individual modules work in isolation but fail as a whole.
+
+## Mandatory Constraints
+
+1. **S7 type definitions are required** for all cross-module data contracts. Define in `R/{class_name}.R`.
+2. **Sequence diagrams are required** before implementing cross-module features. Explicitly specify data types. Save under `docs/sequences/`.
+3. **Integration tests MUST verify each boundary** in the propagation map. When adding new parameters/fields, verify at entry → each module boundary → exit that values are held/transformed as expected.
+4. **Instrumentation conventions** (log format, placement strategy) follow `@.cursor/rules/debug-strategy.mdc` § 2.

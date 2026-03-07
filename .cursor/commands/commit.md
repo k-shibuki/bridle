@@ -12,9 +12,9 @@ Create git commit(s) with **English message(s)** in the project's standard forma
 
 Follow the commit message policy here:
 
-- `@.cursor/rules/commit-message-format.mdc`
+- `@.cursor/rules/commit-format.mdc`
 
-This command intentionally avoids duplicating the policy (format/prefixes/language). Keep `commit-message-format.mdc` as the single source of truth.
+This command intentionally avoids duplicating the policy (format/prefixes/language). Keep `commit-format.mdc` as the single source of truth.
 
 ## Issue reference (required)
 
@@ -110,7 +110,7 @@ Refs: #<issue-number>"
 
 ## Related
 
-- `@.cursor/rules/commit-message-format.mdc`
+- `@.cursor/rules/commit-format.mdc`
 - `@.cursor/commands/docs-discover.md` (Mode 2: pre-commit doc alignment)
 - `@.cursor/commands/pr-create.md` (next step: PR flow)
 - `@.cursor/commands/push.md` (exception flow only: docs-only direct push)

@@ -36,7 +36,7 @@ fi
 
 ### 2. Commit changes (if uncommitted)
 
-If there are uncommitted changes, commit them following `@.cursor/rules/commit-message-format.mdc`. Include `Refs: #<issue>` in the footer.
+If there are uncommitted changes, commit them following `@.cursor/rules/commit-format.mdc`. Include `Refs: #<issue>` in the footer.
 
 ```bash
 git status --short
@@ -255,7 +255,7 @@ gh pr checks <PR_NUMBER>
    ```
    This triggers a `check-policy` re-run without polluting the commit history.
 
-4. **For code fixes**: Commit the fix (follow `@.cursor/rules/commit-message-format.mdc`, use `fix(scope):` prefix, include `Refs: #<issue>`), then push:
+4. **For code fixes**: Commit the fix (follow `@.cursor/rules/commit-format.mdc`, use `fix(scope):` prefix, include `Refs: #<issue>`), then push:
    ```bash
    git push
    ```
@@ -279,6 +279,6 @@ If the repository requires a review before merge (branch protection), report the
 
 ## Related
 
-- `@.cursor/rules/commit-message-format.mdc` (commit + branch naming convention)
+- `@.cursor/rules/commit-format.mdc` (commit + branch naming convention)
 - `@.cursor/commands/pr-review.md` (next step: review)
 - `@.cursor/commands/pr-merge.md` (merge strategy reference)
