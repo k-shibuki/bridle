@@ -25,14 +25,6 @@ The following are prohibited in principle (exception only with stated justificat
 - Excessive use of `...` that bypasses validation
 - Side effects in `.onLoad()` beyond package registration (e.g., setting global options that affect user code)
 
-## Correct Fix Approaches
-
-- Add appropriate S7 property types and validators
-- Use `match.arg()` for input validation where applicable
-- Make conditional branches explicit; avoid implicit fallbacks
-- Use `.lintr` configuration for intentional lint exclusions (with comments)
-- Document intentional exceptions in roxygen2 `@details` or inline comments
-
 ## Check Targets (Minimum Required Execution)
 
 1. **lintr** — `lintr::lint_package()`: errors and warnings
@@ -125,28 +117,6 @@ Per ADR-0001, S7 classes are the source of truth once implemented.
 | `roxygen2::roxygenise()` | After `git rebase` adding new R files | `quality-check` | No |
 
 Even when no R code changed (Makefile, docs, CI only), `make validate-schemas` must still run. There is no case where verification can be entirely skipped.
-
-## Change Safety Checklist
-
-For every PR/commit, verify:
-
-- [ ] Issue reference present (`Refs: #N` in commits, `Closes #N` in PR)
-- [ ] ADR reference identified (or "no ADR applies" stated)
-- [ ] Schema-code consistency maintained
-- [ ] No prohibited patterns introduced (see above § Prohibited Practices)
-- [ ] S7 properties have explicit types (no `class_any`)
-- [ ] Tests added/updated for new functionality
-- [ ] `make ci` passes locally
-- [ ] PR body contains all required sections (see Hard Stop #5 in `@.cursor/rules/agent-safety.mdc`)
-
-## Known Patterns and Troubleshooting
-
-For recurring lint/format issues, read the relevant atom directly:
-
-- `@.cursor/knowledge/lint--styler-lintr-conflict.md` — styler/lintr indentation disagreements
-- `@.cursor/knowledge/lint--s7-cross-file-reference.md` — S7 constructor false positives
-- `@.cursor/knowledge/lint--nolint-accepted-patterns.md` — justified nolint patterns + naming length
-- `@.cursor/knowledge/r--suggests-dynamic-load.md` — optional dependency loading
 
 ## Definition of Done
 

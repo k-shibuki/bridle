@@ -17,7 +17,7 @@ Follow the quality policy here:
 
 ## Recommended Execution Order
 
-Always format before linting. Running lint on unformatted code produces false positives from styler/lintr indentation conflicts (see `quality-policy.mdc` § Known Patterns).
+Always format before linting. Running lint on unformatted code produces false positives from styler/lintr indentation conflicts (see `@.cursor/knowledge/lint--styler-lintr-conflict.md`).
 
 ```bash
 # Step 1: Auto-format (fixes style issues)
@@ -104,7 +104,7 @@ if (is_empty) {
 }
 ```
 
-See `quality-policy.mdc` § Known Patterns for the full list.
+See `@.cursor/knowledge/lint--styler-lintr-conflict.md` for details.
 
 ### `object_usage_linter` false positives for S7 classes
 
@@ -125,6 +125,16 @@ result <- MyClass(...) # nolint: object_usage_linter. S7 class defined in R/my_c
 **Cause**: Local run may use cached format state. The CI environment starts clean.
 
 **Fix**: Run the full sequence from scratch: `make format && make format-check && make ci-fast`.
+
+## Coverage Commands
+
+```bash
+make coverage                 # Print coverage summary
+make coverage-check           # Verify threshold (default 80%)
+make coverage-check COVERAGE_THRESHOLD=70  # Override threshold (investigation only)
+```
+
+In CI, coverage results are uploaded to Codecov. See `codecov.yml` for configuration.
 
 ## Related rules
 

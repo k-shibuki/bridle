@@ -24,15 +24,9 @@ Achieve reproducible and efficient problem resolution. bridle is an R package; d
 
 **Related**: For **prevention** of integration issues during new feature development, see `@.cursor/rules/integration-strategy.mdc`.
 
-## 0. Task Prefix Convention (Multi-Agent Support)
+## Task Prefix Convention
 
-**Multiple AI agents may debug concurrently.** Use consistent prefixes across all artifacts to avoid conflicts:
-
-| Artifact | Pattern | Example |
-|----------|---------|---------|
-| Docs | `debug/docs/<TASK>_report.md` | `debug/docs/GRAPH_report.md` |
-| Logs | `debug/scripts/<TASK>_debug.log` | `debug/scripts/NODE_debug.log` |
-| Hypothesis IDs | `<TASK>-H1`, `<TASK>-H2`, ... | `GRAPH-H1`, `EVAL-H2` |
+Multiple agents may debug concurrently. Use task prefixes for all artifacts. See `@.cursor/knowledge/agent--task-prefix-convention.md` for the naming convention.
 
 ---
 
@@ -47,14 +41,6 @@ Achieve reproducible and efficient problem resolution. bridle is an R package; d
 
 Terminal commands **must always have timeout set** to prevent hangs:
 
-```bash
-# Good: with timeout
-timeout 30 Rscript -e "devtools::test()"
-
-# Bad: no timeout (hang risk)
-Rscript -e "devtools::test()"
-```
-
 **Recommended Timeout Values**:
 
 | Operation | Timeout |
@@ -63,16 +49,7 @@ Rscript -e "devtools::test()"
 | make test | 120s |
 | make check | 300s |
 
-### 1.3 Log Verification
-
-**R package logs** (if any):
-
-```bash
-make test    # Run tests
-make check   # Full R CMD check
-```
-
-### 1.4 Hypothesis → Instrumentation → Verification Cycle
+### 1.3 Hypothesis → Instrumentation → Verification Cycle
 
 1. **Hypothesis Formation**: List possible causes from symptoms (use `<TASK>-H1`, `<TASK>-H2`, ...)
 2. **Instrumentation**: Add `message()` / `cli::cli_inform()` that can verify hypotheses
@@ -83,53 +60,19 @@ make check   # Full R CMD check
 
 ## 2. Instrumentation Guidelines
 
-### 2.1 Philosophy
+### Philosophy
 
 **No limit on instrumentation count.** Add as many logs as needed to:
 - Track value propagation across function boundaries
 - Identify exact point of divergence (expected vs actual)
 - Debug in **minimum steps** (one reproduction run should provide enough data)
 
-### 2.2 Log File Location
+### Log File Location
 
 `debug/scripts/<TASK>_debug.log` (NDJSON or plain text)
 
 **PROHIBITED**: `.cursor/debug.log` (system-protected)
 
-### 2.3 Log Clearing
+### Templates and Placement
 
-```bash
-echo "" > debug/scripts/<TASK>_debug.log   # Empty overwrite (no user prompt)
-```
-
-### 2.4 Instrumentation Templates and Placement
-
-For R instrumentation templates and placement strategy (propagation tracking), see `@.cursor/knowledge/debug--instrumentation-template.md`. For R debugging tools and method priority, see `@.cursor/knowledge/debug--method-priority.md`.
-
-### 2.5 Hypothesis ID Convention
-
-- `<TASK>-H1`, `<TASK>-H2`, ... : Main hypotheses
-- `<TASK>-H1a`, `<TASK>-H1b`, ... : Sub-hypotheses
-- Use same hypothesis ID for all logs tracing one propagation path
-
----
-
-## 3. Checklists
-
-### Before Starting Debug
-
-- [ ] Accurately described symptoms (expected vs actual)
-- [ ] Listed hypotheses with task prefix (`<TASK>-H1`, ...)
-
-### During Debug
-
-- [ ] Added timeout to terminal commands
-- [ ] Added region markers to instrumentation (`#region agent log`)
-- [ ] Included hypothesis ID with task prefix in logs
-
-### After Debug Completion
-
-- [ ] Removed instrumentation code
-- [ ] Identified root cause and made minimal fix
-- [ ] Verified fix with tests
-- [ ] Created report at `debug/docs/<TASK>_report.md` (if significant)
+For R instrumentation templates and placement strategy, see `@.cursor/knowledge/debug--instrumentation-template.md`. For R debugging tools and method priority, see `@.cursor/knowledge/debug--method-priority.md`.

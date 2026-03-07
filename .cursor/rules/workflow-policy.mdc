@@ -1,5 +1,5 @@
 ---
-description: "Issue-driven workflow policy: Issue traceability, fix/hotfix criteria, exception policy, container prerequisite, pre-implementation checks, knowledge consultation triggers"
+description: "Issue-driven workflow policy: Issue traceability, fix/hotfix criteria, exception policy, container prerequisite, knowledge consultation triggers"
 alwaysApply: true
 ---
 # Workflow Policy
@@ -55,22 +55,7 @@ This contract is the single source of truth. The PR template, `pr-create` comman
 
 ## Container Prerequisite
 
-All R commands run inside the Podman container `bridle-dev`.
-Before any R-related work:
-
-1. Verify the container is running: `make doctor`
-2. If not running: `make container-up`
-3. If first time: `make container-build && make container-up && make renv-init`
-
-## Pre-Implementation Checks (Required)
-
-Before writing any code:
-
-1. **Confirm the target Issue**: `gh issue view <number>` to retrieve spec, DoD, and test plan
-2. **Run `make doctor`** to verify the development environment
-3. **Read relevant ADR(s)** from `docs/adr/` for the feature being implemented
-4. **Read relevant schema(s)** from `docs/schemas/` if the change touches data structures
-5. **Check existing patterns** in `R/` to maintain consistency
+All R commands MUST run inside container `bridle-dev`. Run `make doctor` to verify; `make container-up` to start.
 
 ## Knowledge Consultation Triggers
 
@@ -83,7 +68,3 @@ Certain task types require reading a specific knowledge file **before** starting
 | Fixing lint / format issues | `lint--nolint-accepted-patterns.md`, `lint--styler-lintr-conflict.md` | `quality-policy.mdc` |
 
 **Rule**: When the agent enters one of these task types, it MUST read the listed atoms as its first action. For unexpected situations (errors not covered above), use `knowledge-index.mdc` as a reactive lookup table. Do not rely on memory from previous sessions — knowledge files may have been updated.
-
-## Makefile Reference
-
-Run `make help` for all available targets and their descriptions.
