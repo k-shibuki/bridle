@@ -37,8 +37,11 @@
 <url><loc>/reference/analyze_log.html</loc></url>
 <url><loc>/reference/assemble_draft_prompt.html</loc></url>
 <url><loc>/reference/assemble_runtime_prompt.html</loc></url>
+<url><loc>/reference/bridle_agent.html</loc></url>
 <url><loc>/reference/bridle_chat.html</loc></url>
+<url><loc>/reference/bridle_console.html</loc></url>
 <url><loc>/reference/bridle_eval_code.html</loc></url>
+<url><loc>/reference/bridle_readline.html</loc></url>
 <url><loc>/reference/bridle_runtime_chat.html</loc></url>
 <url><loc>/reference/build_dependency_graph.html</loc></url>
 <url><loc>/reference/check_availability.html</loc></url>
@@ -49,6 +52,7 @@
 <url><loc>/reference/collect_conditional_stops.html</loc></url>
 <url><loc>/reference/collect_node_hints.html</loc></url>
 <url><loc>/reference/compute_node_order.html</loc></url>
+<url><loc>/reference/console.html</loc></url>
 <url><loc>/reference/constraints.html</loc></url>
 <url><loc>/reference/context_schema.html</loc></url>
 <url><loc>/reference/crossref_get.html</loc></url>
