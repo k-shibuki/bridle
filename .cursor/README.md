@@ -59,7 +59,7 @@ All changes follow an **Issue-driven workflow**. Every implementation task start
 ```
 doctor → issue-create → implement ─────────→ test-create → quality-check
                           │                                      │
-                     docs-discover                          regression-test
+                     docs-discover                          test-regression
                       (Mode 1:                                   │
                       Discover)                             docs-discover
                                                              (Mode 2:
@@ -94,7 +94,7 @@ Two exception types exist, with different delivery methods:
 #### hotfix (critical production fix → exception PR)
 
 ```
-doctor → implement → quality-check → regression-test → docs-discover (Mode 2) → commit → pr-create (exception path) → [CI] → pr-review → pr-merge
+doctor → implement → quality-check → test-regression → docs-discover (Mode 2) → commit → pr-create (exception path) → [CI] → pr-review → pr-merge
 ```
 
 Use when: main is broken, users are blocked, or CI is non-functional. Issue not required, but must be justified in PR body. **All code changes go through PR — direct push to main is never permitted.**
@@ -102,7 +102,7 @@ Use when: main is broken, users are blocked, or CI is non-functional. Issue not 
 #### docs-only (documentation change → direct push)
 
 ```
-doctor → implement → commit → push
+doctor → implement → commit (with direct push)
 ```
 
 Use when: change is documentation only (README, ADR, comments, Cursor rules/commands text) with no code impact. May also use a PR if preferred.
@@ -118,17 +118,14 @@ Use when: change is documentation only (README, ADR, comments, Cursor rules/comm
 | Development | `implement` | Select next Issue (or specify one) and write code (no tests) |
 | Development | `scaffold-class` | Generate S7 class from YAML schema |
 | Development | `test-create` | Design and implement tests |
-| Development | `test-review` | Review test quality |
 | Development | `integration-design` | Design cross-module integration |
-| Quality | `quality-check` | lint + format + R CMD check |
-| Quality | `regression-test` | Run tests (scoped then full) |
-| Quality | `validate-schemas` | Validate YAML schemas |
+| Quality | `quality-check` | lint + format + R CMD check + schema validation |
+| Quality | `test-regression` | Run tests (scoped then full) + coverage gate |
 | Docs | `docs-discover` | Find (Mode 1) and update (Mode 2) related docs |
-| Git | `commit` | Create git commits (with `Refs: #<issue>`) |
+| Git | `commit` | Create git commits (+ docs-only direct push exception) |
 | Git | `pr-create` | Create feature branch + PR (with `Closes #<issue>`) |
-| Git | `pr-review` | Review PR and produce merge recommendation |
+| Git | `pr-review` | Review PR + test quality and produce merge recommendation |
 | Git | `pr-merge` | Execute merge (GitHub or local) |
-| Git | `push` | Push main to origin (**docs-only exception only**) |
 | Knowledge | `knowledge-create` | Capture new pattern/gotcha as atomic knowledge file |
 | Debug | `debug` | Hypothesis-driven debugging |
 

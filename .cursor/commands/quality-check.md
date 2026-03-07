@@ -6,7 +6,7 @@ Run linting, formatting checks, and R CMD check.
 
 ## When to use
 
-- Before running the full test suite (typically before `regression-test`)
+- Before running the full test suite (typically before `test-regression`)
 - Before merging/pushing
 
 ## Policy (rules)
@@ -135,6 +135,16 @@ make coverage-check COVERAGE_THRESHOLD=70  # Override threshold (investigation o
 ```
 
 In CI, coverage results are uploaded to Codecov. See `codecov.yml` for configuration.
+
+### Schema validation errors
+
+| Error | Fix |
+|---|---|
+| YAML parse error | Fix YAML syntax (indentation, quoting) |
+| Missing top-level key | Add required key per schema spec |
+| Unrecognised schema type | Rename file to match `*.schema.yaml` pattern or add rule |
+
+Schema validation runs via `make validate-schemas` (also part of `make ci-fast`). Currently checks YAML syntax, top-level structure, and filename convention. Future S7 validator integration will add cross-reference and reachability checks.
 
 ## Related rules
 

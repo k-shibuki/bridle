@@ -6,7 +6,7 @@ Create a feature branch (if needed), commit, push, and open a pull request on Gi
 
 ## When to use
 
-- After `quality-check` / `regression-test` pass, when the change is ready for CI validation and review
+- After `quality-check` / `test-regression` pass, when the change is ready for CI validation and review
 
 ## Preconditions
 
