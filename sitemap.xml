@@ -6,6 +6,7 @@
 <url><loc>/PULL_REQUEST_TEMPLATE.html</loc></url>
 <url><loc>/authors.html</loc></url>
 <url><loc>/index.html</loc></url>
+<url><loc>/reference/AdvanceResult.html</loc></url>
 <url><loc>/reference/CodeResult.html</loc></url>
 <url><loc>/reference/CodeSandbox.html</loc></url>
 <url><loc>/reference/CompetingView.html</loc></url>
@@ -17,6 +18,7 @@
 <url><loc>/reference/DecisionGraph.html</loc></url>
 <url><loc>/reference/DecisionLogger.html</loc></url>
 <url><loc>/reference/GlobalPolicy.html</loc></url>
+<url><loc>/reference/GraphEngine.html</loc></url>
 <url><loc>/reference/KnowledgeEntry.html</loc></url>
 <url><loc>/reference/KnowledgeStore.html</loc></url>
 <url><loc>/reference/Node.html</loc></url>
@@ -26,13 +28,17 @@
 <url><loc>/reference/ScanResult.html</loc></url>
 <url><loc>/reference/SessionContext.html</loc></url>
 <url><loc>/reference/Transition.html</loc></url>
+<url><loc>/reference/TransitionCandidate.html</loc></url>
+<url><loc>/reference/TransitionTrace.html</loc></url>
 <url><loc>/reference/ValidationResult.html</loc></url>
+<url><loc>/reference/advance.html</loc></url>
 <url><loc>/reference/analyze_log.html</loc></url>
 <url><loc>/reference/assemble_draft_prompt.html</loc></url>
 <url><loc>/reference/bridle_chat.html</loc></url>
 <url><loc>/reference/bridle_eval_code.html</loc></url>
 <url><loc>/reference/build_dependency_graph.html</loc></url>
 <url><loc>/reference/check_availability.html</loc></url>
+<url><loc>/reference/check_iteration_limit.html</loc></url>
 <url><loc>/reference/classify_parameter.html</loc></url>
 <url><loc>/reference/code_sandbox.html</loc></url>
 <url><loc>/reference/collect_calls.html</loc></url>
@@ -46,7 +52,11 @@
 <url><loc>/reference/decision_logger.html</loc></url>
 <url><loc>/reference/detect_rd_deprecated.html</loc></url>
 <url><loc>/reference/draft_knowledge.html</loc></url>
+<url><loc>/reference/engine_current_node.html</loc></url>
+<url><loc>/reference/engine_visit_counts.html</loc></url>
 <url><loc>/reference/evaluate_hint.html</loc></url>
+<url><loc>/reference/evaluate_skip.html</loc></url>
+<url><loc>/reference/evaluate_transitions.html</loc></url>
 <url><loc>/reference/extract_abstract_from_xml.html</loc></url>
 <url><loc>/reference/extract_char_vector.html</loc></url>
 <url><loc>/reference/extract_crossref_authors.html</loc></url>
@@ -72,6 +82,7 @@
 <url><loc>/reference/get_rd_aliases.html</loc></url>
 <url><loc>/reference/get_rd_db.html</loc></url>
 <url><loc>/reference/get_rd_section.html</loc></url>
+<url><loc>/reference/graph_engine.html</loc></url>
 <url><loc>/reference/hint_evaluator.html</loc></url>
 <url><loc>/reference/index.html</loc></url>
 <url><loc>/reference/is_available.html</loc></url>
@@ -82,6 +93,7 @@
 <url><loc>/reference/knowledge.html</loc></url>
 <url><loc>/reference/knowledge_retriever.html</loc></url>
 <url><loc>/reference/log_visit.html</loc></url>
+<url><loc>/reference/make_graph_engine.html</loc></url>
 <url><loc>/reference/merge_valid_values.html</loc></url>
 <url><loc>/reference/parse_crossref_response.html</loc></url>
 <url><loc>/reference/parse_draft_response.html</loc></url>
@@ -96,6 +108,7 @@
 <url><loc>/reference/read_decision_graph.html</loc></url>
 <url><loc>/reference/read_knowledge.html</loc></url>
 <url><loc>/reference/resolve_function.html</loc></url>
+<url><loc>/reference/resolve_policy.html</loc></url>
 <url><loc>/reference/retrieve_constraints.html</loc></url>
 <url><loc>/reference/retrieve_knowledge.html</loc></url>
 <url><loc>/reference/safe_deparse.html</loc></url>
@@ -104,6 +117,7 @@
 <url><loc>/reference/scan_layer3a.html</loc></url>
 <url><loc>/reference/scan_package.html</loc></url>
 <url><loc>/reference/scan_result.html</loc></url>
+<url><loc>/reference/select_transition.html</loc></url>
 <url><loc>/reference/session_context.html</loc></url>
 <url><loc>/reference/update_context.html</loc></url>
 <url><loc>/reference/update_deprecated_params.html</loc></url>
