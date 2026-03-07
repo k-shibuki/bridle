@@ -24,6 +24,7 @@
 <url><loc>/reference/Node.html</loc></url>
 <url><loc>/reference/NodePolicy.html</loc></url>
 <url><loc>/reference/ParameterInfo.html</loc></url>
+<url><loc>/reference/PromptResult.html</loc></url>
 <url><loc>/reference/RetrievalResult.html</loc></url>
 <url><loc>/reference/ScanResult.html</loc></url>
 <url><loc>/reference/SessionContext.html</loc></url>
@@ -34,8 +35,10 @@
 <url><loc>/reference/advance.html</loc></url>
 <url><loc>/reference/analyze_log.html</loc></url>
 <url><loc>/reference/assemble_draft_prompt.html</loc></url>
+<url><loc>/reference/assemble_runtime_prompt.html</loc></url>
 <url><loc>/reference/bridle_chat.html</loc></url>
 <url><loc>/reference/bridle_eval_code.html</loc></url>
+<url><loc>/reference/bridle_runtime_chat.html</loc></url>
 <url><loc>/reference/build_dependency_graph.html</loc></url>
 <url><loc>/reference/check_availability.html</loc></url>
 <url><loc>/reference/check_iteration_limit.html</loc></url>
@@ -92,12 +95,14 @@
 <url><loc>/reference/is_valid.html</loc></url>
 <url><loc>/reference/knowledge.html</loc></url>
 <url><loc>/reference/knowledge_retriever.html</loc></url>
+<url><loc>/reference/llm_utils.html</loc></url>
 <url><loc>/reference/log_visit.html</loc></url>
 <url><loc>/reference/make_graph_engine.html</loc></url>
 <url><loc>/reference/merge_valid_values.html</loc></url>
 <url><loc>/reference/parse_crossref_response.html</loc></url>
 <url><loc>/reference/parse_draft_response.html</loc></url>
 <url><loc>/reference/parse_match_arg.html</loc></url>
+<url><loc>/reference/prompt_assembler.html</loc></url>
 <url><loc>/reference/pubmed_efetch_get.html</loc></url>
 <url><loc>/reference/pubmed_fetch_abstract.html</loc></url>
 <url><loc>/reference/pubmed_search.html</loc></url>
