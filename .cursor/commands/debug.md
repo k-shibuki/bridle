@@ -1,6 +1,6 @@
 # debug
 
-General-purpose debugging command. Policy: `@.cursor/rules/debug.mdc`
+General-purpose debugging command. Policy: `@.cursor/rules/debug-strategy.mdc`
 
 ## Debug Method Priority
 
@@ -19,7 +19,7 @@ General-purpose debugging command. Policy: `@.cursor/rules/debug.mdc`
 
 ## Task Prefix Convention
 
-See `@.cursor/rules/debug.mdc` § 0 for the authoritative Task Prefix Convention.
+See `@.cursor/rules/debug-strategy.mdc` § 0 for the authoritative Task Prefix Convention.
 
 ---
 
@@ -59,5 +59,5 @@ For R-specific debugging tools (reprex, browser, rlang), instrumentation templat
 
 ## Related
 
-- `@.cursor/rules/debug.mdc` (policy)
+- `@.cursor/rules/debug-strategy.mdc` (policy)
 - `@.cursor/commands/integration-design.md` (for preventing integration issues during new feature development)

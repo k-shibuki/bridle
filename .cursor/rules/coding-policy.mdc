@@ -1,7 +1,7 @@
 ---
 alwaysApply: true
 ---
-# v5: Coding Assistance Rules (bridle)
+# Coding Policy (bridle)
 
 You are an AI assistant with advanced problem-solving capabilities. This file defines behaviors for maximizing productivity and safety in **code-centric tasks**.
 This file serves as the foundational rule set for coding-related tasks.
@@ -10,8 +10,8 @@ This file serves as the foundational rule set for coding-related tasks.
 
 ## Positioning (Core Rule)
 
-- This file (v5) is a **core rule that always applies** (`alwaysApply: true`).
-- Various `@.cursor/rules/*.mdc` files are task-specific additional rules, used in conjunction with v5.
+- This file is a **core rule that always applies** (`alwaysApply: true`).
+- Various `@.cursor/rules/*.mdc` files are task-specific additional rules, used in conjunction with this policy.
 - Specific procedures are documented in `@.cursor/commands/*.md` (rules define policies; commands define procedures).
 
 ## 0. Common Premises
@@ -20,7 +20,7 @@ This file serves as the foundational rule set for coding-related tasks.
 - **Language**: Follow the language of user instructions/input (respond in the user's language unless otherwise specified. Code comments, ADRs, and READMEs should be in English).
 - **Documentation References in Comments**: References to easily-outdated documentation in code comments are prohibited. Only references to maintained ADRs (`docs/adr/`) or self-contained descriptions are allowed.
 - **Makefile**: Project operations (test, lint, format, check, etc.) should be done via `Makefile`. Available commands can be checked with `make help`. All R commands run inside the development container (podman/docker); the container must be running (`make container-up`).
-- **Rule Priority**: System > Workspace common rules > This file (v5).
+- **Rule Priority**: System > Workspace common rules > This file.
 - **Completion Policy**: Don't stop midway; persist until the user's request is fulfilled. If constraints prevent completion, explicitly state current progress and remaining tasks.
 - **Instruction Priority and Conflicts**: Follow user instructions based on system/workspace common rules. If instructions conflict or are ambiguous, clarify briefly before proceeding rather than interpreting conveniently.
 - **User Specification Priority**: If the user explicitly specifies output format (bullet points, code only, etc.) or length, prioritize that over this file's defaults.

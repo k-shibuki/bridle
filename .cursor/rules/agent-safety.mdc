@@ -1,0 +1,32 @@
+---
+description: "AI agent absolute prohibitions (Hard Stops): CI merge, local verification, workflow steps, gate evidence, PR template, diagnostics, CI polling, nolint, PR base branch. Multi-agent safety rules."
+alwaysApply: true
+---
+# Agent Safety Rules
+
+## Purpose
+
+Absolute prohibitions for AI agents in the bridle project. These Hard Stops apply regardless of user instructions.
+
+## Hard Stops (Absolute Prohibitions)
+
+The following actions are NEVER permitted, regardless of user instructions:
+
+1. **NEVER merge a PR without CI green**: Run `gh pr checks <N>` and confirm all checks pass before executing `gh pr merge`. No exceptions.
+2. **NEVER skip local verification**: Run `make ci-fast` AND `make format-check` before every `git push`. This applies to every branch (feature, hotfix, main). Even when no R code changed (Makefile, docs, CI only), run `make validate-schemas`. Pushing without local verification is prohibited — "CI will catch it" is not acceptable.
+3. **NEVER skip workflow steps for speed**: When told to "do everything", "hurry up", or "till close all issues", execute every step of every command in full. Achieve speed through parallel work on independent Issues, not by skipping verification.
+4. **NEVER proceed past a gate without evidence**: Gate passage must be proven by command output or tool results. "Probably fine" is not evidence.
+5. **NEVER create a PR without the full template**: Every PR body must include ALL sections from `pr-create.md` Step 4 (Summary, Traceability, Risk/Impact, Rollback Plan, Review Checklist). Read `pr-create.md` before every PR creation — do not compose the body from memory.
+6. **NEVER dismiss diagnostics as "pre-existing"**: Every error, warning, and NOTE reported by quality gates (`devtools::check()`, `lintr`, `validate-schemas`, etc.) is a defect to fix — regardless of when it was introduced. The agent must not classify, skip, or deprioritize diagnostics based on whether the current change caused them. If the gate reports a problem, the agent resolves it before proceeding.
+7. **NEVER poll CI inline**: CI polling is always delegated to a background subagent (see `@.cursor/rules/subagent-policy.mdc`). The main agent uses freed time for productive work: implementing the next Issue, branch cleanup, environment health checks (`make doctor`), documentation review, or next-Issue planning. Inline `sleep` + poll loops in the main agent are prohibited regardless of whether independent Issues exist. "I'll just wait a minute" is not acceptable — delegate and do useful work. **Completion Guarantee**: After delegating to a subagent, the main agent MUST NOT end its turn until the subagent completes. After exhausting productive work (independent Issues, housekeeping), enter a monitoring loop: read the subagent output file, sleep, repeat. Report the subagent's result to the user before ending the turn.
+8. **NEVER add `# nolint` without consulting knowledge first**: Before writing ANY `# nolint` annotation, the agent MUST read `@.cursor/knowledge/lint--nolint-accepted-patterns.md` and follow the nolint decision tree in `@.cursor/rules/quality-policy.mdc` § nolint Checkpoint. The required sequence is: (1) attempt code restructuring, (2) attempt co-location for test helpers, (3) only then consider line-level `# nolint: <linter_name>. <reason>`. Blanket `# nolint`, `# nolint start/end`, and `# nolint` without linter name + reason are **always prohibited**. Adding `# nolint` without first reading the knowledge file and exhausting alternatives is prohibited — "the lint error needs suppressing" is not sufficient justification.
+9. **NEVER use `--base feat/<branch>` in `gh pr create`**: All PRs must target `main`. Using a feature branch as base causes the PR to be auto-closed when the base branch is deleted on merge. Document dependencies in the PR body, not through the base branch. See `pr-create.md` Step 3c.
+
+## Multi-Agent Safety Rules
+
+When multiple AI agents (or a main agent + subagents) work concurrently:
+
+- Use task prefixes (see `@.cursor/rules/debug-strategy.mdc` Section 0) for all artifacts
+- Check `git status` before starting work to detect concurrent changes
+- Keep changes scoped to minimize merge conflicts
+- Do not modify the same file from multiple agents simultaneously

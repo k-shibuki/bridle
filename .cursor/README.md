@@ -22,7 +22,7 @@ Start here to find the right information quickly.
 | ADRs (design decisions) | [`docs/adr/`](../docs/adr/) — referenced from [`docs/README.md`](../docs/README.md) |
 | YAML schemas (data contracts) | [`docs/schemas/`](../docs/schemas/) — referenced from [`docs/README.md`](../docs/README.md) |
 | S7 class implementations | `R/` |
-| Subagent delegation policy | `ai-guardrails.mdc` § Subagent Delegation |
+| Subagent delegation policy | `subagent-policy.mdc` |
 | **Any specific pattern/gotcha** | **`knowledge-index.mdc`** — trigger-keyword lookup for all atoms |
 | Subagent prompt templates | `knowledge/agent--delegation-templates.md` |
 | Lint/format patterns (S7, styler/lintr) | `knowledge/lint--*.md` atoms |
@@ -81,7 +81,7 @@ pr-create → [CI pending] ┤  CI poll → merge → rebase next → CI poll...
                          └→ next re-assessment checks subagent transcript
 ```
 
-- **`next`** can be invoked at any point to assess the current state and propose the appropriate next command. After approval, it delegates to the command and loops back for the next step. When blocking operations (CI polling) are detected, `next` delegates them to background subagents (see `ai-guardrails.mdc` § Subagent Delegation).
+- **`next`** can be invoked at any point to assess the current state and propose the appropriate next command. After approval, it delegates to the command and loops back for the next step. When blocking operations (CI polling) are detected, `next` delegates them to background subagents (see `subagent-policy.mdc`).
 - `implement` auto-selects the next Issue when no Issue number is provided (analyzes dependencies, priority, and blocked status).
 - `docs-discover` runs twice: **Mode 1** during `implement` (early discovery) and **Mode 2** before `commit` (apply doc updates).
 
@@ -138,14 +138,16 @@ Rules define enforceable MUST/MUST NOT policies. Commands define procedures. Kno
 
 | Rule | Scope | Related Knowledge |
 |------|-------|-------------------|
-| `v5_bridle.mdc` (always) | Core coding assistance | — |
-| `ai-guardrails.mdc` (always) | AI safety, Issue workflow, subagent delegation | `agent--*` atoms, `git--*` atoms, `ci--*` atoms |
+| `coding-policy.mdc` (always) | Core coding assistance | — |
+| `agent-safety.mdc` (always) | Hard Stops — absolute prohibitions | — |
+| `workflow-policy.mdc` (always) | Issue-driven workflow, exception policy, pre-implementation checks | — |
 | `knowledge-index.mdc` (always) | Trigger-keyword lookup for all knowledge atoms | All atoms in `.cursor/knowledge/` |
+| `subagent-policy.mdc` | Subagent delegation, Two-Tier Gate, CI polling | `agent--*` atoms, `git--*` atoms, `ci--*` atoms |
+| `quality-policy.mdc` | Lint/format/check, S7 type strictness, schema-code consistency, verification gates | `lint--*` atoms, `r--*` atoms |
 | `test-strategy.mdc` | Test design and review | `test--*` atoms, `r--null-assignment-trap.md` |
-| `integration-design.mdc` | Cross-module design | — |
-| `debug.mdc` | Debugging methodology | `debug--*` atoms |
-| `quality-check.mdc` | Lint/format/check policy | `lint--*` atoms, `r--*` atoms |
-| `commit-message-format.mdc` | Commit message format, branch naming | — |
+| `debug-strategy.mdc` | Debugging methodology | `debug--*` atoms |
+| `integration-strategy.mdc` | Cross-module design | — |
+| `commit-format.mdc` | Commit message format, branch naming | — |
 
 ## Issue-Driven Workflow Principles
 
@@ -153,5 +155,5 @@ Rules define enforceable MUST/MUST NOT policies. Commands define procedures. Kno
 2. **1 Issue ≈ 1 PR**: Each Issue should be implementable in a single PR. Large tasks are split into child Issues.
 3. **Traceability is mandatory**: PRs must reference their Issue (`Closes #N`), commits should reference it (`Refs: #N`).
 4. **No main direct push** for normal changes: All code changes go through the PR flow with CI validation.
-5. **Exceptions are explicit**: `hotfix` bypasses Issue triage but still requires a PR. Only `docs-only` may use direct push to main. See `ai-guardrails.mdc` for the full policy.
-6. **Parallelize via subagent delegation**: Blocking operations (CI polling, sequential merges) are always delegated to background subagents so the main agent can continue productive work (independent Issues, branch cleanup, environment health, doc review). Inline CI polling is prohibited. See `ai-guardrails.mdc` § Subagent Delegation for the policy and `agent--delegation-templates.md` for prompt templates.
+5. **Exceptions are explicit**: `hotfix` bypasses Issue triage but still requires a PR. Only `docs-only` may use direct push to main. See `workflow-policy.mdc` for the full policy.
+6. **Parallelize via subagent delegation**: Blocking operations (CI polling, sequential merges) are always delegated to background subagents so the main agent can continue productive work (independent Issues, branch cleanup, environment health, doc review). Inline CI polling is prohibited. See `subagent-policy.mdc` for the policy and `agent--delegation-templates.md` for prompt templates.

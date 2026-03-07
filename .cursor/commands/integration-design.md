@@ -22,7 +22,7 @@ Design and verify cross-module integration (interfaces, types, and data flow).
 
 Follow the integration policy here:
 
-- `@.cursor/rules/integration-design.mdc`
+- `@.cursor/rules/integration-strategy.mdc`
 
 This command focuses on the concrete deliverables and how to produce them.
 
@@ -32,7 +32,7 @@ This command focuses on the concrete deliverables and how to produce them.
 2. Define shared data contracts as S7 classes in `R/{class_name}.R`.
 3. If introducing new parameters/fields, create a **propagation map** (where the value is accepted, transformed, forwarded, and where it has effect).
 4. Add integration tests at `tests/testthat/test-{feature}-integration.R` that validate the end-to-end flow (including the propagation map checkpoints).
-   - For instrumentation conventions (log format, template), see `@.cursor/rules/debug.mdc` Section 2
+   - For instrumentation conventions (log format, template), see `@.cursor/rules/debug-strategy.mdc` Section 2
 5. Run/verify the flow and update the sequence diagram to match reality.
 
 ## Output (response format)
@@ -52,5 +52,5 @@ This command focuses on the concrete deliverables and how to produce them.
 
 ## Related
 
-- `@.cursor/rules/integration-design.mdc` (policy)
+- `@.cursor/rules/integration-strategy.mdc` (policy)
 - `@.cursor/commands/debug.md` (for instrumentation procedures)

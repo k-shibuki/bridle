@@ -1,0 +1,86 @@
+---
+description: "Subagent delegation: CI polling, background tasks, Two-Tier Gate, completion guarantee, git conflict prevention, delegation templates"
+alwaysApply: false
+---
+# Subagent Delegation Policy
+
+## Subagent Delegation Pattern
+
+The main agent **MUST** delegate all blocking operations (CI polling, sequential PR merges, long builds) to a background subagent (see Hard Stop #7 in `@.cursor/rules/agent-safety.mdc`). This applies unconditionally — not only when independent Issues exist.
+
+### When to delegate
+
+| Situation | Action |
+|---|---|
+| CI pending (any) | Always delegate CI-wait to background subagent |
+| CI pending + independent Issue exists | Delegate + start `implement` on independent Issue |
+| CI pending + no independent Issue | Delegate + run Two-Tier Gate (see § Productive work during delegation) |
+| Sequential multi-PR merge chain | Delegate entire rebase → CI → merge chain to one subagent |
+| Dependent PR chain (shared commits) | Use "Dependent PR Merge Chain" template with `--onto` rebase (see `agent--delegation-templates.md`) |
+| Code review, implementation, user interaction | Never delegate — requires main agent judgment |
+
+### Subagent configuration
+
+- **Type**: `subagent_type: "shell"` for CI polling, merge, rebase, and other git/CLI operations
+- **Model**: `model: "fast"` for routine operations (CI poll, merge, rebase). Omit `model` (inherit parent) for tasks requiring judgment. Never hardcode specific model names — they are environment-dependent.
+- **Background**: `run_in_background: true` to avoid blocking the main agent
+
+### Prompt structure and completion detection
+
+For prompt templates (CI-wait, merge chain, CI-only), see `@.cursor/knowledge/agent--delegation-templates.md`.
+
+Delegated subagent prompts MUST include: Goal, Steps, Prohibitions (especially git operation bans), Error handling, and Return format.
+
+### Productive work during delegation (Two-Tier Gate)
+
+After delegating, decide what to do using a two-tier gate — not unconditional reasoning.
+
+**Tier 1 — Signal scan** (always, low cost):
+
+Run these checks in parallel (~2-3 s total). No reasoning required:
+
+| Signal | Check | Fires when |
+|---|---|---|
+| uncommitted | `git status` | Working tree has uncommitted changes |
+| open-issues | `gh issue list --state open` | Actionable Issues exist |
+| stash | `git stash list` | Stashed work exists |
+| session-findings | Agent working memory (no tool call) | Unresolved discoveries from this session |
+
+**Gate decision**:
+
+- **All signals clear** → State "Signals clear, entering monitoring." and proceed directly to § Completion guarantee. No further reasoning.
+- **Any signal fires** → Proceed to Tier 2.
+
+**Tier 2 — Reasoning** (only when signals fire):
+
+1. **Context**: Which signals fired? What is the project state?
+2. **Options**: What actions are possible without conflicting with the subagent?
+3. **Decision**: What is the highest-value action, and why?
+
+Execute the chosen action(s), then proceed to § Completion guarantee.
+
+### Completion guarantee
+
+After launching a background subagent, the main agent MUST follow this lifecycle:
+
+1. Run the Two-Tier Gate (see § Productive work during delegation) and perform any resulting work
+2. Periodically check the subagent output file between tasks
+3. When the gate yields no work (all signals clear) or productive work is exhausted, enter a monitoring loop (read output file → sleep 10-30s → repeat)
+4. When the subagent completes, process the result (report merged PRs, surface errors)
+5. Report to the user, THEN end the turn
+
+Ending the turn while a subagent is still running is prohibited.
+
+### Git conflict prevention
+
+When a subagent is handling merge operations:
+
+- The subagent owns ALL git operations on the merge-target branches
+- The main agent MUST work on a **different branch** (e.g., a new feature branch for the independent Issue)
+- Do not run `git checkout main` or `git pull` on the main agent while the subagent is merging
+
+For recovery procedures when git state is corrupted, see the `git--*` atoms in `.cursor/knowledge/` (e.g., `git--subagent-branch-interference.md`, `git--quick-recovery.md`, `git--pr-consolidation-split.md`).
+
+### Fallback (backward compatibility)
+
+If the environment does not support subagents (e.g., non-Cursor environment, manual command execution), all commands fall back to sequential inline execution. Commands must remain fully functional without subagent delegation.

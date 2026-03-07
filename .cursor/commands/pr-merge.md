@@ -126,7 +126,7 @@ git commit -m "<type>: <description>
 Refs: #<issue-number>"
 ```
 
-After `--squash`, you must run `git commit` with a message following `commit-message-format.mdc`.
+After `--squash`, you must run `git commit` with a message following `commit-format.mdc`.
 
 ## Delegated merge (background subagent)
 
@@ -153,7 +153,7 @@ Choose the appropriate template from `@.cursor/knowledge/agent--delegation-templ
 
 ### Completion detection
 
-The main agent checks the subagent transcript at the next `next` re-assessment cycle. See `ai-guardrails.mdc` "Completion detection" for the protocol.
+The main agent checks the subagent transcript at the next `next` re-assessment cycle. See `subagent-policy.mdc` "Completion guarantee" for the protocol.
 
 ## Constraints
 
@@ -176,4 +176,4 @@ The main agent checks the subagent transcript at the next `next` re-assessment c
 
 - `@.cursor/commands/pr-review.md` (previous step in PR flow)
 - `@.cursor/commands/push.md` (exception flow: docs-only direct push)
-- `@.cursor/rules/commit-message-format.mdc` (for squash commit messages)
+- `@.cursor/rules/commit-format.mdc` (for squash commit messages)

@@ -57,4 +57,4 @@ make doctor             # Verify everything
 
 ## Related rules
 
-- `@.cursor/rules/ai-guardrails.mdc`
+- `@.cursor/rules/workflow-policy.mdc`

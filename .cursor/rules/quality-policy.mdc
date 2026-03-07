@@ -1,8 +1,8 @@
 ---
-description: "Running lint, format, or R CMD check: fix approaches and prohibited workarounds"
+description: "Quality gates: lint, format, R CMD check, S7 type strictness, schema-code consistency, verification gates, change safety checklist, nolint decision tree"
 alwaysApply: false
 ---
-# Quality Check Conventions
+# Quality Policy
 
 This rule defines the **policy** applied when executing `/quality-check`.
 Procedures (which commands to run and how) are documented in `@.cursor/commands/quality-check.md`.
@@ -92,6 +92,52 @@ result <- ScanResult(...) # nolint: object_usage_linter. S7 class defined in R/s
 ### Accepted Justifications
 
 See `@.cursor/knowledge/lint--nolint-accepted-patterns.md` for the complete table of accepted justifications and naming length strategies.
+
+## Type Strictness (S7)
+
+- All S7 properties **MUST** have explicit types. `class_any` is **prohibited** unless the property genuinely accepts multiple unrelated types with no common interface.
+- Use `S7::new_union(class_character, class_integer)` for known union types rather than falling back to `class_any`.
+- Validators must check constraints that types alone cannot express (e.g., value ranges, cross-field dependencies, format patterns).
+- Use `match.arg()` for enum-like parameters.
+- When an S7 property references another S7 class from a different file, the source file **MUST** have `#' @include <dependency>.R` in its roxygen header. Alphabetical file order is not reliable — it changes when files are added or removed (including via rebase). See `@.cursor/knowledge/r--s7-include-directive.md`.
+
+## Schema-Code Consistency (Critical)
+
+YAML schemas (`docs/schemas/`) and S7 classes (`R/`) must remain consistent.
+Per ADR-0001, S7 classes are the source of truth once implemented.
+
+- When creating/modifying an S7 class, verify it matches the corresponding YAML schema
+- When modifying a schema, update the corresponding S7 class (or create a follow-up task)
+- Run `make validate-schemas` after any schema-related change
+
+## Mandatory Verification After Changes
+
+| Verification | Minimum gate | Executed during | Skippable? |
+|---|---|---|---|
+| `make validate-schemas` | Always | `quality-check` | No |
+| `make ci-fast` | Always | `quality-check` | No |
+| `make test` | When tests exist | `regression-test` | Only if no tests exist |
+| `make check` | Before commit | `quality-check` | No |
+| `make coverage-check` | When tests exist | `regression-test` | Only if no tests exist |
+| `make document` | When roxygen2 changed | `quality-check` | Only if no roxygen2 changes |
+| `gh pr checks` | Before merge | `pr-create` (Step 5) | No |
+| `make doctor` | Always (includes renv sync) | `quality-check` | No |
+| `roxygen2::roxygenise()` | After `git rebase` adding new R files | `quality-check` | No |
+
+Even when no R code changed (Makefile, docs, CI only), `make validate-schemas` must still run. There is no case where verification can be entirely skipped.
+
+## Change Safety Checklist
+
+For every PR/commit, verify:
+
+- [ ] Issue reference present (`Refs: #N` in commits, `Closes #N` in PR)
+- [ ] ADR reference identified (or "no ADR applies" stated)
+- [ ] Schema-code consistency maintained
+- [ ] No prohibited patterns introduced (see above § Prohibited Practices)
+- [ ] S7 properties have explicit types (no `class_any`)
+- [ ] Tests added/updated for new functionality
+- [ ] `make ci` passes locally
+- [ ] PR body contains all required sections (see Hard Stop #5 in `@.cursor/rules/agent-safety.mdc`)
 
 ## Known Patterns and Troubleshooting
 

@@ -98,4 +98,4 @@ Use multiple signals (don't rely on one):
 
 - `@.cursor/commands/implement.md` (calls Mode 1 during Step 3)
 - `@.cursor/commands/commit.md` (calls Mode 2 before committing)
-- `@.cursor/rules/integration-design.mdc` (when changes affect cross-module contracts / data flow docs)
+- `@.cursor/rules/integration-strategy.mdc` (when changes affect cross-module contracts / data flow docs)

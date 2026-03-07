@@ -140,4 +140,4 @@ If cross-module integration is involved, recommend `/integration-design` before 
 
 - `@.cursor/commands/implement.md` (next step)
 - `@.cursor/commands/integration-design.md` (when cross-module)
-- `@.cursor/rules/ai-guardrails.mdc`
+- `@.cursor/rules/workflow-policy.mdc`

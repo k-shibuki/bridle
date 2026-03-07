@@ -114,4 +114,4 @@ If the conclusion is "Changes required", list the required changes and stop.
 - `@.cursor/commands/pr-merge.md` (next step when mergeable)
 - `@.cursor/commands/pr-create.md` (PR creation)
 - `@.cursor/rules/test-strategy.mdc`
-- `@.cursor/rules/commit-message-format.mdc`
+- `@.cursor/rules/commit-format.mdc`

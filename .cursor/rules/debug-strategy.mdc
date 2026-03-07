@@ -11,7 +11,7 @@ Before starting any debug or investigation work, the agent MUST read these knowl
 - `@.cursor/knowledge/debug--method-priority.md` — debug method priority, R tools reference, phase-specific checks
 - `@.cursor/knowledge/debug--instrumentation-template.md` — R instrumentation template and boundary placement
 
-Do not rely on memory — read the atoms every time. See also `@.cursor/rules/ai-guardrails.mdc` § Knowledge Consultation Triggers.
+Do not rely on memory — read the atoms every time. See also `@.cursor/rules/workflow-policy.mdc` § Knowledge Consultation Triggers.
 
 ## Positioning (Separation of Policy and Procedure)
 
@@ -22,7 +22,7 @@ Do not rely on memory — read the atoms every time. See also `@.cursor/rules/ai
 
 Achieve reproducible and efficient problem resolution. bridle is an R package; debugging focuses on R code paths, S7 class behavior, and integration with ellmer/ragnar/vitals.
 
-**Related**: For **prevention** of integration issues during new feature development, see `@.cursor/rules/integration-design.mdc`.
+**Related**: For **prevention** of integration issues during new feature development, see `@.cursor/rules/integration-strategy.mdc`.
 
 ## 0. Task Prefix Convention (Multi-Agent Support)
 

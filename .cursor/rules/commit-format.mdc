@@ -53,7 +53,7 @@ Following Conventional Commits, `<Prefix>(scope):` format is also allowed as nee
 
 ### fix vs hotfix
 
-`fix` and `hotfix` differ in **urgency**, not in the kind of change. For the full decision criteria and hotfix threshold, see `@.cursor/rules/ai-guardrails.mdc` § fix vs hotfix Decision Criteria.
+`fix` and `hotfix` differ in **urgency**, not in the kind of change. For the full decision criteria and hotfix threshold, see `@.cursor/rules/workflow-policy.mdc` § fix vs hotfix Decision Criteria.
 
 Both `fix` and `hotfix` **always go through a PR** — direct push to `main` is not permitted for code changes.
 

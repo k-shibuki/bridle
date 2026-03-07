@@ -53,5 +53,4 @@ The same `make validate-schemas` target will delegate to S7 class constructors, 
 
 ## Related rules
 
-- `@.cursor/rules/ai-guardrails.mdc`
-- `@.cursor/rules/quality-check.mdc`
+- `@.cursor/rules/quality-policy.mdc`

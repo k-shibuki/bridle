@@ -73,7 +73,7 @@ git branch --merged origin/main | grep -v '^\*\|main$' || true
 git branch --no-merged origin/main --format='%(refname:short) %(upstream:track)' | grep '\[gone\]' || true
 ```
 
-**Background task check**: If a background subagent was previously launched (e.g., for CI-wait + merge), check its transcript file for completion. See `ai-guardrails.mdc` "Completion detection" for the protocol. Incorporate results into the state assessment.
+**Background task check**: If a background subagent was previously launched (e.g., for CI-wait + merge), check its transcript file for completion. See `subagent-policy.mdc` "Completion guarantee" for the protocol. Incorporate results into the state assessment.
 
 ### Step 2: Determine workflow position
 
@@ -159,7 +159,7 @@ When Step 2 identifies any **CI pending** state (Hard Stop #7 — always delegat
 
 2. **Note the subagent transcript path** returned by the Task tool for later completion checking.
 
-3. **Run the Two-Tier Gate** (see `@.cursor/rules/ai-guardrails.mdc` § Productive work during delegation):
+3. **Run the Two-Tier Gate** (see `@.cursor/rules/subagent-policy.mdc` § Productive work during delegation):
    - Tier 1: Signal scan (`git status`, `gh issue list`, `git stash list`, session-findings) — parallel, ~2-3 s.
    - If all clear → proceed directly to step 4.
    - If any signal fires → Tier 2: reason about highest-value action, execute, then proceed to step 4.
@@ -253,4 +253,6 @@ After execution:
 
 - All commands in `.cursor/commands/` — this meta-command delegates to them
 - `.cursor/README.md` — workflow overview and knowledge map
-- `.cursor/rules/ai-guardrails.mdc` — Issue-driven workflow requirements
+- `.cursor/rules/workflow-policy.mdc` — Issue-driven workflow requirements
+- `.cursor/rules/agent-safety.mdc` — Hard Stops (absolute prohibitions)
+- `.cursor/rules/subagent-policy.mdc` — Subagent delegation policy

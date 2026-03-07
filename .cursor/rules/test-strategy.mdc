@@ -13,7 +13,7 @@ Before writing, reviewing, or modifying any test code, the agent MUST read these
 - `@.cursor/knowledge/test--layered-mock-strategy.md` — mock all layer boundaries in integration tests
 - `@.cursor/knowledge/r--null-assignment-trap.md` — `x$field <- NULL` silently removes the field
 
-Do not rely on memory — read the atoms every time. See also `@.cursor/rules/ai-guardrails.mdc` § Knowledge Consultation Triggers.
+Do not rely on memory — read the atoms every time. See also `@.cursor/rules/workflow-policy.mdc` § Knowledge Consultation Triggers.
 
 ---
 

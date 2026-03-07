@@ -13,11 +13,11 @@ Run linting, formatting checks, and R CMD check.
 
 Follow the quality policy here:
 
-- `@.cursor/rules/quality-check.mdc`
+- `@.cursor/rules/quality-policy.mdc`
 
 ## Recommended Execution Order
 
-Always format before linting. Running lint on unformatted code produces false positives from styler/lintr indentation conflicts (see `quality-check.mdc` § Known Patterns).
+Always format before linting. Running lint on unformatted code produces false positives from styler/lintr indentation conflicts (see `quality-policy.mdc` § Known Patterns).
 
 ```bash
 # Step 1: Auto-format (fixes style issues)
@@ -104,7 +104,7 @@ if (is_empty) {
 }
 ```
 
-See `quality-check.mdc` § Known Patterns for the full list.
+See `quality-policy.mdc` § Known Patterns for the full list.
 
 ### `object_usage_linter` false positives for S7 classes
 
@@ -128,4 +128,4 @@ result <- MyClass(...) # nolint: object_usage_linter. S7 class defined in R/my_c
 
 ## Related rules
 
-- `@.cursor/rules/quality-check.mdc`
+- `@.cursor/rules/quality-policy.mdc`

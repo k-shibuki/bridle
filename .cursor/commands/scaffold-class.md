@@ -73,5 +73,5 @@ The generated code is a starting point. Review and refine:
 ## Related
 
 - `@docs/adr/0001-use-s7-class-system.md`
-- `@.cursor/rules/ai-guardrails.mdc` (type strictness policy)
+- `@.cursor/rules/quality-policy.mdc` (type strictness policy)
 - `@.cursor/commands/implement.md` (for the actual implementation)

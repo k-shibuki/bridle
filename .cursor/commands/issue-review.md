@@ -184,5 +184,5 @@ For each Issue:
 - `@.cursor/commands/issue-create.md` (Issue creation standards)
 - `@.cursor/commands/implement.md` (consumes Issues)
 - `@.cursor/commands/next.md` (orchestrator that may invoke this)
-- `@.cursor/rules/ai-guardrails.mdc` (Issue-driven workflow)
+- `@.cursor/rules/workflow-policy.mdc` (Issue-driven workflow)
 - `@.cursor/rules/test-strategy.mdc` (test plan quality standards)
