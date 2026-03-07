@@ -24,6 +24,7 @@
 <url><loc>/reference/Node.html</loc></url>
 <url><loc>/reference/NodePolicy.html</loc></url>
 <url><loc>/reference/ParameterInfo.html</loc></url>
+<url><loc>/reference/ParsedResponse.html</loc></url>
 <url><loc>/reference/PromptResult.html</loc></url>
 <url><loc>/reference/RetrievalResult.html</loc></url>
 <url><loc>/reference/ScanResult.html</loc></url>
@@ -102,6 +103,7 @@
 <url><loc>/reference/parse_crossref_response.html</loc></url>
 <url><loc>/reference/parse_draft_response.html</loc></url>
 <url><loc>/reference/parse_match_arg.html</loc></url>
+<url><loc>/reference/parse_response.html</loc></url>
 <url><loc>/reference/prompt_assembler.html</loc></url>
 <url><loc>/reference/pubmed_efetch_get.html</loc></url>
 <url><loc>/reference/pubmed_fetch_abstract.html</loc></url>
@@ -114,6 +116,7 @@
 <url><loc>/reference/read_knowledge.html</loc></url>
 <url><loc>/reference/resolve_function.html</loc></url>
 <url><loc>/reference/resolve_policy.html</loc></url>
+<url><loc>/reference/response_parser.html</loc></url>
 <url><loc>/reference/retrieve_constraints.html</loc></url>
 <url><loc>/reference/retrieve_knowledge.html</loc></url>
 <url><loc>/reference/safe_deparse.html</loc></url>
