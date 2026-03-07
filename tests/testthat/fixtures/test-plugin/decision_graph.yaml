@@ -1,0 +1,43 @@
+graph:
+  entry_node: gather_data
+  global_policy:
+    max_iterations: 3
+
+  nodes:
+    gather_data:
+      type: context_gathering
+      description: "Inspect data structure"
+      transitions:
+        - to: choose_method
+          always: true
+
+    choose_method:
+      type: decision
+      topic: effect_measures
+      parameter: sm
+      description: "Select effect measure"
+      transitions:
+        - to: run_analysis
+          always: true
+
+    run_analysis:
+      type: execution
+      description: "Run analysis with selected parameters"
+      transitions:
+        - to: check_results
+          always: true
+
+    check_results:
+      type: diagnosis
+      topic: result_quality
+      transitions:
+        - to: choose_method
+          when: "adjustment needed"
+          fallback_to_llm: true
+        - to: complete
+          always: true
+
+    complete:
+      type: context_gathering
+      description: "Summarize results"
+      transitions: []
