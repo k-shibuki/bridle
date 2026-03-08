@@ -1,3 +1,6 @@
+---
+trigger: context variable scope, context_schema.yaml, available_from, depends_on_node, source_expression, data_loaded, post_fit, parameter_decided
+---
 # ADR-0007: Context Variable Scope
 
 ## Context

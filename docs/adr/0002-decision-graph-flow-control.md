@@ -1,3 +1,6 @@
+---
+trigger: decision graph, decision_graph.yaml, flow control, node type, context_gathering, execution, diagnosis, transitions, computable_hint, cycle, DAG
+---
 # ADR-0002: Decision Graph as Flow Control Mechanism
 
 ## Context

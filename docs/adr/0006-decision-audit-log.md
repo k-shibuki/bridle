@@ -1,3 +1,6 @@
+---
+trigger: decision audit log, DecisionLog, JSONL streaming, analyze_log, transition_trace, selection_basis, validate_plugin
+---
 # ADR-0006: Decision Audit Log
 
 ## Context

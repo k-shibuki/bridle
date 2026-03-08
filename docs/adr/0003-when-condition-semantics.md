@@ -1,3 +1,6 @@
+---
+trigger: when condition, computable_hint, data condition, post-fit condition, LLM interpretation, R expression evaluation, technical constraint
+---
 # ADR-0003: When Condition Semantics
 
 ## Context

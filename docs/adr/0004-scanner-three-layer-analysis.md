@@ -1,3 +1,6 @@
+---
+trigger: scan_package, ScanResult, three-layer analysis, formals, Rd, Layer 1 Layer 2 Layer 3, match.arg, dependency graph, source code analysis
+---
 # ADR-0004: Scanner Three-Layer Analysis
 
 ## Context

@@ -1,3 +1,6 @@
+---
+trigger: graph policy, skip_when, skip_hint, max_iterations, policy inheritance, manifest graph node, policy_defaults, global_policy, three-layer policy
+---
 # ADR-0005: Graph Policy Layer
 
 ## Context

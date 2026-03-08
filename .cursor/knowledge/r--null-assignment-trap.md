@@ -1,5 +1,5 @@
 ---
-trigger: NULL assignment, list element removal, missing formal, empty symbol
+trigger: NULL assignment, list element removal, missing formal, empty symbol, formals extraction, sentinel pattern
 ---
 # NULL Assignment Trap in R
 

@@ -1,5 +1,5 @@
 ---
-trigger: nolint justification, nolint accepted, nolint prohibited, nolint pattern, object_length_linter, 30 character limit, long function name, naming length
+trigger: nolint justification, nolint accepted, nolint prohibited, nolint pattern, object_length_linter, object_usage_linter, object_name_linter, line_length_linter, 30 character limit, long function name, naming length
 ---
 # Justified `# nolint` Usage
 

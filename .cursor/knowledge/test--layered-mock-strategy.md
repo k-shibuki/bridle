@@ -1,5 +1,5 @@
 ---
-trigger: layered mock, integration test mock, scan_package mock, mock all layers
+trigger: layered mock, integration test mock, scan_package mock, orchestrator mock, with_scan_mocks, mock all layers
 ---
 # Layered Architecture Mock Strategy
 

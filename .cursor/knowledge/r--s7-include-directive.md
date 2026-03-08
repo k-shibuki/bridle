@@ -1,5 +1,5 @@
 ---
-trigger: S7 @include, cross-file class, Collate field, load order, object not found
+trigger: S7 @include, cross-file class, Collate field, load order, S7 object not found, roxygenise, load_all
 ---
 # S7 `@include` Directive for Cross-File Class Dependencies
 

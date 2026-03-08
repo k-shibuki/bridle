@@ -1,5 +1,5 @@
 ---
-trigger: Suggests package, getFromNamespace, optional dependency, requireNamespace
+trigger: Suggests package, getFromNamespace, optional dependency, requireNamespace, R CMD check Suggests
 ---
 # Suggests Package Dynamic Loading Pattern
 

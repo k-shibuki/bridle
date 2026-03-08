@@ -1,3 +1,6 @@
+---
+trigger: S7, S7 class system, new_class, property validator, S3 vs S4 vs R6, OOP choice, domain class, DecisionGraph, S7::prop
+---
 # ADR-0001: Use S7 Class System
 
 ## Context

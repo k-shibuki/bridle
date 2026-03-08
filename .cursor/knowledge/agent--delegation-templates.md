@@ -1,5 +1,5 @@
 ---
-trigger: CI-wait template, merge template, sequential merge, dependent PR merge, delegation template
+trigger: CI-wait template, CI-wait only, merge template, sequential merge, dependent PR merge, delegation template, subagent prompt template, background subagent
 ---
 # Subagent Delegation Templates
 

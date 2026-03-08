@@ -1,5 +1,5 @@
 ---
-trigger: debug method, reprex, browser, rlang last_error, last_trace, debug priority
+trigger: debug method, reprex, R browser(), rlang last_error, last_trace, rlang entrace, R debugging, debug priority
 ---
 # Debug Method Priority and R Tools Reference
 

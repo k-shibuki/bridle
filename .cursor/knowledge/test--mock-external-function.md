@@ -1,5 +1,5 @@
 ---
-trigger: mock external function, mock system function, namespace locking, packageVersion mock
+trigger: mock external function, mock system function, namespace locking, packageVersion mock, wrapper pattern, mock base function
 ---
 # Mocking System and External Functions
 

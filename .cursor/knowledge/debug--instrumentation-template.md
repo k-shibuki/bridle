@@ -1,5 +1,5 @@
 ---
-trigger: instrumentation, debug log, agent log, propagation tracking, message sprintf
+trigger: instrumentation, debug log, agent log, propagation tracking, R message logging, cli_inform, boundary logging
 ---
 # R Instrumentation Template and Boundary Placement
 
