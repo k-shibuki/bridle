@@ -94,9 +94,14 @@ Before running `gh pr create`, verify the body contains ALL required sections. M
 
 Do NOT compose the PR body from memory. Use the template below exactly.
 
-**Checkbox rules**:
-- **Test Evidence** (`make test`, `make check`, etc.): Leave as `- [ ]` at creation time. These are updated to `- [x]` only after CI passes (see `pr-merge.md` Mandatory Preconditions step 3). Pre-checking these defeats the gate purpose.
-- **Review Checklist**: May be checked at creation time if the agent has verified each item.
+**Checkbox lifecycle** — every checkbox is a gate item verified at `pr-merge` time:
+
+| Section | At PR creation | At merge (pr-merge step 3) |
+|---------|---------------|---------------------------|
+| Test Evidence | `- [ ]` always | Check after CI passes. If CI failed, fix and re-push instead of merging. |
+| Review Checklist | `- [ ]` always | Check only after honest verification. If an item cannot be checked, return to implementation. |
+
+Pre-checking any box at PR creation time is prohibited — it defeats the gate.
 
 #### Standard path (Issue exists)
 
@@ -143,10 +148,9 @@ Closes #<issue-number>
 
 ## Review Checklist
 
-- [ ] Code follows project conventions
-- [ ] No prohibited patterns
-- [ ] ADR compliance verified
-- [ ] Issue DoD criteria met
+- [ ] Changes match the Issue DoD / acceptance criteria
+- [ ] No prohibited patterns (`# nolint` without reason, hardcoded secrets, etc.)
+- [ ] `controls-review` or manual review found no broken references from this change
 
 EOF
 )"
@@ -201,9 +205,8 @@ gh pr create --title "<type>(<scope>): <description>" \
 
 ## Review Checklist
 
-- [ ] Code follows project conventions
-- [ ] No prohibited patterns
-- [ ] ADR compliance verified
+- [ ] Changes address the stated justification
+- [ ] No prohibited patterns (`# nolint` without reason, hardcoded secrets, etc.)
 
 EOF
 )"
