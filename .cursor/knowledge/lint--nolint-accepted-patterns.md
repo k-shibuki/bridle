@@ -12,12 +12,7 @@ The following are **accepted justifications** (always include the reason after t
 | `object_name_linter` | Mock parameter names matching external package conventions (e.g., `event.e`) | `# nolint: object_name_linter. matches survival package API` |
 | `line_length_linter` | Long URL or error message that cannot be meaningfully split | `# nolint: line_length_linter. error message` |
 
-**NOT accepted**:
-
-- `# nolint` without specifying the linter name
-- `# nolint` without a reason comment
-- Blanket `# nolint` to silence multiple unrelated warnings on one line
-- Using `# nolint` to avoid fixing actual code quality issues
+**NOT accepted**: See `quality-policy.mdc` § Prohibited forms for the authoritative list of rejected nolint patterns.
 
 ## `object_length_linter` and Naming
 

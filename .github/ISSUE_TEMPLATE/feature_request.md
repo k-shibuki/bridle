@@ -41,19 +41,9 @@ labels: feat
 
 ## Test Plan
 
-<!--
-Include CONCRETE test cases with specific input values and expected outputs.
-The Issue should be self-contained — a reader can understand what to test without other docs.
-
-Requirements:
-- At least 2 normal cases with distinct, concrete inputs
-- At least 2 error/validation cases (NULL, type mismatch, constraint violation, etc.)
-- At least 1 boundary case where applicable (empty, single element, max, etc.)
-
-Anti-patterns (DO NOT use):
-- "valid input" / "invalid input" without specifics
-- "succeeds" / "fails" without describing the outcome
--->
+<!-- Concrete test cases with specific inputs and expected outputs.
+     Min: 2 normal + 2 error + 1 boundary case. No vague placeholders.
+     Full guidelines: .cursor/commands/issue-create.md § Test Plan Guidelines -->
 
 | Scenario | Input / Precondition | Expected Result | Notes |
 |----------|---------------------|-----------------|-------|
