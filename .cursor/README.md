@@ -93,7 +93,7 @@ Use for: all feature work, bug fixes, refactors, and multi-file changes.
 
 ### Exception Flow (restricted)
 
-Three exception types exist, with different delivery methods (see `workflow-policy.mdc` § Exception Policy for the full contract):
+Two exception types exist, with different delivery methods (see `workflow-policy.mdc` § Exception Policy for the full contract):
 
 #### hotfix (critical production fix → exception PR)
 
@@ -103,21 +103,13 @@ doctor → implement → quality-check → test-regression → docs-discover (Mo
 
 Use when: main is broken, users are blocked, or CI is non-functional. Issue not required, but must be justified in PR body. **All code changes go through PR — direct push to main is never permitted.**
 
-#### no-issue (justified exception → exception PR)
+#### no-issue (justified exception → exception PR or direct push)
 
 ```
 doctor → implement → quality-check → test-regression → docs-discover (Mode 2) → commit → pr-create (exception path) → [CI] → pr-review → pr-merge
 ```
 
-Use when: justified exception that doesn't fit `hotfix` or `docs-only` (e.g., meta-implementation of workflow itself). Issue not required, but must be justified in PR body.
-
-#### docs-only (documentation change → direct push)
-
-```
-doctor → implement → commit (with direct push)
-```
-
-Use when: change is documentation only (README, ADR, comments, Cursor rules/commands text) with no code impact. May also use a PR if preferred.
+Use when: justified exception (e.g., meta-implementation of workflow, documentation-only change). Issue not required, but must be justified in PR body. **Documentation-only changes** (type: `docs`) may use direct push to `main` instead of the PR flow.
 
 ## Commands
 
@@ -135,7 +127,7 @@ Use when: change is documentation only (README, ADR, comments, Cursor rules/comm
 | Quality | `quality-check` | lint + format + R CMD check + schema validation |
 | Quality | `test-regression` | Run tests (scoped then full) + coverage gate |
 | Docs | `docs-discover` | Find (Mode 1) and update (Mode 2) related docs |
-| Git | `commit` | Create git commits (+ docs-only direct push exception) |
+| Git | `commit` | Create git commits (+ docs direct push via `no-issue` exception) |
 | Git | `pr-create` | Create feature branch + PR (with `Closes #<issue>`) |
 | Git | `pr-review` | Review PR + test quality and produce merge recommendation |
 | Git | `pr-merge` | Execute merge (GitHub or local) |
@@ -166,5 +158,5 @@ Rules define enforceable MUST/MUST NOT policies. Commands define procedures. Kno
 2. **1 Issue ≈ 1 PR**: Each Issue should be implementable in a single PR. Large tasks are split into child Issues.
 3. **Traceability is mandatory**: PRs must reference their Issue (`Closes #N`), commits should reference it (`Refs: #N`).
 4. **No main direct push** for normal changes: All code changes go through the PR flow with CI validation.
-5. **Exceptions are explicit**: `hotfix` bypasses Issue triage but still requires a PR. Only `docs-only` may use direct push to main. See `workflow-policy.mdc` for the full policy.
+5. **Exceptions are explicit**: `hotfix` bypasses Issue triage but still requires a PR. Only documentation-only changes (`docs` type + `no-issue` exception) may use direct push to main. See `workflow-policy.mdc` for the full policy.
 6. **Parallelize via subagent delegation**: Blocking operations (CI polling, sequential merges) are always delegated to background subagents so the main agent can continue productive work (independent Issues, branch cleanup, environment health, doc review). Inline CI polling is prohibited. See `subagent-policy.mdc` for the policy and `agent--delegation-templates.md` for prompt templates.

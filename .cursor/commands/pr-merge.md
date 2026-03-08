@@ -7,7 +7,7 @@ Execute a merge — either via GitHub (for PR flow) or locally (for exception fl
 ## When to use
 
 - After `pr-review` concludes "Mergeable" (standard PR flow, including hotfix exception PRs)
-- After `commit` and successful quality/tests (docs-only exception flow on local branch)
+- After `commit` and successful quality/tests (documentation-only exception flow on local branch)
 
 ## Mandatory Preconditions (verify before ANY merge)
 
@@ -105,9 +105,9 @@ fi
 
 See `@.cursor/knowledge/git--squash-merge-dependent-branch.md` for related patterns.
 
-## Local merge (docs-only exception flow only)
+## Local merge (documentation-only exception flow)
 
-For `docs-only` changes that bypassed the PR flow. **`hotfix` changes must use the GitHub PR merge flow above** — direct push / local merge is not permitted for code changes.
+For documentation-only changes (type: `docs` + exception: `no-issue`) that bypassed the PR flow. **`hotfix` changes must use the GitHub PR merge flow above** — direct push / local merge is not permitted for code changes.
 
 ### Normal merge
 
@@ -175,5 +175,5 @@ The main agent checks the subagent transcript at the next `next` re-assessment c
 ## Related
 
 - `@.cursor/commands/pr-review.md` (previous step in PR flow)
-- `@.cursor/commands/commit.md` (exception: docs-only direct push)
+- `@.cursor/commands/commit.md` (exception: documentation-only direct push)
 - `@.cursor/rules/commit-format.mdc` (for squash commit messages)

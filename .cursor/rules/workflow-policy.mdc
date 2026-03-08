@@ -38,16 +38,15 @@ The following exception types may bypass the Issue-driven flow:
 | Label | When to use | Delivery method |
 |-------|-------------|-----------------|
 | `hotfix` | Critical fix meeting the hotfix threshold above | **Exception PR** (via `pr-create` exception path) |
-| `docs-only` | Documentation-only change with no code impact | **Direct push** (via `commit` docs-only path) or exception PR |
-| `no-issue` | Other justified exceptions (e.g., meta-implementation of workflow itself) | **Exception PR** (via `pr-create` exception path) |
+| `no-issue` | Other justified exceptions (docs-only changes, meta-implementation of workflow, etc.) | **Exception PR** or **direct push** (direct push only when type is `docs`) |
 
-**All code changes — including hotfix — MUST go through a PR.** Direct push to `main` is permitted only for `docs-only` changes. This ensures CI validation and an auditable merge record for every code change.
+**All code changes — including hotfix — MUST go through a PR.** Direct push to `main` is permitted only for documentation-only changes (type: `docs` + exception: `no-issue`). This ensures CI validation and an auditable merge record for every code change.
 
 **Exception requirements** (enforced by CI):
 
 - **Commits**: May omit `Refs: #<issue>` but must include justification in the body.
 - **PRs**: Must have an exception label AND a `## Exception` section with:
-  - `- Type:` one of `hotfix` / `docs-only` / `no-issue`
+  - `- Type:` one of `hotfix` / `no-issue`
   - `- Justification:` reason (min 20 characters)
 - **Branch naming**: `hotfix/<description>` (no Issue number required).
 
@@ -75,10 +74,9 @@ Every Issue and PR MUST have exactly one **type label** matching its Conventiona
 | Label | When to use |
 |-------|-------------|
 | `hotfix` | Critical fix meeting the hotfix threshold (see § fix vs hotfix Decision Criteria) |
-| `no-issue` | Justified exception bypassing Issue-driven flow |
-| `docs-only` | Documentation-only change (may use direct push) |
+| `no-issue` | Justified exception bypassing Issue-driven flow (includes docs-only direct push) |
 
-Exception labels do NOT replace the type label — a PR has both (e.g., `fix` + `hotfix`).
+Exception labels do NOT replace the type label — a PR has both (e.g., `fix` + `hotfix`). For documentation-only direct push, the combination is `docs` (type) + `no-issue` (exception).
 
 ### Meta labels (zero or more, additional context)
 
@@ -87,7 +85,6 @@ Exception labels do NOT replace the type label — a PR has both (e.g., `fix` + 
 | `blocked` | Issue/PR is blocked by an external dependency |
 | `dependencies` | Dependabot dependency update |
 | `github_actions` | Dependabot GitHub Actions update |
-| `phase-2` | Phase 2 scope marker (historical) |
 
 ### Assignment rules
 

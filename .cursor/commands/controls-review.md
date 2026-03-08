@@ -86,7 +86,7 @@ For each information item below, enumerate all locations where it appears and cl
 | # | Information item | Expected SSOT location |
 |---|-----------------|----------------------|
 | 1 | Workflow flow diagram | `.cursor/README.md` |
-| 2 | Exception types (hotfix / docs-only / no-issue) | `workflow-policy.mdc` |
+| 2 | Exception types (hotfix / no-issue) | `workflow-policy.mdc` |
 | 3 | fix vs hotfix criteria | `workflow-policy.mdc` |
 | 4 | Hard Stop list (HS#1-9) | `agent-safety.mdc` |
 | 5 | Branch naming convention | `commit-format.mdc` |

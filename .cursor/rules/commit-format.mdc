@@ -55,7 +55,7 @@ Differ in **urgency**, not kind. See `@.cursor/rules/workflow-policy.mdc` § fix
 - **`Refs: #N`** (required): Every commit must reference the tracking Issue.
 - **`Closes: #N`**: Use in the final commit or PR body to auto-close the Issue.
 - **`BREAKING CHANGE:`**: Required for backward-incompatible changes (or use `!` notation: `fix!:`).
-- **Exception**: `hotfix`/`docs-only`/`no-issue` may omit `Refs:` but must justify in body.
+- **Exception**: `hotfix`/`no-issue` may omit `Refs:` but must justify in body.
 
 ## Prohibitions
 

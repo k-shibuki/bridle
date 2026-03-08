@@ -26,7 +26,7 @@ Every commit must reference its tracking Issue in the footer:
 Refs: #<issue-number>
 ```
 
-**Exceptions**: `hotfix` or `docs-only` changes that bypass the Issue-driven flow may omit the Issue reference, but must state the justification in the commit body.
+**Exceptions**: `hotfix` or `no-issue` changes that bypass the Issue-driven flow may omit the Issue reference, but must state the justification in the commit body.
 
 ## Atomic commits (recommended)
 
@@ -101,7 +101,7 @@ Refs: #<issue-number>"
 
 - Do **not** open an interactive editor (`git commit` without `-m`).
 - Keep messages **English only**.
-- Include `Refs: #<issue>` in every commit (except hotfix/docs-only exceptions).
+- Include `Refs: #<issue>` in every commit (except hotfix/no-issue exceptions).
 
 ## Output (response format)
 
@@ -110,17 +110,17 @@ Refs: #<issue-number>"
 - **Commits**: list of commits created (message + short hash for each)
 - **Summary**: `git log --oneline -n <count>` showing the new commits
 
-## Exception: docs-only direct push
+## Exception: documentation-only direct push
 
-For **documentation-only changes** (no R code, no CI config, no Makefile logic), direct push to `main` is permitted instead of the PR flow.
+For **documentation-only changes** (no R code, no CI config, no Makefile logic), direct push to `main` is permitted instead of the PR flow. This uses the `no-issue` exception with type `docs`.
 
-**Preconditions**: On `main`, change is docs-only, commit body explains the exception.
+**Preconditions**: On `main`, change is documentation-only, commit body explains the exception.
 
 ```bash
 # Verify on main with unpushed commits
 git log origin/main..main --oneline
 
-# Push (only after confirming docs-only scope)
+# Push (only after confirming documentation-only scope)
 git push origin main
 ```
 
