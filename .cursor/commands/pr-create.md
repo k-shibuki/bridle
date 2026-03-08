@@ -99,7 +99,9 @@ Do NOT compose the PR body from memory. Use the template below exactly.
 The PR body **must** include `Closes #<issue>` for automatic Issue closure on merge. Delete the `## Exception` section.
 
 ```bash
-gh pr create --title "<type>(<scope>): <description>" --body "$(cat <<'EOF'
+gh pr create --title "<type>(<scope>): <description>" \
+  --label "<type>" \
+  --body "$(cat <<'EOF'
 ## Summary
 
 - <change summary>

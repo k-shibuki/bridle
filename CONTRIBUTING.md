@@ -53,7 +53,7 @@ Run `make help` for all available commands.
 
 ## Commits
 
-Follow [Conventional Commits](https://www.conventionalcommits.org/) format. Messages in English. See [commit message rules](.cursor/rules/commit-message-format.mdc) for details.
+Follow [Conventional Commits](https://www.conventionalcommits.org/) format. Messages in English. See [commit message rules](.cursor/rules/commit-format.mdc) for details.
 
 ## Pull Requests
 

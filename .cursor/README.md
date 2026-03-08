@@ -1,18 +1,20 @@
 # Cursor AI Configuration
 
-This directory contains the AI control system for bridle development, organized into three layers.
+This directory contains the AI control system for bridle development, organized into five components.
 
-## Three-Layer Control System
+## Five-Component Control System
 
-| Layer | Location | Content | Enforcement |
+| Component | Location | Content | Enforcement |
 |---|---|---|---|
 | **Rules** | `.cursor/rules/*.mdc` | MUST / MUST NOT policies | Hard stop on violation |
 | **Commands** | `.cursor/commands/*.md` | Step-by-step procedures | No step skipping |
 | **Knowledge** | `.cursor/knowledge/*.md` | Patterns, playbooks, reference | Advisory (referenced by rules/commands) |
+| **Guards** | `.pre-commit-config.yaml`, `.github/workflows/*.yaml`, `tools/` | Hooks, CI, Branch Protection | Deterministic (tool-enforced) |
+| **Surface** | `Makefile`, `README.md`, `CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/` | Entry points, development API | Discovery / onboarding |
 
-**Hierarchy**: Rules constrain commands; commands reference knowledge. No reverse dependencies. Each piece of information exists in exactly one place (Single Source of Truth).
+**Component relationships**: Rules declare policies; Guards enforce them deterministically. Commands define procedures constrained by Rules and referencing Knowledge. Surface provides entry points for both human and AI workflows. Each piece of information exists in exactly one place (Single Source of Truth).
 
-The individual components of this system — rule files, command specs, knowledge atoms, README maps, and Makefile targets — are collectively called **controls**. The `controls-review` command audits these controls for structural integrity.
+The individual elements of this system — rule files, command specs, knowledge atoms, guard configs, and surface assets — are collectively called **controls**. The `controls-review` command audits these controls for structural integrity.
 
 ## Project Knowledge Map
 
@@ -143,7 +145,7 @@ Use when: change is documentation only (README, ADR, comments, Cursor rules/comm
 
 ## Rules
 
-Rules define enforceable MUST/MUST NOT policies. Commands define procedures. Knowledge provides advisory patterns.
+Rules define enforceable MUST/MUST NOT policies. Commands define procedures. Knowledge provides advisory patterns. Guards enforce Rules deterministically via hooks and CI. Surface provides entry points and development APIs.
 
 | Rule | Scope | Related Knowledge |
 |------|-------|-------------------|
