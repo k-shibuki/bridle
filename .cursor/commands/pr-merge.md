@@ -23,21 +23,19 @@ These checks are the first step of `pr-merge` and cannot be skipped:
    - `pr-review` concluded "Mergeable"
    - User explicitly instructed to merge
 
-3. **PR checklist verification gate**:
-   Read the PR body and verify every checkbox. This is the final quality gate before merge.
+3. **Review Checklist verification gate**:
+   Read the `## Review Checklist` in the PR body. Both items must be `- [x]` (checked during `pr-review`).
 
-   **For each unchecked `- [ ]` item**:
-   - **Test Evidence items** (CI-related): If CI passed (including skipped jobs for unchanged areas), check the box and note the evidence (e.g., "CI — skipped, no R changes").
-   - **Review Checklist items**: Verify each claim is true. If an item cannot be honestly checked, **STOP merging and return to implementation** to address the gap. Only resume merge after the fix is pushed and CI re-passes.
+   If any `- [ ]` remains: **STOP**. Do not merge. Return to `pr-review` or implementation to address the gap. Only resume merge after the fix is pushed and CI re-passes.
 
-   **Gate rule**: Do not proceed to merge while any `- [ ]` remains. Every checkbox must be `- [x]` with honest verification.
+4. **Record CI evidence** (audit trail):
+   If `## Test Evidence` is empty, paste a CI summary (e.g., `gh pr checks` output or "CI all pass — R jobs skipped, no R changes"). This is a record, not a gate — CI green is already enforced by precondition 1.
 
-   Update the PR body via API:
    ```bash
    gh api repos/{owner}/{repo}/pulls/<PR-number> -X PATCH -f body="<updated body>"
    ```
 
-If any precondition is not met, do not proceed to merge. Report the blocking condition and the required action.
+If any precondition (1-3) is not met, do not proceed to merge. Report the blocking condition and the required action.
 
 ## Inputs
 

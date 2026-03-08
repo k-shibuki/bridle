@@ -80,7 +80,7 @@ a main that already contains the prerequisite code.
 
 ### 4. Create PR
 
-#### Pre-flight checklist (REQUIRED before `gh pr create`)
+#### Pre-flight: required sections
 
 Before running `gh pr create`, verify the body contains ALL required sections. Missing sections cause `check-policy` CI failure.
 
@@ -90,70 +90,25 @@ Before running `gh pr create`, verify the body contains ALL required sections. M
 | `## Traceability` | Always | `Closes #N` or Exception block |
 | `## Risk / Impact` | Always | Affected area, breaking change, data impact |
 | `## Rollback Plan` | Non-docs/test | How to revert; `N/A` for docs/test only |
-| `## Review Checklist` | Always | Verification checkboxes |
+| `## Review Checklist` | Always | Judgment-only items (2 items) |
 
-Do NOT compose the PR body from memory. Use the template below exactly.
+#### PR body template (SSOT)
 
-**Checkbox lifecycle** — every checkbox is a gate item verified at `pr-merge` time:
+Read `@.github/PULL_REQUEST_TEMPLATE.md` and use it as the PR body. Do NOT compose the body from memory or duplicate the template here.
 
-| Section | At PR creation | At merge (pr-merge step 3) |
-|---------|---------------|---------------------------|
-| Test Evidence | `- [ ]` always | Check after CI passes. If CI failed, fix and re-push instead of merging. |
-| Review Checklist | `- [ ]` always | Check only after honest verification. If an item cannot be checked, return to implementation. |
-
-Pre-checking any box at PR creation time is prohibited — it defeats the gate.
+**Checkbox rules**:
+- **Review Checklist** items must be `- [ ]` at PR creation. They are checked during `pr-review` and verified by `pr-merge`. Pre-checking at creation time is prohibited.
+- **Test Evidence** is a free-text section for CI result audit trail — no checkboxes.
+- **Schema Impact** checkboxes are a selection (not a gate) — check the applicable one at creation.
 
 #### Standard path (Issue exists)
 
-The PR body **must** include `Closes #<issue>` for automatic Issue closure on merge. Delete the `## Exception` section.
+The PR body **must** include `Closes #<issue>` for automatic Issue closure on merge. Delete the `## Exception` section from the template.
 
 ```bash
 gh pr create --title "<type>(<scope>): <description>" \
   --label "<type>" \
-  --body "$(cat <<'EOF'
-## Summary
-
-- <change summary>
-
-## Traceability
-
-Closes #<issue-number>
-
-## Related ADR / Issue
-
-- ADR: <if applicable>
-
-## Schema Impact
-
-- [ ] No schema impact
-- [ ] Schema updated
-- [ ] S7 class updated
-- [ ] Both updated (consistency verified)
-
-## Test Evidence
-
-- [ ] `make test` passes
-- [ ] `make check` passes
-- [ ] New tests added for new functionality
-
-## Risk / Impact
-
-- Affected area: <what is affected>
-- Breaking change: no
-- Data impact: none
-
-## Rollback Plan
-
-<how to revert>
-
-## Review Checklist
-
-- [ ] Changes match the Issue DoD / acceptance criteria
-- [ ] No prohibited patterns (`# nolint` without reason, hardcoded secrets, etc.)
-- [ ] `controls-review` or manual review found no broken references from this change
-
-EOF
-)"
+  --body "<body from PULL_REQUEST_TEMPLATE.md with placeholders filled>"
 ```
 
 #### Exception path (hotfix / no-issue)
@@ -166,50 +121,7 @@ When the user explicitly confirms an exception, add a label and fill the `## Exc
 gh pr create --title "<type>(<scope>): <description>" \
   --label "<type>" \
   --label "<no-issue|hotfix>" \
-  --body "$(cat <<'EOF'
-## Summary
-
-- <change summary>
-
-## Traceability
-
-<!-- No Issue for this exception PR -->
-
-## Exception
-
-- Type: <no-issue / hotfix>
-- Justification: <why this PR bypasses the Issue-driven flow>
-
-## Related ADR / Issue
-
-- ADR: <if applicable>
-
-## Schema Impact
-
-- [ ] No schema impact
-
-## Test Evidence
-
-- [ ] `make test` passes
-- [ ] `make check` passes
-
-## Risk / Impact
-
-- Affected area: <what is affected>
-- Breaking change: no
-- Data impact: none
-
-## Rollback Plan
-
-<how to revert>
-
-## Review Checklist
-
-- [ ] Changes address the stated justification
-- [ ] No prohibited patterns (`# nolint` without reason, hardcoded secrets, etc.)
-
-EOF
-)"
+  --body "<body from PULL_REQUEST_TEMPLATE.md with Exception section filled>"
 ```
 
 ### 5. Monitor CI until completion
