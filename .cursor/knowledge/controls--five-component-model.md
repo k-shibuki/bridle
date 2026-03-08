@@ -68,7 +68,7 @@ fallback).
 ## Component Boundary Rules
 
 Each component has a defined responsibility. Violations occur when content crosses
-boundaries (detected by `controls-review` Step 5):
+boundaries (detected by `controls-review` Step 6):
 
 - Rules MUST NOT contain procedures (Step 1, Step 2...).
 - Commands MUST NOT declare MUST/MUST NOT policies.
