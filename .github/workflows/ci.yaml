@@ -266,6 +266,7 @@ jobs:
           pct <- covr::percent_coverage(cov)
           cat(sprintf("Line coverage: %.1f%%\n", pct))
           covr::codecov(coverage = cov, quiet = FALSE)
+          # Coverage threshold SSOT: test-strategy.mdc § Coverage Threshold Policy
           if (pct < 80) {
             stop(sprintf("Coverage %.1f%% is below the 80%% threshold", pct))
           }

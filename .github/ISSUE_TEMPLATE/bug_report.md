@@ -53,19 +53,9 @@ make doctor output here
 
 ## Regression Test Plan
 
-<!--
-Include CONCRETE test cases with specific input values and expected outputs.
-The Issue should be self-contained — a reader can verify the fix without other docs.
-
-Requirements:
-- Original bug scenario with exact reproduction inputs and the now-correct expected result
-- At least 1 edge case near the bug boundary
-- At least 1 error/validation case if the fix changes error handling
-
-Anti-patterns (DO NOT use):
-- "valid input" / "invalid input" without specifics
-- "succeeds" / "fails" without describing the outcome
--->
+<!-- Concrete test cases: original bug scenario + edge cases + error cases.
+     Use specific inputs and expected outputs, not vague placeholders.
+     Full guidelines: .cursor/commands/issue-create.md § Test Plan Guidelines -->
 
 | Scenario | Input / Precondition | Expected Result | Notes |
 |----------|---------------------|-----------------|-------|

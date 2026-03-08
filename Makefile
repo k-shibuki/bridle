@@ -115,6 +115,7 @@ document: _require_container ## Generate documentation with roxygen2
 coverage: _require_container ## Measure test coverage
 	$(RSCRIPT) -e "print(covr::package_coverage())"
 
+# Coverage threshold SSOT: test-strategy.mdc § Coverage Threshold Policy
 COVERAGE_THRESHOLD ?= 80
 
 coverage-check: _require_container ## Verify test coverage meets threshold (default 80%)
