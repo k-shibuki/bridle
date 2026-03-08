@@ -128,12 +128,12 @@ jobs:
             }
 
             // --- 7. Type label (workflow-policy § Label Taxonomy) ---
-            const TYPE_LABELS = ['feat', 'fix', 'refactor', 'docs', 'test', 'ci', 'build', 'chore'];
+            const TYPE_LABELS = ['feat', 'fix', 'refactor', 'perf', 'docs', 'test', 'ci', 'build', 'chore', 'style', 'revert'];
             const hasTypeLabel = TYPE_LABELS.some(t => labels.includes(t));
             if (!hasTypeLabel) {
               errors.push(
                 '**Type label**: PR must have exactly one type label ' +
-                '(`feat`, `fix`, `refactor`, `docs`, `test`, `ci`, `build`, `chore`). ' +
+                '(`feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `ci`, `build`, `chore`, `style`, `revert`). ' +
                 'Add a label via `--label "<type>"` in `gh pr create`.'
               );
             }
