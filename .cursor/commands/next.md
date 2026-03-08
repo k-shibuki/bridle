@@ -15,11 +15,12 @@ This is a **meta-command** that orchestrates all other commands. It does not imp
 
 ## Constraints
 
-- **Never skip commands**: Always follow the defined workflow order. Do not jump from `implement` to `pr-create` without going through `test-create`, `quality-check`, `test-regression`, `docs-discover`, and `commit`.
-- **Never skip steps within commands**: Following the command chain is not enough. Each command's full specification (every step) must be executed. "Called the command" does not mean "followed its steps".
-- **Never act without approval**: Present the proposed action and wait for user confirmation before executing.
-- **Delegate, don't duplicate**: Once the next command is determined, invoke it by following its full specification (`.cursor/commands/<command>.md`). Do not reimplement the command's logic inline.
-- **State assessment must be evidence-based**: Use `git status`, `gh issue list`, `make doctor`, etc. to determine state. Do not guess.
+This command is bound by `@.cursor/rules/agent-safety.mdc` Hard Stop #3 (no step skipping) and Hard Stop #4 (gate evidence). Specifically:
+
+- Follow the defined workflow order without skipping commands or steps within commands
+- Present proposed actions and wait for user confirmation before executing
+- Delegate to command specifications (`.cursor/commands/<command>.md`) rather than reimplementing logic inline
+- Base all state assessments on evidence from tool output, not assumptions
 
 ## Continuous Execution Mode
 

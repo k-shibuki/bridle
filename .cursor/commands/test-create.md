@@ -16,11 +16,10 @@ Design and implement tests for the implemented change.
 
 ## Constraints
 
-- Do **not** reference archived documents in code comments.
-- Use Given/When/Then comments for readability.
-- Include **at least as many negative tests as positive tests**.
-- Unit tests must **not** depend on external resources (network, remote services, model downloads).
-  - Mock integration points (e.g., ellmer chat, ragnar search, HTTP clients) so tests are deterministic and non-hanging.
+Follow `@.cursor/rules/test-strategy.mdc` for test design policy (perspectives table, negative test ratios, mock conventions, external resource isolation). Key operational constraints for this command:
+
+- Use Given/When/Then comments for readability
+- Mock integration points so tests are deterministic and non-hanging
 
 ## Steps
 

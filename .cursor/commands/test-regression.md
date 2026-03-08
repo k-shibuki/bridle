@@ -71,18 +71,6 @@ If coverage is below the threshold, add tests before proceeding. Do not lower th
 
 ## Failure handling policy
 
-**CRITICAL: Do NOT ignore test failures, even if they appear unrelated to your changes.**
+Per `@.cursor/rules/agent-safety.mdc` Hard Stop #6: every test failure reported by the suite is a defect to fix — regardless of when it was introduced. The test suite must pass completely (zero failures) before proceeding to commit/push.
 
-- All test failures must be addressed before merging/pushing
-- If a test failure is pre-existing (not introduced by your changes):
-  - Fix it as part of this commit, or
-  - Document why it cannot be fixed now and create a follow-up task
-- Do NOT report failures as "unrelated" or "pre-existing" without fixing them
-- The test suite must pass completely (zero failures) before proceeding to commit/push
-
-### When you encounter failures
-
-1. **Identify the root cause**: Check if your changes introduced the failure
-2. **Fix immediately**: If your changes caused it, fix the regression
-3. **Fix pre-existing issues**: If the failure existed before your changes, fix it now
-4. **Document exceptions**: Only skip fixing if there's a documented technical blocker (e.g., external dependency issue), and create a follow-up task
+When failures occur: identify the root cause, fix it (whether introduced by current changes or pre-existing), and only create a follow-up task if there is a documented technical blocker (e.g., external dependency issue).

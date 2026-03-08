@@ -64,10 +64,11 @@ fallback).
 ## Component Boundary Rules
 
 Each component has a defined responsibility. Violations occur when content crosses
-boundaries (detected by `controls-review` Step 6):
+boundaries (detected by `controls-review` Step 6). The boundary constraints are
+defined in `@.cursor/rules/coding-policy.mdc` and enforced by `controls-review`:
 
-- Rules MUST NOT contain procedures (Step 1, Step 2...).
-- Commands MUST NOT declare MUST/MUST NOT policies.
-- Knowledge MUST NOT declare MUST/MUST NOT policies.
-- Guards MUST NOT embed policy prose — they reference Rules via links.
-- Surface MUST NOT contain step-by-step procedures — it links to Commands.
+- Rules declare policies (conditions, requirements), not procedures (numbered steps)
+- Commands define procedures, referencing Rules via `@` links rather than re-declaring policies
+- Knowledge provides advisory patterns and references; policy authority belongs to Rules
+- Guards implement enforcement logic and reference Rules for justification
+- Surface provides entry points and summaries, linking to Commands for detailed procedures

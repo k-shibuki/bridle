@@ -38,13 +38,15 @@ The following are prohibited in principle (exception only with stated justificat
 
 **Trigger**: The agent considers adding `# nolint` to any line of code.
 
-Before writing `# nolint`, the agent MUST execute the following steps **in order**. Proceed to the next step only if the previous one does not resolve the issue.
+Before writing `# nolint`, the agent MUST satisfy the following conditions in priority order. Each approach takes precedence over the next — only use a lower-priority option when all higher-priority options fail to resolve the lint issue.
 
-### Step 1: Read Knowledge
+### Prerequisite: Consult Knowledge
 
-Read `@.cursor/knowledge/lint--nolint-accepted-patterns.md` and `@.cursor/knowledge/lint--styler-lintr-conflict.md`. If in test code, also read `@.cursor/rules/test-strategy.mdc` §7 (Helper Colocation). Do not rely on memory — always read the files.
+The agent MUST read `@.cursor/knowledge/lint--nolint-accepted-patterns.md` and `@.cursor/knowledge/lint--styler-lintr-conflict.md` before any suppression attempt. If in test code, also read `@.cursor/rules/test-strategy.mdc` §7 (Helper Colocation). Memory from previous sessions is not sufficient — always read the files.
 
-### Step 2: Attempt Code Restructuring
+### Priority 1: Code Restructuring
+
+The agent MUST first attempt to resolve the lint by restructuring the code:
 
 | Lint issue | Restructuring approach |
 |---|---|
@@ -53,20 +55,17 @@ Read `@.cursor/knowledge/lint--nolint-accepted-patterns.md` and `@.cursor/knowle
 | `line_length_linter` | Break expression across lines (unless URL or error message) |
 | Other style lints | Refactor code to satisfy both styler and lintr |
 
-If restructuring resolves the lint → done. No `# nolint` needed.
+If restructuring resolves the lint, no `# nolint` is needed and the process ends.
 
-### Step 3: Attempt Co-location (Test Code Only)
+### Priority 2: Co-location (Test Code Only)
 
-If the lint is `object_usage_linter` in test/helper code and the referenced function is in another helper file:
+If the lint is `object_usage_linter` in test/helper code and Priority 1 does not apply, the agent MUST attempt co-location: move the referenced function into the **same** `helper-*.R` file so the linter can resolve the reference (see `@.cursor/rules/test-strategy.mdc` §7).
 
-- Move the function (or both functions) into the **same** `helper-*.R` file so the linter can resolve the reference.
-- See `@.cursor/rules/test-strategy.mdc` §7 (Helper Colocation).
+If co-location resolves the lint, no `# nolint` is needed and the process ends.
 
-If co-location resolves the lint → done. No `# nolint` needed.
+### Priority 3: Justified Line-Level Suppression (Last Resort)
 
-### Step 4: Justified Line-Level Suppression (Last Resort)
-
-Only if Steps 2–3 do not apply, add a **line-level** suppression with **linter name** and **reason**:
+Only when Priorities 1–2 do not resolve the issue, the agent may add a **line-level** suppression with **linter name** and **reason**:
 
 ```r
 result <- ScanResult(...) # nolint: object_usage_linter. S7 class defined in R/scan_result.R
