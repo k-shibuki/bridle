@@ -1,5 +1,5 @@
 ---
-trigger: git safety, concurrent agent, pre-work verification, force-with-lease
+trigger: git safety, concurrent agent, pre-work verification, force-with-lease, PR auto-close, base branch deleted
 ---
 # Git Safety Checklist for Concurrent Agent Work
 

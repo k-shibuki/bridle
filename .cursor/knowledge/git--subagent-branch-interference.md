@@ -1,5 +1,5 @@
 ---
-trigger: subagent branch, misplaced commit, git checkout interference, cherry-pick recovery
+trigger: subagent branch, misplaced commit, git checkout interference, cherry-pick recovery, commit on wrong branch
 ---
 # Subagent Branch Interference Recovery
 

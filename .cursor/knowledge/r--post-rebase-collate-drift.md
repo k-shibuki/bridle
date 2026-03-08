@@ -1,5 +1,5 @@
 ---
-trigger: rebase Collate, DESCRIPTION Collate, missing from Collate, roxygenise after rebase
+trigger: rebase Collate, DESCRIPTION Collate, missing from Collate, roxygenise after rebase, R CMD check Collate
 ---
 # Post-Rebase DESCRIPTION Collate Drift
 

@@ -1,5 +1,5 @@
 ---
-trigger: AI development system, Design domain, Controls domain, control system architecture, Guards component, Surface component, enforcement tier, Deterministic Steering, Hard Stop classification, component boundary, five-component model
+trigger: AI development system, two-domain tree, Design domain, Controls domain, control system architecture, Rules component, Commands component, Knowledge component, Guards component, Surface component, enforcement tier, Deterministic tier, Conditionally Deterministic, Steering tier, Hard Stop classification, component boundary
 ---
 # AI Development System
 
@@ -62,14 +62,6 @@ Within Controls:
 - **Commands** implement workflows, constrained by Rules and referencing Knowledge.
 - **Knowledge** advises Commands with patterns and gotchas.
 - **Surface** exposes the system to users (human and AI) as the first point of contact.
-
-### Evolution history
-
-The original "Three-Layer Control System" (Rules, Commands, Knowledge) left two
-categories unnamed: deterministic enforcement (Guards) and entry points (Surface).
-The 5-component model resolved this. The current tree structure adds a Design
-domain for ADRs and schemas, which were previously referenced but not formally
-positioned in the system.
 
 ## Hard Stop Enforcement Tiers
 

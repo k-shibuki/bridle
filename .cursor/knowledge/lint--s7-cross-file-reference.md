@@ -1,5 +1,5 @@
 ---
-trigger: object_usage_linter S7, S7 constructor lint, no visible global function, cross-file S7
+trigger: object_usage_linter S7, S7 constructor lint, no visible global function, cross-file S7, S7 lint false positive, lintr S7
 ---
 # `object_usage_linter` and S7 Cross-File References
 

@@ -1,5 +1,5 @@
 ---
-trigger: CI job, job dependency, filter category, coverage gate, ci-pass, CI polling, poll interval, adaptive polling, time budget, CI wait
+trigger: CI job, job dependency, filter category, coverage gate, coverage threshold, ci-pass, CI polling, poll interval, adaptive polling, time budget, CI wait, make coverage-check
 ---
 # CI Job Dependency Graph
 

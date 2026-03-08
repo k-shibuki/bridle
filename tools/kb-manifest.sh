@@ -93,39 +93,64 @@ ADR_HEADER
 
     basename=$(basename "$f")
 
-    # Extract title from first heading: "# ADR-NNNN: Title"
-    title=""
+    # Generate ADR number trigger (e.g., "ADR-0001")
+    adr_num=$(echo "$basename" | sed 's/^\([0-9]*\)-.*/ADR-\1/')
+
+    # Try extracting trigger: from YAML frontmatter (same logic as atoms)
+    fm_triggers=""
+    in_fm=0
     while IFS= read -r line; do
+      if [ "$in_fm" -eq 0 ]; then
+        if [ "$line" = "---" ]; then
+          in_fm=1
+          continue
+        else
+          break
+        fi
+      fi
+      if [ "$line" = "---" ]; then
+        break
+      fi
       case "$line" in
-        "# ADR-"*)
-          title=$(echo "$line" | sed 's/^# ADR-[0-9]*:[[:space:]]*//')
-          break
-          ;;
-        "# "*)
-          title=$(echo "$line" | sed 's/^#[[:space:]]*//')
-          break
+        trigger:*)
+          fm_triggers=$(echo "$line" | sed 's/^trigger:[[:space:]]*//')
           ;;
       esac
     done < "$f"
 
-    if [ -z "$title" ]; then
-      echo "WARN: $basename has no recognizable title heading" >&2
-      title="TODO"
+    if [ -n "$fm_triggers" ]; then
+      triggers="$adr_num, $fm_triggers"
+    else
+      # Fallback: derive triggers from title heading
+      title=""
+      while IFS= read -r line; do
+        case "$line" in
+          "# ADR-"*)
+            title=$(echo "$line" | sed 's/^# ADR-[0-9]*:[[:space:]]*//')
+            break
+            ;;
+          "# "*)
+            title=$(echo "$line" | sed 's/^#[[:space:]]*//')
+            break
+            ;;
+        esac
+      done < "$f"
+
+      if [ -z "$title" ]; then
+        echo "WARN: $basename has no trigger: field and no recognizable title heading" >&2
+        title="TODO"
+      fi
+
+      keywords=$(echo "$title" | tr '[:upper:]' '[:lower:]' | tr '-' ' ' | \
+        sed 's/[^a-z0-9 ]//g' | \
+        tr ' ' '\n' | \
+        grep -v -E '^(use|the|a|an|and|or|for|in|of|to|with|is|are|was|were|be|been|has|have|had|do|does|did|will|would|shall|should|may|might|can|could)$' | \
+        grep -v -E '^.{0,2}$' | \
+        tr '\n' ', ' | \
+        sed 's/,$//' | sed 's/,/, /g')
+
+      triggers="$adr_num, $keywords"
     fi
-
-    # Generate ADR number trigger (e.g., "ADR-0001")
-    adr_num=$(echo "$basename" | sed 's/^\([0-9]*\)-.*/ADR-\1/')
-
-    # Convert title to trigger keywords: lowercase, remove stop words
-    keywords=$(echo "$title" | tr '[:upper:]' '[:lower:]' | tr '-' ' ' | \
-      sed 's/[^a-z0-9 ]//g' | \
-      tr ' ' '\n' | \
-      grep -v -E '^(use|the|a|an|and|or|for|in|of|to|with|is|are|was|were|be|been|has|have|had|do|does|did|will|would|shall|should|may|might|can|could)$' | \
-      grep -v -E '^.{0,2}$' | \
-      tr '\n' ', ' | \
-      sed 's/,$//' | sed 's/,/, /g')
-
-    triggers="$adr_num, $keywords"
 
     printf "| \`%s\` | %s |\n" "$basename" "$triggers" >> "$tmpfile"
     adr_count=$((adr_count + 1))

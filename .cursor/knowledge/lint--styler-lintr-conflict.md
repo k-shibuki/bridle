@@ -1,5 +1,5 @@
 ---
-trigger: styler lintr conflict, indentation conflict, format lint disagree
+trigger: styler lintr conflict, indentation conflict, indentation_linter, format lint disagree, format before lint
 ---
 # styler / lintr Indentation Conflicts
 

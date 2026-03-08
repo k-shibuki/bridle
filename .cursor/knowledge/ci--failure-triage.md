@@ -1,5 +1,5 @@
 ---
-trigger: CI failure, CI check failed, run view log-failed, failure classification
+trigger: CI failure, CI check failed, gh run view --log-failed, failure classification, flaky test, CI rerun
 ---
 # CI Failure Triage
 

@@ -1,3 +1,6 @@
+---
+trigger: graph template, template composition, build_graph, entry_point, exit_point, build-time merge, flat graph, connection point
+---
 # ADR-0009: Graph Template Composition
 
 ## Context

@@ -1,5 +1,5 @@
 ---
-trigger: local_mocked_bindings, mock scope, mock leaks, mock helper
+trigger: local_mocked_bindings, mock scope, mock scope limitation, mock helper, mock calling environment
 ---
 # Mock Scope Constraint: `local_mocked_bindings` cannot be extracted
 

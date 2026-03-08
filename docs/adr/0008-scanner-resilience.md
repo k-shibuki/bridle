@@ -1,3 +1,6 @@
+---
+trigger: scanner resilience, Layer 3a, Layer 3b, dry-run fuzzing, review_scan, export_scan, import_scan, confidence grading, withCallingHandlers
+---
 # ADR-0008: Scanner Resilience
 
 ## Context

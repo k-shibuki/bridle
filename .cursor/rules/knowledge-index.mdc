@@ -10,42 +10,42 @@ Lookup table for `.cursor/knowledge/` atoms and `docs/adr/` ADRs. Use triggers t
 
 | File | Triggers |
 |------|----------|
-| `agent--delegation-templates.md` | CI-wait template, merge template, sequential merge, dependent PR merge, delegation template |
+| `agent--delegation-templates.md` | CI-wait template, CI-wait only, merge template, sequential merge, dependent PR merge, delegation template, subagent prompt template, background subagent |
 | `agent--task-prefix-convention.md` | task prefix, multi-agent artifact, hypothesis ID, concurrent agent naming |
-| `ci--failure-triage.md` | CI failure, CI check failed, run view log-failed, failure classification |
-| `ci--job-dependency-graph.md` | CI job, job dependency, filter category, coverage gate, ci-pass, CI polling, poll interval, adaptive polling, time budget, CI wait |
-| `controls--ai-development-system.md` | AI development system, Design domain, Controls domain, control system architecture, Guards component, Surface component, enforcement tier, Deterministic Steering, Hard Stop classification, component boundary, five-component model |
-| `debug--instrumentation-template.md` | instrumentation, debug log, agent log, propagation tracking, message sprintf |
-| `debug--method-priority.md` | debug method, reprex, browser, rlang last_error, last_trace, debug priority |
+| `ci--failure-triage.md` | CI failure, CI check failed, gh run view --log-failed, failure classification, flaky test, CI rerun |
+| `ci--job-dependency-graph.md` | CI job, job dependency, filter category, coverage gate, coverage threshold, ci-pass, CI polling, poll interval, adaptive polling, time budget, CI wait, make coverage-check |
+| `controls--ai-development-system.md` | AI development system, two-domain tree, Design domain, Controls domain, control system architecture, Rules component, Commands component, Knowledge component, Guards component, Surface component, enforcement tier, Deterministic tier, Conditionally Deterministic, Steering tier, Hard Stop classification, component boundary |
+| `debug--instrumentation-template.md` | instrumentation, debug log, agent log, propagation tracking, R message logging, cli_inform, boundary logging |
+| `debug--method-priority.md` | debug method, reprex, R browser(), rlang last_error, last_trace, rlang entrace, R debugging, debug priority |
 | `git--pr-consolidation-split.md` | PR consolidation, multiple issues one PR, split PR, 1:1 principle |
 | `git--quick-recovery.md` | lost commit, reflog, commit disappeared, rebase lost, push rejected, diverged branch, non-fast-forward, force-with-lease |
-| `git--safety-checklist.md` | git safety, concurrent agent, pre-work verification, force-with-lease |
+| `git--safety-checklist.md` | git safety, concurrent agent, pre-work verification, force-with-lease, PR auto-close, base branch deleted |
 | `git--squash-merge-dependent-branch.md` | squash merge conflict, rebase --onto, dependent branch, dependent PR |
-| `git--subagent-branch-interference.md` | subagent branch, misplaced commit, git checkout interference, cherry-pick recovery |
-| `lint--nolint-accepted-patterns.md` | nolint justification, nolint accepted, nolint prohibited, nolint pattern, object_length_linter, 30 character limit, long function name, naming length |
-| `lint--s7-cross-file-reference.md` | object_usage_linter S7, S7 constructor lint, no visible global function, cross-file S7 |
-| `lint--styler-lintr-conflict.md` | styler lintr conflict, indentation conflict, format lint disagree |
-| `r--null-assignment-trap.md` | NULL assignment, list element removal, missing formal, empty symbol |
-| `r--post-rebase-collate-drift.md` | rebase Collate, DESCRIPTION Collate, missing from Collate, roxygenise after rebase |
-| `r--s7-include-directive.md` | S7 @include, cross-file class, Collate field, load order, object not found |
-| `r--suggests-dynamic-load.md` | Suggests package, getFromNamespace, optional dependency, requireNamespace |
-| `test--layered-mock-strategy.md` | layered mock, integration test mock, scan_package mock, mock all layers |
-| `test--mock-external-function.md` | mock external function, mock system function, namespace locking, packageVersion mock |
-| `test--mock-scope-constraint.md` | local_mocked_bindings, mock scope, mock leaks, mock helper |
-| `test--snapshot-guidelines.md` | snapshot test, expect_snapshot, _snaps directory, snapshot review, testthat 3 snapshot |
+| `git--subagent-branch-interference.md` | subagent branch, misplaced commit, git checkout interference, cherry-pick recovery, commit on wrong branch |
+| `lint--nolint-accepted-patterns.md` | nolint justification, nolint accepted, nolint prohibited, nolint pattern, object_length_linter, object_usage_linter, object_name_linter, line_length_linter, 30 character limit, long function name, naming length |
+| `lint--s7-cross-file-reference.md` | object_usage_linter S7, S7 constructor lint, no visible global function, cross-file S7, S7 lint false positive, lintr S7 |
+| `lint--styler-lintr-conflict.md` | styler lintr conflict, indentation conflict, indentation_linter, format lint disagree, format before lint |
+| `r--null-assignment-trap.md` | NULL assignment, list element removal, missing formal, empty symbol, formals extraction, sentinel pattern |
+| `r--post-rebase-collate-drift.md` | rebase Collate, DESCRIPTION Collate, missing from Collate, roxygenise after rebase, R CMD check Collate |
+| `r--s7-include-directive.md` | S7 @include, cross-file class, Collate field, load order, S7 object not found, roxygenise, load_all |
+| `r--suggests-dynamic-load.md` | Suggests package, getFromNamespace, optional dependency, requireNamespace, R CMD check Suggests |
+| `test--layered-mock-strategy.md` | layered mock, integration test mock, scan_package mock, orchestrator mock, with_scan_mocks, mock all layers |
+| `test--mock-external-function.md` | mock external function, mock system function, namespace locking, packageVersion mock, wrapper pattern, mock base function |
+| `test--mock-scope-constraint.md` | local_mocked_bindings, mock scope, mock scope limitation, mock helper, mock calling environment |
+| `test--snapshot-guidelines.md` | snapshot test, expect_snapshot, expect_snapshot_error, _snaps directory, snapshot review, testthat 3 snapshot |
 
 ## Design (ADRs)
 
 | File | Triggers |
 |------|----------|
-| `0001-use-s7-class-system.md` | ADR-0001, class, system |
-| `0002-decision-graph-flow-control.md` | ADR-0002, decision, graph, flow, control, mechanism |
-| `0003-when-condition-semantics.md` | ADR-0003, when, condition, semantics |
-| `0004-scanner-three-layer-analysis.md` | ADR-0004, scanner, three, layer, analysis |
-| `0005-graph-policy-layer.md` | ADR-0005, graph, policy, layer |
-| `0006-decision-audit-log.md` | ADR-0006, decision, audit, log |
-| `0007-context-variable-scope.md` | ADR-0007, context, variable, scope |
-| `0008-scanner-resilience.md` | ADR-0008, scanner, resilience |
-| `0009-graph-template-composition.md` | ADR-0009, graph, template, composition |
+| `0001-use-s7-class-system.md` | ADR-0001, S7, S7 class system, new_class, property validator, S3 vs S4 vs R6, OOP choice, domain class, DecisionGraph, S7::prop |
+| `0002-decision-graph-flow-control.md` | ADR-0002, decision graph, decision_graph.yaml, flow control, node type, context_gathering, execution, diagnosis, transitions, computable_hint, cycle, DAG |
+| `0003-when-condition-semantics.md` | ADR-0003, when condition, computable_hint, data condition, post-fit condition, LLM interpretation, R expression evaluation, technical constraint |
+| `0004-scanner-three-layer-analysis.md` | ADR-0004, scan_package, ScanResult, three-layer analysis, formals, Rd, Layer 1 Layer 2 Layer 3, match.arg, dependency graph, source code analysis |
+| `0005-graph-policy-layer.md` | ADR-0005, graph policy, skip_when, skip_hint, max_iterations, policy inheritance, manifest graph node, policy_defaults, global_policy, three-layer policy |
+| `0006-decision-audit-log.md` | ADR-0006, decision audit log, DecisionLog, JSONL streaming, analyze_log, transition_trace, selection_basis, validate_plugin |
+| `0007-context-variable-scope.md` | ADR-0007, context variable scope, context_schema.yaml, available_from, depends_on_node, source_expression, data_loaded, post_fit, parameter_decided |
+| `0008-scanner-resilience.md` | ADR-0008, scanner resilience, Layer 3a, Layer 3b, dry-run fuzzing, review_scan, export_scan, import_scan, confidence grading, withCallingHandlers |
+| `0009-graph-template-composition.md` | ADR-0009, graph template, template composition, build_graph, entry_point, exit_point, build-time merge, flat graph, connection point |
 
 _Auto-generated by `make kb-manifest`. 23 atoms, 9 ADRs indexed._

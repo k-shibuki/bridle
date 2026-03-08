@@ -1,5 +1,5 @@
 ---
-trigger: snapshot test, expect_snapshot, _snaps directory, snapshot review, testthat 3 snapshot
+trigger: snapshot test, expect_snapshot, expect_snapshot_error, _snaps directory, snapshot review, testthat 3 snapshot
 ---
 # Snapshot Testing Guidelines (testthat 3)
 
