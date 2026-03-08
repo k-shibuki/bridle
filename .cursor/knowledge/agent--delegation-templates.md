@@ -7,6 +7,8 @@ Four reusable templates for delegating blocking operations to background subagen
 
 ## Template 1: CI-Wait + Merge
 
+**Prerequisite**: Use only after `pr-review` has completed and concluded "Mergeable". For CI polling before review, use Template 3 (CI-Wait Only).
+
 ```
 ## Goal
 Monitor CI for PR #<N> until all checks pass, then merge it.

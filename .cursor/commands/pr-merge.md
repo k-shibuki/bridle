@@ -158,7 +158,8 @@ Choose the appropriate template from `@.cursor/knowledge/agent--delegation-templ
 
 | Scenario | Template |
 |----------|----------|
-| Single PR, CI pending | "CI-Wait + Merge" |
+| Single PR, CI pending, pr-review completed | "CI-Wait + Merge" |
+| Single PR, CI pending, pr-review not yet done | "CI-Wait Only" (merge after pr-review) |
 | Multiple independent PRs | "Sequential PR Merge Chain" |
 | PRs with shared commits (branched from each other) | "Dependent PR Merge Chain" (includes `--onto` rebase) |
 | CI monitoring only (no merge) | "CI-Wait Only" |
