@@ -44,7 +44,7 @@ The following exception types may bypass the Issue-driven flow:
 
 **Exception requirements** (enforced by CI):
 
-- **Commits**: May omit `Refs: #<issue>` but must include justification in the body.
+- **Commits**: `hotfix`/`docs` types may omit `Refs: #<issue>` (see `commit-format.mdc` § Footer for SSOT) but must include justification in the body. Other exception types still require `Refs:`.
 - **PRs**: Must have an exception label AND a `## Exception` section with:
   - `- Type:` one of `hotfix` / `no-issue`
   - `- Justification:` reason (min 20 characters)
@@ -63,11 +63,14 @@ Every Issue and PR MUST have exactly one **type label** matching its Conventiona
 | `feat` | `feat:` | New feature or capability |
 | `fix` | `fix:` | Bug fix |
 | `refactor` | `refactor:` | Code restructuring without behavior change |
+| `perf` | `perf:` | Performance improvement |
 | `docs` | `docs:` | Documentation only change |
 | `test` | `test:` | Test addition or modification |
 | `ci` | `ci:` | CI/CD pipeline change |
 | `build` | `build:` | Build system or dependency change |
 | `chore` | `chore:` | Maintenance task (no production code change) |
+| `style` | `style:` | Style-only changes (formatting, no logic change) |
+| `revert` | `revert:` | Revert a previous commit |
 
 ### Exception labels (zero or one per PR, additive to type label)
 
