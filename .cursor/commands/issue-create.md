@@ -43,7 +43,14 @@ Evaluate whether the task fits a single Issue or needs decomposition:
 
 ### 3. Draft the Issue body
 
-Structure the Issue using the project's Issue template. At minimum, include:
+Structure the Issue using the project's Issue templates in `.github/ISSUE_TEMPLATE/`:
+
+- **Bug fix** (`fix:`): Read `@.github/ISSUE_TEMPLATE/bug_report.md` and follow its sections.
+- **All other types** (`feat:`, `refactor:`, `chore:`, `test:`, etc.): Read `@.github/ISSUE_TEMPLATE/task.md` and follow its sections.
+
+**Always read the appropriate template file first** — do not infer the structure from recent Issues or from memory. The templates are the single source of truth for Issue structure.
+
+The templates already include all required sections. At minimum, every Issue must have:
 
 - **Summary**: 1-2 sentences describing the change
 - **Motivation / Context**: why this is needed

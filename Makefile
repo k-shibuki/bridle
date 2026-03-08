@@ -168,9 +168,7 @@ status: ## Show git + container status
 	@echo "=== Container ===" && $(RUNTIME) inspect $(CONTAINER_NAME) --format '{{.State.Status}}' 2>/dev/null || echo "not found"
 
 install-hooks: ## Install git hooks (pre-commit, pre-push, commit-msg)
-	pre-commit install --install-hooks
-	pre-commit install --hook-type pre-push
-	pre-commit install --hook-type commit-msg
+	@bash tools/install-hooks.sh --force
 
 new-branch: ## Create feature branch (usage: make new-branch PREFIX=feat ISSUE=42 DESC=short-description)
 	@if [ -z "$(ISSUE)" ] || [ -z "$(DESC)" ]; then \

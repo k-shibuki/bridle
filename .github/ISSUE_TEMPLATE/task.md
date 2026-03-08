@@ -1,13 +1,13 @@
 ---
-name: Feature Request
-about: Propose a new feature or enhancement
-title: "feat: "
-labels: feat
+name: Task
+about: Feature, refactor, chore, or any non-bug task
+title: ""
+labels: ""
 ---
 
 ## Summary
 
-<!-- 1-2 sentences describing the feature. -->
+<!-- 1-2 sentences describing the task. -->
 
 ## Motivation
 
@@ -15,7 +15,7 @@ labels: feat
 
 ## Related ADR
 
-<!-- Which ADR(s) govern this feature? If none, should a new ADR be created? -->
+<!-- Which ADR(s) govern this change? If none, should a new ADR be created? -->
 
 - ADR:
 
@@ -51,6 +51,10 @@ labels: feat
 | <!-- e.g., Single node, no edges --> | <!-- e.g., nodes=list("A"), edges=list() --> | <!-- e.g., DecisionGraph with 1 node, 0 edges --> | Boundary |
 | <!-- e.g., NULL nodes --> | <!-- e.g., nodes=NULL --> | <!-- e.g., Validation error: 'nodes must not be NULL' --> | |
 | <!-- e.g., Duplicate node names --> | <!-- e.g., nodes=list("A","A") --> | <!-- e.g., Validation error: 'node names must be unique' --> | |
+
+## Risks / Open Questions
+
+<!-- Anything that needs clarification, external dependencies, or potential pitfalls. -->
 
 ## Sub-issues
 

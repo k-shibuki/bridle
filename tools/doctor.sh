@@ -88,17 +88,42 @@ else
 fi
 
 # Git hooks (pre-commit, pre-push, commit-msg)
+# Accepts both bridle guard hooks (direct) and pre-commit framework hooks.
 hooks_ok=true
+hooks_missing=()
 for hook_type in pre-commit pre-push commit-msg; do
   hook_file=".git/hooks/$hook_type"
-  if [[ -f "$hook_file" ]] && grep -q 'pre-commit' "$hook_file" 2>/dev/null; then
+  if [[ -f "$hook_file" ]] && grep -qE 'bridle-guard-hook|pre-commit' "$hook_file" 2>/dev/null; then
     record "git hook: $hook_type" "ok"
   else
-    record "git hook: $hook_type" "warn" "not installed — HS#2/HS#8 enforcement inactive (run 'make install-hooks')"
-    warnings=$((warnings + 1))
+    hooks_missing+=("$hook_type")
     hooks_ok=false
   fi
 done
+
+# Auto-fix: install missing guard hooks
+if [[ ${#hooks_missing[@]} -gt 0 ]]; then
+  $JSON_MODE || printf '\033[1;33m  → Auto-installing missing guard hooks...\033[0m\n'
+  if bash tools/install-hooks.sh 2>&1 | while IFS= read -r line; do
+    $JSON_MODE || echo "    $line"
+  done; then
+    # Re-check after install
+    for hook_type in "${hooks_missing[@]}"; do
+      hook_file=".git/hooks/$hook_type"
+      if [[ -f "$hook_file" ]] && grep -q 'bridle-guard-hook' "$hook_file" 2>/dev/null; then
+        record "git hook: $hook_type" "ok" "auto-installed"
+      else
+        record "git hook: $hook_type" "warn" "auto-install failed — run 'make install-hooks' manually"
+        warnings=$((warnings + 1))
+      fi
+    done
+  else
+    for hook_type in "${hooks_missing[@]}"; do
+      record "git hook: $hook_type" "warn" "auto-install failed — run 'make install-hooks' manually"
+      warnings=$((warnings + 1))
+    done
+  fi
+fi
 
 # Compose tool: podman-compose (standalone) or docker compose (V2 subcommand)
 if command -v podman-compose &>/dev/null; then
