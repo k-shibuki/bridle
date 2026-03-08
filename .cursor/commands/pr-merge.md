@@ -23,14 +23,21 @@ These checks are the first step of `pr-merge` and cannot be skipped:
    - `pr-review` concluded "Mergeable"
    - User explicitly instructed to merge
 
-3. **Update PR checklist with CI results**:
-   After CI passes, update the Test Evidence checkboxes in the PR body to reflect actual outcomes. Skipped CI jobs (e.g., R jobs when only non-R files changed) count as passed for checklist purposes.
+3. **PR checklist verification gate**:
+   Read the PR body and verify every checkbox. This is the final quality gate before merge.
+
+   **For each unchecked `- [ ]` item**:
+   - **Test Evidence items** (CI-related): If CI passed (including skipped jobs for unchanged areas), check the box and note the evidence (e.g., "CI — skipped, no R changes").
+   - **Review Checklist items**: Verify each claim is true. If an item cannot be honestly checked, **STOP merging and return to implementation** to address the gap. Only resume merge after the fix is pushed and CI re-passes.
+
+   **Gate rule**: Do not proceed to merge while any `- [ ]` remains. Every checkbox must be `- [x]` with honest verification.
+
+   Update the PR body via API:
    ```bash
-   # Read current body, update checkboxes, patch via API
    gh api repos/{owner}/{repo}/pulls/<PR-number> -X PATCH -f body="<updated body>"
    ```
 
-If preconditions 1 or 2 are not met, do not proceed to merge. Report the blocking condition instead.
+If any precondition is not met, do not proceed to merge. Report the blocking condition and the required action.
 
 ## Inputs
 
