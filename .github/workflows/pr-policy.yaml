@@ -118,6 +118,15 @@ jobs:
               );
             }
 
+            // --- 6. Base branch check (HS#9) ---
+            if (pr.base.ref !== 'main' && pr.base.ref !== 'master') {
+              errors.push(
+                '**Base branch**: PR must target `main`. ' +
+                'Using `--base feat/<branch>` causes the PR to auto-close when the base branch is deleted on merge. ' +
+                'Document dependencies in the PR body instead.'
+              );
+            }
+
             // --- Report ---
             if (errors.length > 0) {
               const report = [
