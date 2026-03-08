@@ -27,6 +27,10 @@ make doctor-json
 - `podman` (or `docker`) command availability
 - `podman-compose` (or `docker compose`) availability
 - `git` availability
+- `git commit.template` configuration
+- `git hook: pre-commit` — pre-commit framework hook installed
+- `git hook: pre-push` — pre-push verification gate (HS#2) installed
+- `git hook: commit-msg` — commit message format validator installed
 - Container `bridle-dev` running status
 
 ### Container side (via podman exec)
