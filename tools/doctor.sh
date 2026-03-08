@@ -87,6 +87,19 @@ else
   warnings=$((warnings + 1))
 fi
 
+# Git hooks (pre-commit, pre-push, commit-msg)
+hooks_ok=true
+for hook_type in pre-commit pre-push commit-msg; do
+  hook_file=".git/hooks/$hook_type"
+  if [[ -f "$hook_file" ]] && grep -q 'pre-commit' "$hook_file" 2>/dev/null; then
+    record "git hook: $hook_type" "ok"
+  else
+    record "git hook: $hook_type" "warn" "not installed (run 'make install-hooks')"
+    warnings=$((warnings + 1))
+    hooks_ok=false
+  fi
+done
+
 # Compose tool: podman-compose (standalone) or docker compose (V2 subcommand)
 if command -v podman-compose &>/dev/null; then
   record "podman-compose" "ok"

@@ -8,6 +8,7 @@ See the [Development Environment](README.md#development-environment) section in 
 make container-build
 make container-up
 make renv-init
+make install-hooks   # Install git hooks (pre-commit, pre-push, commit-msg)
 make doctor          # Verify everything works
 ```
 
