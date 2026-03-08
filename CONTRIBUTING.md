@@ -27,15 +27,11 @@ doctor → issue-create → implement → test-create → quality-check
 
 ### For Human Contributors
 
-1. Pick an open Issue (or create one via `gh issue create`)
-2. Create a feature branch: `git checkout -b feat/<issue>-<description>`
-3. Implement, test, and verify quality (see Make targets below)
-4. Commit with `Refs: #<issue>` in the footer
-5. Open a PR with `Closes #<issue>` in the body
+Follow the same Issue-driven flow: pick an Issue, branch, implement, commit (with `Refs: #<issue>`), and open a PR (with `Closes #<issue>`). See [commit rules](.cursor/rules/commit-format.mdc) for branch naming and message format.
 
 ## Coding Standards
 
-- **S7 classes**: follow [ADR-0001](docs/adr/0001-use-s7-class-system.md). All properties must have explicit types; `class_any` is prohibited.
+- **S7 classes**: follow [ADR-0001](docs/adr/0001-use-s7-class-system.md). See [quality-policy.mdc](.cursor/rules/quality-policy.mdc) § Type Strictness (S7) for type requirements.
 - **Lint**: configured in [`.lintr`](.lintr). Run `make lint` to check, `make format` to auto-fix formatting.
 - **Quality gate**: `make check` must pass with 0 errors, 0 warnings, 0 notes.
 

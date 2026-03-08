@@ -13,6 +13,8 @@ alwaysApply: false
 
 ## Prefix (Type)
 
+Canonical type list: `tools/commit-types.txt` (shared with `check-commit-msg.sh`).
+
 | Prefix | Description |
 |--------|-------------|
 | `feat` | New feature addition |

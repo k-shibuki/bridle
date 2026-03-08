@@ -139,7 +139,7 @@ gh pr checks <PR_NUMBER>
 
 ### 6. If CI fails: diagnose, fix, re-push
 
-**The agent must autonomously diagnose and fix CI failures.** Do not merely report failures to the user — investigate the root cause, fix it, and re-push. Escalate to the user only after a genuine fix attempt has failed.
+Per `@.cursor/rules/coding-policy.mdc` § CI Failure Autonomy, the agent must autonomously diagnose and fix CI failures before escalating.
 
 1. **Identify the failed job(s)** from `gh pr checks` output.
 2. **Fetch failure logs**:

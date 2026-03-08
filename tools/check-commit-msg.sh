@@ -15,7 +15,15 @@ if [[ -z "$MSG" ]]; then
   exit 1
 fi
 
-TYPES="feat|fix|hotfix|refactor|perf|test|docs|build|ci|chore|style|revert"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TYPES_FILE="$SCRIPT_DIR/commit-types.txt"
+
+if [[ ! -f "$TYPES_FILE" ]]; then
+  echo "ERROR: $TYPES_FILE not found." >&2
+  exit 1
+fi
+
+TYPES=$(grep -v '^#' "$TYPES_FILE" | grep -v '^$' | paste -sd '|' -)
 PATTERN="^($TYPES)(\(.+\))?!?: .+"
 
 if ! echo "$MSG" | grep -Eq "$PATTERN"; then

@@ -1,13 +1,6 @@
 # PR policy gate: verifies Issue linkage, required sections, and traceability.
 # Runs on every PR to main/master regardless of file changes.
-#
-# Exception contract:
-#   When a PR has no Issue link (Closes #N), it must:
-#   1. Have one of the exception labels: no-issue, hotfix
-#   2. Have a "## Exception" section with:
-#      - Type: <no-issue / hotfix>
-#      - Justification: <reason, min 20 chars>
-#   The canonical format is defined in workflow-policy.mdc and PULL_REQUEST_TEMPLATE.md.
+# Exception contract: see workflow-policy.mdc § Exception Policy (SSOT).
 on:
   pull_request:
     branches: [main, master]
@@ -83,24 +76,19 @@ jobs:
               );
             }
 
-            // --- 3. Rollback Plan section ---
-            const changeType = body.match(/- \[x\] (feat|fix|refactor|ci|chore)/i);
-            const isDocsOrTestOnly = /- \[x\] (docs|test):/i.test(body) && !changeType;
-
+            // --- 3. Rollback Plan section (always required; docs/test PRs may write "N/A") ---
             const rollbackMatch = body.match(/## Rollback Plan[^]*?(?=\n## |$)/i);
             const rollbackContent = rollbackMatch
               ? rollbackMatch[0].replace(/## Rollback Plan/i, '').replace(/<!--[^]*?-->/g, '').trim()
               : '';
 
-            if (!isDocsOrTestOnly) {
-              if (!rollbackMatch) {
-                errors.push('**Rollback Plan**: Section is missing from the PR body.');
-              } else if (rollbackContent.length < 3 || rollbackContent === '-') {
-                errors.push(
-                  '**Rollback Plan**: Section exists but appears empty. ' +
-                  'Describe how to revert if something goes wrong.'
-                );
-              }
+            if (!rollbackMatch) {
+              errors.push('**Rollback Plan**: Section is missing from the PR body.');
+            } else if (rollbackContent.length < 3 || rollbackContent === '-') {
+              errors.push(
+                '**Rollback Plan**: Section exists but appears empty. ' +
+                'Describe how to revert if something goes wrong. For docs/test-only PRs, write "N/A".'
+              );
             }
 
             // --- 4. Traceability section ---
@@ -109,6 +97,8 @@ jobs:
             }
 
             // --- 5. PR title format (Conventional Commits) ---
+            // Type list intentionally excludes 'hotfix' — see commit-format.mdc § PR title handling.
+            // Canonical commit type list: tools/commit-types.txt
             const titleRegex = /^(feat|fix|refactor|perf|test|docs|build|ci|chore|style|revert)(\(.+\))?!?:\s.+$/;
             if (!titleRegex.test(pr.title)) {
               errors.push(
@@ -128,6 +118,7 @@ jobs:
             }
 
             // --- 7. Type label (workflow-policy § Label Taxonomy) ---
+            // 'hotfix' is an exception label, not a type label — see workflow-policy.mdc § Label Taxonomy
             const TYPE_LABELS = ['feat', 'fix', 'refactor', 'perf', 'docs', 'test', 'ci', 'build', 'chore', 'style', 'revert'];
             const hasTypeLabel = TYPE_LABELS.some(t => labels.includes(t));
             if (!hasTypeLabel) {
