@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Comprehensively audit the structural quality of the AI control system: rules, commands, knowledge atoms, guards, and surface assets. This is the `issue-review` analogue for the AI governance layer — it checks reference integrity, SSOT/DRY compliance, rule contradictions, component boundary separation, token efficiency, and frontmatter accuracy.
+Comprehensively audit the structural quality of the AI development system: design documents (ADRs, schemas), rules, commands, knowledge atoms, guards, and surface assets. This is the `issue-review` analogue for the AI governance layer — it checks reference integrity, SSOT/DRY compliance, rule contradictions, component boundary separation, token efficiency, and frontmatter accuracy.
 
 ## When to use
 
@@ -14,8 +14,9 @@ Comprehensively audit the structural quality of the AI control system: rules, co
 
 ## Inputs
 
-- **Scope** (optional): `--all` (default), `--scope rules`, `--scope commands`, `--scope knowledge`, `--scope guards`, `--scope surface`
+- **Scope** (optional): `--all` (default), `--scope design`, `--scope rules`, `--scope commands`, `--scope knowledge`, `--scope guards`, `--scope surface`
 - All files under `.cursor/` (auto-discovered)
+- Design documents: `docs/adr/*.md`, `docs/schemas/*.yaml` (auto-discovered)
 - Guard configs: `.pre-commit-config.yaml`, `.github/workflows/*.yaml`, `tools/` (auto-discovered)
 - Surface assets: `Makefile`, `README.md`, `CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/` (auto-discovered)
 
@@ -23,17 +24,26 @@ Comprehensively audit the structural quality of the AI control system: rules, co
 
 ### Step 1: Inventory collection
 
-Gather a complete manifest of all controls across the 5 component types:
+Gather a complete manifest of all controls across both domains (Design + Controls):
 
-| Component | Location | Content |
-|-----------|----------|---------| 
-| Rules | `.cursor/rules/*.mdc` | MUST / MUST NOT policies |
-| Commands | `.cursor/commands/*.md` | Step-by-step procedures |
-| Knowledge | `.cursor/knowledge/*.md` | Patterns, playbooks, reference |
-| Guards | `.pre-commit-config.yaml`, `.github/workflows/*.yaml`, `tools/` | Hooks, CI checks, enforcement scripts |
-| Surface | `Makefile`, `README.md`, `CONTRIBUTING.md`, `.cursor/README.md`, `.github/ISSUE_TEMPLATE/` | Entry points, development API, navigation maps |
+| Domain | Component | Location | Content |
+|--------|-----------|----------|---------| 
+| Design | ADRs | `docs/adr/*.md` | Architectural decisions (immutable records) |
+| Design | Schemas | `docs/schemas/*.yaml` | Data contracts for plugin artifacts |
+| Controls | Rules | `.cursor/rules/*.mdc` | MUST / MUST NOT policies |
+| Controls | Commands | `.cursor/commands/*.md` | Step-by-step procedures |
+| Controls | Knowledge | `.cursor/knowledge/*.md` | Patterns, playbooks, reference |
+| Controls | Guards | `.pre-commit-config.yaml`, `.github/workflows/*.yaml`, `tools/` | Hooks, CI checks, enforcement scripts |
+| Controls | Surface | `Makefile`, `README.md`, `CONTRIBUTING.md`, `.cursor/README.md`, `.github/ISSUE_TEMPLATE/` | Entry points, development API, navigation maps |
 
 ```bash
+# Design — ADRs
+ls -la docs/adr/*.md 2>/dev/null | wc -l
+wc -c docs/adr/*.md 2>/dev/null
+
+# Design — Schemas
+ls -la docs/schemas/*.yaml 2>/dev/null | wc -l
+
 # Rules
 ls -la .cursor/rules/*.mdc | wc -l
 wc -c .cursor/rules/*.mdc
@@ -102,7 +112,9 @@ For each information item below, enumerate all locations where it appears and cl
 | 15 | S7 type strictness rules | `quality-policy.mdc` |
 | 16 | Guard-Policy alignment (CI checks vs Rule claims) | `agent-safety.mdc` Enforcement Tier table |
 | 17 | Commit hook exemptions | `commit-format.mdc` |
-| 18 | Enforcement tier accuracy (claimed vs actual) | `controls--five-component-model.md` |
+| 18 | Enforcement tier accuracy (claimed vs actual) | `controls--ai-development-system.md` |
+| 19 | ADR-to-schema consistency | `docs/adr/` ↔ `docs/schemas/` |
+| 20 | AI development system structure (Design + Controls) | `.cursor/README.md` |
 
 For each item:
 - **SSOT_OK**: defined in one place, referenced elsewhere with pointers
@@ -157,17 +169,19 @@ Scan for logical contradictions across controls:
 
 ### Step 6: Component boundary check
 
-Verify the five-component architecture boundaries are maintained:
+Verify the Design + Controls architecture boundaries are maintained:
 
 | Violation type | Detection | Example |
 |---------------|-----------|---------|
+| `DESIGN_HAS_PROCEDURE` | ADR contains step-by-step operational procedures | An ADR with "Step 1: Run make lint" |
+| `CONTROL_OVERRIDES_DESIGN` | A Rule or Command contradicts an accepted ADR without a superseding ADR | A rule declaring a pattern that conflicts with an ADR decision |
 | `RULE_HAS_PROCEDURE` | Rule file contains numbered steps (Step 1, Step 2, ...) | A rule file with "Step 1: Run make lint" |
 | `COMMAND_HAS_POLICY` | Command file contains MUST/MUST NOT policy statements | A command file with "You MUST always..." |
 | `KNOWLEDGE_HAS_POLICY` | Knowledge atom contains MUST/MUST NOT policy statements | A knowledge atom with "MUST NOT use..." |
 | `GUARD_HAS_POLICY` | Guard config embeds policy prose instead of referencing Rules | A CI workflow with policy justification instead of `@` link |
 | `SURFACE_HAS_PROCEDURE` | Surface asset contains step-by-step procedures instead of linking to Commands | A README with inline implementation steps |
 
-Exceptions: Rules may reference command steps via `@` links. Commands may quote rule requirements when explaining why a step exists. Surface assets may summarize workflows for onboarding purposes.
+Exceptions: Rules may reference command steps via `@` links. Commands may quote rule requirements when explaining why a step exists. Surface assets may summarize workflows for onboarding purposes. ADRs may include code examples to illustrate decisions.
 
 ### Step 7: Token efficiency analysis
 
@@ -182,7 +196,7 @@ Assess the token cost of the control system:
 - Flag rules with low density as `LOW_DENSITY` (candidate for compression)
 
 **README information duplication**:
-- Compare `.cursor/README.md` content with `README.md` and `docs/README.md`
+- Compare `.cursor/README.md` content with `README.md`
 - Flag significant overlaps as `README_OVERLAP`
 
 ### Step 8: Classify findings and apply
@@ -250,4 +264,4 @@ For each control file with findings:
 - `@.cursor/commands/issue-review.md` — analogous command for GitHub Issues
 - `@.cursor/commands/session-retro.md` — lightweight session retrospective (escalates structural problems here)
 - `@.cursor/rules/knowledge-index.mdc` — auto-generated knowledge index
-- `@.cursor/README.md` — control system overview and navigation map
+- `@.cursor/README.md` — AI development system overview and navigation map
