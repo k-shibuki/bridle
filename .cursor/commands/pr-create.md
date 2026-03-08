@@ -128,7 +128,7 @@ gh pr create --title "<type>(<scope>): <description>" \
 
 Per `agent-safety.mdc` Hard Stop #7: CI polling MUST be delegated to a background subagent. The main agent must not poll CI inline with `sleep` loops.
 
-**Delegation**: Use `@.cursor/rules/subagent-policy.mdc` delegation pattern with prompt templates from `@.cursor/knowledge/agent--delegation-templates.md` (Template 1: CI-Wait + Merge, or Template 3: CI-Wait Only).
+**Delegation**: Use `@.cursor/rules/subagent-policy.mdc` delegation pattern with prompt templates from `@.cursor/knowledge/agent--delegation-templates.md` (Template 3: CI-Wait Only). Do not use Template 1 (CI-Wait + Merge) here — merge requires `pr-review` first.
 
 **Polling strategy**: The subagent follows the Adaptive Polling Strategy defined in `@.cursor/knowledge/ci--job-dependency-graph.md` § Adaptive Polling Strategy (the SSOT for polling intervals and time budgets).
 

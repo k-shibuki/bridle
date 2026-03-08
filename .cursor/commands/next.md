@@ -72,7 +72,7 @@ git branch --merged origin/main | grep -v '^\*\|main$' || true
 git branch --no-merged origin/main --format='%(refname:short) %(upstream:track)' | grep '\[gone\]' || true
 ```
 
-**Background task check**: If a background subagent was previously launched (e.g., for CI-wait + merge), check its transcript file for completion. See `subagent-policy.mdc` "Completion guarantee" for the protocol. Incorporate results into the state assessment.
+**Background task check**: If a background subagent was previously launched (e.g., for CI-wait), check its transcript file for completion. See `subagent-policy.mdc` "Completion guarantee" for the protocol. Incorporate results into the state assessment.
 
 ### Step 2: Determine workflow position
 
@@ -89,7 +89,7 @@ Use the evidence to classify the current state into one of these positions:
 | On feature branch, tests pass, docs not reviewed | **Tests pass** | `docs-discover` (Mode 2) |
 | On feature branch, docs OK, uncommitted changes | **Docs OK** | `commit` |
 | On feature branch, committed, no PR | **Committed** | `pr-create` |
-| Open PR, CI still running, independent Issue exists | **CI pending (parallel)** | **Hard Stop #7**: Delegate CI-wait + merge to background subagent, then start `implement` on independent Issue. |
+| Open PR, CI still running, independent Issue exists | **CI pending (parallel)** | **Hard Stop #7**: Delegate CI-wait (Template 3, no merge) to background subagent, then start `implement` on independent Issue. When CI completes, proceed to `pr-review`. |
 | Open PR, CI still running, no independent Issue | **CI pending (housekeeping)** | **Hard Stop #7**: Delegate CI-wait to background subagent, then do housekeeping (see Step 6). |
 | Stale local branches detected | **Cleanup needed** | Delete stale branches (see `pr-merge.md` "Post-merge cleanup"). Can be done during housekeeping. |
 | Background subagent running | **Background task in progress** | Check transcript for completion; continue independent work |
