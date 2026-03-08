@@ -28,10 +28,14 @@ make doctor-json
 - `podman-compose` (or `docker compose`) availability
 - `git` availability
 - `git commit.template` configuration
-- `git hook: pre-commit` — pre-commit framework hook installed
-- `git hook: pre-push` — pre-push verification gate (HS#2) installed
-- `git hook: commit-msg` — commit message format validator installed
+- `git hook: pre-commit` — nolint annotation validator (HS#8)
+- `git hook: pre-push` — pre-push verification gate (HS#2)
+- `git hook: commit-msg` — commit message format validator
 - Container `bridle-dev` running status
+
+### Auto-fix: guard hooks
+
+When guard hooks are missing, `doctor` automatically installs them via `tools/install-hooks.sh`. These are lightweight bash scripts written directly to `.git/hooks/` — no `pre-commit` framework or host-side R required. R-based quality hooks (style, lint, roxygen) run inside the container via `make` targets and in CI.
 
 ### Container side (via podman exec)
 

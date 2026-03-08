@@ -23,7 +23,14 @@ These checks are the first step of `pr-merge` and cannot be skipped:
    - `pr-review` concluded "Mergeable"
    - User explicitly instructed to merge
 
-If either precondition is not met, do not proceed to merge. Report the blocking condition instead.
+3. **Update PR checklist with CI results**:
+   After CI passes, update the Test Evidence checkboxes in the PR body to reflect actual outcomes. Skipped CI jobs (e.g., R jobs when only non-R files changed) count as passed for checklist purposes.
+   ```bash
+   # Read current body, update checkboxes, patch via API
+   gh api repos/{owner}/{repo}/pulls/<PR-number> -X PATCH -f body="<updated body>"
+   ```
+
+If preconditions 1 or 2 are not met, do not proceed to merge. Report the blocking condition instead.
 
 ## Inputs
 
