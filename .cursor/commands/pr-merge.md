@@ -157,11 +157,9 @@ The main agent checks the subagent transcript at the next `next` re-assessment c
 
 ## Constraints
 
-- Use non-interactive git flags (`--no-edit`, `--no-pager`) to avoid hangs.
-- Do not merge if CI has failures or warnings remain.
-- **Approval model**: Merge is permitted when one of the following is satisfied:
-  - `pr-review` concluded "Mergeable"
-  - Explicit user instruction to merge
+- Use non-interactive git flags (`--no-edit`, `--no-pager`) to avoid hangs
+- Per `@.cursor/rules/agent-safety.mdc` Hard Stop #1: CI must be green before merge
+- Merge is permitted when `pr-review` concluded "Mergeable" or the user explicitly instructs to merge
 
 ## Output (response format)
 

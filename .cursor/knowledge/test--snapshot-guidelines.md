@@ -16,6 +16,6 @@ Do NOT use snapshot tests for:
 ## Managing `_snaps/` Directories
 
 - Snapshot files live in `tests/testthat/_snaps/<test-file-name>/`.
-- They MUST be committed to version control.
+- They should be committed to version control (required by testthat 3 workflow).
 - On snapshot changes, review the diff carefully — snapshot updates should be intentional.
 - Use `testthat::snapshot_review()` to interactively approve changes.

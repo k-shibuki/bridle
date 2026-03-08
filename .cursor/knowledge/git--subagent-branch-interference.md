@@ -5,10 +5,10 @@ trigger: subagent branch, misplaced commit, git checkout interference, cherry-pi
 
 **Symptom**: A subagent ran `git checkout main` or `git switch`, changing the main agent's working branch. Commits intended for branch A end up on branch B.
 
-**Prevention** (mandatory — see subagent-policy.mdc):
+**Prevention** (per `@.cursor/rules/subagent-policy.mdc` § Prompt structure):
 
-- Subagent prompts for CI-wait/merge MUST include: "Do NOT run git checkout, git switch, git branch -d, or git rebase"
-- Subagents should use only `gh` API commands (e.g., `gh pr merge`), never local git commands
+- Subagent prompts for CI-wait/merge should include git operation prohibitions ("Do NOT run git checkout, git switch, git branch -d, or git rebase")
+- Subagents should use only `gh` API commands (e.g., `gh pr merge`), not local git commands
 
 **Recovery**:
 

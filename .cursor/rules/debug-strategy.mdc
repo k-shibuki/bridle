@@ -49,12 +49,9 @@ Terminal commands **must always have timeout set** to prevent hangs:
 | make test | 120s |
 | make check | 300s |
 
-### 1.3 Hypothesis → Instrumentation → Verification Cycle
+### 1.3 Hypothesis-Driven Debugging
 
-1. **Hypothesis Formation**: List possible causes from symptoms (use `<TASK>-H1`, `<TASK>-H2`, ...)
-2. **Instrumentation**: Add `message()` / `cli::cli_inform()` that can verify hypotheses
-3. **Verification**: Reject or adopt hypotheses based on instrumentation results
-4. **Iteration**: If hypothesis is rejected, move to next hypothesis
+All debugging MUST follow a hypothesis-driven cycle: the agent forms hypotheses about possible causes (tagged `<TASK>-H1`, `<TASK>-H2`, ...), instruments the code with `message()` / `cli::cli_inform()` to verify them, evaluates evidence to reject or adopt each hypothesis, and iterates with the next hypothesis when one is rejected. Fixes based on speculation (without instrumentation evidence) are prohibited.
 
 ---
 
