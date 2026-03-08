@@ -154,9 +154,4 @@ Rules define enforceable MUST/MUST NOT policies. Commands define procedures. Kno
 
 ## Issue-Driven Workflow Principles
 
-1. **Every task starts as an Issue**: Use `issue-create` to decompose tasks and create structured GitHub Issues.
-2. **1 Issue ≈ 1 PR**: Each Issue should be implementable in a single PR. Large tasks are split into child Issues.
-3. **Traceability is mandatory**: PRs must reference their Issue (`Closes #N`), commits should reference it (`Refs: #N`).
-4. **No main direct push** for normal changes: All code changes go through the PR flow with CI validation.
-5. **Exceptions are explicit**: `hotfix` bypasses Issue triage but still requires a PR. Only documentation-only changes (`docs` type + `no-issue` exception) may use direct push to main. See `workflow-policy.mdc` for the full policy.
-6. **Parallelize via subagent delegation**: Blocking operations (CI polling, sequential merges) are always delegated to background subagents so the main agent can continue productive work (independent Issues, branch cleanup, environment health, doc review). Inline CI polling is prohibited. See `subagent-policy.mdc` for the policy and `agent--delegation-templates.md` for prompt templates.
+See `workflow-policy.mdc` § Issue-Driven Workflow for the full policy. Key principles: every task starts as an Issue, 1 Issue ≈ 1 PR, traceability is mandatory, exceptions are explicit, and blocking operations are delegated to subagents (see `subagent-policy.mdc`).

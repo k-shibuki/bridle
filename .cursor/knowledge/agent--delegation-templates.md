@@ -94,7 +94,7 @@ squash-merging #<A>, use `git rebase --onto` to rebase #<B> cleanly.
 
 ## Steps
 
-1. Poll CI for PR #<A>: `gh pr checks <A>` every 30s until all pass.
+1. Poll CI for PR #<A> using Adaptive Polling Strategy from `ci--job-dependency-graph.md` § Adaptive Polling Strategy:
 2. Merge PR #<A>: `gh pr merge <A> --squash --delete-branch`
 3. Verify: `gh pr view <A> --json state -q '.state'` → "MERGED"
 4. Check PR #<B> mergeability: `gh pr view <B> --json mergeable -q '.mergeable'`
@@ -107,7 +107,7 @@ squash-merging #<A>, use `git rebase --onto` to rebase #<B> cleanly.
       The commit just before #<B>'s first unique commit.
    e. `git rebase --onto origin/main <boundary-commit> <branch-B>`
    f. `git push --force-with-lease origin <branch-B>`
-6. Poll CI for PR #<B>: `gh pr checks <B>` every 30s until all pass.
+6. Poll CI for PR #<B> using Adaptive Polling Strategy from `ci--job-dependency-graph.md` § Adaptive Polling Strategy:
 7. Merge PR #<B>: `gh pr merge <B> --squash --delete-branch`
 8. Verify: `gh pr view <B> --json state -q '.state'` → "MERGED"
 
