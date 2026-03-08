@@ -24,7 +24,7 @@ The following actions are NEVER permitted, regardless of user instructions:
 
 ## Enforcement Tiers
 
-Each Hard Stop is classified by its enforcement mechanism. See `controls--five-component-model.md` § Hard Stop Enforcement Tiers for tier definitions.
+Each Hard Stop is classified by its enforcement mechanism. See `controls--ai-development-system.md` § Hard Stop Enforcement Tiers for tier definitions.
 
 | Hard Stop | Tier | Enforcement mechanism |
 |---|---|---|

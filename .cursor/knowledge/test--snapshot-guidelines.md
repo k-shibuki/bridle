@@ -1,3 +1,6 @@
+---
+trigger: snapshot test, expect_snapshot, _snaps directory, snapshot review, testthat 3 snapshot
+---
 # Snapshot Testing Guidelines (testthat 3)
 
 ## When to Use Snapshots

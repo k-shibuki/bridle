@@ -1,3 +1,6 @@
+---
+trigger: task prefix, multi-agent artifact, hypothesis ID, concurrent agent naming
+---
 # Task Prefix Convention (Multi-Agent Support)
 
 Multiple AI agents may debug or work concurrently. Use consistent prefixes across all artifacts to avoid conflicts.
