@@ -164,6 +164,9 @@ If an error or unexpected state occurs during execution:
 
 ## Workflow State Diagram
 
+> Canonical pipeline overview: `.cursor/README.md` § Standard Flow.
+> This diagram adds `next`-specific details (decision points, retro scan, loop-back).
+
 ```
                     ┌─────────────┐
                     │   doctor    │ (environment check)

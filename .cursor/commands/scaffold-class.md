@@ -59,7 +59,7 @@ The generated code is a starting point. Review and refine:
 
 ## Constraints
 
-- Every property MUST have an explicit type. `class_any` is prohibited.
+- Type strictness and `class_any` prohibition are defined in `@.cursor/rules/quality-policy.mdc` § Type Strictness (S7).
 - Validators must check constraints that types cannot express (e.g., value ranges, cross-field dependencies).
 - Follow existing patterns in `R/` if any classes already exist.
 
