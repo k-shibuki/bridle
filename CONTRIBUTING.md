@@ -22,7 +22,7 @@ The full AI workflow (commands, rules, knowledge map) is documented in [`.cursor
 
 ```
 doctor → issue-create → implement → test-create → quality-check
-  → regression-test → docs-discover → commit → pr-create → [CI] → pr-review → pr-merge
+  → test-regression → docs-discover → commit → pr-create → [CI] → pr-review → pr-merge
 ```
 
 ### For Human Contributors

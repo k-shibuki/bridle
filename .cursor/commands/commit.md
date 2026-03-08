@@ -26,7 +26,7 @@ Every commit must reference its tracking Issue in the footer:
 Refs: #<issue-number>
 ```
 
-**Exceptions**: `hotfix` or `no-issue` changes that bypass the Issue-driven flow may omit the Issue reference, but must state the justification in the commit body.
+**Exceptions**: `hotfix` or `docs` changes that bypass the Issue-driven flow may omit the Issue reference, but must state the justification in the commit body. See `@.cursor/rules/commit-format.mdc` § Footer for the exemption rules.
 
 ## Atomic commits (recommended)
 
@@ -101,7 +101,7 @@ Refs: #<issue-number>"
 
 - Do **not** open an interactive editor (`git commit` without `-m`).
 - Keep messages **English only**.
-- Include `Refs: #<issue>` in every commit (except hotfix/no-issue exceptions).
+- Include `Refs: #<issue>` in every commit (except hotfix/docs exceptions).
 
 ## Output (response format)
 

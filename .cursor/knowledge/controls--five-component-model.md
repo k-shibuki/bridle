@@ -54,11 +54,7 @@ Each Hard Stop in `agent-safety.mdc` is classified by enforcement mechanism:
 | **Conditionally Deterministic** | Enforced by Guards that require local setup (`make install-hooks`) | 100% when activated, 0% otherwise |
 | **Steering** | Declared in Rules, agent self-policing | Probabilistic — depends on agent adherence |
 
-Current classification:
-
-- **Deterministic**: HS#1 (Branch Protection), HS#5 (PR policy CI), HS#9 (PR policy CI)
-- **Conditionally Deterministic**: HS#2 (pre-push hook), HS#8 (pre-commit hook) — requires `make install-hooks`
-- **Steering**: HS#3 (no step skipping), HS#4 (gate evidence), HS#6 (no dismissing diagnostics), HS#7 (no inline CI polling)
+Current classification: See `agent-safety.mdc` § Enforcement Tiers for the authoritative HS-to-tier mapping.
 
 The goal is to maximize the Deterministic tier. When a Steering constraint can be
 converted to a Guard, it should be. Conditionally Deterministic Guards should be
