@@ -71,7 +71,7 @@ Only when Priorities 1–2 do not resolve the issue, the agent may add a **line-
 result <- ScanResult(...) # nolint: object_usage_linter. S7 class defined in R/scan_result.R
 ```
 
-**Prohibited forms** (always rejected):
+### Prohibited forms (always rejected)
 
 | Form | Why prohibited |
 |---|---|
