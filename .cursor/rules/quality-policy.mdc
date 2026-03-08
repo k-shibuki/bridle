@@ -116,7 +116,7 @@ Per ADR-0001, S7 classes are the source of truth once implemented.
 | `make doctor` | Always (includes renv sync) | `quality-check` | No |
 | `roxygen2::roxygenise()` | After `git rebase` adding new R files | `quality-check` | No |
 
-Even when no R code changed (Makefile, docs, CI only), `make validate-schemas` must still run. There is no case where verification can be entirely skipped.
+When no R code changed (Makefile, docs, CI only) but schema-related files were modified, run `make validate-schemas`. When neither R code nor schemas changed, local verification may be skipped.
 
 ## Definition of Done
 
