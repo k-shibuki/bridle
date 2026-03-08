@@ -17,7 +17,7 @@ Create a feature branch (if needed), commit, push, and open a pull request on Gi
 ## Inputs (ask if missing)
 
 - **Issue number** (required unless exception): the GitHub Issue this PR closes (e.g., `#42`)
-- If no Issue exists, the user must explicitly confirm this is an exception (`hotfix`, `docs-only`, or `no-issue`)
+- If no Issue exists, the user must explicitly confirm this is an exception (`hotfix` or `no-issue`)
 
 ## Steps
 
@@ -99,7 +99,9 @@ Do NOT compose the PR body from memory. Use the template below exactly.
 The PR body **must** include `Closes #<issue>` for automatic Issue closure on merge. Delete the `## Exception` section.
 
 ```bash
-gh pr create --title "<type>(<scope>): <description>" --body "$(cat <<'EOF'
+gh pr create --title "<type>(<scope>): <description>" \
+  --label "<type>" \
+  --body "$(cat <<'EOF'
 ## Summary
 
 - <change summary>
@@ -146,15 +148,16 @@ EOF
 )"
 ```
 
-#### Exception path (hotfix / no-issue / docs-only)
+#### Exception path (hotfix / no-issue)
 
-This is the **required delivery method for all code changes that bypass the Issue-driven flow**, including `hotfix`. Direct push to `main` is not permitted for code changes — only `docs-only` may use direct push via `commit` (docs-only path).
+This is the **required delivery method for all code changes that bypass the Issue-driven flow**, including `hotfix`. Direct push to `main` is not permitted for code changes — only documentation-only changes (type: `docs` + exception: `no-issue`) may use direct push via `commit` (docs-only path).
 
 When the user explicitly confirms an exception, add a label and fill the `## Exception` section instead of `Closes #`.
 
 ```bash
 gh pr create --title "<type>(<scope>): <description>" \
-  --label "<no-issue|hotfix|docs-only>" \
+  --label "<type>" \
+  --label "<no-issue|hotfix>" \
   --body "$(cat <<'EOF'
 ## Summary
 
@@ -166,7 +169,7 @@ gh pr create --title "<type>(<scope>): <description>" \
 
 ## Exception
 
-- Type: <no-issue / hotfix / docs-only>
+- Type: <no-issue / hotfix>
 - Justification: <why this PR bypasses the Issue-driven flow>
 
 ## Related ADR / Issue

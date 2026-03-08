@@ -8,4 +8,4 @@
 #
 # ---- Types: feat fix hotfix refactor perf test docs build ci chore style revert
 # ---- Footer: Refs: #N (required) | BREAKING CHANGE: (optional)
-# ---- Exception: hotfix/docs-only may omit Refs but must justify in body
+# ---- Exception: hotfix/no-issue may omit Refs but must justify in body

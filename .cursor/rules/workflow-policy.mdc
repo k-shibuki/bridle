@@ -1,5 +1,5 @@
 ---
-description: "Issue-driven workflow policy: Issue traceability, fix/hotfix criteria, exception policy, container prerequisite, knowledge consultation triggers"
+description: "Issue-driven workflow policy: Issue traceability, fix/hotfix criteria, exception policy, label taxonomy, container prerequisite, knowledge consultation triggers"
 alwaysApply: true
 ---
 # Workflow Policy
@@ -38,20 +38,59 @@ The following exception types may bypass the Issue-driven flow:
 | Label | When to use | Delivery method |
 |-------|-------------|-----------------|
 | `hotfix` | Critical fix meeting the hotfix threshold above | **Exception PR** (via `pr-create` exception path) |
-| `docs-only` | Documentation-only change with no code impact | **Direct push** (via `commit` docs-only path) or exception PR |
-| `no-issue` | Other justified exceptions (e.g., meta-implementation of workflow itself) | **Exception PR** (via `pr-create` exception path) |
+| `no-issue` | Other justified exceptions (docs-only changes, meta-implementation of workflow, etc.) | **Exception PR** or **direct push** (direct push only when type is `docs`) |
 
-**All code changes — including hotfix — MUST go through a PR.** Direct push to `main` is permitted only for `docs-only` changes. This ensures CI validation and an auditable merge record for every code change.
+**All code changes — including hotfix — MUST go through a PR.** Direct push to `main` is permitted only for documentation-only changes (type: `docs` + exception: `no-issue`). This ensures CI validation and an auditable merge record for every code change.
 
 **Exception requirements** (enforced by CI):
 
 - **Commits**: May omit `Refs: #<issue>` but must include justification in the body.
 - **PRs**: Must have an exception label AND a `## Exception` section with:
-  - `- Type:` one of `hotfix` / `docs-only` / `no-issue`
+  - `- Type:` one of `hotfix` / `no-issue`
   - `- Justification:` reason (min 20 characters)
 - **Branch naming**: `hotfix/<description>` (no Issue number required).
 
 This contract is the single source of truth. The PR template, `pr-create` command, and `pr-policy.yaml` workflow all follow this format.
+
+## Label Taxonomy
+
+Every Issue and PR MUST have exactly one **type label** matching its Conventional Commits title prefix. This section is the single source of truth for valid labels.
+
+### Type labels (exactly one per Issue/PR)
+
+| Label | Conventional Commits prefix | Description |
+|-------|----------------------------|-------------|
+| `feat` | `feat:` | New feature or capability |
+| `fix` | `fix:` | Bug fix |
+| `refactor` | `refactor:` | Code restructuring without behavior change |
+| `docs` | `docs:` | Documentation only change |
+| `test` | `test:` | Test addition or modification |
+| `ci` | `ci:` | CI/CD pipeline change |
+| `build` | `build:` | Build system or dependency change |
+| `chore` | `chore:` | Maintenance task (no production code change) |
+
+### Exception labels (zero or one per PR, additive to type label)
+
+| Label | When to use |
+|-------|-------------|
+| `hotfix` | Critical fix meeting the hotfix threshold (see § fix vs hotfix Decision Criteria) |
+| `no-issue` | Justified exception bypassing Issue-driven flow (includes docs-only direct push) |
+
+Exception labels do NOT replace the type label — a PR has both (e.g., `fix` + `hotfix`). For documentation-only direct push, the combination is `docs` (type) + `no-issue` (exception).
+
+### Meta labels (zero or more, additional context)
+
+| Label | Description |
+|-------|-------------|
+| `blocked` | Issue/PR is blocked by an external dependency |
+| `dependencies` | Dependabot dependency update |
+| `github_actions` | Dependabot GitHub Actions update |
+
+### Assignment rules
+
+- `issue-create` assigns the type label at Issue creation (`--label "<type>"`).
+- `pr-create` assigns the type label at PR creation (`--label "<type>"`), plus exception label if applicable.
+- `pr-policy.yaml` validates that every PR has at least one recognized type label.
 
 ## Container Prerequisite
 

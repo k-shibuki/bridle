@@ -1,5 +1,5 @@
 ---
-description: "AI agent absolute prohibitions (Hard Stops): CI merge, local verification, workflow steps, gate evidence, PR template, diagnostics, CI polling, nolint, PR base branch. Multi-agent safety rules."
+description: "AI agent absolute prohibitions (Hard Stops): CI merge, local verification, workflow steps, gate evidence, PR template, diagnostics, CI polling, nolint, PR base branch. Enforcement tiers (Deterministic/Steering). Multi-agent safety rules."
 alwaysApply: true
 ---
 # Agent Safety Rules
@@ -21,6 +21,22 @@ The following actions are NEVER permitted, regardless of user instructions:
 7. **NEVER poll CI inline**: CI polling MUST be delegated to a background subagent. Inline `sleep` + poll loops are prohibited. The main agent MUST NOT end its turn until the subagent completes. See `@.cursor/rules/subagent-policy.mdc` for delegation pattern and completion guarantee.
 8. **NEVER add `# nolint` without consulting knowledge first**: Before writing ANY `# nolint` annotation, the agent MUST read `@.cursor/knowledge/lint--nolint-accepted-patterns.md` and follow the nolint decision tree in `@.cursor/rules/quality-policy.mdc` § nolint Checkpoint. The required sequence is: (1) attempt code restructuring, (2) attempt co-location for test helpers, (3) only then consider line-level `# nolint: <linter_name>. <reason>`. Blanket `# nolint`, `# nolint start/end`, and `# nolint` without linter name + reason are **always prohibited**. Adding `# nolint` without first reading the knowledge file and exhausting alternatives is prohibited — "the lint error needs suppressing" is not sufficient justification.
 9. **NEVER use `--base feat/<branch>` in `gh pr create`**: All PRs must target `main`. Using a feature branch as base causes the PR to be auto-closed when the base branch is deleted on merge. Document dependencies in the PR body, not through the base branch. See `pr-create.md` Step 3c.
+
+## Enforcement Tiers
+
+Each Hard Stop is classified by its enforcement mechanism. Deterministic constraints are tool-enforced (Guards component); Steering constraints rely on agent self-policing (Rules component).
+
+| Hard Stop | Tier | Enforcement mechanism |
+|---|---|---|
+| HS#1 (CI green before merge) | **Deterministic** | GitHub Branch Protection required status checks (#92) |
+| HS#2 (local verification) | **Deterministic** | `pre-push` Git hook (#93) |
+| HS#3 (no step skipping) | Steering | Agent self-policing (procedural discipline) |
+| HS#4 (gate evidence) | Steering | Agent self-policing (evidence requirement) |
+| HS#5 (full PR template) | **Deterministic** | `pr-policy.yaml` CI check |
+| HS#6 (no dismissing diagnostics) | Steering | Agent self-policing (zero-tolerance policy) |
+| HS#7 (no inline CI polling) | Steering | Agent self-policing (subagent delegation) |
+| HS#8 (nolint consultation) | **Deterministic** | `pre-commit` hook for `# nolint` patterns (#93) |
+| HS#9 (no feature-base PR) | **Deterministic** | `pr-policy.yaml` CI check (#92) |
 
 ## Multi-Agent Safety Rules
 

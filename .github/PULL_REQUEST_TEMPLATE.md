@@ -13,9 +13,9 @@ Closes #<!-- issue number -->
 ## Exception
 
 <!-- Delete this entire section if Closes # above is filled. -->
-<!-- Required when no Issue is linked. Add label: no-issue, hotfix, or docs-only. -->
+<!-- Required when no Issue is linked. Add label: no-issue or hotfix. -->
 
-- Type: <!-- no-issue / hotfix / docs-only -->
+- Type: <!-- no-issue / hotfix -->
 - Justification: <!-- Why this PR bypasses the Issue-driven flow (min 20 chars) -->
 
 ## Related ADR / Issue

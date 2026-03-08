@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Comprehensively audit the structural quality of the AI control system: rules, commands, knowledge atoms, README maps, and Makefile targets. This is the `issue-review` analogue for the AI governance layer — it checks reference integrity, SSOT/DRY compliance, rule contradictions, layer separation, token efficiency, and frontmatter accuracy.
+Comprehensively audit the structural quality of the AI control system: rules, commands, knowledge atoms, guards, and surface assets. This is the `issue-review` analogue for the AI governance layer — it checks reference integrity, SSOT/DRY compliance, rule contradictions, component boundary separation, token efficiency, and frontmatter accuracy.
 
 ## When to use
 
@@ -14,24 +14,24 @@ Comprehensively audit the structural quality of the AI control system: rules, co
 
 ## Inputs
 
-- **Scope** (optional): `--all` (default), `--scope rules`, `--scope commands`, `--scope knowledge`, `--scope docs`, `--scope build`
+- **Scope** (optional): `--all` (default), `--scope rules`, `--scope commands`, `--scope knowledge`, `--scope guards`, `--scope surface`
 - All files under `.cursor/` (auto-discovered)
-- `Makefile` (auto-discovered)
-- `README.md`, `docs/README.md` (auto-discovered)
+- Guard configs: `.pre-commit-config.yaml`, `.github/workflows/*.yaml`, `tools/` (auto-discovered)
+- Surface assets: `Makefile`, `README.md`, `CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/` (auto-discovered)
 
 ## Steps
 
 ### Step 1: Inventory collection
 
-Gather a complete manifest of all controls across the 5 control types:
+Gather a complete manifest of all controls across the 5 component types:
 
-| Control type | Location | Content |
-|-------------|----------|---------| 
+| Component | Location | Content |
+|-----------|----------|---------| 
 | Rules | `.cursor/rules/*.mdc` | MUST / MUST NOT policies |
 | Commands | `.cursor/commands/*.md` | Step-by-step procedures |
 | Knowledge | `.cursor/knowledge/*.md` | Patterns, playbooks, reference |
-| Docs | `.cursor/README.md`, `README.md`, `docs/README.md` | Navigation maps, project overview |
-| Build | `Makefile` | Build targets that commands reference |
+| Guards | `.pre-commit-config.yaml`, `.github/workflows/*.yaml`, `tools/` | Hooks, CI checks, enforcement scripts |
+| Surface | `Makefile`, `README.md`, `CONTRIBUTING.md`, `.cursor/README.md`, `.github/ISSUE_TEMPLATE/` | Entry points, development API, navigation maps |
 
 ```bash
 # Rules
@@ -46,10 +46,11 @@ wc -c .cursor/commands/*.md
 ls -la .cursor/knowledge/*.md | wc -l
 wc -c .cursor/knowledge/*.md
 
-# Docs
-ls -la .cursor/README.md README.md docs/README.md 2>/dev/null
+# Guards
+ls -la .pre-commit-config.yaml .github/workflows/*.yaml tools/*.sh 2>/dev/null
 
-# Build targets
+# Surface
+ls -la Makefile README.md CONTRIBUTING.md .cursor/README.md .github/ISSUE_TEMPLATE/*.md 2>/dev/null
 make help 2>/dev/null | wc -l
 ```
 
@@ -85,7 +86,7 @@ For each information item below, enumerate all locations where it appears and cl
 | # | Information item | Expected SSOT location |
 |---|-----------------|----------------------|
 | 1 | Workflow flow diagram | `.cursor/README.md` |
-| 2 | Exception types (hotfix / docs-only / no-issue) | `workflow-policy.mdc` |
+| 2 | Exception types (hotfix / no-issue) | `workflow-policy.mdc` |
 | 3 | fix vs hotfix criteria | `workflow-policy.mdc` |
 | 4 | Hard Stop list (HS#1-9) | `agent-safety.mdc` |
 | 5 | Branch naming convention | `commit-format.mdc` |
@@ -123,17 +124,19 @@ Scan for logical contradictions across controls:
 - Verify that command-documented preconditions match Makefile target dependencies
 - Flag inconsistencies as `PRECONDITION_MISMATCH`
 
-### Step 5: Layer separation check
+### Step 5: Component boundary check
 
-Verify the Three-Layer architecture is maintained:
+Verify the five-component architecture boundaries are maintained:
 
 | Violation type | Detection | Example |
 |---------------|-----------|---------|
 | `RULE_HAS_PROCEDURE` | Rule file contains numbered steps (Step 1, Step 2, ...) | A rule file with "Step 1: Run make lint" |
 | `COMMAND_HAS_POLICY` | Command file contains MUST/MUST NOT policy statements | A command file with "You MUST always..." |
 | `KNOWLEDGE_HAS_POLICY` | Knowledge atom contains MUST/MUST NOT policy statements | A knowledge atom with "MUST NOT use..." |
+| `GUARD_HAS_POLICY` | Guard config embeds policy prose instead of referencing Rules | A CI workflow with policy justification instead of `@` link |
+| `SURFACE_HAS_PROCEDURE` | Surface asset contains step-by-step procedures instead of linking to Commands | A README with inline implementation steps |
 
-Exceptions: Rules may reference command steps via `@` links. Commands may quote rule requirements when explaining why a step exists.
+Exceptions: Rules may reference command steps via `@` links. Commands may quote rule requirements when explaining why a step exists. Surface assets may summarize workflows for onboarding purposes.
 
 ### Step 6: Token efficiency analysis
 
@@ -163,7 +166,7 @@ Improvements that can be applied without design discussion:
 - Frontmatter description drift (update description)
 - Missing Makefile target references (add target or update reference)
 - SSOT duplications where the SSOT location is clear (replace with pointer)
-- Layer separation violations where the fix is obvious (move content)
+- Component boundary violations where the fix is obvious (move content)
 
 Apply fixes directly and report what changed.
 
@@ -174,7 +177,7 @@ Changes that require design decisions:
 - Structural reorganization (split/merge files)
 - Token efficiency trade-offs (compress vs readability)
 - New SSOT items not yet catalogued
-- Significant layer separation violations with unclear resolution
+- Significant component boundary violations with unclear resolution
 
 Present as numbered discussion points with context and options.
 
@@ -193,7 +196,7 @@ For each control file with findings:
 - **Reference integrity**: broken links count, missing sections count
 - **SSOT/DRY**: duplications, contradictions, missing items
 - **Contradictions**: list with affected files
-- **Layer separation**: violations by type
+- **Component boundaries**: violations by type
 - **Token efficiency**: `alwaysApply` total size, low-density rules
 
 ### Action summary

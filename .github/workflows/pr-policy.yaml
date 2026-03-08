@@ -3,11 +3,11 @@
 #
 # Exception contract:
 #   When a PR has no Issue link (Closes #N), it must:
-#   1. Have one of the exception labels: no-issue, hotfix, docs-only
+#   1. Have one of the exception labels: no-issue, hotfix
 #   2. Have a "## Exception" section with:
-#      - Type: <no-issue / hotfix / docs-only>
+#      - Type: <no-issue / hotfix>
 #      - Justification: <reason, min 20 chars>
-#   The canonical format is defined in ai-guardrails.mdc and PULL_REQUEST_TEMPLATE.md.
+#   The canonical format is defined in workflow-policy.mdc and PULL_REQUEST_TEMPLATE.md.
 on:
   pull_request:
     branches: [main, master]
@@ -34,7 +34,7 @@ jobs:
             const errors = [];
             const warnings = [];
 
-            const EXCEPTION_LABELS = ['no-issue', 'hotfix', 'docs-only'];
+            const EXCEPTION_LABELS = ['no-issue', 'hotfix'];
             const isException = EXCEPTION_LABELS.some(l => labels.includes(l));
 
             // --- 1. Issue linkage ---
@@ -62,7 +62,7 @@ jobs:
                 errors.push(
                   '**Issue linkage**: PR body must contain `Closes #<number>` ' +
                   '(or `Fixes #N` / `Resolves #N`). ' +
-                  'If this is an exception, add a label (`no-issue` / `hotfix` / `docs-only`) ' +
+                  'If this is an exception, add a label (`no-issue` / `hotfix`) ' +
                   'and fill in the `## Exception` section.'
                 );
               }
