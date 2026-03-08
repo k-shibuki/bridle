@@ -127,6 +127,27 @@ jobs:
               );
             }
 
+            // --- 7. Type label (workflow-policy § Label Taxonomy) ---
+            const TYPE_LABELS = ['feat', 'fix', 'refactor', 'docs', 'test', 'ci', 'build', 'chore'];
+            const hasTypeLabel = TYPE_LABELS.some(t => labels.includes(t));
+            if (!hasTypeLabel) {
+              errors.push(
+                '**Type label**: PR must have exactly one type label ' +
+                '(`feat`, `fix`, `refactor`, `docs`, `test`, `ci`, `build`, `chore`). ' +
+                'Add a label via `--label "<type>"` in `gh pr create`.'
+              );
+            }
+
+            // --- 8. Summary section ---
+            if (!/## Summary/i.test(body)) {
+              errors.push('**Summary**: Section is missing from the PR body.');
+            }
+
+            // --- 9. Review Checklist section ---
+            if (!/## Review Checklist/i.test(body)) {
+              errors.push('**Review Checklist**: Section is missing from the PR body.');
+            }
+
             // --- Report ---
             if (errors.length > 0) {
               const report = [
