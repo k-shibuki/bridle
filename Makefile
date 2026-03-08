@@ -32,7 +32,7 @@ endif
 	check check-fast test lint format format-check document coverage coverage-check site install clean \
 	ci ci-fast ci-pr pr-ready doctor doctor-json validate-schemas \
 	changed-lint changed-test test-json lint-json scaffold-test scaffold-class \
-	status new-branch \
+	status new-branch install-hooks \
 	kb-manifest kb-validate kb-new
 
 # === Help ===
@@ -165,6 +165,11 @@ validate-schemas: _require_container ## Validate YAML schemas
 status: ## Show git + container status
 	@echo "=== Git ===" && git status --short --branch
 	@echo "=== Container ===" && $(RUNTIME) inspect $(CONTAINER_NAME) --format '{{.State.Status}}' 2>/dev/null || echo "not found"
+
+install-hooks: ## Install git hooks (pre-commit, pre-push, commit-msg)
+	pre-commit install --install-hooks
+	pre-commit install --hook-type pre-push
+	pre-commit install --hook-type commit-msg
 
 new-branch: ## Create feature branch (usage: make new-branch PREFIX=feat ISSUE=42 DESC=short-description)
 	@if [ -z "$(ISSUE)" ] || [ -z "$(DESC)" ]; then \
