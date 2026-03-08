@@ -74,7 +74,20 @@ All required checks must pass. If any check fails, the PR is not ready for merge
 | **Traceability** | `Closes #<issue>` present, `Refs: #<issue>` in commits |
 | **Risk / Rollback** | risk assessment and rollback plan documented in PR |
 
-### 7. Produce merge recommendation
+### 7. Update PR Review Checklist
+
+Based on the review findings, update the `## Review Checklist` in the PR body:
+
+- **"Acceptance criteria from linked Issue are met"**: Check `[x]` if all DoD criteria from step 3 are satisfied. Leave unchecked if any criterion is not met.
+- **"No untested new functionality introduced"**: Check `[x]` if the test quality review (step 6) confirms adequate coverage. Leave unchecked if new code paths lack tests.
+
+For items left unchecked, note the reason in the merge recommendation (step 8).
+
+```bash
+gh api repos/{owner}/{repo}/pulls/<PR-number> -X PATCH -f body="<updated body>"
+```
+
+### 8. Produce merge recommendation
 
 ```text
 ## Merge decision
