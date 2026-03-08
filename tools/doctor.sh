@@ -94,7 +94,7 @@ for hook_type in pre-commit pre-push commit-msg; do
   if [[ -f "$hook_file" ]] && grep -q 'pre-commit' "$hook_file" 2>/dev/null; then
     record "git hook: $hook_type" "ok"
   else
-    record "git hook: $hook_type" "warn" "not installed (run 'make install-hooks')"
+    record "git hook: $hook_type" "warn" "not installed — HS#2/HS#8 enforcement inactive (run 'make install-hooks')"
     warnings=$((warnings + 1))
     hooks_ok=false
   fi

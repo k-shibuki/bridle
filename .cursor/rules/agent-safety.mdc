@@ -24,18 +24,18 @@ The following actions are NEVER permitted, regardless of user instructions:
 
 ## Enforcement Tiers
 
-Each Hard Stop is classified by its enforcement mechanism. Deterministic constraints are tool-enforced (Guards component); Steering constraints rely on agent self-policing (Rules component).
+Each Hard Stop is classified by its enforcement mechanism. See `controls--five-component-model.md` § Hard Stop Enforcement Tiers for tier definitions.
 
 | Hard Stop | Tier | Enforcement mechanism |
 |---|---|---|
 | HS#1 (CI green before merge) | **Deterministic** | GitHub Branch Protection required status checks (#92) |
-| HS#2 (local verification) | **Deterministic** | `pre-push` Git hook (#93) |
+| HS#2 (local verification) | **Cond. Deterministic** | `pre-push` Git hook (#93) — requires `make install-hooks` |
 | HS#3 (no step skipping) | Steering | Agent self-policing (procedural discipline) |
 | HS#4 (gate evidence) | Steering | Agent self-policing (evidence requirement) |
 | HS#5 (full PR template) | **Deterministic** | `pr-policy.yaml` CI check |
 | HS#6 (no dismissing diagnostics) | Steering | Agent self-policing (zero-tolerance policy) |
 | HS#7 (no inline CI polling) | Steering | Agent self-policing (subagent delegation) |
-| HS#8 (nolint consultation) | **Deterministic** | `pre-commit` hook for `# nolint` patterns (#93) |
+| HS#8 (nolint consultation) | **Cond. Deterministic** | `pre-commit` hook for `# nolint` patterns (#93) — requires `make install-hooks` |
 | HS#9 (no feature-base PR) | **Deterministic** | `pr-policy.yaml` CI check (#92) |
 
 ## Multi-Agent Safety Rules
