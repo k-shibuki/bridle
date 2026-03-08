@@ -94,6 +94,10 @@ Before running `gh pr create`, verify the body contains ALL required sections. M
 
 Do NOT compose the PR body from memory. Use the template below exactly.
 
+**Checkbox rules**:
+- **Test Evidence** (`make test`, `make check`, etc.): Leave as `- [ ]` at creation time. These are updated to `- [x]` only after CI passes (see `pr-merge.md` Mandatory Preconditions step 3). Pre-checking these defeats the gate purpose.
+- **Review Checklist**: May be checked at creation time if the agent has verified each item.
+
 #### Standard path (Issue exists)
 
 The PR body **must** include `Closes #<issue>` for automatic Issue closure on merge. Delete the `## Exception` section.
