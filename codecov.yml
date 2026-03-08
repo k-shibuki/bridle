@@ -1,3 +1,4 @@
+# Coverage thresholds — SSOT: .cursor/rules/test-strategy.mdc § Coverage Threshold Policy
 coverage:
   status:
     project:

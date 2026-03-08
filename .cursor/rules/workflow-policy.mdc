@@ -48,7 +48,7 @@ The following exception types may bypass the Issue-driven flow:
 - **PRs**: Must have an exception label AND a `## Exception` section with:
   - `- Type:` one of `hotfix` / `no-issue`
   - `- Justification:` reason (min 20 characters)
-- **Branch naming**: `hotfix/<description>` (no Issue number required).
+- **Branch naming**: see `commit-format.mdc` § Branch Naming Convention (hotfix exception included).
 
 This contract is the single source of truth. The PR template, `pr-create` command, and `pr-policy.yaml` workflow all follow this format.
 
