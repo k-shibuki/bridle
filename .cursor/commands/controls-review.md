@@ -100,6 +100,9 @@ For each information item below, enumerate all locations where it appears and cl
 | 13 | Coverage thresholds (80% line / 90% patch) | `test-strategy.mdc` |
 | 14 | Container prerequisite | `workflow-policy.mdc` |
 | 15 | S7 type strictness rules | `quality-policy.mdc` |
+| 16 | Guard-Policy alignment (CI checks vs Rule claims) | `agent-safety.mdc` Enforcement Tier table |
+| 17 | Commit hook exemptions | `commit-format.mdc` |
+| 18 | Enforcement tier accuracy (claimed vs actual) | `controls--five-component-model.md` |
 
 For each item:
 - **SSOT_OK**: defined in one place, referenced elsewhere with pointers
@@ -107,7 +110,35 @@ For each item:
 - **SSOT_MISSING**: not defined anywhere (fix: add to expected SSOT location)
 - **SSOT_CONTRADICTED**: conflicting definitions in different locations (fix: reconcile to SSOT)
 
-### Step 4: Contradiction detection
+### Step 4: Guard effectiveness audit
+
+Verify that Guards (Deterministic and Conditionally Deterministic) correctly implement the Rules they claim to enforce. This step detects enforcement gaps where a Rule declares a constraint but the corresponding Guard does not implement it (or implements it incorrectly).
+
+**4a. Extract Hard Stops from enforcement tier table**:
+- Read `agent-safety.mdc` § Enforcement Tiers
+- List all Hard Stops classified as **Deterministic** or **Cond. Deterministic**
+- For each, identify the declared Guard mechanism
+
+**4b. Verify Guard implementation logic**:
+
+For each Deterministic/Cond. Deterministic Hard Stop, compare the Rule declaration with the Guard implementation:
+
+| Guard | Rule source | Check |
+|-------|-------------|-------|
+| `pr-policy.yaml` | `agent-safety.mdc` HS#5, HS#9; `workflow-policy.mdc` § Label Taxonomy | Each declared check has a corresponding implementation block in the workflow script |
+| `check-commit-msg.sh` | `commit-format.mdc` § Footer | Exemption logic matches declared exceptions |
+| `check-nolint.sh` | `quality-policy.mdc` § Prohibited forms | Rejected patterns match the prohibited forms table |
+| `pre-push.sh` | `agent-safety.mdc` HS#2 | Gate conditions match the HS#2 requirements |
+| Branch Protection | `agent-safety.mdc` HS#1 | `gh api repos/{owner}/{repo}/branches/main/protection` shows required status checks |
+
+Flag mismatches as `GUARD_RULE_MISMATCH`.
+
+**4c. Verify Guard activation prerequisites**:
+- **Branch Protection**: `gh api repos/{owner}/{repo}/branches/main/protection` — confirm required status checks exist
+- **Git hooks**: Check `.git/hooks/` for pre-commit, pre-push, commit-msg installation
+- Flag inactive Guards as `GUARD_INACTIVE`
+
+### Step 5: Contradiction detection
 
 Scan for logical contradictions across controls:
 
@@ -124,7 +155,7 @@ Scan for logical contradictions across controls:
 - Verify that command-documented preconditions match Makefile target dependencies
 - Flag inconsistencies as `PRECONDITION_MISMATCH`
 
-### Step 5: Component boundary check
+### Step 6: Component boundary check
 
 Verify the five-component architecture boundaries are maintained:
 
@@ -138,7 +169,7 @@ Verify the five-component architecture boundaries are maintained:
 
 Exceptions: Rules may reference command steps via `@` links. Commands may quote rule requirements when explaining why a step exists. Surface assets may summarize workflows for onboarding purposes.
 
-### Step 6: Token efficiency analysis
+### Step 7: Token efficiency analysis
 
 Assess the token cost of the control system:
 
@@ -154,7 +185,7 @@ Assess the token cost of the control system:
 - Compare `.cursor/README.md` content with `README.md` and `docs/README.md`
 - Flag significant overlaps as `README_OVERLAP`
 
-### Step 7: Classify findings and apply
+### Step 8: Classify findings and apply
 
 Split all findings into two categories following the `issue-review` pattern:
 
