@@ -6,17 +6,20 @@ alwaysApply: false
 
 ## Subagent Delegation Pattern
 
-The main agent **MUST** delegate all blocking operations (CI polling, sequential PR merges, long builds) to a background subagent. Inline `sleep` + poll loops in the main agent are prohibited — CI polling MUST always use a background subagent. This applies unconditionally — not only when independent Issues exist.
+The main agent **MUST** delegate all blocking operations (CI polling, sequential PR merges, long builds) to a background subagent — except when auto-merge handles the operation (see below). Inline `sleep` + poll loops in the main agent are prohibited.
 
-### When to delegate
+### When to delegate (vs auto-merge)
+
+For single-PR merges, prefer auto-merge (Deterministic) over subagent delegation (Steering). See `agent--delegation-templates.md` § Decision Flowchart for the full decision tree.
 
 | Situation | Action |
 |---|---|
-| CI pending (any) | Always delegate CI-wait to background subagent |
-| CI pending + independent Issue exists | Delegate + start `implement` on independent Issue |
-| CI pending + no independent Issue | Delegate + run Two-Tier Gate (see § Productive work during delegation) |
-| Sequential multi-PR merge chain | Delegate entire rebase → CI → merge chain to one subagent |
-| Dependent PR chain (shared commits) | Use "Dependent PR Merge Chain" template with `--onto` rebase (see `agent--delegation-templates.md`) |
+| Single PR, pr-review done, CI pending | **Auto-merge**: `gh pr merge --auto --squash`. No subagent needed. |
+| Single PR, auto-merge failed | Delegate using Template 1: CI-Wait + Merge (Fallback) |
+| Single PR, pr-review not yet done | Delegate using Template 2: CI-Wait Only (no merge) |
+| Multiple independent PRs, pr-review done | **Batch Auto-Merge**: `gh pr merge --auto --squash` on each. No subagent needed. |
+| Dependent PR chain (shared commits) | Delegate using Template 3: Dependent PR Merge Chain with `--onto` rebase |
+| CI monitoring only (no merge intent) | Delegate using Template 2: CI-Wait Only |
 | Code review, implementation, user interaction | Never delegate — requires main agent judgment |
 
 ### Subagent configuration

@@ -189,13 +189,15 @@ to the delegated merge pattern below.
 
 ## Delegated merge (background subagent)
 
-CI polling is always delegated to a background subagent (see `@.cursor/rules/subagent-policy.mdc`). This frees the main agent for productive work — whether implementing the next Issue or performing housekeeping.
+Delegation is the **fallback** when auto-merge is not available. See
+`@.cursor/knowledge/agent--delegation-templates.md` § Decision Flowchart for the
+full decision tree (auto-merge → fallback → delegation).
 
 ### When to use
 
-- Auto-merge is not available or not suitable
-- Multiple PRs need sequential merge
+- `gh pr merge --auto` failed (e.g., token scope issue, API error)
 - Dependent PRs with shared commit history need `--onto` rebase after squash merge
+- CI monitoring without merge intent (pre-review)
 
 ### How to delegate
 
@@ -205,11 +207,13 @@ Choose the appropriate template from `@.cursor/knowledge/agent--delegation-templ
 
 | Scenario | Template |
 |----------|----------|
-| Single PR, CI pending, pr-review completed | "CI-Wait + Merge" |
-| Single PR, CI pending, pr-review not yet done | "CI-Wait Only" (merge after pr-review) |
-| Multiple independent PRs | "Sequential PR Merge Chain" |
-| PRs with shared commits (branched from each other) | "Dependent PR Merge Chain" (includes `--onto` rebase) |
-| CI monitoring only (no merge) | "CI-Wait Only" |
+| Single PR, auto-merge failed, pr-review done | Template 1: "CI-Wait + Merge (Fallback)" |
+| CI monitoring only (no merge intent) | Template 2: "CI-Wait Only" |
+| PRs with shared commits (branched from each other) | Template 3: "Dependent PR Merge Chain" (includes `--onto` rebase) |
+
+Scenarios **not listed** (single PR with pr-review done, multiple independent PRs)
+are handled by auto-merge — see § Auto-merge and § Batch Auto-Merge in
+`agent--delegation-templates.md`.
 
 ### Completion detection
 
