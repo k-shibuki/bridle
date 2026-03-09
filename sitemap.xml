@@ -23,6 +23,7 @@
 <url><loc>/reference/KnowledgeStore.html</loc></url>
 <url><loc>/reference/Node.html</loc></url>
 <url><loc>/reference/NodePolicy.html</loc></url>
+<url><loc>/reference/PackageScanResult.html</loc></url>
 <url><loc>/reference/ParameterInfo.html</loc></url>
 <url><loc>/reference/ParsedResponse.html</loc></url>
 <url><loc>/reference/PromptResult.html</loc></url>
@@ -36,6 +37,8 @@
 <url><loc>/reference/advance.html</loc></url>
 <url><loc>/reference/analyze_log.html</loc></url>
 <url><loc>/reference/assemble_draft_prompt.html</loc></url>
+<url><loc>/reference/assemble_function_prompt.html</loc></url>
+<url><loc>/reference/assemble_package_prompt.html</loc></url>
 <url><loc>/reference/assemble_runtime_prompt.html</loc></url>
 <url><loc>/reference/bridle_agent.html</loc></url>
 <url><loc>/reference/bridle_chat.html</loc></url>
@@ -46,7 +49,9 @@
 <url><loc>/reference/build_dependency_graph.html</loc></url>
 <url><loc>/reference/check_availability.html</loc></url>
 <url><loc>/reference/check_iteration_limit.html</loc></url>
+<url><loc>/reference/classify_functions.html</loc></url>
 <url><loc>/reference/classify_parameter.html</loc></url>
+<url><loc>/reference/classify_single_function.html</loc></url>
 <url><loc>/reference/code_sandbox.html</loc></url>
 <url><loc>/reference/collect_calls.html</loc></url>
 <url><loc>/reference/collect_conditional_stops.html</loc></url>
@@ -58,6 +63,7 @@
 <url><loc>/reference/crossref_get.html</loc></url>
 <url><loc>/reference/decision_graph.html</loc></url>
 <url><loc>/reference/decision_logger.html</loc></url>
+<url><loc>/reference/detect_families.html</loc></url>
 <url><loc>/reference/detect_rd_deprecated.html</loc></url>
 <url><loc>/reference/draft_knowledge.html</loc></url>
 <url><loc>/reference/engine_current_node.html</loc></url>
@@ -65,8 +71,10 @@
 <url><loc>/reference/evaluate_hint.html</loc></url>
 <url><loc>/reference/evaluate_skip.html</loc></url>
 <url><loc>/reference/evaluate_transitions.html</loc></url>
+<url><loc>/reference/exclude_s3_methods.html</loc></url>
 <url><loc>/reference/extract_abstract_from_xml.html</loc></url>
 <url><loc>/reference/extract_char_vector.html</loc></url>
+<url><loc>/reference/extract_cross_constraints.html</loc></url>
 <url><loc>/reference/extract_crossref_authors.html</loc></url>
 <url><loc>/reference/extract_crossref_year.html</loc></url>
 <url><loc>/reference/extract_dois.html</loc></url>
@@ -85,11 +93,17 @@
 <url><loc>/reference/find_function_rd.html</loc></url>
 <url><loc>/reference/find_match_arg_values.html</loc></url>
 <url><loc>/reference/find_stop_constraints.html</loc></url>
+<url><loc>/reference/format_references_prompt.html</loc></url>
+<url><loc>/reference/format_task_prompt.html</loc></url>
 <url><loc>/reference/get_hint_variables.html</loc></url>
+<url><loc>/reference/get_namespace_exports.html</loc></url>
+<url><loc>/reference/get_package_namespace.html</loc></url>
 <url><loc>/reference/get_package_version.html</loc></url>
 <url><loc>/reference/get_rd_aliases.html</loc></url>
 <url><loc>/reference/get_rd_db.html</loc></url>
 <url><loc>/reference/get_rd_section.html</loc></url>
+<url><loc>/reference/get_rd_title.html</loc></url>
+<url><loc>/reference/get_s3_method_table.html</loc></url>
 <url><loc>/reference/graph_engine.html</loc></url>
 <url><loc>/reference/hint_evaluator.html</loc></url>
 <url><loc>/reference/index.html</loc></url>
@@ -125,6 +139,7 @@
 <url><loc>/reference/retrieve_knowledge.html</loc></url>
 <url><loc>/reference/safe_deparse.html</loc></url>
 <url><loc>/reference/safe_formals.html</loc></url>
+<url><loc>/reference/scan_function.html</loc></url>
 <url><loc>/reference/scan_layer2.html</loc></url>
 <url><loc>/reference/scan_layer3a.html</loc></url>
 <url><loc>/reference/scan_package.html</loc></url>

@@ -153,8 +153,8 @@
 <div class="section level3">
 <h3 id="decision-graph">Decision Graph<a class="anchor" aria-label="anchor" href="#decision-graph"></a>
 </h3>
-<p>The decision graph defines a flow that efficiently narrows the parameter space. Each node corresponds to a decision point (e.g., choosing an effect measure or a tau-squared estimator), and transition conditions determine the next decision point (<a href="docs/adr/0002-decision-graph-flow-control.html">ADR-0002</a>).</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># inst/bridle/decision_graph.yaml (meta::metabin example, excerpt)</span></span>
+<p>The decision graph defines a flow that efficiently narrows the parameter space. Each node corresponds to a decision point, and transition conditions determine the next node. Four node types exist: <code>context_gathering</code>, <code>decision</code>, <code>execution</code>, and <code>diagnosis</code>. Loops allow re-running with changed parameters (e.g., sensitivity analysis).</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># inst/bridle/decision_graph.yaml (excerpt)</span></span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">graph</span><span class="kw">:</span></span>
 <span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="at">  </span><span class="fu">entry_node</span><span class="kw">:</span><span class="at"> sm_selection</span></span>
 <span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="at">  </span><span class="fu">nodes</span><span class="kw">:</span></span>
@@ -164,167 +164,63 @@
 <span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="at">      </span><span class="fu">parameter</span><span class="kw">:</span><span class="at"> sm</span></span>
 <span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="at">      </span><span class="fu">transitions</span><span class="kw">:</span></span>
 <span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">to</span><span class="kw">:</span><span class="at"> method_selection</span></span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="at">          </span><span class="fu">always</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a></span>
-<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="at">    </span><span class="fu">method_selection</span><span class="kw">:</span></span>
-<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> decision</span></span>
-<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="at">      </span><span class="fu">topic</span><span class="kw">:</span><span class="at"> pooling_methods</span></span>
-<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="at">      </span><span class="fu">parameter</span><span class="kw">:</span><span class="at"> method</span></span>
-<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="at">      </span><span class="fu">transitions</span><span class="kw">:</span></span>
-<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">to</span><span class="kw">:</span><span class="at"> continuity_correction</span></span>
-<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="at">          </span><span class="fu">when</span><span class="kw">:</span><span class="at"> </span><span class="st">"zero cells exist"</span></span>
-<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="at">          </span><span class="fu">computable_hint</span><span class="kw">:</span><span class="at"> </span><span class="st">"any(event.e == 0 | event.c == 0)"</span></span>
-<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">to</span><span class="kw">:</span><span class="at"> model_type</span></span>
-<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="at">          </span><span class="fu">otherwise</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a></span>
-<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a><span class="at">    </span><span class="fu">heterogeneity_assessment</span><span class="kw">:</span></span>
-<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a><span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> diagnosis</span></span>
-<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a><span class="at">      </span><span class="fu">topic</span><span class="kw">:</span><span class="at"> heterogeneity</span></span>
-<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a><span class="at">      </span><span class="fu">transitions</span><span class="kw">:</span></span>
-<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">to</span><span class="kw">:</span><span class="at"> sensitivity_analysis</span></span>
-<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a><span class="at">          </span><span class="fu">when</span><span class="kw">:</span><span class="at"> </span><span class="st">"heterogeneity is high"</span></span>
-<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a><span class="at">          </span><span class="fu">computable_hint</span><span class="kw">:</span><span class="at"> </span><span class="st">"I2 &gt; 50"</span></span>
-<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">to</span><span class="kw">:</span><span class="at"> publication_bias</span></span>
-<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a><span class="at">          </span><span class="fu">otherwise</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a></span>
-<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a><span class="at">    </span><span class="fu">sensitivity_analysis</span><span class="kw">:</span></span>
-<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a><span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> decision</span></span>
-<span id="cb3-36"><a href="#cb3-36" tabindex="-1"></a><span class="at">      </span><span class="fu">topic</span><span class="kw">:</span><span class="at"> sensitivity_approaches</span></span>
-<span id="cb3-37"><a href="#cb3-37" tabindex="-1"></a><span class="at">      </span><span class="fu">transitions</span><span class="kw">:</span></span>
-<span id="cb3-38"><a href="#cb3-38" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">to</span><span class="kw">:</span><span class="at"> execute_analysis</span><span class="co">   # loop: change parameters and re-run</span></span>
-<span id="cb3-39"><a href="#cb3-39" tabindex="-1"></a><span class="at">          </span><span class="fu">when</span><span class="kw">:</span><span class="at"> </span><span class="st">"re-run with different parameters"</span></span>
-<span id="cb3-40"><a href="#cb3-40" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">to</span><span class="kw">:</span><span class="at"> publication_bias</span></span>
-<span id="cb3-41"><a href="#cb3-41" tabindex="-1"></a><span class="at">          </span><span class="fu">otherwise</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
-<p>Four node types exist: <code>context_gathering</code> (collecting context), <code>decision</code> (parameter selection), <code>execution</code> (code generation and execution), and <code>diagnosis</code> (post-fit diagnostics). Loops can occur via transitions from <code>diagnosis</code> nodes (e.g., sensitivity analysis with different parameters).</p>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="at">          </span><span class="fu">always</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<p>Full schema: <a href="docs/schemas/decision_graph.schema.yaml"><code>docs/schemas/decision_graph.schema.yaml</code></a>. Design rationale: <a href="docs/adr/0002-decision-graph-flow-control.html">ADR-0002</a>.</p>
 </div>
 <div class="section level3">
 <h3 id="knowledge-format">Knowledge Format<a class="anchor" aria-label="anchor" href="#knowledge-format"></a>
 </h3>
-<p>Knowledge is <strong>descriptive</strong>: instead of “recommend PM,” it states “PM has these properties, supported by these references.” The LLM generates context-dependent recommendations from this. Knowledge entries link to decision graph nodes via the <code>topic</code> field.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># inst/bridle/knowledge/tau2_estimators.yaml</span></span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">topic</span><span class="kw">:</span><span class="at"> tau2_estimators</span></span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="fu">target_parameter</span><span class="kw">:</span><span class="at"> method.tau</span></span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="fu">package</span><span class="kw">:</span><span class="at"> meta</span></span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="fu">function</span><span class="kw">:</span><span class="at"> metabin</span></span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a></span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="fu">entries</span><span class="kw">:</span></span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">id</span><span class="kw">:</span><span class="at"> tau2_small_k</span></span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="at">    </span><span class="fu">when</span><span class="kw">:</span><span class="at"> </span><span class="st">"number of studies is small (fewer than 5)"</span></span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="at">    </span><span class="fu">computable_hint</span><span class="kw">:</span><span class="at"> </span><span class="st">"k &lt; 5"</span></span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="at">    </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">"PM is robust with small samples"</span></span>
-<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">"REML is prone to convergence issues"</span></span>
-<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">"DL tends to underestimate"</span></span>
-<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="at">    </span><span class="fu">references</span><span class="kw">:</span></span>
-<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">"Veroniki AA, et al. (2016) Res Synth Methods"</span></span>
-<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">"IntHout J, et al. (2014) BMC Med Res Methodol"</span></span>
-<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a></span>
-<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">id</span><span class="kw">:</span><span class="at"> tau2_moderate_k</span></span>
-<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="at">    </span><span class="fu">when</span><span class="kw">:</span><span class="at"> </span><span class="st">"number of studies is moderate (5 to 30)"</span></span>
-<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a><span class="at">    </span><span class="fu">computable_hint</span><span class="kw">:</span><span class="at"> </span><span class="st">"k &gt;= 5 &amp; k &lt;= 30"</span></span>
-<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a><span class="at">    </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">"REML offers a good balance of bias and efficiency"</span></span>
-<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a><span class="at">    </span><span class="fu">related</span><span class="kw">:</span></span>
-<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">"consider Hartung-Knapp adjustment (method.random.ci)"</span></span>
-<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a><span class="at">    </span><span class="fu">references</span><span class="kw">:</span></span>
-<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">"Langan D, et al. (2019) Stat Med"</span></span></code></pre></div>
-<p><code>when</code> is a natural-language text string that serves as the expert-review target. <code>computable_hint</code> is an optional R expression that the runtime evaluates programmatically when possible; if evaluation fails, the LLM judges from the <code>when</code> text (<a href="docs/adr/0003-when-condition-semantics.html">ADR-0003</a>).</p>
+<p>Knowledge is <strong>descriptive</strong>: instead of “recommend PM,” it states “PM has these properties, supported by these references.” The LLM generates context-dependent recommendations from this. Each entry has a <code>when</code> condition (natural language for expert review) and an optional <code>computable_hint</code> (R expression evaluated at runtime).</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># inst/bridle/knowledge/tau2_estimators.yaml (excerpt)</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">entries</span><span class="kw">:</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">id</span><span class="kw">:</span><span class="at"> tau2_small_k</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="at">    </span><span class="fu">when</span><span class="kw">:</span><span class="at"> </span><span class="st">"number of studies is small (fewer than 5)"</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="at">    </span><span class="fu">computable_hint</span><span class="kw">:</span><span class="at"> </span><span class="st">"k &lt; 5"</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="at">    </span><span class="fu">properties</span><span class="kw">:</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">"PM is robust with small samples"</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">"REML is prone to convergence issues"</span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="at">    </span><span class="fu">references</span><span class="kw">:</span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">"Veroniki AA, et al. (2016) Res Synth Methods"</span></span></code></pre></div>
+<p>Full schema: <a href="docs/schemas/knowledge.schema.yaml"><code>docs/schemas/knowledge.schema.yaml</code></a>. Condition semantics: <a href="docs/adr/0003-when-condition-semantics.html">ADR-0003</a>.</p>
 </div>
 <div class="section level3">
 <h3 id="technical-constraints">Technical Constraints<a class="anchor" aria-label="anchor" href="#technical-constraints"></a>
 </h3>
-<p><code>constraints/technical.yaml</code> is auto-generated by <code><a href="reference/scan_package.html">scan_package()</a></code>. It holds inter-parameter technical constraints extracted from formals default expressions and source code.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># inst/bridle/constraints/technical.yaml (auto-generated)</span></span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">constraints</span><span class="kw">:</span></span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">id</span><span class="kw">:</span><span class="at"> peto_requires_or</span></span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="at">    </span><span class="fu">source</span><span class="kw">:</span><span class="at"> formals_default</span></span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> forces</span></span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="at">    </span><span class="fu">condition</span><span class="kw">:</span><span class="at"> </span><span class="st">"method == 'Peto'"</span></span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="at">    </span><span class="fu">forces</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">sm</span><span class="kw">:</span><span class="at"> </span><span class="st">"OR"</span><span class="kw">}</span></span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a></span>
-<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">id</span><span class="kw">:</span><span class="at"> valid_sm_values</span></span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="at">    </span><span class="fu">source</span><span class="kw">:</span><span class="at"> rd_description</span></span>
-<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> valid_values</span></span>
-<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="at">    </span><span class="fu">param</span><span class="kw">:</span><span class="at"> sm</span></span>
-<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="at">    </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">"RR"</span><span class="kw">,</span><span class="at"> </span><span class="st">"OR"</span><span class="kw">,</span><span class="at"> </span><span class="st">"RD"</span><span class="kw">,</span><span class="at"> </span><span class="st">"ASD"</span><span class="kw">,</span><span class="at"> </span><span class="st">"DOR"</span><span class="kw">,</span><span class="at"> </span><span class="st">"VE"</span><span class="kw">]</span></span></code></pre></div>
+<p><code>constraints/technical.yaml</code> is auto-generated by <code><a href="reference/scan_package.html">scan_package()</a></code>. It captures inter-parameter constraints (e.g., “Peto method forces OR as effect measure”) and valid value enumerations extracted from formals, Rd, and source code. See <a href="docs/schemas/constraints.schema.yaml"><code>docs/schemas/constraints.schema.yaml</code></a> and <a href="docs/adr/0004-scanner-three-layer-analysis.html">ADR-0004</a> for details.</p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="plugin-generation-pipeline">Plugin Generation Pipeline<a class="anchor" aria-label="anchor" href="#plugin-generation-pipeline"></a>
 </h2>
-<p>The pipeline, provided by bridle core, generates most of a plugin’s content.</p>
-<div class="section level3">
-<h3 id="id_1-bridlescan_packagemeta">1. <code>bridle::scan_package("meta")</code>
-<a class="anchor" aria-label="anchor" href="#id_1-bridlescan_packagemeta"></a>
-</h3>
-<p>Analyzes the R package’s parameter space in three layers (<a href="docs/adr/0004-scanner-three-layer-analysis.html">ADR-0004</a>).</p>
-<p><strong>Layer 1 — formals() analysis</strong>: Parses default expressions to extract inter-parameter dependency graphs. Because R formals retain default values as unevaluated expressions, conditional defaults like <code>sm = ifelse(!is.na(charmatch(tolower(method), ...)), "OR", ...)</code> yield a <code>method -&gt; sm</code> dependency mechanically. Automatic parameter classification (data input / statistical decision / presentation, etc.) also happens here.</p>
-<p><strong>Layer 2 — Rd analysis</strong>: Extracts valid value lists (e.g., “One of <code>"RR"</code>, <code>"OR"</code>, …”), parameter descriptions, and reference lists from man pages.</p>
-<p><strong>Layer 3 — Source code analysis</strong>: Confirms valid value enumerations from <code><a href="https://rdrr.io/r/base/match.arg.html" class="external-link">match.arg()</a></code> calls and extracts runtime constraints from <code><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop()</a></code> / <code><a href="https://rdrr.io/r/base/warning.html" class="external-link">warning()</a></code> conditions.</p>
-<p>The output is a <code>ScanResult</code> object containing the parameter list, dependency graph, valid-value map, technical constraints, and reference list.</p>
-</div>
-<div class="section level3">
-<h3 id="id_2-bridlefetch_referencesscan_result">2. <code>bridle::fetch_references(scan_result)</code>
-<a class="anchor" aria-label="anchor" href="#id_2-bridlefetch_referencesscan_result"></a>
-</h3>
-<p>Resolves DOIs and retrieves abstracts via CrossRef API / PubMed API. Fetches open-access full text where available.</p>
-</div>
-<div class="section level3">
-<h3 id="id_3-bridledraft_knowledgescan_result-references">3. <code>bridle::draft_knowledge(scan_result, references)</code>
-<a class="anchor" aria-label="anchor" href="#id_3-bridledraft_knowledgescan_result-references"></a>
-</h3>
-<p>Uses ellmer to draft the following:</p>
-<ul>
+<p>The pipeline, provided by bridle core, generates most of a plugin’s content:</p>
+<ol style="list-style-type: decimal">
 <li>
-<strong>decision_graph.yaml</strong> — The LLM drafts an efficient decision ordering using the dependency graph and parameter classifications from the scan result. Note that the dependency direction in formals (e.g., <code>method -&gt; sm</code>) and the decision direction (e.g., <code>sm -&gt; method</code>) can be reversed.</li>
-<li>**knowledge/*.yaml** — Drafts descriptive knowledge entries from package documentation + literature.</li>
+<strong><code>scan_package("meta")</code></strong> — Analyzes the R package in three layers: formals (dependency graphs), Rd (valid values, descriptions), and source code (match.arg, stop/warning constraints). See <a href="docs/adr/0004-scanner-three-layer-analysis.html">ADR-0004</a>.</li>
 <li>
-<strong>constraints/technical.yaml</strong> — Auto-generated from the scan result (no AI drafting needed).</li>
-</ul>
-</div>
-<div class="section level3">
-<h3 id="id_4-expert-review">4. Expert Review<a class="anchor" aria-label="anchor" href="#id_4-expert-review"></a>
-</h3>
-<p>Direct YAML editing: verifying decision graph ordering, adding competing views, refining when conditions, supplementing references.</p>
-</div>
-<div class="section level3">
-<h3 id="id_5-bridlevalidate_pluginbridlemeta">5. <code>bridle::validate_plugin("bridle.meta")</code>
-<a class="anchor" aria-label="anchor" href="#id_5-bridlevalidate_pluginbridlemeta"></a>
-</h3>
-<ul>
-<li>Coverage check: are there parameters not covered by the decision graph?</li>
-<li>Consistency check: do knowledge topics match decision graph nodes?</li>
-<li>Constraint check: do constraint references point to real parameters?</li>
-<li>Reachability check: are all nodes reachable from the entry node?</li>
-</ul>
-<p>Knowledge quality improves incrementally: formals() only -&gt; abstracts added -&gt; full text added -&gt; expert review.</p>
-</div>
+<strong><code>fetch_references(scan_result)</code></strong> — Resolves DOIs and retrieves abstracts via CrossRef / PubMed APIs.</li>
+<li>
+<strong><code>draft_knowledge(scan_result, references)</code></strong> — Uses ellmer to draft the decision graph, knowledge entries, and constraints from scan results + literature.</li>
+<li>
+<strong>Expert Review</strong> — Direct YAML editing: verifying decision ordering, adding competing views, refining conditions, supplementing references.</li>
+<li>
+<strong><code>validate_plugin("bridle.meta")</code></strong> — Checks coverage, consistency, constraint validity, and node reachability.</li>
+</ol>
+<p>Knowledge quality improves incrementally: formals only → abstracts added → full text added → expert review.</p>
 </div>
 <div class="section level2">
 <h2 id="runtime-engine">Runtime Engine<a class="anchor" aria-label="anchor" href="#runtime-engine"></a>
 </h2>
-<p>The runtime engine controls the dialogue according to the plugin’s decision graph.</p>
-<div class="section level3">
-<h3 id="graph-engine">Graph Engine<a class="anchor" aria-label="anchor" href="#graph-engine"></a>
-</h3>
-<p>Manages the current node in the decision graph and evaluates transition conditions to determine the next node. When a transition has a <code>computable_hint</code>, the engine attempts to evaluate it as an R expression; on success, it transitions accordingly. When evaluation is not possible (e.g., data not yet loaded), it delegates the judgment to the LLM.</p>
-<p>Loops are supported: a transition from a <code>diagnosis</code> node back to an <code>execution</code> node allows re-running with changed parameters (e.g., sensitivity analysis, post-diagnostic refitting).</p>
-</div>
-<div class="section level3">
-<h3 id="knowledge-retriever">Knowledge Retriever<a class="anchor" aria-label="anchor" href="#knowledge-retriever"></a>
-</h3>
-<p>Retrieves knowledge entries matching the current node’s <code>topic</code> along with relevant constraints. Each topic typically has 5-15 entries, all injected into the LLM context in full. If the knowledge base scales up, selective retrieval via ragnar can be adopted, but this is unnecessary in the initial phase.</p>
-</div>
-<div class="section level3">
-<h3 id="prompt-assembler">Prompt Assembler<a class="anchor" aria-label="anchor" href="#prompt-assembler"></a>
-</h3>
-<p>Combines retrieved knowledge entries, technical constraints, user context (data characteristics, decision history so far), and protocol information into a structured prompt. The prompt includes knowledge properties and references so the LLM can generate context-dependent recommendations grounded in descriptive knowledge.</p>
-</div>
-<div class="section level3">
-<h3 id="response-parser">Response Parser<a class="anchor" aria-label="anchor" href="#response-parser"></a>
-</h3>
-<p>Interprets the LLM response, extracting user-facing content (considerations, suggestions, code) and graph transition signals.</p>
-</div>
+<p>The runtime engine controls the dialogue according to the plugin’s decision graph:</p>
+<ul>
+<li>
+<strong>Graph Engine</strong> — Manages node transitions; evaluates <code>computable_hint</code> R expressions when possible, otherwise delegates to the LLM. Supports loops for sensitivity analysis.</li>
+<li>
+<strong>Knowledge Retriever</strong> — Fetches knowledge entries and constraints matching the current node’s topic.</li>
+<li>
+<strong>Prompt Assembler</strong> — Combines knowledge, constraints, user context, and protocol information into a structured LLM prompt.</li>
+<li>
+<strong>Response Parser</strong> — Extracts user-facing content (considerations, suggestions, code) and graph transition signals from LLM output.</li>
+</ul>
 </div>
 <div class="section level2">
 <h2 id="protocol-layer">Protocol Layer<a class="anchor" aria-label="anchor" href="#protocol-layer"></a>
@@ -336,7 +232,7 @@
 <h2 id="usage-example">Usage Example<a class="anchor" aria-label="anchor" href="#usage-example"></a>
 </h2>
 <p>Interactive dialogue example using <code>bridle.metafor</code> for a pairwise meta-analysis.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/shibuki/bridle" class="external-link">bridle</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">bridle.metafor</span><span class="op">)</span></span>
 <span></span>
@@ -468,10 +364,10 @@
 <h2 id="development-environment">Development Environment<a class="anchor" aria-label="anchor" href="#development-environment"></a>
 </h2>
 <p>Development uses a containerized R environment. No local R installation is required.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">make</span> container-build   <span class="co"># Build container (rocker/tidyverse + renv)</span></span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="fu">make</span> container-up      <span class="co"># Start container</span></span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="fu">make</span> renv-init         <span class="co"># Initialize renv (first time only)</span></span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="fu">make</span> doctor            <span class="co"># Verify environment</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">make</span> container-build   <span class="co"># Build container (rocker/tidyverse + renv)</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">make</span> container-up      <span class="co"># Start container</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="fu">make</span> renv-init         <span class="co"># Initialize renv (first time only)</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="fu">make</span> doctor            <span class="co"># Verify environment</span></span></code></pre></div>
 <p>R package dependencies are managed by <a href="https://rstudio.github.io/renv/" class="external-link">renv</a> (<code>renv.lock</code> is the single source of truth). RStudio Server is available at <code>http://localhost:8787</code> when the container is running.</p>
 <p>Run <code>make help</code> for all available targets.</p>
 </div>
@@ -479,7 +375,7 @@
 <h2 id="development-status">Development Status<a class="anchor" aria-label="anchor" href="#development-status"></a>
 </h2>
 <blockquote>
-<p><strong>Phase 1 complete — Phase 2 (Runtime Engine) is next</strong></p>
+<p><strong>Phase 2 in progress — real-package integration (metafor)</strong></p>
 </blockquote>
 <table class="table">
 <colgroup>
@@ -505,8 +401,8 @@
 </tr>
 <tr class="odd">
 <td>Phase 2</td>
-<td>Runtime engine (REPL)</td>
-<td>Not started</td>
+<td>Runtime engine (REPL) + real-package integration</td>
+<td><strong>In progress</strong></td>
 </tr>
 <tr class="even">
 <td>Phase 3</td>
@@ -520,22 +416,7 @@
 </tr>
 </tbody>
 </table>
-<div class="section level3">
-<h3 id="phase-1-deliverables">Phase 1 Deliverables<a class="anchor" aria-label="anchor" href="#phase-1-deliverables"></a>
-</h3>
-<ul>
-<li>
-<strong>S7 domain classes</strong>: <code>DecisionGraph</code>, <code>KnowledgeStore</code>, <code>ConstraintSet</code>, <code>ContextSchema</code>, <code>ScanResult</code> with YAML readers and validators</li>
-<li>
-<strong>Three-layer scanner</strong>: <code><a href="reference/scan_package.html">scan_package()</a></code> — Layer 1 (formals analysis), Layer 2 (Rd documentation), Layer 3a (source code static analysis)</li>
-<li>
-<strong>Reference fetcher</strong>: <code><a href="reference/fetch_references.html">fetch_references()</a></code> — CrossRef API + PubMed fallback</li>
-<li>
-<strong>AI drafter</strong>: <code><a href="reference/draft_knowledge.html">draft_knowledge()</a></code> — ellmer-based LLM integration for generating decision graph, knowledge, and constraint YAML drafts</li>
-<li>
-<strong>Plugin validator</strong>: <code><a href="reference/validate_plugin.html">validate_plugin()</a></code> — coverage, consistency, constraint, and reachability checks</li>
-</ul>
-</div>
+<p>Phase 2 core components (Graph Engine, Knowledge Retriever, Prompt Assembler, Response Parser, Code Sandbox, Decision Logger, REPL) are implemented. Phase 2c extends validation to a real package (metafor) — see <a href="https://github.com/k-shibuki/bridle/issues/129" class="external-link">#129</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>

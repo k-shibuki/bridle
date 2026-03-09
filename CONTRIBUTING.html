@@ -51,7 +51,8 @@
 <div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">make</span> container-build</span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">make</span> container-up</span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">make</span> renv-init</span>
-<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">make</span> doctor          <span class="co"># Verify everything works</span></span></code></pre></div>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">make</span> install-hooks   <span class="co"># Install git hooks (pre-commit, pre-push, commit-msg)</span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="fu">make</span> doctor          <span class="co"># Verify everything works</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="issue-driven-workflow">Issue-Driven Workflow<a class="anchor" aria-label="anchor" href="#issue-driven-workflow"></a></h2>
@@ -60,22 +61,17 @@
 <h3 id="for-ai-agents">For AI Agents<a class="anchor" aria-label="anchor" href="#for-ai-agents"></a></h3>
 <p>The full AI workflow (commands, rules, knowledge map) is documented in <a href=".cursor/README.html"><code>.cursor/README.md</code></a>. The standard flow is:</p>
 <pre><code>doctor → issue-create → implement → test-create → quality-check
-  → regression-test → docs-discover → commit → pr-create → [CI] → pr-review → pr-merge</code></pre>
+  → test-regression → docs-discover → commit → pr-create → [CI] → pr-review → pr-merge</code></pre>
 </div>
 <div class="section level3">
 <h3 id="for-human-contributors">For Human Contributors<a class="anchor" aria-label="anchor" href="#for-human-contributors"></a></h3>
-<ol style="list-style-type: decimal"><li>Pick an open Issue (or create one via <code>gh issue create</code>)</li>
-<li>Create a feature branch: <code>git checkout -b feat/&lt;issue&gt;-&lt;description&gt;</code>
-</li>
-<li>Implement, test, and verify quality (see Make targets below)</li>
-<li>Commit with <code>Refs: #&lt;issue&gt;</code> in the footer</li>
-<li>Open a PR with <code>Closes #&lt;issue&gt;</code> in the body</li>
-</ol></div>
+<p>Follow the same Issue-driven flow: pick an Issue, branch, implement, commit (with <code>Refs: #&lt;issue&gt;</code>), and open a PR (with <code>Closes #&lt;issue&gt;</code>). See <a href=".cursor/rules/commit-format.mdc">commit rules</a> for branch naming and message format.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="coding-standards">Coding Standards<a class="anchor" aria-label="anchor" href="#coding-standards"></a></h2>
 <ul><li>
-<strong>S7 classes</strong>: follow <a href="docs/adr/0001-use-s7-class-system.html">ADR-0001</a>. All properties must have explicit types; <code>class_any</code> is prohibited.</li>
+<strong>S7 classes</strong>: follow <a href="docs/adr/0001-use-s7-class-system.html">ADR-0001</a>. See <a href=".cursor/rules/quality-policy.mdc">quality-policy.mdc</a> § Type Strictness (S7) for type requirements.</li>
 <li>
 <strong>Lint</strong>: configured in <a href=".lintr"><code>.lintr</code></a>. Run <code>make lint</code> to check, <code>make format</code> to auto-fix formatting.</li>
 <li>
@@ -101,7 +97,7 @@
 </tr></tbody></table></div>
 <div class="section level2">
 <h2 id="commits">Commits<a class="anchor" aria-label="anchor" href="#commits"></a></h2>
-<p>Follow <a href="https://www.conventionalcommits.org/" class="external-link">Conventional Commits</a> format. Messages in English. See <a href=".cursor/rules/commit-message-format.mdc">commit message rules</a> for details.</p>
+<p>Follow <a href="https://www.conventionalcommits.org/" class="external-link">Conventional Commits</a> format. Messages in English. See <a href=".cursor/rules/commit-format.mdc">commit message rules</a> for details.</p>
 </div>
 <div class="section level2">
 <h2 id="pull-requests">Pull Requests<a class="anchor" aria-label="anchor" href="#pull-requests"></a></h2>
