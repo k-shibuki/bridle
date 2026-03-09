@@ -86,3 +86,36 @@ This is informational (used by `context_gathering` nodes and `validate_plugin()`
 - **Easier**: Dynamic detection avoids forcing plugin authors to enumerate every possible data column name
 - **Harder**: The runtime maintains a variable scope that evolves as nodes are traversed — scope management adds implementation complexity
 - **Harder**: Validation is partial — dynamic variables cannot be checked statically, so some hint failures remain runtime-only
+
+## Supplement: Function-Specific Source Expressions in Template Composition
+
+When ADR-0009 template composition is used with multi-function packages (see ADR-0004 Addendum), `source_expression` values may differ depending on which function was selected. For example:
+
+- After `rma.uni`: `result$I2` is the heterogeneity statistic
+- After `rma.mv`: `result$sigma2` is the variance component (I2 is not directly available)
+
+Each function-specific template carries its own `context_schema` section declaring the variables and source expressions relevant to that function's output:
+
+```yaml
+# template: rma_uni_flow
+context_schema:
+  variables:
+    - name: I2
+      available_from: post_fit
+      source_expression: "result$I2"
+    - name: tau2
+      available_from: post_fit
+      source_expression: "result$tau2"
+
+# template: rma_mv_flow
+context_schema:
+  variables:
+    - name: sigma2
+      available_from: post_fit
+      source_expression: "result$sigma2"
+    - name: tau2
+      available_from: post_fit
+      source_expression: "sum(result$sigma2)"
+```
+
+At build time, `build_graph()` merges the selected template's `context_schema` into the plugin's `context_schema.yaml`. The runtime always sees a single flat `context_schema` — template-level composition is transparent, consistent with ADR-0009's principle that templates are a build-time concern only.
