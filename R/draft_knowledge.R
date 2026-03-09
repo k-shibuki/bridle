@@ -10,11 +10,12 @@ NULL
 
 #' Draft Knowledge Plugin Artifacts
 #'
-#' Assembles a prompt from [ScanResult] data and optional references,
+#' Assembles a prompt from scan data and optional references,
 #' sends it to an LLM via ellmer, and writes draft YAML files to
-#' the specified output directory.
+#' the specified output directory. Accepts either a [ScanResult]
+#' (single function) or a [PackageScanResult] (full package).
 #'
-#' @param scan_result A [ScanResult] object.
+#' @param scan_result A [ScanResult] or [PackageScanResult] object.
 #' @param references Optional list of reference metadata from
 #'   [fetch_references()].
 #' @param provider LLM provider name for ellmer (character), e.g.
@@ -40,7 +41,13 @@ draft_knowledge <- function(scan_result, references = NULL,
   )
 
   drafts <- parse_draft_response(response)
-  write_draft_files(drafts, output_dir, scan_result@package, scan_result@func)
+  is_pkg_result <- S7::S7_inherits(scan_result, PackageScanResult) # nolint: object_usage_linter. S7 in scan_result.R
+  label <- if (is_pkg_result) {
+    scan_result@package
+  } else {
+    scan_result@func
+  }
+  write_draft_files(drafts, output_dir, scan_result@package, label)
   drafts
 }
 
@@ -62,9 +69,19 @@ bridle_chat <- function(prompt, provider = NULL, model = NULL) {
   chat_obj$chat(prompt)
 }
 
-#' Assemble the draft prompt from ScanResult and references
+#' Assemble the draft prompt from scan data and references
 #' @keywords internal
 assemble_draft_prompt <- function(scan_result, references = NULL) {
+  is_pkg <- S7::S7_inherits(scan_result, PackageScanResult) # nolint: object_usage_linter. S7 class in scan_result.R
+  if (is_pkg) {
+    return(assemble_package_prompt(scan_result, references))
+  }
+  assemble_function_prompt(scan_result, references)
+}
+
+#' Assemble prompt for a single ScanResult
+#' @keywords internal
+assemble_function_prompt <- function(scan_result, references = NULL) {
   parts <- character(0)
 
   parts <- c(parts, sprintf(
@@ -110,30 +127,112 @@ assemble_draft_prompt <- function(scan_result, references = NULL) {
     }
   }
 
-  if (!is.null(references) && length(references) > 0L) {
-    parts <- c(parts, "\n## References\n")
-    for (ref in references) {
-      authors <- paste(ref$authors, collapse = ", ")
+  parts <- c(parts, format_references_prompt(references))
+  parts <- c(parts, format_task_prompt())
+
+  paste(parts, collapse = "\n")
+}
+
+#' Assemble prompt for a PackageScanResult (multi-function)
+#' @keywords internal
+assemble_package_prompt <- function(pkg_result, references = NULL) {
+  parts <- character(0)
+  parts <- c(parts, sprintf("Package: %s\n", pkg_result@package))
+
+  roles <- pkg_result@function_roles
+  analysis_fns <- names(roles[roles == "analysis"])
+  parts <- c(parts, sprintf(
+    "Analysis functions: %s\n", paste(analysis_fns, collapse = ", ")
+  ))
+
+  if (length(pkg_result@function_families) > 0L) {
+    parts <- c(parts, "\n## Function Families\n")
+    for (fam in pkg_result@function_families) {
       parts <- c(parts, sprintf(
-        "- %s (%s). %s. %s",
-        authors, ref$year %||% "n.d.", ref$title, ref$journal %||% ""
+        "- %s family: common params (%s), members: %s",
+        fam$name,
+        paste(fam$common_parameters, collapse = ", "),
+        paste(names(fam$members), collapse = ", ")
       ))
-      if (nchar(ref$abstract %||% "") > 0L) {
-        parts <- c(parts, sprintf("  Abstract: %s", ref$abstract))
+    }
+  }
+
+  if (length(pkg_result@cross_function_constraints) > 0L) {
+    parts <- c(parts, "\n## Cross-Function Constraints\n")
+    for (cfc in pkg_result@cross_function_constraints) {
+      parts <- c(parts, sprintf("- %s: %s", cfc$function_name, cfc$reason))
+    }
+  }
+
+  for (fn_name in names(pkg_result@functions)) {
+    sr <- pkg_result@functions[[fn_name]]
+    parts <- c(parts, sprintf("\n## Function: %s\n", fn_name))
+
+    stat_params <- Filter(
+      function(p) p@classification == "statistical_decision",
+      sr@parameters
+    )
+    if (length(stat_params) > 0L) {
+      parts <- c(parts, "Key parameters:")
+      for (p in stat_params) {
+        default_info <- if (p@has_default) {
+          sprintf(" (default: %s)", p@default_expression)
+        } else {
+          ""
+        }
+        parts <- c(parts, sprintf("- %s%s", p@name, default_info))
+      }
+    }
+
+    if (length(sr@valid_values) > 0L) {
+      parts <- c(parts, "Valid values:")
+      for (nm in names(sr@valid_values)) {
+        parts <- c(parts, sprintf(
+          "- %s: %s", nm, paste(sr@valid_values[[nm]], collapse = ", ")
+        ))
       }
     }
   }
 
-  parts <- c(parts, "\n## Task\n")
-  parts <- c(parts, paste(
-    "Generate a bridle knowledge plugin with three YAML sections",
-    "separated by '---':\n",
-    "1. decision_graph: A decision flow with nodes and transitions.\n",
-    "2. knowledge: Knowledge entries with when/properties/references.\n",
-    "3. constraints: Technical constraints for parameter validation."
-  ))
+  parts <- c(parts, format_references_prompt(references))
+  parts <- c(parts, format_task_prompt())
 
   paste(parts, collapse = "\n")
+}
+
+#' Format references section for prompt
+#' @keywords internal
+format_references_prompt <- function(references) {
+  if (is.null(references) || length(references) == 0L) {
+    return(character(0))
+  }
+  parts <- "\n## References\n"
+  for (ref in references) {
+    authors <- paste(ref$authors, collapse = ", ")
+    parts <- c(parts, sprintf(
+      "- %s (%s). %s. %s",
+      authors, ref$year %||% "n.d.", ref$title, ref$journal %||% ""
+    ))
+    if (nchar(ref$abstract %||% "") > 0L) {
+      parts <- c(parts, sprintf("  Abstract: %s", ref$abstract))
+    }
+  }
+  parts
+}
+
+#' Format task instruction for prompt
+#' @keywords internal
+format_task_prompt <- function() {
+  c(
+    "\n## Task\n",
+    paste(
+      "Generate a bridle knowledge plugin with three YAML sections",
+      "separated by '---':\n",
+      "1. decision_graph: A decision flow with nodes and transitions.\n",
+      "2. knowledge: Knowledge entries with when/properties/references.\n",
+      "3. constraints: Technical constraints for parameter validation."
+    )
+  )
 }
 
 #' Parse the LLM response into structured draft content

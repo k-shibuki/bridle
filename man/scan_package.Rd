@@ -4,22 +4,21 @@
 \alias{scan_package}
 \title{Package Scanner}
 \usage{
-scan_package(package, func)
+scan_package(package)
 }
 \arguments{
 \item{package}{Package name (character).}
-
-\item{func}{Function name (character).}
 }
 \value{
-A \link{ScanResult} object.
+A \link{PackageScanResult} object.
 }
 \description{
-Analyzes an R package function to produce a \link{ScanResult}. Layer 1 extracts
-parameter names, default expressions, AST-parsed dependency graphs, and
-automatic parameter classification (ADR-0004).
+Analyzes an R package to produce a \link{PackageScanResult} that maps the full
+decision space including function classification, family structure, and
+cross-function constraints (ADR-0004, ADR-0004 Addendum).
 
-Entry point for the plugin generation scanner. Implements Layer 1
-(formals analysis) and Layer 2 (Rd documentation analysis).
-Layer 3 will be added in subsequent Issues.
+Entry point for the plugin generation scanner. Enumerates exported
+functions, classifies them by role, scans analysis functions through
+Layers 1-3, detects function families, and extracts cross-function
+constraints.
 }

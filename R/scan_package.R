@@ -1,24 +1,82 @@
 #' Package Scanner
 #'
-#' Analyzes an R package function to produce a [ScanResult]. Layer 1 extracts
-#' parameter names, default expressions, AST-parsed dependency graphs, and
-#' automatic parameter classification (ADR-0004).
+#' Analyzes an R package to produce a [PackageScanResult] that maps the full
+#' decision space including function classification, family structure, and
+#' cross-function constraints (ADR-0004, ADR-0004 Addendum).
 #'
 #' @name scan_package
 #' @importFrom rlang %||%
 NULL
 
-#' Scan a Package Function
+#' Scan an R Package
 #'
-#' Entry point for the plugin generation scanner. Implements Layer 1
-#' (formals analysis) and Layer 2 (Rd documentation analysis).
-#' Layer 3 will be added in subsequent Issues.
+#' Entry point for the plugin generation scanner. Enumerates exported
+#' functions, classifies them by role, scans analysis functions through
+#' Layers 1-3, detects function families, and extracts cross-function
+#' constraints.
+#'
+#' @param package Package name (character).
+#' @return A [PackageScanResult] object.
+#' @export
+scan_package <- function(package) {
+  if (!is.character(package) || length(package) != 1L || nchar(package) == 0L) {
+    cli::cli_abort("{.arg package} must be a non-empty string.")
+  }
+
+  ns <- get_package_namespace(package)
+
+  exports <- get_namespace_exports(package)
+  non_s3 <- exclude_s3_methods(exports, package)
+  roles <- classify_functions(non_s3, ns, package)
+  analysis_fns <- names(roles[roles == "analysis"])
+
+  cli::cli_inform(
+    "Scanning {.pkg {package}}: {length(non_s3)} exports, {length(analysis_fns)} analysis functions."
+  )
+
+  functions <- list()
+  for (fn_name in analysis_fns) {
+    tryCatch(
+      {
+        functions[[fn_name]] <- scan_function(package, fn_name)
+      },
+      error = function(e) {
+        cli::cli_warn(
+          "Skipping {.fn {fn_name}}: {conditionMessage(e)}"
+        )
+      }
+    )
+  }
+
+  families <- detect_families(functions)
+  cross_constraints <- extract_cross_constraints(functions, roles)
+
+  PackageScanResult( # nolint: object_usage_linter. S7 class in scan_result.R
+    package = package,
+    functions = functions,
+    function_roles = roles,
+    function_families = families,
+    cross_function_constraints = cross_constraints,
+    scan_metadata = list(
+      package_version = get_package_version(package),
+      timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z"),
+      bridle_version = as.character(utils::packageVersion("bridle")),
+      total_exports = length(exports),
+      scanned_functions = length(functions)
+    )
+  )
+}
+
+#' Scan a Single Package Function
+#'
+#' Internal function-level scanner. Runs Layer 1 (formals), Layer 2 (Rd),
+#' and Layer 3a (source) analysis on a single function.
 #'
 #' @param package Package name (character).
 #' @param func Function name (character).
 #' @return A [ScanResult] object.
-#' @export
-scan_package <- function(package, func) {
+#' @keywords internal
+scan_function <- function(package, func) {
   if (!is.character(package) || length(package) != 1L || nchar(package) == 0L) {
     cli::cli_abort("{.arg package} must be a non-empty string.")
   }
@@ -30,6 +88,232 @@ scan_package <- function(package, func) {
   result <- scan_layer1(package = package, func_name = func, fn = fn)
   result <- scan_layer2(result)
   scan_layer3a(result, fn)
+}
+
+# -- Package-Level Helpers ---------------------------------------------------
+
+#' Get a package namespace (mockable wrapper)
+#' @keywords internal
+get_package_namespace <- function(package) {
+  tryCatch(
+    getNamespace(package),
+    error = function(e) {
+      cli::cli_abort(
+        "Package {.pkg {package}} is not available.",
+        parent = e
+      )
+    }
+  )
+}
+
+#' Get exported function names from a package namespace (mockable)
+#' @keywords internal
+get_namespace_exports <- function(package) {
+  getNamespaceExports(package)
+}
+
+#' Exclude S3 methods from a list of exported names
+#' @keywords internal
+exclude_s3_methods <- function(exports, package) {
+  s3_table <- tryCatch(
+    get_s3_method_table(package),
+    error = function(e) data.frame(method = character(0), stringsAsFactors = FALSE)
+  )
+
+  s3_methods <- if (nrow(s3_table) > 0L && "method" %in% names(s3_table)) {
+    as.character(s3_table$method)
+  } else if (nrow(s3_table) > 0L) {
+    paste0(s3_table[[1L]], ".", s3_table[[2L]])
+  } else {
+    character(0)
+  }
+
+  remaining <- setdiff(exports, s3_methods)
+  ns <- getNamespace(package)
+  Filter(function(nm) is.function(ns[[nm]]), remaining)
+}
+
+#' Get S3 methods table for a package (mockable)
+#' @keywords internal
+get_s3_method_table <- function(package) {
+  ns <- asNamespace(package)
+  tbl <- ns[[".__S3MethodsTable__."]]
+  if (is.null(tbl)) {
+    return(data.frame(method = character(0), stringsAsFactors = FALSE))
+  }
+  method_names <- ls(tbl)
+  data.frame(method = method_names, stringsAsFactors = FALSE)
+}
+
+#' Classify exported functions by role
+#' @keywords internal
+classify_functions <- function(func_names, ns, package) {
+  rd_db <- tryCatch(
+    get_rd_db(package),
+    error = function(e) NULL
+  )
+
+  roles <- character(length(func_names))
+  names(roles) <- func_names
+
+  for (fn_name in func_names) {
+    fn <- ns[[fn_name]]
+    fml_names <- names(formals(fn))
+    rd_title <- get_rd_title(rd_db, fn_name)
+    roles[[fn_name]] <- classify_single_function(fn_name, fml_names, rd_title)
+  }
+  roles
+}
+
+#' Classify a single function by heuristic signals
+#' @keywords internal
+classify_single_function <- function(fn_name, fml_names, rd_title) {
+  score_analysis <- 0L
+  score_viz <- 0L
+  score_diag <- 0L
+
+  analysis_formals <- c("data", "method", "measure", "yi", "vi", "ai", "bi")
+  viz_formals <- c("col", "pch", "lty", "xlim", "ylim", "main", "xlab", "ylab")
+
+  if (any(analysis_formals %in% fml_names)) score_analysis <- score_analysis + 1L
+  if (any(viz_formals %in% fml_names)) score_viz <- score_viz + 1L
+  if (length(fml_names) == 1L && identical(fml_names[1L], "x")) score_diag <- score_diag + 1L
+
+  rd_lower <- tolower(rd_title)
+  analysis_words <- c("fit", "model", "analysis", "estimat", "calculat", "effect size")
+  viz_words <- c("plot", "forest", "funnel", "graph", "draw", "diagram")
+  diag_words <- c("influence", "diagnostic", "residual", "leave1out", "sensitivity")
+
+  for (w in analysis_words) {
+    if (grepl(w, rd_lower, fixed = TRUE)) score_analysis <- score_analysis + 1L
+  }
+  for (w in viz_words) {
+    if (grepl(w, rd_lower, fixed = TRUE)) score_viz <- score_viz + 1L
+  }
+  for (w in diag_words) {
+    if (grepl(w, rd_lower, fixed = TRUE)) score_diag <- score_diag + 1L
+  }
+
+  if (grepl("^(forest|funnel|plot|draw|baujat|labbe|radial|qqnorm)", fn_name)) {
+    score_viz <- score_viz + 2L
+  }
+  if (grepl("^(influence|leave1out|residuals|rstudent|cooks\\.distance)", fn_name)) {
+    score_diag <- score_diag + 2L
+  }
+  if (grepl("^(rma|escalc|metabin|metacont|metaprop)", fn_name)) {
+    score_analysis <- score_analysis + 2L
+  }
+
+  scores <- c(analysis = score_analysis, visualization = score_viz, diagnostic = score_diag)
+  max_score <- max(scores)
+
+  if (max_score == 0L) {
+    return("utility")
+  }
+  winner <- names(which.max(scores))
+  winner
+}
+
+#' Get Rd title for a function (returns empty string if unavailable)
+#' @keywords internal
+get_rd_title <- function(rd_db, func_name) {
+  if (is.null(rd_db)) {
+    return("")
+  }
+  rd <- find_function_rd(rd_db, func_name)
+  if (is.null(rd)) {
+    return("")
+  }
+  title_section <- get_rd_section(rd, "\\title")
+  if (is.null(title_section)) {
+    return("")
+  }
+  trimws(rd_text(title_section))
+}
+
+#' Detect function families by shared prefix
+#' @keywords internal
+detect_families <- function(scan_results) {
+  func_names <- names(scan_results)
+  if (length(func_names) < 2L) {
+    return(list())
+  }
+
+  prefix_groups <- list()
+  for (fn_name in func_names) {
+    parts <- strsplit(fn_name, "\\.", perl = TRUE)[[1L]]
+    if (length(parts) >= 2L) {
+      prefix <- parts[1L]
+      prefix_groups[[prefix]] <- c(prefix_groups[[prefix]], fn_name)
+    }
+  }
+
+  families <- list()
+  for (prefix in names(prefix_groups)) {
+    members <- prefix_groups[[prefix]]
+    if (length(members) < 2L) next
+
+    all_params <- lapply(members, function(fn_name) {
+      sr <- scan_results[[fn_name]]
+      vapply(sr@parameters, function(p) p@name, character(1))
+    })
+    names(all_params) <- members
+
+    common <- Reduce(intersect, all_params)
+    common <- setdiff(common, "..none..")
+
+    member_info <- list()
+    for (fn_name in members) {
+      unique_params <- setdiff(all_params[[fn_name]], c(common, "..none.."))
+      member_info[[fn_name]] <- list(unique_parameters = unique_params)
+    }
+
+    families[[prefix]] <- list(
+      name = prefix,
+      common_parameters = common,
+      members = member_info
+    )
+  }
+  families
+}
+
+#' Extract cross-function constraints from scan results
+#' @keywords internal
+extract_cross_constraints <- function(scan_results, roles) {
+  constraints <- list()
+
+  for (fn_name in names(scan_results)) {
+    sr <- scan_results[[fn_name]]
+    vv <- sr@valid_values
+
+    if ("measure" %in% names(vv)) {
+      vals <- vv[["measure"]]
+      if (length(vals) > 0L && length(vals) <= 5L) {
+        constraints <- c(constraints, list(list(
+          function_name = fn_name,
+          constraint = sprintf(
+            "measure %%in%% c(%s)",
+            paste0('"', vals, '"', collapse = ", ")
+          ),
+          reason = sprintf(
+            "%s restricts 'measure' to: %s",
+            fn_name, paste(vals, collapse = ", ")
+          )
+        )))
+      }
+    }
+
+    for (cst in sr@constraints) {
+      if (cst@type == "forces" && cst@source == "formals_default") {
+        constraints <- c(constraints, list(list(
+          function_name = fn_name,
+          constraint = cst@condition,
+          reason = cst@message
+        )))
+      }
+    }
+  }
+  constraints
 }
 
 #' Resolve a function from a package namespace
@@ -65,7 +349,7 @@ scan_layer1 <- function(package, func_name, fn) {
     return(ScanResult( # nolint: object_usage_linter. Defined in scan_result.R.
       package = package,
       func = func_name,
-      parameters = list(ParameterInfo( # nolint: object_usage_linter.
+      parameters = list(ParameterInfo( # nolint: object_usage_linter. S7 class in scan_result.R
         name = "..none..",
         has_default = FALSE,
         default_expression = "",
@@ -87,7 +371,7 @@ scan_layer1 <- function(package, func_name, fn) {
   for (idx in seq_along(param_names)) {
     nm <- param_names[[idx]]
     if (is_formal_missing(fmls, nm)) {
-      parameters[[idx]] <- ParameterInfo( # nolint: object_usage_linter.
+      parameters[[idx]] <- ParameterInfo( # nolint: object_usage_linter. S7 class in scan_result.R
         name = nm,
         has_default = FALSE,
         default_expression = "",
@@ -97,7 +381,7 @@ scan_layer1 <- function(package, func_name, fn) {
       expr <- fmls[[nm]]
       def_str <- safe_deparse(expr)
       classification <- classify_parameter(nm, expr, TRUE)
-      parameters[[idx]] <- ParameterInfo( # nolint: object_usage_linter.
+      parameters[[idx]] <- ParameterInfo( # nolint: object_usage_linter. S7 class in scan_result.R
         name = nm,
         has_default = TRUE,
         default_expression = def_str,
@@ -261,7 +545,7 @@ extract_formals_constraints <- function(fmls, param_names, dep_graph, package,
     if (is_conditional_default(expr)) {
       counter <- counter + 1L
       cid <- sprintf("%s_%s_cond_%d", package, func_name, counter)
-      constraints <- c(constraints, list(Constraint( # nolint: object_usage_linter.
+      constraints <- c(constraints, list(Constraint( # nolint: object_usage_linter. S7 class in constraints.R
         id = cid,
         source = "formals_default",
         type = "forces",

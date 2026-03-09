@@ -294,11 +294,11 @@ test_that("scan_layer2: enriches ScanResult with Rd data", {
 
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
-  local_mocked_bindings(get_rd_db = function(pkg) { # nolint: object_usage_linter.
+  local_mocked_bindings(get_rd_db = function(pkg) { # nolint: object_usage_linter. mock binding
     list("testfn.Rd" = mock_rd)
   })
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
 
   expect_true("layer2_rd" %in% sr@scan_metadata[["layers_completed"]])
   expect_true("method" %in% names(sr@descriptions))
@@ -314,12 +314,12 @@ test_that("scan_layer2: graceful when Rd unavailable", {
   mock_fn <- function(x = 1) NULL
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
-  local_mocked_bindings(get_rd_db = function(pkg) { # nolint: object_usage_linter.
+  local_mocked_bindings(get_rd_db = function(pkg) { # nolint: object_usage_linter. mock binding
     stop("No Rd available")
   })
 
   expect_warning(
-    sr <- scan_package("testpkg", "testfn"),
+    sr <- bridle:::scan_function("testpkg", "testfn"),
     "Cannot access Rd"
   )
   expect_equal(sr@scan_metadata[["layers_completed"]], "layer1_formals")
@@ -333,12 +333,12 @@ test_that("scan_layer2: graceful when function Rd not found", {
   mock_fn <- function(x = 1) NULL
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
-  local_mocked_bindings(get_rd_db = function(pkg) { # nolint: object_usage_linter.
+  local_mocked_bindings(get_rd_db = function(pkg) { # nolint: object_usage_linter. mock binding
     list("other.Rd" = make_mock_rd("otherfunc"))
   })
 
   expect_warning(
-    sr <- scan_package("testpkg", "testfn"),
+    sr <- bridle:::scan_function("testpkg", "testfn"),
     "No Rd documentation"
   )
   expect_equal(sr@scan_metadata[["layers_completed"]], "layer1_formals")
@@ -356,11 +356,11 @@ test_that("scan_layer2: detects deprecated from Rd and updates classification", 
 
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
-  local_mocked_bindings(get_rd_db = function(pkg) { # nolint: object_usage_linter.
+  local_mocked_bindings(get_rd_db = function(pkg) { # nolint: object_usage_linter. mock binding
     list("testfn.Rd" = mock_rd)
   })
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
 
   classes <- vapply(sr@parameters, function(p) p@classification, character(1))
   names(classes) <- vapply(sr@parameters, function(p) p@name, character(1))
@@ -376,11 +376,11 @@ test_that("scan_layer2: malformed Rd returns partial results", {
 
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
-  local_mocked_bindings(get_rd_db = function(pkg) { # nolint: object_usage_linter.
+  local_mocked_bindings(get_rd_db = function(pkg) { # nolint: object_usage_linter. mock binding
     list("testfn.Rd" = mock_rd)
   })
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
   expect_true("layer2_rd" %in% sr@scan_metadata[["layers_completed"]])
   expect_equal(sr@descriptions, list())
   expect_equal(sr@valid_values, list())

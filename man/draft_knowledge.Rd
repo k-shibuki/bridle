@@ -13,7 +13,7 @@ draft_knowledge(
 )
 }
 \arguments{
-\item{scan_result}{A \link{ScanResult} object.}
+\item{scan_result}{A \link{ScanResult} or \link{PackageScanResult} object.}
 
 \item{references}{Optional list of reference metadata from
 \code{\link[=fetch_references]{fetch_references()}}.}
@@ -34,7 +34,8 @@ Uses ellmer to generate draft plugin artifacts (decision graph,
 knowledge entries, technical constraints) from a \link{ScanResult} and
 fetched references.
 
-Assembles a prompt from \link{ScanResult} data and optional references,
+Assembles a prompt from scan data and optional references,
 sends it to an LLM via ellmer, and writes draft YAML files to
-the specified output directory.
+the specified output directory. Accepts either a \link{ScanResult}
+(single function) or a \link{PackageScanResult} (full package).
 }
