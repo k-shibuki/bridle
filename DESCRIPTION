@@ -1,5 +1,5 @@
 Package: bridle
-Title: AI Knowledge Harness Generation Framework for R Statistical Packages
+Title: Knowledge Harness Framework for LLM-Guided Statistical Analysis
 Version: 0.0.0.9000
 Authors@R:
     person("Katsuya", "Shibuki", role = c("aut", "cre"),
