@@ -320,3 +320,34 @@ test_that("single-node graph returns completed", {
   result <- advance(engine)
   expect_equal(result@status, "completed")
 })
+
+# -- manifest policy_defaults (ADR-0005 3-layer) ------------------------------
+
+test_that("resolve_policy uses built-in default when all layers are NA", {
+  engine <- make_test_engine()
+  policy <- resolve_policy(engine, "start")
+  expect_equal(policy$max_iterations, 10L)
+})
+
+test_that("resolve_policy: global_policy overrides built-in default", {
+  gp <- GlobalPolicy(max_iterations = 7L)
+  engine <- make_test_engine(global_policy = gp)
+  policy <- resolve_policy(engine, "start")
+  expect_equal(policy$max_iterations, 7L)
+})
+
+test_that("resolve_policy: node policy overrides global_policy", {
+  gp <- GlobalPolicy(max_iterations = 7L)
+  np <- NodePolicy(max_iterations = 3L)
+  nodes <- list(
+    start = Node(
+      type = "decision", topic = "t", parameter = "p",
+      policy = np,
+      transitions = list(Transition(to = "end", always = TRUE))
+    ),
+    end = Node(type = "execution", transitions = list())
+  )
+  engine <- make_test_engine(nodes = nodes, global_policy = gp)
+  policy <- resolve_policy(engine, "start")
+  expect_equal(policy$max_iterations, 3L)
+})

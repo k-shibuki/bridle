@@ -11,6 +11,8 @@
 #' @importFrom rlang %||%
 NULL
 
+.default_max_iterations <- 10L
+
 # -- TransitionCandidate ------------------------------------------------------
 
 .valid_eval_results <- c("true", "false", "error", "not_evaluated")
@@ -200,7 +202,7 @@ resolve_policy <- function(engine, node_id) {
   node <- engine@graph@nodes[[node_id]]
   gp <- engine@graph@global_policy
 
-  max_iter <- 10L
+  max_iter <- .default_max_iterations
   if (!is.na(gp@max_iterations)) max_iter <- gp@max_iterations
   np <- node@policy
   if (!is.na(np@max_iterations)) max_iter <- np@max_iterations

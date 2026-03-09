@@ -41,6 +41,11 @@ bridle_agent <- function(plugin_dir,
   }
   graph <- read_decision_graph(graph_path) # nolint: object_usage_linter. defined in R/decision_graph.R
 
+  manifest <- .load_manifest(plugin_dir)
+  if (!is.null(manifest)) {
+    graph <- .merge_manifest_policy(graph, manifest)
+  }
+
   knowledge <- .load_yaml_list(
     plugin_dir, "knowledge.yaml", read_knowledge # nolint: object_usage_linter. cross-file ref
   )
@@ -101,4 +106,55 @@ bridle_agent <- function(plugin_dir,
 .load_optional <- function(dir, filename, reader) {
   path <- file.path(dir, filename)
   if (file.exists(path)) reader(path) else NULL
+}
+
+#' Load manifest.yaml from plugin directory
+#' @keywords internal
+.load_manifest <- function(plugin_dir) {
+  path <- file.path(plugin_dir, "manifest.yaml")
+  if (!file.exists(path)) {
+    return(NULL)
+  }
+  tryCatch(
+    yaml::yaml.load_file(path),
+    error = function(e) {
+      cli::cli_warn(
+        "Failed to load {.file manifest.yaml}: {conditionMessage(e)}"
+      )
+      NULL
+    }
+  )
+}
+
+#' Merge manifest policy_defaults into graph's GlobalPolicy
+#'
+#' Manifest values are overridden by graph-level GlobalPolicy values
+#' (the 3-layer chain: manifest < graph < node per ADR-0005).
+#' @keywords internal
+.merge_manifest_policy <- function(graph, manifest) {
+  pd <- manifest[["policy_defaults"]]
+  if (is.null(pd)) {
+    return(graph)
+  }
+
+  gp <- graph@global_policy
+  manifest_max <- pd[["max_iterations"]]
+
+  if (!is.null(manifest_max)) {
+    manifest_max <- tryCatch(
+      as.integer(manifest_max),
+      warning = function(w) {
+        cli::cli_warn(
+          "Invalid {.field policy_defaults.max_iterations} in manifest.yaml: {.val {pd[['max_iterations']]}}"
+        )
+        NA_integer_
+      }
+    )
+    if (!is.na(manifest_max) && is.na(gp@max_iterations)) {
+      gp <- GlobalPolicy(max_iterations = manifest_max) # nolint: object_usage_linter. S7 cross-file
+    }
+  }
+
+  graph@global_policy <- gp
+  graph
 }
