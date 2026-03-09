@@ -25,7 +25,7 @@ bridle has two functions: a **plugin generation pipeline** (a build tool that se
 graph TB
   subgraph pipeline ["Plugin Generation Pipeline"]
     scanner["Package Scanner<br/>formals + Rd + source"]
-    fetcher["Reference Fetcher<br/>CrossRef / PubMed API"]
+    fetcher["Reference Fetcher<br/>OpenAlex / Semantic Scholar"]
     drafter["AI Drafter<br/>ellmer"]
     validator["Plugin Validator"]
   end
@@ -142,7 +142,7 @@ Full schema: [`docs/schemas/knowledge.schema.yaml`](docs/schemas/knowledge.schem
 The pipeline, provided by bridle core, generates most of a plugin's content:
 
 1. **`scan_package("meta")`** — Analyzes the R package in three layers: formals (dependency graphs), Rd (valid values, descriptions), and source code (match.arg, stop/warning constraints). See [ADR-0004](docs/adr/0004-scanner-three-layer-analysis.md).
-2. **`fetch_references(scan_result)`** — Resolves DOIs and retrieves abstracts via CrossRef / PubMed APIs.
+2. **`fetch_references(scan_result)`** — Resolves DOIs and retrieves abstracts via OpenAlex (primary) and Semantic Scholar (fallback) APIs. See [ADR-0010](docs/adr/0010-reference-api-openalex-semantic-scholar.md).
 3. **`draft_knowledge(scan_result, references)`** — Uses ellmer to draft the decision graph, knowledge entries, and constraints from scan results + literature.
 4. **Expert Review** — Direct YAML editing: verifying decision ordering, adding competing views, refining conditions, supplementing references.
 5. **`validate_plugin("bridle.meta")`** — Checks coverage, consistency, constraint validity, and node reachability.
@@ -249,7 +249,7 @@ Built on the Posit ecosystem.
 | [{S7}](https://rconsortium.github.io/S7/) | Next-generation class system promoted by R Consortium |
 | [{cli}](https://cli.r-lib.org/) | Terminal UI |
 
-Reference retrieval uses CrossRef API and PubMed Entrez API.
+Reference retrieval uses [OpenAlex](https://openalex.org/) (primary) and [Semantic Scholar](https://www.semanticscholar.org/) (fallback) APIs.
 
 ## Interfaces
 

@@ -1,15 +1,13 @@
-# Tests for fetch_references() (CrossRef / PubMed API)
-# Follows test-strategy.mdc: Given/When/Then, failure >= success cases
-# All HTTP calls mocked via local_mocked_bindings on thin wrappers
-
-# mock_crossref_response provided by helper-mocks.R
+# Tests for fetch_references() (OpenAlex / Semantic Scholar API)
+# Issue #132: 27 scenarios (T01-T27)
+# Mock points: openalex_get, s2_get (thin HTTP wrappers)
 
 make_scan_result_with_refs <- function(refs) {
-  ScanResult( # nolint: object_usage_linter. S7 class in R/scan_result.R
+  ScanResult( # nolint: object_usage_linter. S7 constructor
     package = "testpkg",
     func = "testfn",
     parameters = list(
-      ParameterInfo(name = "x", has_default = TRUE) # nolint: object_usage_linter.
+      ParameterInfo(name = "x", has_default = TRUE) # nolint: object_usage_linter. S7 constructor
     ),
     references = refs,
     scan_metadata = list(
@@ -20,9 +18,19 @@ make_scan_result_with_refs <- function(refs) {
   )
 }
 
-# -- extract_dois() ------------------------------------------------------------
+init_anonymous_profile <- function() {
+  bridle:::reset_api_state()
+  withr::local_envvar(
+    BRIDLE_OPENALEX_EMAIL = NA,
+    BRIDLE_S2_API_KEY = NA,
+    .local_envir = parent.frame()
+  )
+  suppressWarnings(bridle:::detect_profiles())
+}
 
-test_that("extract_dois: extracts DOI from reference string", {
+# -- T01-T04: extract_dois() --------------------------------------------------
+
+test_that("T01: extracts DOI from reference string", {
   # Given: reference text containing a DOI
   # When:  extracting DOIs
   # Then:  returns the DOI
@@ -31,7 +39,7 @@ test_that("extract_dois: extracts DOI from reference string", {
   expect_true("10.1234/test.article" %in% dois)
 })
 
-test_that("extract_dois: extracts multiple DOIs", {
+test_that("T02: extracts multiple DOIs", {
   # Given: references with different DOIs
   # When:  extracting
   # Then:  returns all unique DOIs
@@ -44,7 +52,7 @@ test_that("extract_dois: extracts multiple DOIs", {
   expect_true("10.5678/b" %in% dois)
 })
 
-test_that("extract_dois: returns empty for no DOIs", {
+test_that("T03: returns empty for no DOIs", {
   # Given: references without DOIs
   # When:  extracting
   # Then:  returns empty character
@@ -53,7 +61,7 @@ test_that("extract_dois: returns empty for no DOIs", {
   expect_equal(dois, character(0))
 })
 
-test_that("extract_dois: deduplicates", {
+test_that("T04: deduplicates DOIs", {
   # Given: same DOI appearing twice
   # When:  extracting
   # Then:  returns unique
@@ -62,212 +70,475 @@ test_that("extract_dois: deduplicates", {
   expect_equal(sum(dois == "10.1234/same"), 1L)
 })
 
-# -- parse_crossref_response() ------------------------------------------------
+# -- T05-T09: OpenAlex parsing ------------------------------------------------
 
-test_that("parse_crossref_response: extracts metadata", {
-  # Given: a mock CrossRef response
+test_that("T05: OA metadata parsing", {
+  # Given: a mock OpenAlex response with all fields
   # When:  parsing
-  # Then:  returns structured metadata
-  resp <- mock_crossref_response()
-  local_mocked_bindings(resp_body_json = function(resp) resp$body, .package = "httr2") # nolint: object_usage_linter.
-
-  meta <- bridle:::parse_crossref_response(resp)
-  expect_equal(meta$doi, "10.1234/test")
-  expect_equal(meta$title, "Test Paper")
-  expect_equal(meta$authors, "John Doe")
-  expect_equal(meta$abstract, "An abstract.")
-  expect_equal(meta$journal, "Test Journal")
-  expect_equal(meta$year, 2020L)
-})
-
-test_that("parse_crossref_response: handles missing author", {
-  # Given: response without authors
-  # When:  parsing
-  # Then:  authors is empty character
-  resp <- mock_crossref_response(authors = NULL)
-  local_mocked_bindings(resp_body_json = function(resp) resp$body, .package = "httr2") # nolint: object_usage_linter.
-
-  meta <- bridle:::parse_crossref_response(resp)
-  expect_equal(meta$authors, character(0))
-})
-
-test_that("parse_crossref_response: handles missing abstract", {
-  # Given: response without abstract
-  # When:  parsing
-  # Then:  abstract is empty string
-  resp <- mock_crossref_response(abstract = NULL)
-  local_mocked_bindings(resp_body_json = function(resp) resp$body, .package = "httr2") # nolint: object_usage_linter.
-
-  meta <- bridle:::parse_crossref_response(resp)
-  expect_equal(meta$abstract, "")
-})
-
-# -- extract_abstract_from_xml() -----------------------------------------------
-
-test_that("extract_abstract_from_xml: extracts text", {
-  # Given: PubMed XML with AbstractText
-  # When:  extracting
-  # Then:  returns abstract text
-  xml <- "<Abstract><AbstractText>The result shows...</AbstractText></Abstract>"
-  result <- bridle:::extract_abstract_from_xml(xml)
-  expect_equal(result, "The result shows...")
-})
-
-test_that("extract_abstract_from_xml: handles multiple sections", {
-  # Given: structured abstract with multiple AbstractText elements
-  # When:  extracting
-  # Then:  concatenates all parts
-  xml <- paste0(
-    '<AbstractText Label="BACKGROUND">Bg.</AbstractText>',
-    '<AbstractText Label="METHODS">Methods.</AbstractText>'
+  # Then:  returns structured metadata with correct field mapping
+  resp <- mock_openalex_response(
+    doi = "10.1002/jrsm.1211",
+    title = "metafor Package",
+    authors = list(
+      list(author = list(display_name = "Wolfgang Viechtbauer")),
+      list(author = list(display_name = "Jane Doe"))
+    ),
+    abstract_inverted_index = list(
+      Conducting = list(0L), `meta-analyses` = list(1L),
+      `in` = list(2L), R = list(3L)
+    ),
+    journal = "Research Synthesis Methods",
+    year = 2010L
   )
-  result <- bridle:::extract_abstract_from_xml(xml)
-  expect_true(grepl("Bg\\.", result))
-  expect_true(grepl("Methods\\.", result))
+  meta <- bridle:::parse_openalex_response(resp)
+
+  expect_equal(meta$doi, "10.1002/jrsm.1211")
+  expect_equal(meta$title, "metafor Package")
+  expect_equal(meta$authors, c("Wolfgang Viechtbauer", "Jane Doe"))
+  expect_equal(meta$abstract, "Conducting meta-analyses in R")
+  expect_equal(meta$journal, "Research Synthesis Methods")
+  expect_equal(meta$year, 2010L)
 })
 
-test_that("extract_abstract_from_xml: returns NULL for no abstract", {
-  # Given: XML without AbstractText
-  # When:  extracting
+test_that("T06: abstract reconstruction from inverted index", {
+  # Given: an inverted index mapping words to positions
+  # When:  reconstructing
+  # Then:  produces correct word order
+  idx <- list(The = list(0L), result = list(1L), is = list(2L))
+  result <- bridle:::reconstruct_abstract(idx)
+  expect_equal(result, "The result is")
+})
+
+test_that("T07: empty inverted index returns NULL", {
+  # Given: an empty named list (JSON {})
+  # When:  reconstructing
   # Then:  returns NULL
-  xml <- "<PubmedArticle><Title>No abstract</Title></PubmedArticle>"
-  result <- bridle:::extract_abstract_from_xml(xml)
-  expect_null(result)
+  expect_null(bridle:::reconstruct_abstract(setNames(list(), character(0))))
+  expect_null(bridle:::reconstruct_abstract(list()))
 })
 
-# -- extract_crossref_authors() ------------------------------------------------
+test_that("T08: NULL inverted index returns NULL", {
+  # Given: NULL input
+  # When:  reconstructing
+  # Then:  returns NULL
+  expect_null(bridle:::reconstruct_abstract(NULL))
+})
 
-test_that("extract_crossref_authors: formats names", {
-  # Given: author list with given and family names
-  # When:  extracting
-  # Then:  returns formatted names
-  authors <- list(
-    list(given = "Alice", family = "Smith"),
-    list(given = "Bob", family = "Jones")
+test_that("T09: DOI normalization strips https prefix", {
+  # Given: OA response with full DOI URL
+  # When:  parsing
+  # Then:  DOI prefix is stripped
+  resp <- mock_openalex_response(doi = "10.1234/x")
+  meta <- bridle:::parse_openalex_response(resp)
+  expect_equal(meta$doi, "10.1234/x")
+})
+
+# -- T10-T11: Semantic Scholar parsing -----------------------------------------
+
+test_that("T10: S2 metadata parsing", {
+  # Given: a mock S2 response with all fields
+  # When:  parsing
+  # Then:  returns structured metadata with correct field mapping
+  resp <- mock_s2_response(
+    doi = "10.1002/jrsm.1211",
+    title = "metafor Package",
+    authors = list(
+      list(name = "Wolfgang Viechtbauer")
+    ),
+    abstract = "A comprehensive meta-analysis package.",
+    venue = "Research Synthesis Methods",
+    year = 2010L
   )
-  result <- bridle:::extract_crossref_authors(authors)
-  expect_equal(result, c("Alice Smith", "Bob Jones"))
+  meta <- bridle:::parse_s2_response(resp)
+
+  expect_equal(meta$doi, "10.1002/jrsm.1211")
+  expect_equal(meta$title, "metafor Package")
+  expect_equal(meta$authors, "Wolfgang Viechtbauer")
+  expect_equal(meta$abstract, "A comprehensive meta-analysis package.")
+  expect_equal(meta$journal, "Research Synthesis Methods")
+  expect_equal(meta$year, 2010L)
 })
 
-test_that("extract_crossref_authors: handles missing given name", {
-  # Given: author without given name
-  # When:  extracting
-  # Then:  returns family name only
-  authors <- list(list(family = "Consortium"))
-  result <- bridle:::extract_crossref_authors(authors)
-  expect_equal(result, "Consortium")
+test_that("T11: S2 DOI prefix in request URL", {
+  # Given: a DOI 10.1234/test
+  # When:  fetch_s2 calls s2_get
+  # Then:  s2_get receives the DOI (URL prefix DOI: applied inside s2_get)
+  init_anonymous_profile()
+  local_mocked_bindings(
+    rate_limit_sleep = function(s) invisible(NULL) # nolint: object_usage_linter. mock binding
+  )
+  captured_doi <- NULL
+  local_mocked_bindings(s2_get = function(doi, timeout) {
+    captured_doi <<- doi
+    mock_s2_response(doi = doi)
+  })
+
+  bridle:::fetch_s2("10.1234/test", timeout = 1)
+  expect_equal(captured_doi, "10.1234/test")
 })
 
-# -- fetch_references() integration tests --------------------------------------
+# -- T12-T14: Profile detection ------------------------------------------------
 
-test_that("fetch_references: empty references returns empty", {
+test_that("T12: anonymous profile when no env vars", {
+  # Given: no API credentials configured
+  # When:  detecting profiles
+  # Then:  anonymous intervals selected, warning emitted
+  bridle:::reset_api_state()
+  withr::local_envvar(BRIDLE_OPENALEX_EMAIL = NA, BRIDLE_S2_API_KEY = NA)
+
+  expect_warning(bridle:::detect_profiles(), "No API credentials")
+  expect_equal(bridle:::.api_state$oa_interval, 0.33)
+  expect_equal(bridle:::.api_state$s2_interval, 3.0)
+  expect_null(bridle:::.api_state$oa_email)
+  expect_null(bridle:::.api_state$s2_api_key)
+})
+
+test_that("T13: identified OA profile with email", {
+  # Given: BRIDLE_OPENALEX_EMAIL is set
+  # When:  detecting profiles
+  # Then:  identified interval, email stored
+  bridle:::reset_api_state()
+  withr::local_envvar(
+    BRIDLE_OPENALEX_EMAIL = "test@example.com",
+    BRIDLE_S2_API_KEY = NA
+  )
+
+  bridle:::detect_profiles()
+  expect_equal(bridle:::.api_state$oa_interval, 0.25)
+  expect_equal(bridle:::.api_state$oa_email, "test@example.com")
+})
+
+test_that("T14: authenticated S2 profile with API key", {
+  # Given: BRIDLE_S2_API_KEY is set
+  # When:  detecting profiles
+  # Then:  authenticated interval, key stored
+  bridle:::reset_api_state()
+  withr::local_envvar(
+    BRIDLE_OPENALEX_EMAIL = NA,
+    BRIDLE_S2_API_KEY = "test-key-abc"
+  )
+
+  bridle:::detect_profiles()
+  expect_equal(bridle:::.api_state$s2_interval, 1.1)
+  expect_equal(bridle:::.api_state$s2_api_key, "test-key-abc")
+})
+
+# -- T15-T27: fetch_references integration ------------------------------------
+
+test_that("T15: empty references returns empty list", {
   # Given: ScanResult with no references
   # When:  fetching references
-  # Then:  returns empty list
+  # Then:  returns empty list without API calls
   sr <- make_scan_result_with_refs(character(0))
   result <- fetch_references(sr)
   expect_equal(result, list())
 })
 
-test_that("fetch_references: references without DOIs returns empty", {
-  # Given: ScanResult with references that have no DOIs
+test_that("T16: references without DOIs returns empty list", {
+  # Given: ScanResult with references lacking DOIs
   # When:  fetching references
-  # Then:  returns empty list (no DOIs to resolve)
+  # Then:  returns empty list
   sr <- make_scan_result_with_refs("Author (2020). Title. Journal.")
   result <- fetch_references(sr)
   expect_equal(result, list())
 })
 
-test_that("fetch_references: successful DOI resolution", {
-  # Given: ScanResult with a reference containing a DOI
-  # When:  fetching with mocked CrossRef
-  # Then:  returns structured metadata
-  sr <- make_scan_result_with_refs("Author (2020). doi:10.1234/test")
-
-  mock_resp <- mock_crossref_response()
-  local_mocked_bindings(crossref_get = function(doi, mailto, timeout) mock_resp) # nolint: object_usage_linter.
-  local_mocked_bindings(resp_body_json = function(resp) resp$body, .package = "httr2") # nolint: object_usage_linter.
-
-  result <- fetch_references(sr)
-  expect_length(result, 1L)
-  expect_equal(result[[1L]]$title, "Test Paper")
-  expect_equal(result[[1L]]$doi, "10.1234/test")
-})
-
-test_that("fetch_references: network error produces warning", {
-  # Given: CrossRef API returns an error
-  # When:  fetching
-  # Then:  warning emitted, empty result for that DOI
-  sr <- make_scan_result_with_refs("Author. doi:10.1234/fail")
-
-  local_mocked_bindings(crossref_get = function(doi, mailto, timeout) { # nolint: object_usage_linter.
-    stop("Connection timeout")
+test_that("T17: successful OA lookup", {
+  # Given: ScanResult with DOI, OA returns full metadata
+  # When:  fetching references
+  # Then:  returns structured metadata from OA
+  init_anonymous_profile()
+  local_mocked_bindings(
+    rate_limit_sleep = function(s) invisible(NULL) # nolint: object_usage_linter. mock binding
+  )
+  local_mocked_bindings(openalex_get = function(doi, timeout) {
+    mock_openalex_response(doi = doi)
   })
 
+  sr <- make_scan_result_with_refs("Author (2020). doi:10.1234/test")
+  result <- fetch_references(sr)
+
+  expect_length(result, 1L)
+  expect_equal(result[[1L]]$doi, "10.1234/test")
+  expect_equal(result[[1L]]$title, "Test Paper")
+  expect_equal(result[[1L]]$abstract, "An abstract")
+})
+
+test_that("T18: OA missing abstract triggers S2 fallback", {
+  # Given: OA returns metadata without abstract, S2 has abstract
+  # When:  fetching references
+  # Then:  abstract from S2 supplements OA metadata
+  init_anonymous_profile()
+  local_mocked_bindings(
+    rate_limit_sleep = function(s) invisible(NULL) # nolint: object_usage_linter. mock binding
+  )
+  local_mocked_bindings(
+    openalex_get = function(doi, timeout) {
+      mock_openalex_response(doi = doi, abstract_inverted_index = NULL)
+    },
+    s2_get = function(doi, timeout) {
+      mock_s2_response(doi = doi, abstract = "S2 abstract text")
+    }
+  )
+
+  sr <- make_scan_result_with_refs("Author. doi:10.1234/noabs")
+  result <- fetch_references(sr)
+
+  expect_length(result, 1L)
+  expect_equal(result[[1L]]$abstract, "S2 abstract text")
+  expect_equal(result[[1L]]$title, "Test Paper")
+})
+
+test_that("T19: OA 404 promotes S2 to full metadata source", {
+  # Given: OA returns 404, S2 has full metadata
+  # When:  fetching references
+  # Then:  full metadata from S2
+  init_anonymous_profile()
+  local_mocked_bindings(
+    rate_limit_sleep = function(s) invisible(NULL) # nolint: object_usage_linter. mock binding
+  )
+  local_mocked_bindings(
+    openalex_get = function(doi, timeout) {
+      mock_openalex_response(status = 404L)
+    },
+    s2_get = function(doi, timeout) {
+      mock_s2_response(
+        doi = doi, title = "S2 Title",
+        abstract = "S2 abstract", venue = "S2 Journal"
+      )
+    }
+  )
+
+  sr <- make_scan_result_with_refs("Author. doi:10.1234/oa404")
+  result <- fetch_references(sr)
+
+  expect_length(result, 1L)
+  expect_equal(result[[1L]]$title, "S2 Title")
+  expect_equal(result[[1L]]$abstract, "S2 abstract")
+  expect_equal(result[[1L]]$journal, "S2 Journal")
+})
+
+test_that("T20: OA network error warns and skips DOI", {
+  # Given: OA throws a connection error
+  # When:  fetching references
+  # Then:  warning emitted, S2 fallback attempted
+  init_anonymous_profile()
+  local_mocked_bindings(
+    rate_limit_sleep = function(s) invisible(NULL), # nolint: object_usage_linter. mock binding
+    openalex_get = function(doi, timeout) stop("Connection timeout"),
+    s2_get = function(doi, timeout) mock_s2_response(doi = doi)
+  )
+
+  sr <- make_scan_result_with_refs("Author. doi:10.1234/fail")
   expect_warning(
     result <- fetch_references(sr),
-    "Failed to fetch metadata"
+    "OpenAlex request failed"
   )
-  expect_length(result, 0L)
+  expect_length(result, 1L)
 })
 
-test_that("fetch_references: PubMed fallback for missing abstract", {
-  # Given: CrossRef returns no abstract, PubMed has one
-  # When:  fetching
-  # Then:  abstract retrieved from PubMed
-  sr <- make_scan_result_with_refs("Author. doi:10.1234/noabs")
+test_that("T21: S2 fallback also fails leaves DOI skipped", {
+  # Given: OA returns empty abstract, S2 returns 404
+  # When:  fetching references
+  # Then:  metadata returned with empty abstract
+  init_anonymous_profile()
+  local_mocked_bindings(
+    rate_limit_sleep = function(s) invisible(NULL) # nolint: object_usage_linter. mock binding
+  )
+  local_mocked_bindings(
+    openalex_get = function(doi, timeout) {
+      mock_openalex_response(doi = doi, abstract_inverted_index = NULL)
+    },
+    s2_get = function(doi, timeout) {
+      mock_s2_response(status = 404L)
+    }
+  )
 
-  mock_resp <- mock_crossref_response(abstract = NULL)
-  local_mocked_bindings(crossref_get = function(doi, mailto, timeout) mock_resp) # nolint: object_usage_linter.
-  local_mocked_bindings(resp_body_json = function(resp) resp$body, .package = "httr2") # nolint: object_usage_linter.
-  local_mocked_bindings(fetch_pubmed_abstract = function(title, timeout) { # nolint: object_usage_linter.
-    "PubMed abstract text"
+  sr <- make_scan_result_with_refs("Author. doi:10.1234/nofallback")
+  result <- fetch_references(sr)
+
+  expect_length(result, 1L)
+  expect_null(result[[1L]]$abstract)
+})
+
+test_that("T22: S2 auth downgrade on 401", {
+  # Given: S2 returns 401 first, then succeeds after downgrade
+  # When:  fetching references (OA 404 triggers S2 full metadata path)
+  # Then:  auth downgraded, warning emitted, metadata retrieved
+  bridle:::reset_api_state()
+  withr::local_envvar(
+    BRIDLE_OPENALEX_EMAIL = NA,
+    BRIDLE_S2_API_KEY = "test-key"
+  )
+  suppressWarnings(bridle:::detect_profiles())
+  local_mocked_bindings(
+    rate_limit_sleep = function(s) invisible(NULL) # nolint: object_usage_linter. mock binding
+  )
+
+  s2_calls <- 0L
+  local_mocked_bindings(
+    openalex_get = function(doi, timeout) {
+      mock_openalex_response(status = 404L)
+    },
+    s2_get = function(doi, timeout) {
+      s2_calls <<- s2_calls + 1L
+      if (s2_calls == 1L) {
+        mock_s2_response(status = 401L)
+      } else {
+        mock_s2_response(doi = doi, title = "After Downgrade")
+      }
+    }
+  )
+
+  sr <- make_scan_result_with_refs("Author. doi:10.1234/authtest")
+  expect_warning(
+    result <- fetch_references(sr),
+    "API key rejected"
+  )
+
+  expect_true(bridle:::.api_state$s2_downgraded)
+  expect_null(bridle:::.api_state$s2_api_key)
+  expect_equal(bridle:::.api_state$s2_interval, 3.0)
+  expect_length(result, 1L)
+  expect_equal(result[[1L]]$title, "After Downgrade")
+})
+
+test_that("T23: rate limiting enforced between requests", {
+  # Given: two DOIs with identified OA profile (0.25s interval)
+  # When:  fetching references
+  # Then:  second OA request delayed by interval
+  bridle:::reset_api_state()
+  withr::local_envvar(
+    BRIDLE_OPENALEX_EMAIL = "test@example.com",
+    BRIDLE_S2_API_KEY = NA
+  )
+  bridle:::detect_profiles()
+  api_state <- bridle:::.api_state
+  api_state$oa_interval <- 0.1
+
+  call_times <- numeric(0)
+  local_mocked_bindings(openalex_get = function(doi, timeout) {
+    call_times <<- c(call_times, proc.time()[["elapsed"]])
+    mock_openalex_response(doi = doi)
   })
 
+  sr <- make_scan_result_with_refs(c(
+    "A. doi:10.1234/a",
+    "B. doi:10.5678/b"
+  ))
   result <- fetch_references(sr)
-  expect_length(result, 1L)
-  expect_equal(result[[1L]]$abstract, "PubMed abstract text")
+
+  expect_length(result, 2L)
+  expect_length(call_times, 2L)
+  expect_gte(call_times[2L] - call_times[1L], 0.08)
 })
 
-test_that("fetch_references: PubMed failure doesn't break flow", {
-  # Given: CrossRef works but PubMed fails
-  # When:  fetching
-  # Then:  result has empty abstract, no error
-  sr <- make_scan_result_with_refs("Author. doi:10.1234/nopub")
+test_that("T24: 429 expands interval by 1.5x", {
+  # Given: OA returns 429 after retries
+  # When:  fetching references
+  # Then:  oa_interval multiplied by 1.5, streak incremented
+  init_anonymous_profile()
+  original_interval <- bridle:::.api_state$oa_interval
+  local_mocked_bindings(
+    rate_limit_sleep = function(s) invisible(NULL) # nolint: object_usage_linter. mock binding
+  )
+  local_mocked_bindings(
+    openalex_get = function(doi, timeout) {
+      mock_openalex_response(status = 429L)
+    },
+    s2_get = function(doi, timeout) mock_s2_response(doi = doi)
+  )
 
-  mock_resp <- mock_crossref_response(abstract = NULL)
-  local_mocked_bindings(crossref_get = function(doi, mailto, timeout) mock_resp) # nolint: object_usage_linter.
-  local_mocked_bindings(resp_body_json = function(resp) resp$body, .package = "httr2") # nolint: object_usage_linter.
-  local_mocked_bindings(fetch_pubmed_abstract = function(title, timeout) { # nolint: object_usage_linter.
-    stop("PubMed unavailable")
-  })
+  sr <- make_scan_result_with_refs("Author. doi:10.1234/throttled")
+  fetch_references(sr)
 
-  result <- fetch_references(sr)
-  expect_length(result, 1L)
-  expect_equal(result[[1L]]$abstract, "")
+  expect_equal(
+    bridle:::.api_state$oa_interval,
+    original_interval * 1.5
+  )
+  expect_equal(bridle:::.api_state$oa_429_streak, 1L)
 })
 
-test_that("fetch_references: multiple DOIs with mixed success", {
-  # Given: two DOIs, one succeeds and one fails
-  # When:  fetching
-  # Then:  returns partial results with warning
+test_that("T25: no-env-var warning fires exactly once", {
+  # Given: no env vars set
+  # When:  detect_profiles called twice
+  # Then:  warning emitted once (idempotency guard)
+  bridle:::reset_api_state()
+  withr::local_envvar(BRIDLE_OPENALEX_EMAIL = NA, BRIDLE_S2_API_KEY = NA)
+
+  expect_warning(bridle:::detect_profiles(), "No API credentials")
+  expect_no_warning(bridle:::detect_profiles())
+  expect_true(bridle:::.api_state$warned_no_env)
+})
+
+test_that("T26: multiple DOIs with partial success", {
+  # Given: two DOIs, first OA succeeds, second OA errors
+  # When:  fetching references
+  # Then:  1 result + warning, S2 fallback for failed DOI
+  init_anonymous_profile()
+  local_mocked_bindings(
+    rate_limit_sleep = function(s) invisible(NULL) # nolint: object_usage_linter. mock binding
+  )
+
+  oa_call <- 0L
+  local_mocked_bindings(
+    openalex_get = function(doi, timeout) {
+      oa_call <<- oa_call + 1L
+      if (oa_call == 1L) {
+        mock_openalex_response(doi = doi, title = "Paper A")
+      } else {
+        stop("Network error")
+      }
+    },
+    s2_get = function(doi, timeout) {
+      mock_s2_response(doi = doi, title = "Paper B from S2")
+    }
+  )
+
   sr <- make_scan_result_with_refs(c(
     "A. doi:10.1234/good",
     "B. doi:10.1234/bad"
   ))
-
-  call_count <- 0L
-  local_mocked_bindings(crossref_get = function(doi, mailto, timeout) { # nolint: object_usage_linter.
-    call_count <<- call_count + 1L
-    if (grepl("bad", doi)) stop("Not found")
-    mock_crossref_response(doi = doi)
-  })
-  local_mocked_bindings(resp_body_json = function(resp) resp$body, .package = "httr2") # nolint: object_usage_linter.
-
   expect_warning(
     result <- fetch_references(sr),
-    "Failed to fetch"
+    "OpenAlex request failed"
   )
-  expect_length(result, 1L)
-  expect_equal(result[[1L]]$doi, "10.1234/good")
+
+  expect_length(result, 2L)
+  expect_equal(result[[1L]]$title, "Paper A")
+  expect_equal(result[[2L]]$title, "Paper B from S2")
+})
+
+test_that("T27: state persistence across fetch_references calls", {
+  # Given: first call triggers 429 → interval expanded
+  # When:  second call made
+  # Then:  expanded interval persists (not reset by detect_profiles)
+  init_anonymous_profile()
+  local_mocked_bindings(
+    rate_limit_sleep = function(s) invisible(NULL) # nolint: object_usage_linter. mock binding
+  )
+
+  oa_call <- 0L
+  local_mocked_bindings(
+    openalex_get = function(doi, timeout) {
+      oa_call <<- oa_call + 1L
+      if (oa_call == 1L) {
+        mock_openalex_response(status = 429L)
+      } else {
+        mock_openalex_response(doi = doi)
+      }
+    },
+    s2_get = function(doi, timeout) mock_s2_response(doi = doi)
+  )
+
+  sr1 <- make_scan_result_with_refs("A. doi:10.1234/first")
+  fetch_references(sr1)
+
+  expanded <- bridle:::.api_state$oa_interval
+  expect_gt(expanded, 0.33)
+
+  sr2 <- make_scan_result_with_refs("B. doi:10.5678/second")
+  fetch_references(sr2)
+
+  expect_equal(bridle:::.api_state$oa_interval, expanded)
 })

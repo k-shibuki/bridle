@@ -4,12 +4,10 @@
 \alias{fetch_references}
 \title{Fetch Reference Metadata}
 \usage{
-fetch_references(scan_result, mailto = NULL, timeout = 10)
+fetch_references(scan_result, timeout = 10)
 }
 \arguments{
 \item{scan_result}{A \link{ScanResult} object.}
-
-\item{mailto}{Email address for polite CrossRef API access (character).}
 
 \item{timeout}{Request timeout in seconds (numeric).}
 }
@@ -19,10 +17,18 @@ A list of reference metadata lists, each containing \code{doi},
 }
 \description{
 Resolves DOIs and retrieves bibliographic metadata (title, authors,
-abstract) via CrossRef API and PubMed Entrez API to enrich the
+abstract) via OpenAlex and Semantic Scholar APIs to enrich the
 \code{ScanResult} reference list for the AI Drafter.
 
 Takes a \link{ScanResult} and resolves its reference strings into structured
-bibliographic metadata. DOIs are resolved via CrossRef; PubMed is used
-as a fallback for abstract retrieval.
+bibliographic metadata. OpenAlex is the primary source; Semantic Scholar
+supplements missing abstracts or serves as fallback when OpenAlex
+returns 404.
+}
+\details{
+API access profiles are configured via environment variables:
+\itemize{
+\item \code{BRIDLE_OPENALEX_EMAIL}: enables identified (polite) pool
+\item \code{BRIDLE_S2_API_KEY}: enables authenticated access
+}
 }

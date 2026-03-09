@@ -1,62 +1,113 @@
 #' Fetch Reference Metadata
 #'
 #' Resolves DOIs and retrieves bibliographic metadata (title, authors,
-#' abstract) via CrossRef API and PubMed Entrez API to enrich the
+#' abstract) via OpenAlex and Semantic Scholar APIs to enrich the
 #' `ScanResult` reference list for the AI Drafter.
 #'
 #' @name fetch_references
 #' @importFrom rlang %||%
 NULL
 
-#' Fetch Reference Metadata from CrossRef and PubMed
+# -- API state management -----------------------------------------------------
+
+.api_state <- new.env(parent = emptyenv())
+
+#' Detect API profiles from environment variables
 #'
-#' Takes a [ScanResult] and resolves its reference strings into structured
-#' bibliographic metadata. DOIs are resolved via CrossRef; PubMed is used
-#' as a fallback for abstract retrieval.
-#'
-#' @param scan_result A [ScanResult] object.
-#' @param mailto Email address for polite CrossRef API access (character).
-#' @param timeout Request timeout in seconds (numeric).
-#' @return A list of reference metadata lists, each containing `doi`,
-#'   `title`, `authors`, `abstract`, `journal`, `year`.
-#' @export
-fetch_references <- function(scan_result, mailto = NULL, timeout = 10) {
-  refs <- scan_result@references
-  if (length(refs) == 0L) {
-    return(list())
+#' Initializes `.api_state` with rate-limit intervals and credentials
+#' based on `BRIDLE_OPENALEX_EMAIL` and `BRIDLE_S2_API_KEY`.
+#' Idempotent: skips if already initialized, preserving dynamic interval
+#' expansions and auth downgrade state across multiple calls.
+#' @keywords internal
+detect_profiles <- function() {
+  if (isTRUE(.api_state$initialized)) {
+    return(invisible(NULL))
   }
 
-  dois <- extract_dois(refs)
-  if (length(dois) == 0L) {
-    return(list())
+  oa_email <- Sys.getenv("BRIDLE_OPENALEX_EMAIL", unset = "")
+  s2_key <- Sys.getenv("BRIDLE_S2_API_KEY", unset = "")
+
+  .api_state$oa_email <- if (nzchar(oa_email)) oa_email else NULL
+  .api_state$oa_interval <- if (nzchar(oa_email)) 0.25 else 0.33
+  .api_state$oa_last <- 0
+  .api_state$oa_429_streak <- 0L
+
+  .api_state$s2_api_key <- if (nzchar(s2_key)) s2_key else NULL
+  .api_state$s2_interval <- if (nzchar(s2_key)) 1.1 else 3.0
+  .api_state$s2_last <- 0
+  .api_state$s2_429_streak <- 0L
+  .api_state$s2_downgraded <- FALSE
+
+  .api_state$warned_no_env <- FALSE
+
+  if (!nzchar(oa_email) && !nzchar(s2_key)) {
+    cli::cli_warn(c(
+      "No API credentials configured.",
+      "i" = "Set {.envvar BRIDLE_OPENALEX_EMAIL} for faster OpenAlex access.",
+      "i" = "Set {.envvar BRIDLE_S2_API_KEY} for faster Semantic Scholar access."
+    ))
+    .api_state$warned_no_env <- TRUE
   }
 
-  results <- list()
-  for (doi in dois) {
-    meta <- tryCatch(
-      fetch_crossref_metadata(doi, mailto, timeout),
-      error = function(e) {
-        cli::cli_warn(
-          "Failed to fetch metadata for DOI {.val {doi}}: {conditionMessage(e)}"
-        )
-        NULL
-      }
-    )
-    if (!is.null(meta)) {
-      if (is.null(meta$abstract) || nchar(meta$abstract) == 0L) {
-        abstract <- tryCatch(
-          fetch_pubmed_abstract(meta$title, timeout),
-          error = function(e) NULL
-        )
-        if (!is.null(abstract)) {
-          meta$abstract <- abstract
-        }
-      }
-      results <- c(results, list(meta))
-    }
-  }
-  results
+  .api_state$initialized <- TRUE
+  invisible(NULL)
 }
+
+#' Reset API state for testing
+#' @keywords internal
+reset_api_state <- function() {
+  rm(list = ls(.api_state), envir = .api_state)
+  invisible(NULL)
+}
+
+#' Wrapper around Sys.sleep for testability
+#' @keywords internal
+rate_limit_sleep <- function(seconds) {
+  Sys.sleep(seconds)
+}
+
+#' Enforce per-API rate limit
+#'
+#' Sleeps if the minimum interval since the last request has not elapsed,
+#' then updates the last-request timestamp.
+#' @param api `"openalex"` or `"s2"`.
+#' @keywords internal
+enforce_rate_limit <- function(api) {
+  prefix <- switch(api,
+    openalex = "oa",
+    s2 = "s2"
+  )
+  interval <- .api_state[[paste0(prefix, "_interval")]]
+  last <- .api_state[[paste0(prefix, "_last")]]
+
+  elapsed <- proc.time()[["elapsed"]] - last
+  if (elapsed < interval) {
+    rate_limit_sleep(interval - elapsed)
+  }
+
+  .api_state[[paste0(prefix, "_last")]] <- proc.time()[["elapsed"]]
+  invisible(NULL)
+}
+
+# -- Abstract reconstruction --------------------------------------------------
+
+#' Reconstruct abstract from OpenAlex inverted index
+#'
+#' OpenAlex stores abstracts as a mapping from words to position indices.
+#' Returns `NULL` for `NULL` or empty input.
+#' @param inverted_index Named list mapping words to integer position vectors.
+#' @return Character string or `NULL`.
+#' @keywords internal
+reconstruct_abstract <- function(inverted_index) {
+  if (is.null(inverted_index) || length(inverted_index) == 0L) {
+    return(NULL)
+  }
+  positions <- unlist(inverted_index, use.names = TRUE)
+  words <- rep(names(inverted_index), lengths(inverted_index))
+  paste(words[order(positions)], collapse = " ")
+}
+
+# -- DOI extraction -----------------------------------------------------------
 
 #' Extract DOIs from reference strings
 #' @keywords internal
@@ -70,170 +121,293 @@ extract_dois <- function(refs) {
   unique(trimws(gsub("[.)]+$", "", dois)))
 }
 
-#' Fetch metadata from CrossRef API (mockable wrapper)
-#' @keywords internal
-fetch_crossref_metadata <- function(doi, mailto = NULL, timeout = 10) {
-  resp <- crossref_get(doi, mailto, timeout)
-  parse_crossref_response(resp)
-}
+# -- OpenAlex API layer -------------------------------------------------------
 
-#' Perform HTTP GET to CrossRef API
+#' Perform HTTP GET to OpenAlex API
+#'
+#' Thin wrapper for mocking. Uses `select` to limit response fields
+#' and `mailto` for identified-profile requests.
 #' @keywords internal
-crossref_get <- function(doi, mailto = NULL, timeout = 10) {
-  url <- paste0("https://api.crossref.org/works/", doi)
+openalex_get <- function(doi, timeout = 10) {
+  url <- paste0("https://api.openalex.org/works/https://doi.org/", doi)
   req <- httr2::request(url)
-  req <- httr2::req_timeout(req, timeout)
-  req <- httr2::req_retry(req, max_tries = 3, backoff = ~2)
-  if (!is.null(mailto)) {
-    req <- httr2::req_url_query(req, mailto = mailto)
+  req <- httr2::req_url_query(req,
+    select = paste0(
+      "id,title,abstract_inverted_index,publication_year,",
+      "authorships,doi,primary_location"
+    )
+  )
+  if (!is.null(.api_state$oa_email)) {
+    req <- httr2::req_url_query(req, mailto = .api_state$oa_email)
   }
   req <- httr2::req_headers(req, `User-Agent` = "bridle R package")
+  req <- httr2::req_timeout(req, timeout)
+  req <- httr2::req_retry(req, max_tries = 3, backoff = ~2)
+  req <- httr2::req_error(req, is_error = function(resp) FALSE)
   httr2::req_perform(req)
 }
 
-#' Parse CrossRef API response into structured metadata
+#' Parse OpenAlex API response into structured metadata
 #' @keywords internal
-parse_crossref_response <- function(resp) {
-  body <- httr2::resp_body_json(resp)
-  work <- body[["message"]]
-  if (is.null(work)) {
-    return(NULL)
-  }
+parse_openalex_response <- function(resp) {
+  body <- httr2::resp_body_json(resp, simplifyVector = FALSE)
 
-  title_parts <- work[["title"]]
-  title <- if (is.list(title_parts) && length(title_parts) > 0L) {
-    title_parts[[1L]]
-  } else if (is.character(title_parts)) {
-    paste(title_parts, collapse = " ")
-  } else {
-    ""
-  }
+  doi_raw <- body[["doi"]] %||% ""
+  doi <- sub("^https://doi\\.org/", "", doi_raw)
 
-  authors <- extract_crossref_authors(work[["author"]])
-  abstract <- work[["abstract"]] %||% ""
-  abstract <- gsub("<[^>]+>", "", abstract)
+  title <- body[["title"]] %||% ""
 
-  journal_parts <- work[["container-title"]]
-  journal <- if (is.list(journal_parts) && length(journal_parts) > 0L) {
-    journal_parts[[1L]]
-  } else if (is.character(journal_parts)) {
-    paste(journal_parts, collapse = " ")
-  } else {
-    ""
-  }
+  authorships <- body[["authorships"]] %||% list()
+  authors <- vapply(authorships, function(a) {
+    a[["author"]][["display_name"]] %||% ""
+  }, character(1))
 
-  year <- extract_crossref_year(work)
+  abstract <- reconstruct_abstract(body[["abstract_inverted_index"]])
+
+  journal <- body[["primary_location"]][["source"]][["display_name"]]
+
+  year <- body[["publication_year"]]
+  if (!is.null(year)) year <- as.integer(year)
 
   list(
-    doi = work[["DOI"]] %||% "",
+    doi = doi,
     title = title,
     authors = authors,
     abstract = abstract,
-    journal = journal,
-    year = year
+    journal = journal %||% NA_character_,
+    year = year %||% NA_integer_
   )
 }
 
-#' Extract author names from CrossRef author list
+#' Fetch metadata from OpenAlex with rate limiting and error handling
+#'
+#' Returns parsed metadata on success, `NULL` on 404 or error.
+#' Tracks 429 streak and expands rate-limit interval on throttling.
 #' @keywords internal
-extract_crossref_authors <- function(author_list) {
-  if (is.null(author_list)) {
-    return(character(0))
+fetch_openalex <- function(doi, timeout = 10) {
+  enforce_rate_limit("openalex")
+  resp <- tryCatch(
+    openalex_get(doi, timeout),
+    error = function(e) {
+      cli::cli_warn(
+        "OpenAlex request failed for DOI {.val {doi}}: {conditionMessage(e)}"
+      )
+      NULL
+    }
+  )
+  if (is.null(resp)) {
+    return(NULL)
   }
-  vapply(author_list, function(a) {
-    given <- a[["given"]] %||% ""
-    family <- a[["family"]] %||% ""
-    trimws(paste(given, family))
-  }, character(1))
+
+  status <- httr2::resp_status(resp)
+
+  if (status == 429L) {
+    .api_state$oa_429_streak <- .api_state$oa_429_streak + 1L
+    .api_state$oa_interval <- .api_state$oa_interval * 1.5
+    threshold <- if (!is.null(.api_state$oa_email)) 5L else 2L
+    if (.api_state$oa_429_streak >= threshold) {
+      cli::cli_warn(
+        "OpenAlex rate limit exceeded; skipping remaining DOIs."
+      )
+    }
+    return(NULL)
+  }
+  if (status == 404L) {
+    return(NULL)
+  }
+  if (status >= 400L) {
+    cli::cli_warn("OpenAlex returned HTTP {status} for DOI {.val {doi}}")
+    return(NULL)
+  }
+
+  .api_state$oa_429_streak <- 0L
+  parse_openalex_response(resp)
 }
 
-#' Extract publication year from CrossRef work metadata
+# -- Semantic Scholar API layer ------------------------------------------------
+
+#' Perform HTTP GET to Semantic Scholar API
+#'
+#' Thin wrapper for mocking. Includes `x-api-key` header when authenticated.
 #' @keywords internal
-extract_crossref_year <- function(work) {
-  pub <- work[["published-print"]] %||%
-    work[["published-online"]] %||%
-    work[["created"]]
-  if (!is.null(pub)) {
-    parts <- pub[["date-parts"]]
-    if (is.list(parts) && length(parts) > 0L) {
-      first <- parts[[1L]]
-      if (length(first) > 0L) {
-        return(as.integer(first[[1L]]))
+s2_get <- function(doi, timeout = 10) {
+  url <- paste0(
+    "https://api.semanticscholar.org/graph/v1/paper/DOI:", doi
+  )
+  req <- httr2::request(url)
+  req <- httr2::req_url_query(req,
+    fields = "paperId,title,abstract,year,authors,venue,externalIds"
+  )
+  if (!is.null(.api_state$s2_api_key)) {
+    req <- httr2::req_headers(req, `x-api-key` = .api_state$s2_api_key)
+  }
+  req <- httr2::req_timeout(req, timeout)
+  req <- httr2::req_retry(req, max_tries = 3, backoff = ~2)
+  req <- httr2::req_error(req, is_error = function(resp) FALSE)
+  httr2::req_perform(req)
+}
+
+#' Parse Semantic Scholar API response into structured metadata
+#' @keywords internal
+parse_s2_response <- function(resp) {
+  body <- httr2::resp_body_json(resp, simplifyVector = FALSE)
+
+  doi <- body[["externalIds"]][["DOI"]] %||% ""
+  title <- body[["title"]] %||% ""
+
+  author_list <- body[["authors"]] %||% list()
+  authors <- vapply(author_list, function(a) {
+    a[["name"]] %||% ""
+  }, character(1))
+
+  abstract <- body[["abstract"]]
+
+  journal <- body[["venue"]]
+  if (identical(journal, "")) journal <- NA_character_
+
+  year <- body[["year"]]
+  if (!is.null(year)) year <- as.integer(year)
+
+  list(
+    doi = doi,
+    title = title,
+    authors = authors,
+    abstract = abstract,
+    journal = journal %||% NA_character_,
+    year = year %||% NA_integer_
+  )
+}
+
+#' Fetch metadata from Semantic Scholar with rate limiting and error handling
+#'
+#' Handles auth downgrade (401/403 → anonymous), 429 streak tracking,
+#' and dynamic interval expansion.
+#' @keywords internal
+fetch_s2 <- function(doi, timeout = 10) {
+  enforce_rate_limit("s2")
+  resp <- tryCatch(
+    s2_get(doi, timeout),
+    error = function(e) {
+      cli::cli_warn(
+        "Semantic Scholar request failed for DOI {.val {doi}}: {conditionMessage(e)}"
+      )
+      NULL
+    }
+  )
+  if (is.null(resp)) {
+    return(NULL)
+  }
+
+  status <- httr2::resp_status(resp)
+
+  if (status %in% c(401L, 403L) && !.api_state$s2_downgraded) {
+    .api_state$s2_downgraded <- TRUE
+    .api_state$s2_interval <- 3.0
+    .api_state$s2_api_key <- NULL
+    cli::cli_warn(
+      "Semantic Scholar API key rejected; falling back to anonymous access."
+    )
+    enforce_rate_limit("s2")
+    resp <- tryCatch(
+      s2_get(doi, timeout),
+      error = function(e) NULL
+    )
+    if (is.null(resp)) {
+      return(NULL)
+    }
+    status <- httr2::resp_status(resp)
+  }
+
+  if (status == 429L) {
+    .api_state$s2_429_streak <- .api_state$s2_429_streak + 1L
+    .api_state$s2_interval <- .api_state$s2_interval * 1.5
+    threshold <- if (!is.null(.api_state$s2_api_key)) 5L else 2L
+    if (.api_state$s2_429_streak >= threshold) {
+      cli::cli_warn(
+        "Semantic Scholar rate limit exceeded; skipping remaining DOIs."
+      )
+    }
+    return(NULL)
+  }
+  if (status == 404L) {
+    return(NULL)
+  }
+  if (status >= 400L) {
+    return(NULL)
+  }
+
+  .api_state$s2_429_streak <- 0L
+  parse_s2_response(resp)
+}
+
+#' Fetch only the abstract from Semantic Scholar
+#'
+#' Delegates to [fetch_s2()] and extracts the abstract field.
+#' @keywords internal
+fetch_s2_abstract <- function(doi, timeout = 10) {
+  meta <- fetch_s2(doi, timeout)
+  if (is.null(meta)) {
+    return(NULL)
+  }
+  meta$abstract
+}
+
+# -- Public API ---------------------------------------------------------------
+
+#' Fetch Reference Metadata from OpenAlex and Semantic Scholar
+#'
+#' Takes a [ScanResult] and resolves its reference strings into structured
+#' bibliographic metadata. OpenAlex is the primary source; Semantic Scholar
+#' supplements missing abstracts or serves as fallback when OpenAlex
+#' returns 404.
+#'
+#' API access profiles are configured via environment variables:
+#' - `BRIDLE_OPENALEX_EMAIL`: enables identified (polite) pool
+#' - `BRIDLE_S2_API_KEY`: enables authenticated access
+#'
+#' @param scan_result A [ScanResult] object.
+#' @param timeout Request timeout in seconds (numeric).
+#' @return A list of reference metadata lists, each containing `doi`,
+#'   `title`, `authors`, `abstract`, `journal`, `year`.
+#' @export
+fetch_references <- function(scan_result, timeout = 10) {
+  refs <- scan_result@references
+  if (length(refs) == 0L) {
+    return(list())
+  }
+
+  dois <- extract_dois(refs)
+  if (length(dois) == 0L) {
+    return(list())
+  }
+
+  detect_profiles()
+
+  results <- list()
+
+  for (doi in dois) {
+    oa_threshold <- if (!is.null(.api_state$oa_email)) 5L else 2L
+    s2_threshold <- if (!is.null(.api_state$s2_api_key)) 5L else 2L
+    hit_limit <- .api_state$oa_429_streak >= oa_threshold ||
+      .api_state$s2_429_streak >= s2_threshold
+    if (hit_limit) break
+
+    meta <- fetch_openalex(doi, timeout)
+
+    if (.api_state$oa_429_streak >= oa_threshold) break
+
+    if (is.null(meta)) {
+      meta <- fetch_s2(doi, timeout)
+      if (is.null(meta)) next
+    } else if (is.null(meta$abstract) || !nzchar(meta$abstract)) {
+      abstract <- fetch_s2_abstract(doi, timeout)
+      if (!is.null(abstract) && nzchar(abstract)) {
+        meta$abstract <- abstract
       }
     }
+
+    results <- c(results, list(meta))
   }
-  NA_integer_
-}
 
-#' Fetch abstract from PubMed Entrez API (mockable wrapper)
-#' @keywords internal
-fetch_pubmed_abstract <- function(title, timeout = 10) {
-  pmid <- pubmed_search(title, timeout)
-  if (is.null(pmid)) {
-    return(NULL)
-  }
-  pubmed_fetch_abstract(pmid, timeout)
-}
-
-#' Search PubMed for a paper by title
-#' @keywords internal
-pubmed_search <- function(title, timeout = 10) {
-  resp <- pubmed_search_get(title, timeout)
-  body <- httr2::resp_body_json(resp)
-  ids <- body[["esearchresult"]][["idlist"]]
-  if (is.null(ids) || length(ids) == 0L) {
-    return(NULL)
-  }
-  ids[[1L]]
-}
-
-#' Perform PubMed search HTTP request
-#' @keywords internal
-pubmed_search_get <- function(title, timeout = 10) {
-  url <- "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
-  req <- httr2::request(url)
-  req <- httr2::req_url_query(req,
-    db = "pubmed",
-    term = paste0(title, "[Title]"),
-    retmode = "json",
-    retmax = 1L
-  )
-  req <- httr2::req_timeout(req, timeout)
-  req <- httr2::req_retry(req, max_tries = 2, backoff = ~2)
-  httr2::req_perform(req)
-}
-
-#' Fetch abstract text from PubMed by PMID
-#' @keywords internal
-pubmed_fetch_abstract <- function(pmid, timeout = 10) {
-  resp <- pubmed_efetch_get(pmid, timeout)
-  text <- httr2::resp_body_string(resp)
-  extract_abstract_from_xml(text)
-}
-
-#' Perform PubMed efetch HTTP request
-#' @keywords internal
-pubmed_efetch_get <- function(pmid, timeout = 10) {
-  url <- "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
-  req <- httr2::request(url)
-  req <- httr2::req_url_query(req,
-    db = "pubmed",
-    id = pmid,
-    rettype = "xml"
-  )
-  req <- httr2::req_timeout(req, timeout)
-  req <- httr2::req_retry(req, max_tries = 2, backoff = ~2)
-  httr2::req_perform(req)
-}
-
-#' Extract abstract text from PubMed XML response
-#' @keywords internal
-extract_abstract_from_xml <- function(xml_text) {
-  pattern <- "<AbstractText[^>]*>(.*?)</AbstractText>"
-  m <- regmatches(xml_text, gregexpr(pattern, xml_text, perl = TRUE))[[1L]]
-  if (length(m) == 0L) {
-    return(NULL)
-  }
-  parts <- gsub("<[^>]+>", "", m)
-  paste(parts, collapse = " ")
+  results
 }
