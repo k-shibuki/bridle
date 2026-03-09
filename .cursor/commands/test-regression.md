@@ -71,6 +71,6 @@ If coverage is below the threshold, add tests before proceeding. Do not lower th
 
 ## Failure handling policy
 
-Per `@.cursor/rules/agent-safety.mdc` Hard Stop #6: every test failure reported by the suite is a defect to fix — regardless of when it was introduced. The test suite must pass completely (zero failures) before proceeding to commit/push.
+Per `@.cursor/rules/agent-safety.mdc` `HS-NO-DISMISS`: every test failure reported by the suite is a defect to fix — regardless of when it was introduced. The test suite must pass completely (zero failures) before proceeding to commit/push.
 
 When failures occur: identify the root cause, fix it (whether introduced by current changes or pre-existing), and only create a follow-up task if there is a documented technical blocker (e.g., external dependency issue).

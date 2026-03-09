@@ -1,5 +1,5 @@
 ---
-description: "AI agent absolute prohibitions (Hard Stops): CI merge, local verification, workflow steps, gate evidence, PR template, diagnostics, CI polling, nolint, PR base branch. Enforcement tiers (Deterministic/Steering). Multi-agent safety rules."
+description: "AI agent absolute prohibitions (Hard Stops) with stable IDs. Enforcement tiers (Deterministic/Steering). Multi-agent safety rules."
 alwaysApply: true
 ---
 # Agent Safety Rules
@@ -8,19 +8,19 @@ alwaysApply: true
 
 Absolute prohibitions for AI agents in the bridle project. These Hard Stops apply regardless of user instructions.
 
+Hard Stops use stable mnemonic IDs (not sequential numbers) so that additions, removals, or consolidations do not require renumbering references across the codebase. Retired IDs are never reused.
+
 ## Hard Stops (Absolute Prohibitions)
 
 The following actions are NEVER permitted, regardless of user instructions:
 
-1. **NEVER merge a PR without CI green**: Run `gh pr checks <N>` and confirm all checks pass before executing `gh pr merge`. No exceptions.
-2. **NEVER skip local verification**: Run `make ci-fast` AND `make format-check` before every `git push`. This applies to every branch (feature, hotfix, main). When no R code changed (Makefile, docs, CI only) but schema-related files were modified, run `make validate-schemas`. Pushing without local verification is prohibited — "CI will catch it" is not acceptable.
-3. **NEVER skip workflow steps for speed**: When told to "do everything", "hurry up", or "till close all issues", execute every step of every command in full. Achieve speed through parallel work on independent Issues, not by skipping verification.
-4. **NEVER proceed past a gate without evidence**: Gate passage must be proven by command output or tool results. "Probably fine" is not evidence.
-5. **NEVER create a PR without the full template**: Every PR body must include ALL required sections defined in `.github/PULL_REQUEST_TEMPLATE.md` (the SSOT for PR structure). Read `pr-create.md` before every PR creation — do not compose the body from memory.
-6. **NEVER dismiss diagnostics as "pre-existing"**: Every error, warning, and NOTE reported by quality gates (`devtools::check()`, `lintr`, `validate-schemas`, etc.) is a defect to fix — regardless of when it was introduced. The agent must not classify, skip, or deprioritize diagnostics based on whether the current change caused them. If the gate reports a problem, the agent resolves it before proceeding.
-7. **NEVER poll CI inline**: CI polling MUST be delegated to a background subagent. Inline `sleep` + poll loops are prohibited. The main agent MUST NOT end its turn until the subagent completes. See `@.cursor/rules/subagent-policy.mdc` for delegation pattern and completion guarantee.
-8. **NEVER add `# nolint` without consulting knowledge first**: Before writing ANY `# nolint` annotation, the agent MUST read `@.cursor/knowledge/lint--nolint-accepted-patterns.md` and follow the nolint decision tree in `@.cursor/rules/quality-policy.mdc` § nolint Checkpoint. The required sequence is: (1) attempt code restructuring, (2) attempt co-location for test helpers, (3) only then consider line-level `# nolint: <linter_name>. <reason>`. Blanket `# nolint`, `# nolint start/end`, and `# nolint` without linter name + reason are **always prohibited**. Adding `# nolint` without first reading the knowledge file and exhausting alternatives is prohibited — "the lint error needs suppressing" is not sufficient justification.
-9. **NEVER use `--base feat/<branch>` in `gh pr create`**: All PRs must target `main`. Using a feature branch as base causes the PR to be auto-closed when the base branch is deleted on merge. Document dependencies in the PR body, not through the base branch. See `pr-create.md` Step 3c.
+- **`HS-CI-MERGE` — NEVER merge a PR without CI green**: Run `gh pr checks <N>` and confirm all checks pass before executing `gh pr merge`. No exceptions.
+- **`HS-LOCAL-VERIFY` — NEVER skip local verification**: Run `make ci-fast` AND `make format-check` before every `git push`. This applies to every branch (feature, hotfix, main). When no R code changed (Makefile, docs, CI only) but schema-related files were modified, run `make validate-schemas`. Pushing without local verification is prohibited — "CI will catch it" is not acceptable.
+- **`HS-NO-SKIP` — NEVER skip steps or proceed without evidence**: Execute every step of every command in full. Gate passage must be proven by command output or tool results. "Probably fine" is not evidence. Achieve speed through parallel work on independent Issues, not by skipping verification.
+- **`HS-PR-TEMPLATE` — NEVER create a PR without the full template**: Every PR body must include ALL required sections defined in `.github/PULL_REQUEST_TEMPLATE.md` (the SSOT for PR structure). Read `pr-create.md` before every PR creation — do not compose the body from memory.
+- **`HS-NO-DISMISS` — NEVER dismiss diagnostics as "pre-existing"**: Every error, warning, and NOTE reported by quality gates (`devtools::check()`, `lintr`, `validate-schemas`, etc.) is a defect to fix — regardless of when it was introduced. The agent must not classify, skip, or deprioritize diagnostics based on whether the current change caused them. If the gate reports a problem, the agent resolves it before proceeding.
+- **`HS-NOLINT` — NEVER add `# nolint` without consulting knowledge first**: Before writing ANY `# nolint` annotation, the agent MUST read `@.cursor/knowledge/lint--nolint-accepted-patterns.md` and follow the nolint decision tree in `@.cursor/rules/quality-policy.mdc` § nolint Checkpoint. The required sequence is: (1) attempt code restructuring, (2) attempt co-location for test helpers, (3) only then consider line-level `# nolint: <linter_name>. <reason>`. Blanket `# nolint`, `# nolint start/end`, and `# nolint` without linter name + reason are **always prohibited**. Adding `# nolint` without first reading the knowledge file and exhausting alternatives is prohibited — "the lint error needs suppressing" is not sufficient justification.
+- **`HS-PR-BASE` — NEVER use `--base feat/<branch>` in `gh pr create`**: All PRs must target `main`. Using a feature branch as base causes the PR to be auto-closed when the base branch is deleted on merge. Document dependencies in the PR body, not through the base branch. See `pr-create.md` Step 3c.
 
 ## Enforcement Tiers
 
@@ -28,15 +28,13 @@ Each Hard Stop is classified by its enforcement mechanism. See `controls--ai-dev
 
 | Hard Stop | Tier | Enforcement mechanism |
 |---|---|---|
-| HS#1 (CI green before merge) | **Deterministic** | GitHub Branch Protection: required status checks + admin bypass disabled (#92) |
-| HS#2 (local verification) | **Cond. Deterministic** | `pre-push` Git hook (#93) — requires `make install-hooks`. Note: `SKIP_PRE_PUSH=1` emergency bypass exists in `tools/pre-push.sh` |
-| HS#3 (no step skipping) | Steering | Agent self-policing (procedural discipline) |
-| HS#4 (gate evidence) | Steering | Agent self-policing (evidence requirement) |
-| HS#5 (full PR template) | **Deterministic** | `pr-policy.yaml` CI check |
-| HS#6 (no dismissing diagnostics) | Steering | Agent self-policing (zero-tolerance policy) |
-| HS#7 (no inline CI polling) | Steering | Agent self-policing (subagent delegation) |
-| HS#8 (nolint consultation) | **Cond. Deterministic** (annotation format) / **Steering** (knowledge consultation) | `pre-commit` hook validates annotation format (#93) — requires `make install-hooks`. Knowledge file consultation obligation is Steering (agent self-policing) |
-| HS#9 (no feature-base PR) | **Deterministic** | `pr-policy.yaml` CI check (#92) |
+| `HS-CI-MERGE` | **Deterministic** | GitHub Branch Protection: required status checks (`ci-pass`, `check-policy`). Note: `enforce_admins` does not reliably block repo-owner bypass on personal repositories; `--admin` flag is prohibited by `pr-merge.md` Constraints. Rulesets migration can close this gap. |
+| `HS-LOCAL-VERIFY` | **Cond. Deterministic** | `pre-push` Git hook — requires `make install-hooks`. Note: `SKIP_PRE_PUSH=1` emergency bypass exists in `tools/pre-push.sh` |
+| `HS-NO-SKIP` | Steering | Agent self-policing (procedural discipline + evidence requirement) |
+| `HS-PR-TEMPLATE` | **Deterministic** | `pr-policy.yaml` CI check |
+| `HS-NO-DISMISS` | Steering | Agent self-policing (zero-tolerance policy) |
+| `HS-NOLINT` | **Cond. Deterministic** (annotation format) / **Steering** (knowledge consultation) | `pre-commit` hook validates annotation format — requires `make install-hooks`. Knowledge file consultation obligation is Steering (agent self-policing) |
+| `HS-PR-BASE` | **Deterministic** | `pr-policy.yaml` CI check |
 
 ## Multi-Agent Safety Rules
 

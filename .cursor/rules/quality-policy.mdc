@@ -13,7 +13,7 @@ Procedures (which commands to run and how) are documented in `@.cursor/commands/
 
 ### Zero-Tolerance for Pre-existing Issues
 
-Per `agent-safety.mdc` Hard Stop #6: every diagnostic reported by quality gates must be fixed regardless of when it was introduced. "Pre-existing" is never a valid reason to skip a diagnostic.
+Per `agent-safety.mdc` `HS-NO-DISMISS`: every diagnostic reported by quality gates must be fixed regardless of when it was introduced. "Pre-existing" is never a valid reason to skip a diagnostic.
 
 ## Prohibited Practices (Workarounds)
 
@@ -34,7 +34,7 @@ The following are prohibited in principle (exception only with stated justificat
 5. Inappropriate `# nolint` introduction (new additions, propagation)
 6. Clear security issues (authentication/authorization, input validation, data retention)
 
-## nolint Checkpoint (Hard Stop #8 — Decision Tree)
+## nolint Checkpoint (`HS-NOLINT` — Decision Tree)
 
 **Trigger**: The agent considers adding `# nolint` to any line of code.
 

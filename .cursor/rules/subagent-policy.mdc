@@ -6,7 +6,7 @@ alwaysApply: false
 
 ## Subagent Delegation Pattern
 
-The main agent **MUST** delegate all blocking operations (CI polling, sequential PR merges, long builds) to a background subagent (see Hard Stop #7 in `@.cursor/rules/agent-safety.mdc`). This applies unconditionally — not only when independent Issues exist.
+The main agent **MUST** delegate all blocking operations (CI polling, sequential PR merges, long builds) to a background subagent. Inline `sleep` + poll loops in the main agent are prohibited — CI polling MUST always use a background subagent. This applies unconditionally — not only when independent Issues exist.
 
 ### When to delegate
 

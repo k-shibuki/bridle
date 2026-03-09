@@ -15,7 +15,7 @@ This is a **meta-command** that orchestrates all other commands. It does not imp
 
 ## Constraints
 
-This command is bound by `@.cursor/rules/agent-safety.mdc` Hard Stop #3 (no step skipping) and Hard Stop #4 (gate evidence). Specifically:
+This command is bound by `@.cursor/rules/agent-safety.mdc` `HS-NO-SKIP` (no skipping steps or proceeding without evidence). Specifically:
 
 - Follow the defined workflow order without skipping commands or steps within commands
 - Present proposed actions and wait for user confirmation before executing
@@ -89,8 +89,8 @@ Use the evidence to classify the current state into one of these positions:
 | On feature branch, tests pass, docs not reviewed | **Tests pass** | `docs-discover` (Mode 2) |
 | On feature branch, docs OK, uncommitted changes | **Docs OK** | `commit` |
 | On feature branch, committed, no PR | **Committed** | `pr-create` |
-| Open PR, CI still running, independent Issue exists | **CI pending (parallel)** | **Hard Stop #7**: Delegate CI-wait (Template 3, no merge) to background subagent, then start `implement` on independent Issue. When CI completes, proceed to `pr-review`. |
-| Open PR, CI still running, no independent Issue | **CI pending (housekeeping)** | **Hard Stop #7**: Delegate CI-wait to background subagent, then do housekeeping (see Step 6). |
+| Open PR, CI still running, independent Issue exists | **CI pending (parallel)** | Delegate CI-wait (Template 3, no merge) to background subagent (see `subagent-policy.mdc`), then start `implement` on independent Issue. When CI completes, proceed to `pr-review`. |
+| Open PR, CI still running, no independent Issue | **CI pending (housekeeping)** | Delegate CI-wait to background subagent (see `subagent-policy.mdc`), then do housekeeping (see Step 6). |
 | Stale local branches detected | **Cleanup needed** | Delete stale branches (see `pr-merge.md` "Post-merge cleanup"). Can be done during housekeeping. |
 | Background subagent running | **Background task in progress** | Check transcript for completion; continue independent work |
 | Open PR, CI all green | **CI green** | `pr-review` |

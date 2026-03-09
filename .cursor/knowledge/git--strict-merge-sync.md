@@ -33,15 +33,22 @@ gh pr view <PR-number> --json mergeStateStatus -q '.mergeStateStatus'
 
 ## Recovery: BEHIND
 
+Merge main into the feature branch (no force-push needed, since
+`required_linear_history` is `false`):
+
 ```bash
 git fetch origin
 git checkout <branch>
-git rebase origin/main
-git push --force-with-lease origin <branch>
+git merge origin/main --no-edit
+git push origin <branch>
 ```
 
 After push, CI re-triggers automatically. Wait for all required checks (`ci-pass`,
 `check-policy`) to pass before merging.
+
+Using `git merge` instead of `git rebase` avoids force-push, which prevents stale
+check results from appearing in the GitHub PR GUI (a known display issue where
+old failed checks from the previous HEAD remain visible alongside new results).
 
 ## Sequential PR Merge Pattern
 
@@ -50,24 +57,18 @@ Subsequent PRs become `BEHIND` even if they were `CLEAN` moments before.
 
 Workflow:
 1. Merge PR A (main advances)
-2. PR B is now `BEHIND` — rebase onto updated main
+2. PR B is now `BEHIND` — merge updated main into PR B's branch
 3. Push PR B — CI re-runs
 4. Wait for CI green on PR B, then merge
 
-This is expected behavior, not an error. Budget time for the rebase-CI cycle
+This is expected behavior, not an error. Budget time for the merge-CI cycle
 when planning sequential merges.
 
-## Admin Bypass and `enforce_admins`
+## `enforce_admins` Limitations
 
-`enforce_admins: true` in Branch Protection forces admins to follow all protection
-rules (status checks, reviews, etc.). This setting is enabled on this repository.
+`enforce_admins: true` in Branch Protection forces admins to follow protection
+rules. This setting is enabled, but on personal repositories it does not reliably
+block the repo owner's `--admin` bypass at the API level (GitHub limitation).
 
-The `gh pr merge --admin` flag is designed to bypass protection rules. With
-`enforce_admins: true`, GitHub should reject admin bypass attempts. However,
-the interaction between `--admin` and `strict: true` has edge cases where
-the bypass may succeed for the up-to-date requirement while status checks
-are still enforced.
-
-**Policy**: Do not use `--admin` flag. Instead, follow the BEHIND recovery
-procedure above. The correct fix for a BEHIND branch is always rebase + CI,
-never an admin override.
+**Policy**: `--admin` is prohibited (see `pr-merge.md` Constraints). The correct
+response to a blocked merge is always to diagnose the cause and fix it.

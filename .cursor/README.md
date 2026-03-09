@@ -139,7 +139,7 @@ doctor → issue-create → implement ─────────→ test-create
                                                   commit → pr-create → [CI] → pr-review → pr-merge
 ```
 
-When CI is pending, `next` always delegates CI-wait to a background subagent (Hard Stop #7). The main agent proceeds with independent Issues or housekeeping. After CI passes, `pr-review` runs before merge:
+When CI is pending, `next` always delegates CI-wait to a background subagent (see `subagent-policy.mdc`). The main agent proceeds with independent Issues or housekeeping. After CI passes, `pr-review` runs before merge:
 
 ```
                          ┌──────────────────────────────────────────────┐
