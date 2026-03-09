@@ -1,5 +1,5 @@
 ---
-trigger: scanner resilience, Layer 3a, Layer 3b, dry-run fuzzing, review_scan, export_scan, import_scan, confidence grading, withCallingHandlers
+trigger: scanner resilience, Layer 3a, Layer 3b, dry-run fuzzing, review_scan, export_scan, import_scan, confidence grading, withCallingHandlers, function classification review
 ---
 # ADR-0008: Scanner Resilience
 
@@ -90,3 +90,41 @@ This ADR extends ADR-0004 without modifying it. ADR-0004's three-layer design is
 - **Harder**: Dry-run fuzzing requires test data and may trigger side effects in poorly-behaved packages (sandboxing needed)
 - **Harder**: Interactive review adds a human-in-the-loop step that may slow down fully automated plugin generation
 - **Harder**: The confidence grading system requires maintenance as new extraction methods are added
+
+## Addendum: Function Classification in review_scan()
+
+### Motivation
+
+ADR-0004 Addendum introduces heuristic-based function classification (analysis / visualization / diagnostic / utility) as part of package-level scanning. Heuristics are imperfect — a function like `escalc` (effect size calculator) may be misclassified as "utility" when it is central to the analysis workflow. Expert correction must be possible.
+
+### Extended review_scan() scope
+
+`review_scan(scan_result)` is extended from reviewing only constraint gaps to also reviewing function classifications:
+
+1. **Constraint gaps** (original scope): Present `gap`-confidence constraints for expert resolution.
+2. **Function classification review** (new scope): Present functions whose auto-classification has low confidence or ambiguous heuristic signals.
+
+Classification confidence is determined by the number of agreeing heuristic signals:
+
+| Confidence | Criteria |
+|------------|----------|
+| `high` | 3+ heuristic signals agree (e.g., formals pattern + Rd title + return type) |
+| `medium` | 2 signals agree |
+| `low` | 1 signal or conflicting signals |
+| `unclassified` | No signals matched any role |
+
+Functions with `low` or `unclassified` confidence are presented to the expert during `review_scan()`.
+
+### Interaction format
+
+```
+review_scan(scan_result)
+# -- Function Classification Review --
+# escalc: classified as "utility" (confidence: low)
+#   Signals: formals include "measure" (+analysis), Rd title is "Calculate Effect Sizes" (+utility)
+#   Override? [analysis / visualization / diagnostic / utility / keep]
+```
+
+### Persistence
+
+Classification overrides are stored in the `PackageScanResult@function_roles` property and persisted via `export_scan()` / `import_scan()`. On re-scan, previously overridden classifications are preserved unless the function's signature has changed.
