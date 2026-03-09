@@ -289,15 +289,17 @@ Run `make help` for all available targets.
 
 ## Development Status
 
-> **Phase 1 complete — Phase 2 (Runtime Engine) is next**
+> **Phase 2 in progress — real-package integration (metafor)**
 
 | Phase | Content | Status |
 |---|---|---|
 | Phase 0 | Design and YAML schema formalization | **Done** |
 | Phase 1 | Package scanner + AI drafter (plugin generation pipeline) | **Done** |
-| Phase 2 | Runtime engine (REPL) | Not started |
+| Phase 2 | Runtime engine (REPL) + real-package integration | **In progress** |
 | Phase 3 | vitals evaluation suite | Not started |
 | Phase 4 | MCP server | Not started |
+
+Phase 2 core components (Graph Engine, Knowledge Retriever, Prompt Assembler, Response Parser, Code Sandbox, Decision Logger, REPL) are implemented. Phase 2c extends validation to a real package (metafor) — see [#129](https://github.com/k-shibuki/bridle/issues/129).
 
 ## License
 
