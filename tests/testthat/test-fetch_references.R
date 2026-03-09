@@ -1,5 +1,6 @@
 # Tests for fetch_references() (OpenAlex / Semantic Scholar API)
 # Issue #132: 27 scenarios (T01-T27)
+# Issue #150: 8 scenarios (T28-T35) — PackageScanResult support
 # Mock points: openalex_get, s2_get (thin HTTP wrappers)
 
 make_scan_result_with_refs <- function(refs) {
@@ -541,4 +542,194 @@ test_that("T27: state persistence across fetch_references calls", {
   fetch_references(sr2)
 
   expect_equal(bridle:::.api_state$oa_interval, expanded)
+})
+
+# -- PackageScanResult support (Issue #150: T28-T35) ---------------------------
+
+make_pkg_scan_result <- function(fn_refs_list) {
+  functions <- list()
+  for (i in seq_along(fn_refs_list)) {
+    fn_name <- names(fn_refs_list)[[i]]
+    functions[[fn_name]] <- ScanResult( # nolint: object_usage_linter. S7 constructor
+      package = "testpkg",
+      func = fn_name,
+      parameters = list(
+        ParameterInfo(name = "x", has_default = TRUE) # nolint: object_usage_linter. S7 constructor
+      ),
+      references = fn_refs_list[[i]],
+      scan_metadata = list(
+        layers_completed = "layer1_formals",
+        timestamp = "2026-01-01T00:00:00+0000",
+        package_version = "0.0.1"
+      )
+    )
+  }
+  PackageScanResult( # nolint: object_usage_linter. S7 constructor
+    package = "testpkg",
+    functions = functions,
+    scan_metadata = list(
+      n_exported = length(fn_refs_list),
+      n_scanned = length(fn_refs_list),
+      timestamp = "2026-01-01T00:00:00+0000",
+      package_version = "0.0.1"
+    )
+  )
+}
+
+test_that("T28: PackageScanResult with 2 functions aggregates references", {
+  # Given: pkg_result with fn_a (DOI-1, DOI-2) and fn_b (DOI-3)
+  # When:  fetch_references(pkg_result)
+  # Then:  returns 3 metadata entries
+  init_anonymous_profile()
+  local_mocked_bindings(
+    rate_limit_sleep = function(s) invisible(NULL) # nolint: object_usage_linter. mock binding
+  )
+  local_mocked_bindings(
+    openalex_get = function(doi, timeout) {
+      mock_openalex_response(doi = doi, title = paste("Paper", doi))
+    }
+  )
+
+  pkg <- make_pkg_scan_result(list(
+    fn_a = c("Ref A1. doi:10.1234/one", "Ref A2. doi:10.1234/two"),
+    fn_b = c("Ref B1. doi:10.1234/three")
+  ))
+  result <- fetch_references(pkg)
+
+  expect_length(result, 3L)
+  expect_equal(
+    sort(vapply(result, `[[`, character(1), "doi")),
+    sort(c("10.1234/one", "10.1234/two", "10.1234/three"))
+  )
+})
+
+test_that("T29: PackageScanResult deduplicates DOIs across functions", {
+  # Given: fn_a refs DOI-1, fn_b also refs DOI-1 plus DOI-2
+  # When:  fetch_references(pkg_result)
+  # Then:  DOI-1 fetched once; returns 2 entries
+  init_anonymous_profile()
+  local_mocked_bindings(
+    rate_limit_sleep = function(s) invisible(NULL) # nolint: object_usage_linter. mock binding
+  )
+
+  fetch_count <- 0L
+  local_mocked_bindings(
+    openalex_get = function(doi, timeout) {
+      fetch_count <<- fetch_count + 1L
+      mock_openalex_response(doi = doi, title = paste("Paper", doi))
+    }
+  )
+
+  pkg <- make_pkg_scan_result(list(
+    fn_a = c("Ref. doi:10.1234/shared"),
+    fn_b = c("Ref. doi:10.1234/shared", "Ref. doi:10.1234/unique")
+  ))
+  result <- fetch_references(pkg)
+
+  expect_length(result, 2L)
+  expect_equal(fetch_count, 2L)
+})
+
+test_that("T30: ScanResult backward compatibility unchanged", {
+  # Given: single ScanResult with refs
+  # When:  fetch_references(sr)
+  # Then:  same behavior as before
+  init_anonymous_profile()
+  local_mocked_bindings(
+    rate_limit_sleep = function(s) invisible(NULL) # nolint: object_usage_linter. mock binding
+  )
+  local_mocked_bindings(
+    openalex_get = function(doi, timeout) {
+      mock_openalex_response(doi = doi, title = "Single Paper")
+    }
+  )
+
+  sr <- make_scan_result_with_refs("Ref. doi:10.1234/test")
+  result <- fetch_references(sr)
+
+  expect_length(result, 1L)
+  expect_equal(result[[1L]]$title, "Single Paper")
+})
+
+test_that("T31: PackageScanResult with no refs returns empty list", {
+  # Given: all functions have empty references
+  # When:  fetch_references(pkg_result)
+  # Then:  returns empty list
+  pkg <- make_pkg_scan_result(list(
+    fn_a = character(0),
+    fn_b = character(0)
+  ))
+  result <- fetch_references(pkg)
+  expect_length(result, 0L)
+})
+
+test_that("T32: PackageScanResult with one function having refs", {
+  # Given: fn_a has refs, fn_b has empty refs
+  # When:  fetch_references(pkg_result)
+  # Then:  returns metadata only from fn_a's DOIs
+  init_anonymous_profile()
+  local_mocked_bindings(
+    rate_limit_sleep = function(s) invisible(NULL) # nolint: object_usage_linter. mock binding
+  )
+  local_mocked_bindings(
+    openalex_get = function(doi, timeout) {
+      mock_openalex_response(doi = doi, title = "Only Paper")
+    }
+  )
+
+  pkg <- make_pkg_scan_result(list(
+    fn_a = c("Ref. doi:10.1234/only"),
+    fn_b = character(0)
+  ))
+  result <- fetch_references(pkg)
+
+  expect_length(result, 1L)
+  expect_equal(result[[1L]]$doi, "10.1234/only")
+})
+
+test_that("T33: NULL scan_result produces error", {
+  # Given: scan_result = NULL
+  # When:  fetch_references(NULL)
+  # Then:  error about type
+  expect_error(
+    fetch_references(NULL),
+    "ScanResult.*PackageScanResult"
+  )
+})
+
+test_that("T34: invalid type produces error", {
+  # Given: scan_result = "not an object"
+  # When:  fetch_references("not an object")
+  # Then:  error about type
+  expect_error(
+    fetch_references("not an object"),
+    "ScanResult.*PackageScanResult"
+  )
+})
+
+test_that("T35: PackageScanResult rate limit across many DOIs", {
+  # Given: package with DOIs across functions; 429 threshold hit
+  # When:  fetch_references(pkg_result)
+  # Then:  stops early at threshold
+  init_anonymous_profile()
+  local_mocked_bindings(
+    rate_limit_sleep = function(s) invisible(NULL) # nolint: object_usage_linter. mock binding
+  )
+
+  local_mocked_bindings(
+    openalex_get = function(doi, timeout) {
+      mock_openalex_response(status = 429L)
+    },
+    s2_get = function(doi, timeout) {
+      mock_s2_response(status = 429L)
+    }
+  )
+
+  pkg <- make_pkg_scan_result(list(
+    fn_a = c("Ref. doi:10.1234/a", "Ref. doi:10.1234/b"),
+    fn_b = c("Ref. doi:10.1234/c", "Ref. doi:10.1234/d")
+  ))
+  suppressWarnings(result <- fetch_references(pkg))
+
+  expect_length(result, 0L)
 })
