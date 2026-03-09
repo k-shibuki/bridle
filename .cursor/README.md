@@ -28,7 +28,7 @@ AI Development System
 | **Commands** | `.cursor/commands/*.md` | Step-by-step procedures | No step skipping |
 | **Knowledge** | `.cursor/knowledge/*.md` | Patterns, playbooks, reference | Advisory (referenced by rules/commands) |
 | **Guards** | `.pre-commit-config.yaml`, `.github/workflows/*.yaml`, `tools/` | Hooks, CI, Branch Protection | Deterministic (tool-enforced) |
-| **Surface** | `Makefile`, `README.md`, `CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/` | Entry points, development API | Discovery / onboarding |
+| **Surface** | `Makefile`, `README.md`, `.github/CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/` | Entry points, development API | Discovery / onboarding |
 
 **Domain relationships**: Design constrains Controls — implementation choices must follow accepted ADRs. Within Controls: Rules declare policies; Guards enforce them deterministically. Commands define procedures constrained by Rules and referencing Knowledge. Surface provides entry points for both human and AI workflows. Each piece of information exists in exactly one place (Single Source of Truth).
 
@@ -109,7 +109,7 @@ Start here to find the right information quickly.
 | CI/CD pipeline | [`.github/workflows/`](../.github/workflows/) |
 | Makefile targets | `make help` or [`Makefile`](../Makefile) |
 | Container setup | [`containers/`](../containers/) + `make doctor` |
-| Contributing (human-readable) | [`CONTRIBUTING.md`](../CONTRIBUTING.md) |
+| Contributing (human-readable) | [`.github/CONTRIBUTING.md`](../.github/CONTRIBUTING.md) |
 | Open Issues / next tasks | `gh issue list --state open` |
 | Development status / phases | [`README.md` § Development Status](../README.md#development-status) |
 
