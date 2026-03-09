@@ -1,17 +1,52 @@
 ---
-trigger: CI-wait template, CI-wait only, merge template, sequential merge, dependent PR merge, delegation template, subagent prompt template, background subagent
+trigger: CI-wait template, CI-wait only, merge template, batch auto-merge, dependent PR merge, delegation template, subagent prompt template, background subagent
 ---
 # Subagent Delegation Templates
 
 Reusable templates for delegating blocking operations to background subagents.
 
-**Preferred**: For single PRs after `pr-review`, use `gh pr merge --auto --squash`
-(see `pr-merge.md` § Auto-merge) instead of delegating. Templates below are for
-cases where auto-merge is unavailable or multiple PRs need coordination.
+## Decision Flowchart
 
-## Template 1: CI-Wait + Merge
+Before choosing a template, follow this decision tree:
 
-**Prerequisite**: Use only after `pr-review` has completed and concluded "Mergeable". For CI polling before review, use Template 3 (CI-Wait Only).
+```
+PR ready to merge?
+├── No (CI monitoring only) ──→ Template 2: CI-Wait Only
+└── Yes
+    ├── Single PR?
+    │   ├── Yes ──→ `gh pr merge --auto --squash` (preferred, Deterministic)
+    │   │          └── Auto-merge failed? ──→ Template 1: CI-Wait + Merge (Fallback)
+    │   └── No (multiple PRs)
+    │       ├── Independent PRs ──→ Batch Auto-Merge (set --auto on each)
+    │       └── Dependent PRs (shared commits) ──→ Template 3: Dependent Chain
+```
+
+**Primary path**: For single PRs after `pr-review`, use `gh pr merge --auto --squash`
+(see `pr-merge.md` § Auto-merge). This moves merge execution from Steering (agent
+polls and merges) to Deterministic (GitHub enforces required checks and merges
+automatically). Templates below are for fallback or multi-PR coordination only.
+
+## Batch Auto-Merge (multiple independent PRs)
+
+For multiple independent PRs that all have `pr-review` completed, set auto-merge
+on each PR individually. No subagent delegation is needed:
+
+```bash
+gh pr merge <A> --auto --squash
+gh pr merge <B> --auto --squash
+gh pr merge <C> --auto --squash
+```
+
+GitHub merges each PR independently as its CI passes. If auto-merge fails on
+any PR, fall back to Template 1 for that specific PR.
+
+## Template 1: CI-Wait + Merge (Fallback)
+
+**Use only when `gh pr merge --auto` fails** (e.g., token scope issue, API error).
+For the normal case, use auto-merge directly.
+
+**Prerequisite**: `pr-review` has completed and concluded "Mergeable". For CI
+polling before review, use Template 2 (CI-Wait Only).
 
 ```
 ## Goal
@@ -43,34 +78,7 @@ Monitor CI for PR #<N> until all checks pass, then merge it.
 Report: "MERGED: PR #<N> squash-merged at <sha>" or "FAILED: <reason>"
 ```
 
-## Template 2: Sequential PR Merge Chain
-
-```
-## Goal
-Merge PRs #<A>, #<B>, #<C> sequentially.
-
-## Steps
-
-For each PR in order:
-1. Wait for CI: poll with `gh pr checks <N>` (max 5 min per PR)
-2. Merge: `gh pr merge <N> --squash`
-3. Verify merge: `gh pr view <N> --json state -q '.state'`
-4. Proceed to next PR
-
-## Prohibitions
-- Do NOT run `git checkout`, `git switch`, `git branch`, or `git rebase`
-- Do NOT modify any files
-- Use only `gh` CLI commands and `sleep`
-
-## Error handling
-- If CI fails on PR #X: stop the chain, report which PR failed and why
-- If merge conflict: stop the chain, report the conflict
-
-## Return format
-Report: "COMPLETED: Merged PRs #A, #B, #C" or "STOPPED at PR #X: <reason>"
-```
-
-## Template 3: CI-Wait Only (No Merge)
+## Template 2: CI-Wait Only (No Merge)
 
 ```
 ## Goal
@@ -90,7 +98,7 @@ Monitor CI for PR #<N> and report when all checks complete.
 Report: "CI PASSED: all checks green for PR #<N>" or "CI FAILED: <check-name> failed — <details>"
 ```
 
-## Template 4: Dependent PR Merge Chain (rebase-enabled)
+## Template 3: Dependent PR Merge Chain (rebase-enabled)
 
 ```
 ## Goal

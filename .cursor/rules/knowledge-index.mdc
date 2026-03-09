@@ -10,7 +10,7 @@ Lookup table for `.cursor/knowledge/` atoms and `docs/adr/` ADRs. Use triggers t
 
 | File | Triggers |
 |------|----------|
-| `agent--delegation-templates.md` | CI-wait template, CI-wait only, merge template, sequential merge, dependent PR merge, delegation template, subagent prompt template, background subagent |
+| `agent--delegation-templates.md` | CI-wait template, CI-wait only, merge template, batch auto-merge, dependent PR merge, delegation template, subagent prompt template, background subagent |
 | `agent--task-prefix-convention.md` | task prefix, multi-agent artifact, hypothesis ID, concurrent agent naming |
 | `ci--failure-triage.md` | CI failure, CI check failed, gh run view --log-failed, failure classification, flaky test, CI rerun |
 | `ci--job-dependency-graph.md` | CI job, job dependency, filter category, coverage gate, coverage threshold, ci-pass, CI polling, poll interval, adaptive polling, time budget, CI wait, make coverage-check |

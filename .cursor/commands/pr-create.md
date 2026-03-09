@@ -134,7 +134,7 @@ gh pr merge <PR_NUMBER> --auto --squash
 
 See `@.cursor/commands/pr-merge.md` § Auto-merge for details.
 
-**Delegation**: Use `@.cursor/rules/subagent-policy.mdc` delegation pattern with prompt templates from `@.cursor/knowledge/agent--delegation-templates.md` (Template 3: CI-Wait Only). Do not use Template 1 (CI-Wait + Merge) here — merge requires `pr-review` first.
+**Delegation**: Use `@.cursor/rules/subagent-policy.mdc` delegation pattern with prompt templates from `@.cursor/knowledge/agent--delegation-templates.md` (Template 2: CI-Wait Only). Do not use Template 1 (CI-Wait + Merge) here — merge requires `pr-review` first.
 
 **Polling strategy**: The subagent follows the Adaptive Polling Strategy defined in `@.cursor/knowledge/ci--job-dependency-graph.md` § Adaptive Polling Strategy (the SSOT for polling intervals and time budgets).
 
