@@ -354,29 +354,33 @@ fetch_s2_abstract <- function(doi, timeout = 10) {
 
 # -- Public API ---------------------------------------------------------------
 
-#' Fetch Reference Metadata from OpenAlex and Semantic Scholar
+#' Collect DOIs from a PackageScanResult across all scanned functions
 #'
-#' Takes a [ScanResult] and resolves its reference strings into structured
-#' bibliographic metadata. OpenAlex is the primary source; Semantic Scholar
-#' supplements missing abstracts or serves as fallback when OpenAlex
-#' returns 404.
-#'
-#' API access profiles are configured via environment variables:
-#' - `BRIDLE_OPENALEX_EMAIL`: enables identified (polite) pool
-#' - `BRIDLE_S2_API_KEY`: enables authenticated access
-#'
-#' @param scan_result A [ScanResult] object.
-#' @param timeout Request timeout in seconds (numeric).
-#' @return A list of reference metadata lists, each containing `doi`,
-#'   `title`, `authors`, `abstract`, `journal`, `year`.
-#' @export
-fetch_references <- function(scan_result, timeout = 10) {
-  refs <- scan_result@references
-  if (length(refs) == 0L) {
-    return(list())
+#' Iterates over `@functions`, extracts `@references` from each
+#' [ScanResult], and returns a deduplicated DOI vector.
+#' @param pkg_result A [PackageScanResult] object.
+#' @return Character vector of unique DOIs.
+#' @keywords internal
+collect_package_dois <- function(pkg_result) {
+  all_refs <- character(0)
+  for (sr in pkg_result@functions) {
+    all_refs <- c(all_refs, sr@references)
   }
+  if (length(all_refs) == 0L) {
+    return(character(0))
+  }
+  extract_dois(all_refs)
+}
 
-  dois <- extract_dois(refs)
+#' Fetch reference metadata for a set of DOIs
+#'
+#' Shared implementation used by both [ScanResult] and [PackageScanResult]
+#' code paths. Handles rate limiting, OpenAlex primary + S2 fallback.
+#' @param dois Character vector of DOIs to fetch.
+#' @param timeout Request timeout in seconds.
+#' @return A list of reference metadata lists.
+#' @keywords internal
+fetch_dois <- function(dois, timeout = 10) {
   if (length(dois) == 0L) {
     return(list())
   }
@@ -410,4 +414,44 @@ fetch_references <- function(scan_result, timeout = 10) {
   }
 
   results
+}
+
+#' Fetch Reference Metadata from OpenAlex and Semantic Scholar
+#'
+#' Takes a [ScanResult] or [PackageScanResult] and resolves reference
+#' strings into structured bibliographic metadata. OpenAlex is the primary
+#' source; Semantic Scholar supplements missing abstracts or serves as
+#' fallback when OpenAlex returns 404.
+#'
+#' For [PackageScanResult], DOIs are collected from all scanned functions
+#' and deduplicated before fetching — the same paper referenced by
+#' multiple functions is fetched only once.
+#'
+#' API access profiles are configured via environment variables:
+#' - `BRIDLE_OPENALEX_EMAIL`: enables identified (polite) pool
+#' - `BRIDLE_S2_API_KEY`: enables authenticated access
+#'
+#' @param scan_result A [ScanResult] or [PackageScanResult] object.
+#' @param timeout Request timeout in seconds (numeric).
+#' @return A list of reference metadata lists, each containing `doi`,
+#'   `title`, `authors`, `abstract`, `journal`, `year`.
+#' @export
+fetch_references <- function(scan_result, timeout = 10) {
+  if (S7::S7_inherits(scan_result, PackageScanResult)) {
+    dois <- collect_package_dois(scan_result)
+    return(fetch_dois(dois, timeout))
+  }
+  if (!S7::S7_inherits(scan_result, ScanResult)) {
+    cli::cli_abort(
+      "{.arg scan_result} must be a {.cls ScanResult} or {.cls PackageScanResult}."
+    )
+  }
+
+  refs <- scan_result@references
+  if (length(refs) == 0L) {
+    return(list())
+  }
+
+  dois <- extract_dois(refs)
+  fetch_dois(dois, timeout)
 }
