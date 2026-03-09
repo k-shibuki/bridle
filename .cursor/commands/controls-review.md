@@ -98,7 +98,7 @@ For each information item below, enumerate all locations where it appears and cl
 | 1 | Workflow flow diagram | `.cursor/README.md` |
 | 2 | Exception types (hotfix / no-issue) | `workflow-policy.mdc` |
 | 3 | fix vs hotfix criteria | `workflow-policy.mdc` |
-| 4 | Hard Stop list (HS#1-9) | `agent-safety.mdc` |
+| 4 | Hard Stop list (7 items, mnemonic IDs) | `agent-safety.mdc` |
 | 5 | Branch naming convention | `commit-format.mdc` |
 | 6 | PR template / required sections | `pr-create.md` |
 | 7 | CI polling strategy | `ci--job-dependency-graph.md` |
@@ -137,11 +137,11 @@ For each Deterministic/Cond. Deterministic Hard Stop, compare the Rule declarati
 
 | Guard | Rule source | Check |
 |-------|-------------|-------|
-| `pr-policy.yaml` | `agent-safety.mdc` HS#5, HS#9; `workflow-policy.mdc` § Label Taxonomy | Each declared check has a corresponding implementation block in the workflow script |
+| `pr-policy.yaml` | `agent-safety.mdc` `HS-PR-TEMPLATE`, `HS-PR-BASE`; `workflow-policy.mdc` § Label Taxonomy | Each declared check has a corresponding implementation block in the workflow script |
 | `check-commit-msg.sh` | `commit-format.mdc` § Footer | Exemption logic matches declared exceptions |
 | `check-nolint.sh` | `quality-policy.mdc` § Prohibited forms | Rejected patterns match the prohibited forms table |
-| `pre-push.sh` | `agent-safety.mdc` HS#2 | Gate conditions match the HS#2 requirements |
-| Branch Protection | `agent-safety.mdc` HS#1 | `gh api repos/{owner}/{repo}/branches/main/protection` shows required status checks |
+| `pre-push.sh` | `agent-safety.mdc` `HS-LOCAL-VERIFY` | Gate conditions match the `HS-LOCAL-VERIFY` requirements |
+| Branch Protection | `agent-safety.mdc` `HS-CI-MERGE` | `gh api repos/{owner}/{repo}/branches/main/protection` shows required status checks |
 
 Flag mismatches as `GUARD_RULE_MISMATCH`.
 

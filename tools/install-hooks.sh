@@ -5,9 +5,9 @@
 # requiring the pre-commit framework or Rscript on the host.
 #
 # Guard hooks installed:
-#   commit-msg  → tools/check-commit-msg.sh  (HS#8: commit message format)
-#   pre-commit  → tools/check-nolint.sh      (HS#8: nolint annotation format)
-#   pre-push    → tools/pre-push.sh          (HS#2: local verification gate)
+#   commit-msg  → tools/check-commit-msg.sh  (HS-NOLINT: commit message format)
+#   pre-commit  → tools/check-nolint.sh      (HS-NOLINT: nolint annotation format)
+#   pre-push    → tools/pre-push.sh          (HS-LOCAL-VERIFY: local verification gate)
 #
 # R-based quality hooks (style, lint, roxygen) are handled by make targets
 # inside the container and by CI — they are NOT installed on the host.

@@ -28,8 +28,8 @@ make doctor-json
 - `podman-compose` (or `docker compose`) availability
 - `git` availability
 - `git commit.template` configuration
-- `git hook: pre-commit` — nolint annotation validator (HS#8)
-- `git hook: pre-push` — pre-push verification gate (HS#2)
+- `git hook: pre-commit` — nolint annotation validator (`HS-NOLINT`)
+- `git hook: pre-push` — pre-push verification gate (`HS-LOCAL-VERIFY`)
 - `git hook: commit-msg` — commit message format validator
 - Container `bridle-dev` running status
 

@@ -42,13 +42,13 @@ These checks are the first step of `pr-merge` and cannot be skipped:
    ```
 
    - `CLEAN` or `HAS_HOOKS`: proceed to merge.
-   - `BEHIND`: rebase onto main, push, and wait for CI to re-pass before merging.
+   - `BEHIND`: merge main into the branch (no force-push needed) and wait for CI to re-pass.
 
      ```bash
      git fetch origin
      git checkout <branch>
-     git rebase origin/main
-     git push --force-with-lease origin <branch>
+     git merge origin/main --no-edit
+     git push origin <branch>
      ```
 
      After push, return to precondition 1 (CI must be green) — CI will re-trigger.
@@ -163,7 +163,7 @@ After `--squash`, you must run `git commit` with a message following `commit-for
 
 ## Delegated merge (background subagent)
 
-CI polling is always delegated to a background subagent (Hard Stop #7). This frees the main agent for productive work — whether implementing the next Issue or performing housekeeping.
+CI polling is always delegated to a background subagent (see `@.cursor/rules/subagent-policy.mdc`). This frees the main agent for productive work — whether implementing the next Issue or performing housekeeping.
 
 ### When to use
 
@@ -192,8 +192,10 @@ The main agent checks the subagent transcript at the next `next` re-assessment c
 ## Constraints
 
 - Use non-interactive git flags (`--no-edit`, `--no-pager`) to avoid hangs
-- Per `@.cursor/rules/agent-safety.mdc` Hard Stop #1: CI must be green before merge
+- Per `@.cursor/rules/agent-safety.mdc` `HS-CI-MERGE`: CI must be green before merge
 - Merge is permitted when `pr-review` concluded "Mergeable" or the user explicitly instructs to merge
+- **NEVER use `--admin` flag** on `gh pr merge`. `enforce_admins` does not reliably block repo-owner bypass on personal repositories. If merge is blocked, diagnose the cause (pending checks, BEHIND status) instead of overriding.
+- **NEVER use `git commit --amend` + force-push** in the normal PR flow. Always create a new commit for fixes. Amend+force-push leaves stale failed checks visible in the GitHub PR GUI, causing confusion between CLI and GUI state.
 
 ## Output (response format)
 

@@ -126,7 +126,7 @@ gh pr create --title "<type>(<scope>): <description>" \
 
 ### 5. Monitor CI until completion
 
-Per `agent-safety.mdc` Hard Stop #7: CI polling MUST be delegated to a background subagent. The main agent must not poll CI inline with `sleep` loops.
+Per `subagent-policy.mdc`: CI polling MUST be delegated to a background subagent. The main agent must not poll CI inline with `sleep` loops.
 
 **Delegation**: Use `@.cursor/rules/subagent-policy.mdc` delegation pattern with prompt templates from `@.cursor/knowledge/agent--delegation-templates.md` (Template 3: CI-Wait Only). Do not use Template 1 (CI-Wait + Merge) here — merge requires `pr-review` first.
 
