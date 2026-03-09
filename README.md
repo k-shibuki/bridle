@@ -1,9 +1,13 @@
 # bridle
 
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![Project Status: WIP](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/k-shibuki/bridle/actions/workflows/ci.yaml/badge.svg)](https://github.com/k-shibuki/bridle/actions/workflows/ci.yaml)
 [![R-CMD-check](https://github.com/k-shibuki/bridle/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/k-shibuki/bridle/actions/workflows/R-CMD-check.yaml)
+[![codecov](https://codecov.io/gh/k-shibuki/bridle/graph/badge.svg)](https://codecov.io/gh/k-shibuki/bridle)
 
-AI knowledge harness generation framework for R statistical packages
+Knowledge harness framework that structures R package expertise for LLM-guided statistical analysis
 
 ---
 

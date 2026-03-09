@@ -11,8 +11,6 @@
 ^renv\.lock$
 ^\.Rprofile$
 ^\.lintr$
-^CODEOWNERS$
-^CONTRIBUTING\.md$
 ^codecov\.yml$
 ^\.Renviron\.example$
 ^AGENTS\.md$
