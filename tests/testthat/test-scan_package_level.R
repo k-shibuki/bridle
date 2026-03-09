@@ -245,9 +245,12 @@ test_that("scan_package: gracefully skips failing functions", {
     get_package_version = mock_version
   )
 
-  expect_message(
-    psr <- scan_package("testpkg"),
-    "Scanning"
+  expect_warning(
+    expect_message(
+      psr <- scan_package("testpkg"),
+      "Scanning"
+    ),
+    "Skipping"
   )
   expect_length(psr@functions, 1L)
   expect_true("good_fn" %in% names(psr@functions))
