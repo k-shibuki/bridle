@@ -21,9 +21,12 @@ bridle's technology stack is rooted in the Posit ecosystem (ellmer, ragnar, vita
 Use **S7** for all core domain classes in the bridle package.
 
 - Define classes with `S7::new_class()` and property validators for construction-time invariants
-- Register methods in `.onLoad()` via `S7::methods_register()`
-- Export class constructors for user-facing instantiation
-- Use `S7::prop()` for property access to maintain compatibility with R < 4.3.0 (where `@` for S7 is not yet supported)
+- Export class constructors for user-facing instantiation via roxygen2 `@export`
+- Use `@` for property access (S7 >= 0.2.0 provides an S3 `@.S7_object` method that enables this on R >= 4.1.0)
+
+### Historical note
+
+The original decision specified `S7::methods_register()` in `.onLoad()` and `S7::prop()` for property access. These were superseded by S7 0.2.0 (2024-11): roxygen2 now handles method registration automatically, and the `@` operator works on all supported R versions via the S3 compatibility layer.
 
 ## Consequences
 

@@ -293,17 +293,17 @@ Run `make help` for all available targets.
 
 ## Development Status
 
-> **Phase 2 in progress — real-package integration (metafor)**
+> **Phase 3 next — vitals evaluation suite**
 
 | Phase | Content | Status |
 |---|---|---|
 | Phase 0 | Design and YAML schema formalization | **Done** |
 | Phase 1 | Package scanner + AI drafter (plugin generation pipeline) | **Done** |
-| Phase 2 | Runtime engine (REPL) + real-package integration | **In progress** |
+| Phase 2 | Runtime engine (REPL) + real-package integration | **Done** |
 | Phase 3 | vitals evaluation suite | Not started |
 | Phase 4 | MCP server | Not started |
 
-Phase 2 core components (Graph Engine, Knowledge Retriever, Prompt Assembler, Response Parser, Code Sandbox, Decision Logger, REPL) are implemented. Phase 2c extends validation to a real package (metafor) — see [#129](https://github.com/k-shibuki/bridle/issues/129).
+Phase 2 delivered the runtime engine (Graph Engine, Knowledge Retriever, Prompt Assembler, Response Parser, Code Sandbox, Decision Logger, REPL), template composition (`build_graph()` per [ADR-0009](docs/adr/0009-graph-template-composition.md)), 3-layer policy inheritance (per [ADR-0005](docs/adr/0005-graph-policy-layer.md)), and end-to-end validation with the metafor plugin. ADR compliance audit confirmed all 10 design decisions are faithfully implemented — see [#135](https://github.com/k-shibuki/bridle/issues/135) for the full audit report.
 
 ## License
 
