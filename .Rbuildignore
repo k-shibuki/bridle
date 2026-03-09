@@ -16,3 +16,5 @@
 ^codecov\.yml$
 ^\.Renviron\.example$
 ^AGENTS\.md$
+^\.cursorignore$
+^\.gitmessage$
