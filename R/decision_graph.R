@@ -329,3 +329,173 @@ parse_transition <- function(raw) {
     otherwise = if (isTRUE(raw[["otherwise"]])) TRUE else NA
   )
 }
+
+# -- Template Composition (ADR-0009) ------------------------------------------
+
+#' Build a Decision Graph from Template Composition
+#'
+#' Merges a shared template YAML and a function-specific YAML into a flat
+#' [DecisionGraph]. If the function-specific YAML has no `template` key,
+#' delegates to [read_decision_graph()] (no composition needed).
+#'
+#' @param func_graph_path Path to the function-specific `decision_graph.yaml`.
+#' @param template_dir Directory containing `*.template.yaml` files.
+#'   Defaults to the same directory as `func_graph_path`.
+#' @return A flat [DecisionGraph] S7 object (runtime-ready).
+#' @export
+build_graph <- function(func_graph_path, template_dir = NULL) {
+  if (!file.exists(func_graph_path)) {
+    cli::cli_abort("File not found: {.path {func_graph_path}}")
+  }
+
+  raw <- tryCatch(
+    yaml::yaml.load_file(func_graph_path),
+    error = function(e) {
+      cli::cli_abort("Failed to parse YAML: {conditionMessage(e)}", parent = e)
+    }
+  )
+  graph_raw <- raw[["graph"]]
+  if (is.null(graph_raw)) {
+    cli::cli_abort("YAML must contain a top-level {.field graph} key")
+  }
+
+  template_id <- graph_raw[["template"]]
+  if (is.null(template_id) || !nzchar(template_id)) {
+    return(parse_decision_graph(graph_raw))
+  }
+
+  if (is.null(template_dir)) {
+    template_dir <- dirname(func_graph_path)
+  }
+  template_path <- file.path(template_dir, paste0(template_id, ".template.yaml"))
+  if (!file.exists(template_path)) {
+    cli::cli_abort(
+      "Template file not found: {.path {paste0(template_id, '.template.yaml')}} in {.path {template_dir}}"
+    )
+  }
+
+  tmpl_raw <- tryCatch(
+    yaml::yaml.load_file(template_path),
+    error = function(e) {
+      cli::cli_abort(
+        "Failed to parse template YAML: {conditionMessage(e)}",
+        parent = e
+      )
+    }
+  )
+  tmpl <- tmpl_raw[["template"]]
+  if (is.null(tmpl)) {
+    cli::cli_abort("Template YAML must contain a top-level {.field template} key")
+  }
+
+  merge_template(graph_raw, tmpl)
+}
+
+#' Merge template nodes into a function-specific graph
+#' @keywords internal
+merge_template <- function(graph_raw, tmpl) {
+  entry_point <- tmpl[["entry_point"]]
+  exit_point <- tmpl[["exit_point"]]
+  if (is.null(entry_point) || is.null(exit_point)) {
+    cli::cli_abort("Template must define {.field entry_point} and {.field exit_point}")
+  }
+
+  tmpl_nodes_raw <- tmpl[["nodes"]]
+  if (is.null(tmpl_nodes_raw) || length(tmpl_nodes_raw) == 0L) {
+    cli::cli_abort("Template must define at least one node")
+  }
+
+  if (!entry_point %in% names(tmpl_nodes_raw)) {
+    cli::cli_abort(
+      "Template {.field entry_point} {.val {entry_point}} not found in template nodes"
+    )
+  }
+  if (!exit_point %in% names(tmpl_nodes_raw)) {
+    cli::cli_abort(
+      "Template {.field exit_point} {.val {exit_point}} not found in template nodes"
+    )
+  }
+
+  func_nodes_raw <- graph_raw[["nodes"]]
+  if (is.null(func_nodes_raw)) func_nodes_raw <- list()
+
+  collisions <- intersect(names(tmpl_nodes_raw), names(func_nodes_raw))
+  if (length(collisions) > 0L) {
+    cli::cli_abort(
+      "Node name collision: {.val {collisions}} exist{?s} in both template and function graph"
+    )
+  }
+
+  exit_node_raw <- tmpl_nodes_raw[[exit_point]]
+  exit_transitions <- exit_node_raw[["transitions"]]
+  if (!is.null(exit_transitions) && length(exit_transitions) > 0L) {
+    cli::cli_warn(c(
+      "Template {.field exit_point} node {.val {exit_point}} has non-empty transitions.",
+      "i" = "They will be replaced by function graph connections."
+    ))
+  }
+
+  entry_node <- graph_raw[["entry_node"]]
+  if (is.null(entry_node)) {
+    cli::cli_abort("{.field entry_node} is required in the graph definition")
+  }
+
+  post_exit_transitions <- find_exit_transitions(func_nodes_raw, entry_node)
+  tmpl_nodes_raw[[exit_point]][["transitions"]] <- post_exit_transitions
+
+  merged_nodes_raw <- c(func_nodes_raw, tmpl_nodes_raw)
+
+  gp <- GlobalPolicy()
+  gp_raw <- graph_raw[["global_policy"]]
+  if (!is.null(gp_raw)) {
+    gp <- parse_global_policy(gp_raw)
+  }
+
+  nodes <- stats::setNames(
+    lapply(names(merged_nodes_raw), function(nm) {
+      parse_node(merged_nodes_raw[[nm]], node_id = nm)
+    }),
+    names(merged_nodes_raw)
+  )
+
+  DecisionGraph(
+    entry_node = entry_node,
+    global_policy = gp,
+    nodes = nodes
+  )
+}
+
+#' Find post-exit root nodes in the function graph
+#'
+#' Identifies function-graph nodes that have no incoming transitions
+#' from other function-graph nodes and are not the entry_node. These
+#' are the "post-exit" roots that the template's exit_point should
+#' connect to.
+#' @keywords internal
+find_exit_transitions <- function(func_nodes_raw, entry_node) {
+  func_names <- names(func_nodes_raw)
+  if (length(func_names) == 0L) {
+    return(list())
+  }
+
+  targeted <- character(0)
+  for (nm in func_names) {
+    trs <- func_nodes_raw[[nm]][["transitions"]]
+    if (is.null(trs)) next
+    for (tr in trs) {
+      target <- tr[["to"]]
+      if (target %in% func_names) {
+        targeted <- c(targeted, target)
+      }
+    }
+  }
+  targeted <- unique(targeted)
+
+  roots <- setdiff(func_names, c(targeted, entry_node))
+
+  if (length(roots) == 0L) {
+    return(list())
+  }
+
+  lapply(roots, function(r) list(to = r, always = TRUE))
+}
