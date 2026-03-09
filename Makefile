@@ -149,7 +149,7 @@ renv-check: _require_container ## Verify renv.lock is in sync with DESCRIPTION
 
 ci: validate-schemas lint test check ## Full CI: validate-schemas + lint + test + check
 
-ci-fast: validate-schemas renv-check lint ## Fast gate: validate-schemas + renv-check + lint
+ci-fast: validate-schemas renv-check kb-validate lint ## Fast gate: validate-schemas + renv-check + kb-validate + lint
 
 ci-pr: ci document ## PR-ready gate: full CI + document (run before pr-create)
 
