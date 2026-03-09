@@ -85,7 +85,7 @@
 <pre class="mermaid"><code>graph TB
   subgraph pipeline ["Plugin Generation Pipeline"]
     scanner["Package Scanner&lt;br/&gt;formals + Rd + source"]
-    fetcher["Reference Fetcher&lt;br/&gt;CrossRef / PubMed API"]
+    fetcher["Reference Fetcher&lt;br/&gt;OpenAlex / Semantic Scholar"]
     drafter["AI Drafter&lt;br/&gt;ellmer"]
     validator["Plugin Validator"]
   end
@@ -197,7 +197,7 @@
 <li>
 <strong><code>scan_package("meta")</code></strong> — Analyzes the R package in three layers: formals (dependency graphs), Rd (valid values, descriptions), and source code (match.arg, stop/warning constraints). See <a href="docs/adr/0004-scanner-three-layer-analysis.html">ADR-0004</a>.</li>
 <li>
-<strong><code>fetch_references(scan_result)</code></strong> — Resolves DOIs and retrieves abstracts via CrossRef / PubMed APIs.</li>
+<strong><code>fetch_references(scan_result)</code></strong> — Resolves DOIs and retrieves abstracts via OpenAlex (primary) and Semantic Scholar (fallback) APIs. See <a href="docs/adr/0010-reference-api-openalex-semantic-scholar.html">ADR-0010</a>.</li>
 <li>
 <strong><code>draft_knowledge(scan_result, references)</code></strong> — Uses ellmer to draft the decision graph, knowledge entries, and constraints from scan results + literature.</li>
 <li>
@@ -334,7 +334,7 @@
 </tr>
 </tbody>
 </table>
-<p>Reference retrieval uses CrossRef API and PubMed Entrez API.</p>
+<p>Reference retrieval uses <a href="https://openalex.org/" class="external-link">OpenAlex</a> (primary) and <a href="https://www.semanticscholar.org/" class="external-link">Semantic Scholar</a> (fallback) APIs.</p>
 </div>
 <div class="section level2">
 <h2 id="interfaces">Interfaces<a class="anchor" aria-label="anchor" href="#interfaces"></a>
