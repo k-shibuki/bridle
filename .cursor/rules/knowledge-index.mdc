@@ -33,7 +33,7 @@ Lookup table for `.cursor/knowledge/` atoms and `docs/adr/` ADRs. Use triggers t
 | `r--suggests-dynamic-load.md` | Suggests package, getFromNamespace, optional dependency, requireNamespace, R CMD check Suggests |
 | `test--layered-mock-strategy.md` | layered mock, integration test mock, scan_package mock, orchestrator mock, with_scan_mocks, mock all layers |
 | `test--mock-external-function.md` | mock external function, mock system function, namespace locking, packageVersion mock, wrapper pattern, mock base function |
-| `test--mock-scope-constraint.md` | local_mocked_bindings, mock scope, mock scope limitation, mock helper, mock calling environment |
+| `test--mock-scope-constraint.md` | local_mocked_bindings, mock scope, mock scope limitation, mock helper, mock calling environment, object_usage_linter test helper, nolint test co-location |
 | `test--snapshot-guidelines.md` | snapshot test, expect_snapshot, expect_snapshot_error, _snaps directory, snapshot review, testthat 3 snapshot |
 
 ## Design (ADRs)

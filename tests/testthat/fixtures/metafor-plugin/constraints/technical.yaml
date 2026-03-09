@@ -1,0 +1,27 @@
+package: metafor
+function: rma.uni
+
+constraints:
+  - id: valid_method_values
+    source: formals_default
+    type: valid_values
+    param: method
+    values: ["REML", "ML", "DL", "HE", "HS", "SJ", "PM", "GENQ", "FE", "EE", "CE"]
+    confidence: high
+    confirmed_by: ["formals_default", "source_code"]
+
+  - id: peto_forces_or
+    source: rd_description
+    type: forces
+    condition: "method == 'Peto'"
+    param: measure
+    forces: {measure: "OR"}
+    message: "Peto method only supports Odds Ratio as the effect measure"
+    confidence: high
+
+  - id: valid_tau2_estimators
+    source: formals_default
+    type: valid_values
+    param: tau2_estimator
+    values: ["REML", "ML", "DL", "HE", "HS", "SJ", "PM", "GENQ"]
+    confidence: high

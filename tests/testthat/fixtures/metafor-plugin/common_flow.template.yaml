@@ -1,0 +1,28 @@
+template:
+  id: common_flow
+  entry_point: gather_data
+  exit_point: analysis_approach
+
+  nodes:
+    gather_data:
+      type: context_gathering
+      description: "Inspect data structure and determine analysis type"
+      transitions:
+        - to: measure_selection
+          always: true
+
+    measure_selection:
+      type: decision
+      topic: effect_measures
+      parameter: measure
+      description: "Select effect size measure"
+      transitions:
+        - to: analysis_approach
+          always: true
+
+    analysis_approach:
+      type: decision
+      topic: estimation_methods
+      parameter: method
+      description: "Choose estimation method and analysis approach"
+      transitions: []

@@ -1,0 +1,19 @@
+topic: publication_bias
+target_parameter: measure
+package: metafor
+function: rma.uni
+
+entries:
+  - id: funnel_plot
+    when: "publication bias assessment is needed"
+    properties:
+      - "Funnel plot asymmetry suggests potential publication bias"
+      - "Egger's test provides a formal test for asymmetry"
+    references:
+      - "Egger et al. (1997). Bias in meta-analysis detected by a simple, graphical test"
+
+  - id: trim_fill
+    when: "publication bias is suspected"
+    properties:
+      - "Trim-and-fill method estimates missing studies"
+      - "Results should be interpreted as sensitivity analysis, not definitive"
