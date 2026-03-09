@@ -185,8 +185,8 @@ if $container_running; then
   if [[ "$renv_ok" == "TRUE" ]]; then
     record "renv sync" "ok"
   else
-    record "renv sync" "warn" "out of sync (run 'make renv-snapshot' or 'renv::status()' for details)"
-    warnings=$((warnings + 1))
+    record "renv sync" "fail" "out of sync (run 'make renv-snapshot' then commit renv.lock)"
+    errors=$((errors + 1))
   fi
 
   # Required R packages

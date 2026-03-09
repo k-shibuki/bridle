@@ -100,8 +100,8 @@ check: _require_container ## Run R CMD check (primary quality gate)
 test: _require_container ## Run tests
 	$(RSCRIPT) -e "devtools::test()"
 
-lint: _require_container ## Run lintr
-	$(RSCRIPT) -e "lintr::lint_package()"
+lint: _require_container ## Run lintr (with package namespace loaded for accurate object_usage_linter)
+	$(RSCRIPT) -e "pkgload::load_all('.', quiet = TRUE); lintr::lint_package()"
 
 format: _require_container ## Auto-format with styler
 	$(RSCRIPT) -e "styler::style_pkg()"
@@ -144,9 +144,12 @@ scaffold-class: _require_container ## Generate S7 class from schema (usage: make
 
 # === Integrated CI Targets ===
 
+renv-check: _require_container ## Verify renv.lock is in sync with DESCRIPTION
+	$(RSCRIPT) -e "s <- renv::status(dev = TRUE); if (!isTRUE(s[['synchronized']])) stop('renv out of sync. Run: make renv-snapshot')"
+
 ci: validate-schemas lint test check ## Full CI: validate-schemas + lint + test + check
 
-ci-fast: validate-schemas lint ## Fast gate: validate-schemas + lint
+ci-fast: validate-schemas renv-check lint ## Fast gate: validate-schemas + renv-check + lint
 
 ci-pr: ci document ## PR-ready gate: full CI + document (run before pr-create)
 

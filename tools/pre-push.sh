@@ -22,9 +22,10 @@ fi
 
 r_changed=$(echo "$changed" | grep -E '^(R/|tests/|DESCRIPTION|NAMESPACE)' || true)
 schema_changed=$(echo "$changed" | grep -E '^(docs/schemas/|tools/validate)' || true)
+renv_changed=$(echo "$changed" | grep -E '^(DESCRIPTION|renv\.lock|renv/)' || true)
 
 # --- Nothing to verify ---
-if [[ -z "$r_changed" && -z "$schema_changed" ]]; then
+if [[ -z "$r_changed" && -z "$schema_changed" && -z "$renv_changed" ]]; then
   exit 0
 fi
 
@@ -57,4 +58,7 @@ if [[ -n "$r_changed" ]]; then
 elif [[ -n "$schema_changed" ]]; then
   echo "pre-push: Schema changes detected — running validate-schemas..."
   make validate-schemas || { echo "BLOCKED (HS#2): make validate-schemas failed" >&2; exit 1; }
+elif [[ -n "$renv_changed" ]]; then
+  echo "pre-push: DESCRIPTION/renv changes detected — running renv-check..."
+  make renv-check || { echo "BLOCKED (HS#2): make renv-check failed" >&2; exit 1; }
 fi

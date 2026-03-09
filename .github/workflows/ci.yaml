@@ -27,6 +27,7 @@ jobs:
     outputs:
       r_source: ${{ steps.filter.outputs.r_source }}
       r_deps: ${{ steps.filter.outputs.r_deps }}
+      renv_deps: ${{ steps.filter.outputs.renv_deps }}
       schemas: ${{ steps.filter.outputs.schemas }}
       ci_config: ${{ steps.filter.outputs.ci_config }}
     steps:
@@ -42,6 +43,10 @@ jobs:
             r_deps:
               - 'renv.lock'
               - '.Rbuildignore'
+            renv_deps:
+              - 'DESCRIPTION'
+              - 'renv.lock'
+              - 'renv/settings.json'
             schemas:
               - 'docs/schemas/**'
               - 'tools/validate-schemas.R'
@@ -83,6 +88,48 @@ jobs:
           else
             echo "shellcheck not available, skipping"
           fi
+
+  renv-check:
+    needs: changes
+    if: needs.changes.outputs.renv_deps == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Install renv
+        run: install.packages("renv", repos = "https://cloud.r-project.org")
+        shell: Rscript {0}
+
+      - name: Check renv.lock vs DESCRIPTION
+        run: |
+          desc <- read.dcf("DESCRIPTION")
+          get_deps <- function(field) {
+            val <- desc[1, field]
+            if (is.na(val)) return(character(0))
+            deps <- trimws(unlist(strsplit(val, ",\\s*")))
+            deps <- trimws(gsub("\\(.*\\)", "", deps))
+            deps[nzchar(deps)]
+          }
+          all_deps <- c(get_deps("Imports"), get_deps("Depends"), get_deps("Suggests"))
+          all_deps <- all_deps[all_deps != "R"]
+
+          lock <- renv::lockfile_read("renv.lock")
+          locked_pkgs <- names(lock$Packages)
+
+          missing <- setdiff(all_deps, locked_pkgs)
+          if (length(missing) > 0L) {
+            cat("Packages in DESCRIPTION but not in renv.lock:\n")
+            cat(paste(" -", missing), sep = "\n")
+            cat("\n")
+            stop("renv.lock is out of sync with DESCRIPTION. Run 'make renv-snapshot' and commit renv.lock.")
+          }
+          cat("All", length(all_deps), "DESCRIPTION dependencies are tracked in renv.lock.\n")
+        shell: Rscript {0}
 
   validate-schemas:
     needs: changes
@@ -277,12 +324,13 @@ jobs:
   # It passes when all relevant jobs pass or are correctly skipped.
   ci-pass:
     if: always()
-    needs: [ci-config, validate-schemas, format-check, lint, test, check, coverage]
+    needs: [ci-config, renv-check, validate-schemas, format-check, lint, test, check, coverage]
     runs-on: ubuntu-latest
     steps:
       - name: Verify all jobs passed or were skipped
         run: |
           results=("${{ needs.ci-config.result }}" \
+                   "${{ needs.renv-check.result }}" \
                    "${{ needs.validate-schemas.result }}" \
                    "${{ needs.format-check.result }}" \
                    "${{ needs.lint.result }}" \
@@ -299,7 +347,7 @@ jobs:
 
   ci-summary:
     if: always()
-    needs: [ci-config, validate-schemas, format-check, lint, test, check, coverage]
+    needs: [ci-config, renv-check, validate-schemas, format-check, lint, test, check, coverage]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -311,6 +359,7 @@ jobs:
           script: |
             const jobs = {
               'ci-config': '${{ needs.ci-config.result }}',
+              'renv-check': '${{ needs.renv-check.result }}',
               'validate-schemas': '${{ needs.validate-schemas.result }}',
               'format-check': '${{ needs.format-check.result }}',
               'lint': '${{ needs.lint.result }}',
