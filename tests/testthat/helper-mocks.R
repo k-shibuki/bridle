@@ -268,5 +268,5 @@ make_test_engine <- function(nodes = NULL, entry = "start",
     entry_node = entry, global_policy = gp, nodes = nodes
   )
   ctx <- context %||% make_session_context()
-  make_graph_engine(graph, ctx)
+  make_graph_engine(graph, ctx) # nolint: object_usage_linter. exported function in R/graph_engine.R
 }
