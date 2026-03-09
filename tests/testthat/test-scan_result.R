@@ -293,3 +293,105 @@ test_that("ScanResult: multiple valid layers accepted", {
     c("layer1_formals", "layer2_rd")
   )
 })
+
+# -- PackageScanResult --------------------------------------------------------
+
+test_that("PackageScanResult: valid minimal construction", {
+  # Given: required fields with empty functions list
+  # When:  constructing a PackageScanResult
+  # Then:  object created with defaults
+  psr <- PackageScanResult(
+    package = "metafor",
+    scan_metadata = list(package_version = "4.6-0", timestamp = "2026-01-01")
+  )
+  expect_equal(psr@package, "metafor")
+  expect_equal(psr@functions, list())
+  expect_equal(psr@function_roles, character(0))
+  expect_equal(psr@function_families, list())
+  expect_equal(psr@cross_function_constraints, list())
+})
+
+test_that("PackageScanResult: full construction with functions", {
+  # Given: package scan result with one analysis function
+  # When:  constructing a PackageScanResult
+  # Then:  all fields stored correctly
+  sr <- ScanResult(
+    package = "metafor", func = "rma.uni",
+    parameters = list(ParameterInfo(name = "yi", has_default = FALSE)),
+    scan_metadata = list(layers_completed = "layer1_formals")
+  )
+  psr <- PackageScanResult(
+    package = "metafor",
+    functions = list(rma.uni = sr), # nolint: object_name_linter. matches R package function naming
+    function_roles = c(rma.uni = "analysis"), # nolint: object_name_linter. matches R package function naming
+    function_families = list(rma = list(
+      name = "rma", common_parameters = c("yi", "vi"),
+      members = list(rma.uni = list(unique_parameters = c("sei"))) # nolint: object_name_linter. matches R package function naming
+    )),
+    cross_function_constraints = list(list(
+      function_name = "rma.peto", constraint = "measure == \"OR\"",
+      reason = "Peto requires OR"
+    )),
+    scan_metadata = list(package_version = "4.6-0", timestamp = "2026-01-01")
+  )
+  expect_length(psr@functions, 1L)
+  expect_equal(names(psr@functions), "rma.uni")
+  expect_equal(psr@function_roles[["rma.uni"]], "analysis")
+  expect_length(psr@function_families, 1L)
+  expect_length(psr@cross_function_constraints, 1L)
+})
+
+test_that("PackageScanResult: empty package rejected", {
+  # Given: empty package name
+  # When:  constructing
+  # Then:  validation error
+  expect_error(
+    PackageScanResult(
+      package = "",
+      scan_metadata = list(timestamp = "2026-01-01")
+    ),
+    "non-empty single string"
+  )
+})
+
+test_that("PackageScanResult: invalid function role rejected", {
+  # Given: an invalid role string
+  # When:  constructing
+  # Then:  validation error
+  expect_error(
+    PackageScanResult(
+      package = "metafor",
+      function_roles = c(rma.uni = "invalid_role"), # nolint: object_name_linter. matches R package function naming
+      scan_metadata = list(timestamp = "2026-01-01")
+    ),
+    "Invalid function role"
+  )
+})
+
+test_that("PackageScanResult: non-ScanResult in functions rejected", {
+  # Given: a non-ScanResult in functions list
+  # When:  constructing
+  # Then:  validation error
+  expect_error(
+    PackageScanResult(
+      package = "metafor",
+      functions = list(bad = "not a ScanResult"),
+      scan_metadata = list(timestamp = "2026-01-01")
+    ),
+    "ScanResult"
+  )
+})
+
+test_that("PackageScanResult: all valid roles accepted", {
+  # Given: each valid function role
+  # When:  constructing
+  # Then:  no validation error
+  for (role in c("analysis", "visualization", "diagnostic", "utility", "unclassified")) {
+    psr <- PackageScanResult(
+      package = "pkg",
+      function_roles = stats::setNames(role, "fn"),
+      scan_metadata = list(timestamp = "2026-01-01")
+    )
+    expect_equal(psr@function_roles[["fn"]], role)
+  }
+})

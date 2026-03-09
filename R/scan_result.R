@@ -2,7 +2,8 @@
 #'
 #' S7 classes representing the output of `scan_package()`. `ParameterInfo`
 #' captures a single parameter's metadata; `ScanResult` aggregates all
-#' scanner layers' output for one package function (ADR-0004, ADR-0008).
+#' scanner layers' output for one package function; `PackageScanResult`
+#' aggregates scan results for an entire package (ADR-0004, ADR-0008).
 #'
 #' @name scan_result
 #' @importFrom rlang %||%
@@ -129,6 +130,61 @@ ScanResult <- S7::new_class("ScanResult",
       if (!l %in% .valid_layers) {
         return(sprintf(
           "Invalid layer in `scan_metadata$layers_completed`: \"%s\"", l
+        ))
+      }
+    }
+    NULL
+  }
+)
+
+# -- PackageScanResult ---------------------------------------------------------
+
+.valid_function_roles <- c(
+  "analysis", "visualization", "diagnostic", "utility", "unclassified"
+)
+
+#' @title PackageScanResult
+#' @description Aggregated scanner output for an entire package. Contains
+#' per-function [ScanResult] objects, function role classifications,
+#' family structures, and cross-function constraints (ADR-0004 Addendum).
+#' @param package Target package name (character).
+#' @param functions Named list of [ScanResult] objects keyed by function name.
+#' @param function_roles Named character vector mapping function names to
+#'   roles: `"analysis"`, `"visualization"`, `"diagnostic"`, `"utility"`,
+#'   or `"unclassified"`.
+#' @param function_families List of family structures. Each family has
+#'   `name`, `common_parameters`, and `members` (named list of
+#'   `unique_parameters`).
+#' @param cross_function_constraints List of cross-function constraints.
+#'   Each has `function`, `constraint`, and `reason`.
+#' @param scan_metadata Named list with package version, scan timestamp,
+#'   and bridle version.
+#' @usage NULL
+#' @export
+PackageScanResult <- S7::new_class("PackageScanResult",
+  properties = list(
+    package = S7::class_character,
+    functions = S7::new_property(S7::class_list, default = list()),
+    function_roles = S7::new_property(S7::class_character, default = character(0)),
+    function_families = S7::new_property(S7::class_list, default = list()),
+    cross_function_constraints = S7::new_property(S7::class_list, default = list()),
+    scan_metadata = S7::class_list
+  ),
+  validator = function(self) {
+    if (length(self@package) != 1L || nchar(self@package) == 0L) {
+      return("`package` must be a non-empty single string")
+    }
+    for (nm in names(self@functions)) {
+      fn_result <- self@functions[[nm]]
+      if (!S7::S7_inherits(fn_result, ScanResult)) {
+        return(sprintf("functions[[\"%s\"]] must be a ScanResult object", nm))
+      }
+    }
+    for (role in self@function_roles) {
+      if (!role %in% .valid_function_roles) {
+        return(sprintf(
+          "Invalid function role: \"%s\". Must be one of: %s",
+          role, paste(.valid_function_roles, collapse = ", ")
         ))
       }
     }

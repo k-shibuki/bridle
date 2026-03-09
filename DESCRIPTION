@@ -25,6 +25,7 @@ Suggests:
     devtools,
     ellmer,
     lintr,
+    metafor,
     roxygen2,
     styler,
     testthat (>= 3.0.0),

@@ -266,11 +266,11 @@ test_that("scan_layer3a: detects match.arg valid values", {
     method
   }
   m <- setup_all_mocks(mock_fn)
-  local_mocked_bindings(resolve_function = m$resolve) # nolint: object_usage_linter.
-  local_mocked_bindings(get_package_version = m$version) # nolint: object_usage_linter.
-  local_mocked_bindings(get_rd_db = m$rd) # nolint: object_usage_linter.
+  local_mocked_bindings(resolve_function = m$resolve) # nolint: object_usage_linter. mock binding
+  local_mocked_bindings(get_package_version = m$version) # nolint: object_usage_linter. mock binding
+  local_mocked_bindings(get_rd_db = m$rd) # nolint: object_usage_linter. mock binding
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
 
   expect_true("layer3a_source" %in% sr@scan_metadata[["layers_completed"]])
   expect_true("method" %in% names(sr@valid_values))
@@ -287,11 +287,11 @@ test_that("scan_layer3a: extracts stop constraint", {
     sm
   }
   m <- setup_all_mocks(mock_fn)
-  local_mocked_bindings(resolve_function = m$resolve) # nolint: object_usage_linter.
-  local_mocked_bindings(get_package_version = m$version) # nolint: object_usage_linter.
-  local_mocked_bindings(get_rd_db = m$rd) # nolint: object_usage_linter.
+  local_mocked_bindings(resolve_function = m$resolve) # nolint: object_usage_linter. mock binding
+  local_mocked_bindings(get_package_version = m$version) # nolint: object_usage_linter. mock binding
+  local_mocked_bindings(get_rd_db = m$rd) # nolint: object_usage_linter. mock binding
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
 
   stop_csts <- Filter(
     function(c) c@source == "source_code",
@@ -320,11 +320,11 @@ test_that("scan_layer3a: confidence upgraded to high with cross-layer", {
     sm = 'One of "RR", "OR", "RD".'
   ))
   m <- setup_all_mocks(mock_fn, rd_db)
-  local_mocked_bindings(resolve_function = m$resolve) # nolint: object_usage_linter.
-  local_mocked_bindings(get_package_version = m$version) # nolint: object_usage_linter.
-  local_mocked_bindings(get_rd_db = m$rd) # nolint: object_usage_linter.
+  local_mocked_bindings(resolve_function = m$resolve) # nolint: object_usage_linter. mock binding
+  local_mocked_bindings(get_package_version = m$version) # nolint: object_usage_linter. mock binding
+  local_mocked_bindings(get_rd_db = m$rd) # nolint: object_usage_linter. mock binding
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
 
   formals_csts <- Filter(
     function(c) c@source == "formals_default",
@@ -343,12 +343,12 @@ test_that("scan_layer3a: no source access returns gracefully", {
   # Then:  Layer 3a skipped, previous layers preserved
   mock_fn <- sum
   m <- setup_all_mocks(mock_fn)
-  local_mocked_bindings(resolve_function = m$resolve) # nolint: object_usage_linter.
-  local_mocked_bindings(get_package_version = m$version) # nolint: object_usage_linter.
-  local_mocked_bindings(get_rd_db = m$rd) # nolint: object_usage_linter.
+  local_mocked_bindings(resolve_function = m$resolve) # nolint: object_usage_linter. mock binding
+  local_mocked_bindings(get_package_version = m$version) # nolint: object_usage_linter. mock binding
+  local_mocked_bindings(get_rd_db = m$rd) # nolint: object_usage_linter. mock binding
 
   expect_warning(
-    sr <- scan_package("testpkg", "testfn"),
+    sr <- bridle:::scan_function("testpkg", "testfn"),
     "Cannot access source"
   )
   expect_true("layer1_formals" %in% sr@scan_metadata[["layers_completed"]])
@@ -360,11 +360,11 @@ test_that("scan_layer3a: gap marking for unparseable source", {
   # Then:  Layer 3a completes with no additional constraints
   mock_fn <- function(x = 1, y = 2) x + y
   m <- setup_all_mocks(mock_fn)
-  local_mocked_bindings(resolve_function = m$resolve) # nolint: object_usage_linter.
-  local_mocked_bindings(get_package_version = m$version) # nolint: object_usage_linter.
-  local_mocked_bindings(get_rd_db = m$rd) # nolint: object_usage_linter.
+  local_mocked_bindings(resolve_function = m$resolve) # nolint: object_usage_linter. mock binding
+  local_mocked_bindings(get_package_version = m$version) # nolint: object_usage_linter. mock binding
+  local_mocked_bindings(get_rd_db = m$rd) # nolint: object_usage_linter. mock binding
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
 
   expect_true("layer3a_source" %in% sr@scan_metadata[["layers_completed"]])
   stop_csts <- Filter(

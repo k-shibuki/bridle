@@ -1,60 +1,60 @@
-# Tests for scan_package() Layer 1 (formals analysis)
+# Tests for scan_function() Layer 1 (formals analysis)
 # Follows test-strategy.mdc: Given/When/Then, failure >= success cases
 # Uses local_mocked_bindings to avoid dependency on external packages
 
 # with_scan_mocks, mock_resolve, mock_version, mock_empty_rd_db
 # provided by helper-mocks.R
 
-# -- scan_package() input validation ------------------------------------------
+# -- scan_function() input validation -----------------------------------------
 
-test_that("scan_package: NULL package rejected", {
+test_that("scan_function: NULL package rejected", {
   # Given: NULL as package argument
-  # When:  calling scan_package
+  # When:  calling scan_function
   # Then:  error about non-empty string
-  expect_error(scan_package(NULL, "f"), "non-empty string")
+  expect_error(bridle:::scan_function(NULL, "f"), "non-empty string")
 })
 
-test_that("scan_package: empty package rejected", {
+test_that("scan_function: empty package rejected", {
   # Given: empty string as package
-  # When:  calling scan_package
+  # When:  calling scan_function
   # Then:  error about non-empty string
-  expect_error(scan_package("", "f"), "non-empty string")
+  expect_error(bridle:::scan_function("", "f"), "non-empty string")
 })
 
-test_that("scan_package: numeric package rejected", {
+test_that("scan_function: numeric package rejected", {
   # Given: numeric as package
-  # When:  calling scan_package
+  # When:  calling scan_function
   # Then:  error about non-empty string
-  expect_error(scan_package(42, "f"), "non-empty string")
+  expect_error(bridle:::scan_function(42, "f"), "non-empty string")
 })
 
-test_that("scan_package: NULL func rejected", {
+test_that("scan_function: NULL func rejected", {
   # Given: NULL as func argument
-  # When:  calling scan_package
+  # When:  calling scan_function
   # Then:  error about non-empty string
-  expect_error(scan_package("pkg", NULL), "non-empty string")
+  expect_error(bridle:::scan_function("pkg", NULL), "non-empty string")
 })
 
-test_that("scan_package: empty func rejected", {
+test_that("scan_function: empty func rejected", {
   # Given: empty string as func
-  # When:  calling scan_package
+  # When:  calling scan_function
   # Then:  error about non-empty string
-  expect_error(scan_package("pkg", ""), "non-empty string")
+  expect_error(bridle:::scan_function("pkg", ""), "non-empty string")
 })
 
-test_that("scan_package: non-existent package rejected", {
+test_that("scan_function: non-existent package rejected", {
   # Given: a package name that is not installed
-  # When:  calling scan_package
+  # When:  calling scan_function
   # Then:  error about package not available
   expect_error(
-    scan_package("nonexistent_pkg_xyz_999", "f"),
+    bridle:::scan_function("nonexistent_pkg_xyz_999", "f"),
     "not available"
   )
 })
 
-test_that("scan_package: non-existent function rejected", {
+test_that("scan_function: non-existent function rejected", {
   # Given: a valid package but non-existent function
-  # When:  calling scan_package with mocked resolve
+  # When:  calling scan_function with mocked resolve
   # Then:  error about function not found
   local_mocked_bindings(
     resolve_function = function(package, func) {
@@ -64,7 +64,7 @@ test_that("scan_package: non-existent function rejected", {
     }
   )
   expect_error(
-    scan_package("stats", "nonexistent_fn_xyz"),
+    bridle:::scan_function("stats", "nonexistent_fn_xyz"),
     "not found"
   )
 })
@@ -80,7 +80,7 @@ test_that("scan_package: extracts parameters from simple function", {
   local_mocked_bindings(get_package_version = mock_version)
   local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
 
   expect_s3_class(sr, "bridle::ScanResult")
   expect_equal(sr@package, "testpkg")
@@ -106,7 +106,7 @@ test_that("scan_package: metadata includes layer1 and timestamp", {
   local_mocked_bindings(get_package_version = mock_version)
   local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
   expect_true("layer1_formals" %in% sr@scan_metadata[["layers_completed"]])
   expect_true(nchar(sr@scan_metadata[["timestamp"]]) > 0L)
 })
@@ -124,7 +124,7 @@ test_that("scan_package: dependency graph from ifelse default", {
   local_mocked_bindings(get_package_version = mock_version)
   local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
   expect_true("sm" %in% names(sr@dependency_graph))
   expect_true("method" %in% sr@dependency_graph[["sm"]])
 })
@@ -138,7 +138,7 @@ test_that("scan_package: no dependency for independent params", {
   local_mocked_bindings(get_package_version = mock_version)
   local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
   expect_length(sr@dependency_graph, 0L)
 })
 
@@ -151,7 +151,7 @@ test_that("scan_package: multi-param dependency detected", {
   local_mocked_bindings(get_package_version = mock_version)
   local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
   expect_true("c" %in% names(sr@dependency_graph))
   deps <- sr@dependency_graph[["c"]]
   expect_true("a" %in% deps)
@@ -168,7 +168,7 @@ test_that("scan_package: self-reference excluded from dep graph", {
   local_mocked_bindings(get_package_version = mock_version)
   local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
   expect_false("x" %in% names(sr@dependency_graph))
 })
 
@@ -178,14 +178,12 @@ test_that("scan_package: data_input classification for data params", {
   # Given: parameters matching data_input patterns
   # When:  scanning
   # Then:  classified as data_input
-  # nolint start: object_name_linter. Mimics real R package parameter names.
-  mock_fn <- function(event.e = NULL, n.e = NULL, data = NULL) NULL
-  # nolint end
+  mock_fn <- function(event.e = NULL, n.e = NULL, data = NULL) NULL # nolint: object_name_linter. matches R package parameter naming
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
   local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
   classes <- vapply(sr@parameters, function(p) p@classification, character(1))
   names(classes) <- vapply(sr@parameters, function(p) p@name, character(1))
   expect_equal(classes[["event.e"]], "data_input")
@@ -202,7 +200,7 @@ test_that("scan_package: statistical_decision classification", {
   local_mocked_bindings(get_package_version = mock_version)
   local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
   classes <- vapply(sr@parameters, function(p) p@classification, character(1))
   names(classes) <- vapply(sr@parameters, function(p) p@name, character(1))
   expect_equal(classes[["method"]], "statistical_decision")
@@ -214,12 +212,12 @@ test_that("scan_package: presentation classification", {
   # Given: parameters matching presentation patterns
   # When:  scanning
   # Then:  classified as presentation
-  mock_fn <- function(digits = 2, label.e = "exp", title = "My plot") NULL # nolint: object_name_linter.
+  mock_fn <- function(digits = 2, label.e = "exp", title = "My plot") NULL # nolint: object_name_linter. matches R package parameter naming
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
   local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
   classes <- vapply(sr@parameters, function(p) p@classification, character(1))
   names(classes) <- vapply(sr@parameters, function(p) p@name, character(1))
   expect_equal(classes[["digits"]], "presentation")
@@ -236,7 +234,7 @@ test_that("scan_package: dots classified as unknown", {
   local_mocked_bindings(get_package_version = mock_version)
   local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
   dots_param <- Filter(
     function(p) p@name == "...",
     sr@parameters
@@ -258,7 +256,7 @@ test_that("scan_package: constraint extracted from ifelse default", {
   local_mocked_bindings(get_package_version = mock_version)
   local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
   expect_true(length(sr@constraints) >= 1L)
   cst <- sr@constraints[[1L]]
   expect_equal(cst@type, "forces")
@@ -276,7 +274,7 @@ test_that("scan_package: no constraints for literal defaults", {
   local_mocked_bindings(get_package_version = mock_version)
   local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
   expect_length(sr@constraints, 0L)
 })
 
@@ -294,7 +292,7 @@ test_that("scan_package: constraint from switch default", {
   local_mocked_bindings(get_package_version = mock_version)
   local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
   expect_true(length(sr@constraints) >= 1L)
   cst <- sr@constraints[[1L]]
   expect_equal(cst@type, "forces")
@@ -312,7 +310,7 @@ test_that("scan_package: function with no formals", {
   local_mocked_bindings(get_package_version = mock_version)
   local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
   expect_s3_class(sr, "bridle::ScanResult")
   expect_length(sr@parameters, 1L)
   expect_equal(sr@parameters[[1L]]@name, "..none..")
@@ -332,7 +330,7 @@ test_that("scan_package: deeply nested conditional default", {
   local_mocked_bindings(get_package_version = mock_version)
   local_mocked_bindings(get_rd_db = mock_empty_rd_db)
 
-  sr <- scan_package("testpkg", "testfn")
+  sr <- bridle:::scan_function("testpkg", "testfn")
   expect_true("b" %in% names(sr@dependency_graph))
   expect_true("a" %in% sr@dependency_graph[["b"]])
   expect_true(length(sr@constraints) >= 1L)
