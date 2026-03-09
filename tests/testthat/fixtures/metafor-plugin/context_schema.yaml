@@ -1,0 +1,35 @@
+variables:
+  - name: k
+    description: "number of studies"
+    available_from: data_loaded
+    source_expression: "nrow(data)"
+
+  - name: measure
+    description: "selected effect size measure"
+    available_from: parameter_decided
+    depends_on_node: measure_selection
+    source_expression: "decisions$measure"
+
+  - name: method
+    description: "selected estimation method"
+    available_from: parameter_decided
+    depends_on_node: analysis_approach
+    source_expression: "decisions$method"
+
+  - name: I2
+    description: "I-squared heterogeneity statistic"
+    available_from: post_fit
+    depends_on_node: run_analysis
+    source_expression: "result$I2"
+
+  - name: tau2
+    description: "estimated between-study variance"
+    available_from: post_fit
+    depends_on_node: run_analysis
+    source_expression: "result$tau2"
+
+  - name: QE
+    description: "test statistic for residual heterogeneity"
+    available_from: post_fit
+    depends_on_node: run_analysis
+    source_expression: "result$QE"

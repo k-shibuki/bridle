@@ -1,0 +1,25 @@
+topic: estimation_methods
+target_parameter: method
+package: metafor
+function: rma.uni
+
+entries:
+  - id: reml_default
+    when: "random-effects model is appropriate"
+    properties:
+      - "REML (Restricted Maximum Likelihood) is the default and recommended estimator"
+      - "REML produces less biased tau-squared estimates than ML"
+    references:
+      - "Viechtbauer (2005). Bias and efficiency of meta-analytic variance estimators"
+
+  - id: dl_simple
+    when: "simple non-iterative estimation is preferred"
+    properties:
+      - "DerSimonian-Laird (DL) is the most widely used non-iterative method"
+      - "DL may underestimate tau-squared with few studies"
+
+  - id: ml_comparison
+    when: "likelihood-based inference is needed"
+    properties:
+      - "Maximum Likelihood (ML) allows direct likelihood ratio tests"
+      - "ML tends to underestimate tau-squared compared to REML"

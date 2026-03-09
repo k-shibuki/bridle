@@ -1,0 +1,19 @@
+topic: heterogeneity
+target_parameter: tau2_estimator
+package: metafor
+function: rma.uni
+
+entries:
+  - id: i2_interpretation
+    when: "heterogeneity assessment is needed"
+    properties:
+      - "I-squared > 75% indicates substantial heterogeneity"
+      - "Consider subgroup analysis or meta-regression for high heterogeneity"
+    references:
+      - "Higgins & Thompson (2002). Quantifying heterogeneity in a meta-analysis"
+
+  - id: tau2_reml
+    when: "tau-squared estimation method is needed"
+    properties:
+      - "REML provides the least biased tau-squared estimate"
+      - "tau2_estimator controls the between-study variance estimation"

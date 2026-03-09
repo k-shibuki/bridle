@@ -1,0 +1,46 @@
+graph:
+  entry_node: gather_data
+  template: common_flow
+  global_policy:
+    max_iterations: 3
+
+  nodes:
+    configure_tau2:
+      type: decision
+      topic: heterogeneity
+      parameter: tau2_estimator
+      description: "Select tau-squared estimator for random-effects model"
+      transitions:
+        - to: run_analysis
+          always: true
+
+    run_analysis:
+      type: execution
+      description: "Execute meta-analysis with selected parameters"
+      transitions:
+        - to: check_heterogeneity
+          always: true
+
+    check_heterogeneity:
+      type: diagnosis
+      topic: heterogeneity
+      description: "Assess heterogeneity and consider model adjustments"
+      transitions:
+        - to: measure_selection
+          when: "adjustment needed"
+          fallback_to_llm: true
+        - to: assess_bias
+          always: true
+
+    assess_bias:
+      type: diagnosis
+      topic: publication_bias
+      description: "Assess publication bias via funnel plot and tests"
+      transitions:
+        - to: complete
+          always: true
+
+    complete:
+      type: context_gathering
+      description: "Summarize analysis results"
+      transitions: []

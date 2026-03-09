@@ -1,0 +1,27 @@
+topic: effect_measures
+target_parameter: measure
+package: metafor
+function: rma.uni
+
+entries:
+  - id: smd_default
+    when: "continuous outcome data is available"
+    properties:
+      - "Standardized Mean Difference (SMD) is the default for continuous outcomes"
+      - "SMD allows combining studies with different scales"
+    references:
+      - "Hedges & Olkin (1985). Statistical Methods for Meta-Analysis"
+
+  - id: or_for_binary
+    when: "binary outcome data is available"
+    properties:
+      - "Log Odds Ratio (OR) is standard for binary outcomes"
+      - "Peto method requires OR as the effect measure"
+    related:
+      - "consider Peto method for rare events"
+
+  - id: rr_alternative
+    when: "binary outcome with common events"
+    properties:
+      - "Risk Ratio (RR) may be more interpretable for clinicians"
+      - "RR is not invariant to outcome definition (event vs non-event)"

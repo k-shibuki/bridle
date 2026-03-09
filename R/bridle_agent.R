@@ -39,7 +39,7 @@ bridle_agent <- function(plugin_dir,
   if (!file.exists(graph_path)) {
     cli::cli_abort("Missing {.file decision_graph.yaml} in {.path {plugin_dir}}.")
   }
-  graph <- read_decision_graph(graph_path) # nolint: object_usage_linter. defined in R/decision_graph.R
+  graph <- build_graph(graph_path) # nolint: object_usage_linter. defined in R/decision_graph.R
 
   manifest <- .load_manifest(plugin_dir)
   if (!is.null(manifest)) {
@@ -100,7 +100,16 @@ bridle_agent <- function(plugin_dir,
 
 .load_yaml_list <- function(dir, filename, reader) {
   path <- file.path(dir, filename)
-  if (file.exists(path)) list(reader(path)) else list()
+  if (file.exists(path)) {
+    return(list(reader(path)))
+  }
+  subdir <- tools::file_path_sans_ext(filename)
+  dir_path <- file.path(dir, subdir)
+  if (dir.exists(dir_path)) {
+    files <- sort(list.files(dir_path, pattern = "\\.ya?ml$", full.names = TRUE))
+    return(lapply(files, reader))
+  }
+  list()
 }
 
 .load_optional <- function(dir, filename, reader) {
