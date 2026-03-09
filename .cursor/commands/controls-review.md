@@ -18,7 +18,7 @@ Comprehensively audit the structural quality of the AI development system: desig
 - All files under `.cursor/` (auto-discovered)
 - Design documents: `docs/adr/*.md`, `docs/schemas/*.yaml` (auto-discovered)
 - Guard configs: `.pre-commit-config.yaml`, `.github/workflows/*.yaml`, `tools/` (auto-discovered)
-- Surface assets: `Makefile`, `README.md`, `CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/` (auto-discovered)
+- Surface assets: `Makefile`, `README.md`, `.github/CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/` (auto-discovered)
 
 ## Steps
 
@@ -34,7 +34,7 @@ Gather a complete manifest of all controls across both domains (Design + Control
 | Controls | Commands | `.cursor/commands/*.md` | Step-by-step procedures |
 | Controls | Knowledge | `.cursor/knowledge/*.md` | Patterns, playbooks, reference |
 | Controls | Guards | `.pre-commit-config.yaml`, `.github/workflows/*.yaml`, `tools/` | Hooks, CI checks, enforcement scripts |
-| Controls | Surface | `Makefile`, `README.md`, `CONTRIBUTING.md`, `.cursor/README.md`, `.github/ISSUE_TEMPLATE/` | Entry points, development API, navigation maps |
+| Controls | Surface | `Makefile`, `README.md`, `.github/CONTRIBUTING.md`, `.cursor/README.md`, `.github/ISSUE_TEMPLATE/` | Entry points, development API, navigation maps |
 
 ```bash
 # Design — ADRs
@@ -60,7 +60,7 @@ wc -c .cursor/knowledge/*.md
 ls -la .pre-commit-config.yaml .github/workflows/*.yaml tools/*.sh 2>/dev/null
 
 # Surface
-ls -la Makefile README.md CONTRIBUTING.md .cursor/README.md .github/ISSUE_TEMPLATE/*.md 2>/dev/null
+ls -la Makefile README.md .github/CONTRIBUTING.md .cursor/README.md .github/ISSUE_TEMPLATE/*.md 2>/dev/null
 make help 2>/dev/null | wc -l
 ```
 

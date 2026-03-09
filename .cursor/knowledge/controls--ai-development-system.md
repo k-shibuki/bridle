@@ -42,7 +42,7 @@ supersedes it.
 | **Commands** | `.cursor/commands/*.md` | Define step-by-step procedures |
 | **Knowledge** | `.cursor/knowledge/*.md` | Capture patterns, playbooks, reference |
 | **Guards** | `.pre-commit-config.yaml`, `.github/workflows/*.yaml`, `tools/` | Enforce Rules deterministically via hooks, CI, Branch Protection |
-| **Surface** | `Makefile`, `README.md`, `CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/` | Provide entry points, development API, onboarding |
+| **Surface** | `Makefile`, `README.md`, `.github/CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/` | Provide entry points, development API, onboarding |
 
 ### Domain and component relationships
 
