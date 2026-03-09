@@ -41,7 +41,7 @@ supersedes it.
 | **Rules** | `.cursor/rules/*.mdc` | Declare MUST / MUST NOT policies |
 | **Commands** | `.cursor/commands/*.md` | Define step-by-step procedures |
 | **Knowledge** | `.cursor/knowledge/*.md` | Capture patterns, playbooks, reference |
-| **Guards** | `.pre-commit-config.yaml`, `.github/workflows/*.yaml`, `tools/` | Enforce Rules deterministically via hooks, CI, Branch Protection |
+| **Guards** | `.pre-commit-config.yaml`, `.github/workflows/*.yaml`, `tools/` | Enforce Rules deterministically via hooks, CI, Branch Protection, auto-merge, auto-delete |
 | **Surface** | `Makefile`, `README.md`, `.github/CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/` | Provide entry points, development API, onboarding |
 
 ### Domain and component relationships
@@ -79,6 +79,18 @@ The goal is to maximize the Deterministic tier. When a Steering constraint can b
 converted to a Guard, it should be. Conditionally Deterministic Guards should be
 promoted to Deterministic where possible (e.g., by adding CI-level checks as
 fallback).
+
+### GitHub Repository Settings as Guards
+
+The following repository settings act as Deterministic Guards:
+
+| Setting | Guard behavior |
+|---------|---------------|
+| `required_status_checks` (`ci-pass`, `check-policy`) | Blocks merge without CI green |
+| `required_status_checks.strict: false` | Allows merge when branch is behind main (solo + sequential model; reconsider for parallel development) |
+| `allow_auto_merge` | Enables `gh pr merge --auto` — delegates merge execution to GitHub, strengthening HS-CI-MERGE |
+| `delete_branch_on_merge` | Automatically deletes feature branches after merge — no agent action needed |
+| `enforce_admins` | Forces admins to follow protection rules (limited reliability on personal repos) |
 
 ## Component Boundary Rules
 

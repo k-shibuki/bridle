@@ -90,14 +90,12 @@ Before running `gh pr create`, verify the body contains ALL required sections. M
 | `## Traceability` | Always | `Closes #N` or Exception block |
 | `## Risk / Impact` | Always | Affected area, breaking change, data impact |
 | `## Rollback Plan` | Non-docs/test | How to revert; `N/A` for docs/test only |
-| `## Review Checklist` | Always | Judgment-only items (2 items) |
 
 #### PR body template (SSOT)
 
 Read `@.github/PULL_REQUEST_TEMPLATE.md` and use it as the PR body. Do NOT compose the body from memory or duplicate the template here.
 
 **Checkbox rules**:
-- **Review Checklist** items must be `- [ ]` at PR creation. They are checked during `pr-review` and verified by `pr-merge`. Pre-checking at creation time is prohibited.
 - **Test Evidence** is a free-text section for CI result audit trail — no checkboxes.
 - **Schema Impact** checkboxes are a selection (not a gate) — check the applicable one at creation.
 
@@ -127,6 +125,14 @@ gh pr create --title "<type>(<scope>): <description>" \
 ### 5. Monitor CI until completion
 
 Per `subagent-policy.mdc`: CI polling MUST be delegated to a background subagent. The main agent must not poll CI inline with `sleep` loops.
+
+**Preferred shortcut**: If `pr-review` has already concluded "Mergeable" (e.g., user pre-approved the merge), set auto-merge immediately and skip polling entirely:
+
+```bash
+gh pr merge <PR_NUMBER> --auto --squash
+```
+
+See `@.cursor/commands/pr-merge.md` § Auto-merge for details.
 
 **Delegation**: Use `@.cursor/rules/subagent-policy.mdc` delegation pattern with prompt templates from `@.cursor/knowledge/agent--delegation-templates.md` (Template 3: CI-Wait Only). Do not use Template 1 (CI-Wait + Merge) here — merge requires `pr-review` first.
 
