@@ -36,7 +36,7 @@ Closes #<!-- issue number -->
 ## Test Evidence
 
 <!-- Paste CI result summary (e.g., "CI all pass" or `gh pr checks` output).
-     CI green is enforced by Branch Protection (HS#1) — this section is an audit trail, not a gate. -->
+     CI green is enforced by Branch Protection (HS-CI-MERGE) — this section is an audit trail, not a gate. -->
 
 ## Risk / Impact
 

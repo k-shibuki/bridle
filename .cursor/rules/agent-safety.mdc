@@ -22,13 +22,6 @@ The following actions are NEVER permitted, regardless of user instructions:
 - **`HS-NOLINT` — NEVER add `# nolint` without consulting knowledge first**: Before writing ANY `# nolint` annotation, the agent MUST read `@.cursor/knowledge/lint--nolint-accepted-patterns.md` and follow the nolint decision tree in `@.cursor/rules/quality-policy.mdc` § nolint Checkpoint. The required sequence is: (1) attempt code restructuring, (2) attempt co-location for test helpers, (3) only then consider line-level `# nolint: <linter_name>. <reason>`. Blanket `# nolint`, `# nolint start/end`, and `# nolint` without linter name + reason are **always prohibited**. Adding `# nolint` without first reading the knowledge file and exhausting alternatives is prohibited — "the lint error needs suppressing" is not sufficient justification.
 - **`HS-PR-BASE` — NEVER use `--base feat/<branch>` in `gh pr create`**: All PRs must target `main`. Using a feature branch as base causes the PR to be auto-closed when the base branch is deleted on merge. Document dependencies in the PR body, not through the base branch. See `pr-create.md` Step 3c.
 
-### Retired IDs (do not reuse)
-
-| Retired ID | Disposition |
-|---|---|
-| HS#3, HS#4 | Consolidated into `HS-NO-SKIP` |
-| HS#7 | Demoted to MUST rule in `subagent-policy.mdc` (CI polling delegation is an implementation technique, not a safety-critical prohibition) |
-
 ## Enforcement Tiers
 
 Each Hard Stop is classified by its enforcement mechanism. See `controls--ai-development-system.md` § Hard Stop Enforcement Tiers for tier definitions.

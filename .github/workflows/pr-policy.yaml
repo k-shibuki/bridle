@@ -108,7 +108,7 @@ jobs:
               );
             }
 
-            // --- 6. Base branch check (HS#9) ---
+            // --- 6. Base branch check (HS-PR-BASE) ---
             if (pr.base.ref !== 'main' && pr.base.ref !== 'master') {
               errors.push(
                 '**Base branch**: PR must target `main`. ' +

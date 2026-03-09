@@ -55,12 +55,12 @@ repos:
         stages: [commit-msg]
         always_run: true
       - id: check-nolint-format
-        name: Validate nolint annotations (HS#8)
+        name: Validate nolint annotations (HS-NOLINT)
         entry: bash tools/check-nolint.sh
         language: system
         types: [r]
       - id: local-verification
-        name: Local verification gate (HS#2)
+        name: Local verification gate (HS-LOCAL-VERIFY)
         entry: bash tools/pre-push.sh
         language: system
         stages: [pre-push]
