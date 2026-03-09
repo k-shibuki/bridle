@@ -3,6 +3,8 @@ trigger: nolint justification, nolint accepted, nolint prohibited, nolint patter
 ---
 # Justified `# nolint` Usage
 
+**Before using `# nolint`**: Follow `quality-policy.mdc` § nolint Checkpoint — Priority 1 (restructuring) and Priority 2 (co-location) must be exhausted first. For test code `object_usage_linter`, see `test--mock-scope-constraint.md` to determine which helpers can be co-located.
+
 The following are **accepted justifications** (always include the reason after the linter name):
 
 | Linter | Justification | Example |
