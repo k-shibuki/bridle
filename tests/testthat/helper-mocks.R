@@ -106,65 +106,99 @@ setup_all_mocks <- function(fn, rd_db = NULL) {
 
 # -- HTTP mock factories (used by fetch_references) ----------------------------
 
-mock_crossref_response <- function(doi = "10.1234/test",
-                                   title = "Test Paper",
-                                   authors = list(
-                                     list(given = "John", family = "Doe")
-                                   ),
-                                   abstract = "An abstract.",
-                                   journal = "Test Journal",
-                                   year = 2020L) {
-  body <- list(
-    message = list(
-      DOI = doi,
-      title = list(title),
-      author = authors,
-      abstract = abstract,
-      `container-title` = list(journal),
-      `published-print` = list(
-        `date-parts` = list(list(year))
-      )
-    )
-  )
+make_json_response <- function(body_data, status = 200L) {
+  json_str <- jsonlite::toJSON(body_data, auto_unbox = TRUE, null = "null")
   structure(
-    list(body = body),
+    list(
+      method = "GET",
+      url = "https://mock.test",
+      status_code = as.integer(status),
+      headers = structure(
+        list(`content-type` = "application/json"),
+        class = "httr2_headers"
+      ),
+      body = charToRaw(as.character(json_str)),
+      cache = new.env(parent = emptyenv())
+    ),
     class = "httr2_response"
   )
 }
 
+mock_openalex_response <- function(doi = "10.1234/test",
+                                   title = "Test Paper",
+                                   authors = list(
+                                     list(author = list(
+                                       display_name = "John Doe"
+                                     ))
+                                   ),
+                                   abstract_inverted_index = list(
+                                     An = list(0L),
+                                     abstract = list(1L)
+                                   ),
+                                   journal = "Test Journal",
+                                   year = 2020L,
+                                   status = 200L) {
+  body <- list(
+    doi = paste0("https://doi.org/", doi),
+    title = title,
+    authorships = authors,
+    publication_year = year,
+    primary_location = list(source = list(display_name = journal))
+  )
+  body[["abstract_inverted_index"]] <- abstract_inverted_index
+  make_json_response(body, status = status)
+}
+
+mock_s2_response <- function(doi = "10.1234/test",
+                             title = "Test Paper",
+                             authors = list(list(name = "John Doe")),
+                             abstract = "An abstract.",
+                             venue = "Test Journal",
+                             year = 2020L,
+                             status = 200L) {
+  body <- list(
+    externalIds = list(DOI = doi),
+    title = title,
+    authors = authors,
+    venue = venue,
+    year = year
+  )
+  body[["abstract"]] <- abstract
+  make_json_response(body, status = status)
+}
+
 # -- Plugin test builders (used by validate_plugin) ----------------------------
 
-# nolint start: object_usage_linter. S7 constructors from same package.
 make_graph <- function(nodes = NULL, entry = "start") {
   if (is.null(nodes)) {
     nodes <- list(
-      start = Node(
+      start = Node( # nolint: object_usage_linter. S7 constructor
         type = "decision",
         topic = "effect_measure",
         parameter = "sm",
         transitions = list(
-          Transition(to = "end", always = TRUE)
+          Transition(to = "end", always = TRUE) # nolint: object_usage_linter. S7 constructor
         )
       ),
-      end = Node(
+      end = Node( # nolint: object_usage_linter. S7 constructor
         type = "execution",
         transitions = list()
       )
     )
   }
-  DecisionGraph(entry_node = entry, nodes = nodes)
+  DecisionGraph(entry_node = entry, nodes = nodes) # nolint: object_usage_linter. S7 constructor
 }
 
 make_knowledge <- function(topic = "effect_measure",
                            param = "sm",
                            pkg = "meta",
                            func = "metabin") {
-  KnowledgeStore(
+  KnowledgeStore( # nolint: object_usage_linter. S7 constructor
     topic = topic,
     target_parameter = param,
     package = pkg,
     func = func,
-    entries = list(KnowledgeEntry(
+    entries = list(KnowledgeEntry( # nolint: object_usage_linter. S7 constructor
       id = "e1",
       when = "always",
       properties = "Use RR for binary outcomes"
@@ -173,10 +207,10 @@ make_knowledge <- function(topic = "effect_measure",
 }
 
 make_constraint <- function(param = "sm", pkg = "meta", func = "metabin") {
-  ConstraintSet(
+  ConstraintSet( # nolint: object_usage_linter. S7 constructor
     package = pkg,
     func = func,
-    constraints = list(Constraint(
+    constraints = list(Constraint( # nolint: object_usage_linter. S7 constructor
       id = "c1",
       source = "formals_default",
       type = "valid_values",
@@ -188,14 +222,14 @@ make_constraint <- function(param = "sm", pkg = "meta", func = "metabin") {
 
 make_context <- function(vars = NULL) {
   if (is.null(vars)) {
-    vars <- list(ContextVariable(
+    vars <- list(ContextVariable( # nolint: object_usage_linter. S7 constructor
       name = "k",
       description = "number of studies",
       available_from = "data_loaded",
       source_expression = "nrow(data)"
     ))
   }
-  ContextSchema(variables = vars)
+  ContextSchema(variables = vars) # nolint: object_usage_linter. S7 constructor
 }
 # -- SessionContext mock factory (used by session_context, graph_engine, etc.) --
 
@@ -206,7 +240,7 @@ make_session_context <- function(variables = list(),
   if (is.null(schema)) {
     schema <- make_context()
   }
-  ctx <- SessionContext(schema = schema, variables = variables)
+  ctx <- SessionContext(schema = schema, variables = variables) # nolint: object_usage_linter. S7 constructor
   if (!is.null(data)) {
     ctx@data <- data
   }
@@ -222,19 +256,17 @@ make_test_engine <- function(nodes = NULL, entry = "start",
                              context = NULL, global_policy = NULL) {
   if (is.null(nodes)) {
     nodes <- list(
-      start = Node(
+      start = Node( # nolint: object_usage_linter. S7 constructor
         type = "decision", topic = "effect_measure", parameter = "sm",
-        transitions = list(Transition(to = "end", always = TRUE))
+        transitions = list(Transition(to = "end", always = TRUE)) # nolint: object_usage_linter. S7 constructor
       ),
-      end = Node(type = "execution", transitions = list())
+      end = Node(type = "execution", transitions = list()) # nolint: object_usage_linter. S7 constructor
     )
   }
-  gp <- global_policy %||% GlobalPolicy()
-  graph <- DecisionGraph(
+  gp <- global_policy %||% GlobalPolicy() # nolint: object_usage_linter. S7 constructor
+  graph <- DecisionGraph( # nolint: object_usage_linter. S7 constructor
     entry_node = entry, global_policy = gp, nodes = nodes
   )
   ctx <- context %||% make_session_context()
   make_graph_engine(graph, ctx)
 }
-
-# nolint end
