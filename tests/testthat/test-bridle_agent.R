@@ -208,3 +208,79 @@ test_that("console with logging writes JSONL", {
   log_files <- list.files(log_dir, pattern = "\\.jsonl$")
   expect_true(length(log_files) > 0L)
 })
+
+# -- manifest.yaml policy_defaults (Issue #149) --------------------------------
+
+test_that("manifest policy_defaults merges into global_policy", {
+  dir <- .make_plugin_dir()
+  writeLines(c(
+    "policy_defaults:",
+    "  max_iterations: 5"
+  ), file.path(dir, "manifest.yaml"))
+
+  agent <- bridle_agent(dir)
+  policy <- resolve_policy(agent$engine, "start")
+  expect_equal(policy$max_iterations, 5L)
+})
+
+test_that("graph global_policy overrides manifest policy_defaults", {
+  dir <- .make_plugin_dir()
+  writeLines(c(
+    "policy_defaults:",
+    "  max_iterations: 5"
+  ), file.path(dir, "manifest.yaml"))
+
+  graph_yaml <- "
+graph:
+  entry_node: start
+  global_policy:
+    max_iterations: 3
+  nodes:
+    start:
+      type: decision
+      topic: effect_measure
+      parameter: sm
+      transitions:
+        - to: end
+          always: true
+    end:
+      type: execution
+      transitions: []
+"
+  writeLines(graph_yaml, file.path(dir, "decision_graph.yaml"))
+
+  agent <- bridle_agent(dir)
+  policy <- resolve_policy(agent$engine, "start")
+  expect_equal(policy$max_iterations, 3L)
+})
+
+test_that("missing manifest.yaml uses built-in defaults", {
+  dir <- .make_plugin_dir()
+  agent <- bridle_agent(dir)
+  policy <- resolve_policy(agent$engine, "start")
+  expect_equal(policy$max_iterations, 10L)
+})
+
+test_that("empty policy_defaults in manifest uses built-in defaults", {
+  dir <- .make_plugin_dir()
+  writeLines(c(
+    "policy_defaults: {}"
+  ), file.path(dir, "manifest.yaml"))
+
+  agent <- bridle_agent(dir)
+  policy <- resolve_policy(agent$engine, "start")
+  expect_equal(policy$max_iterations, 10L)
+})
+
+test_that("manifest with unknown fields is silently ignored", {
+  dir <- .make_plugin_dir()
+  writeLines(c(
+    "policy_defaults:",
+    "  max_iterations: 5",
+    "  unknown_field: true"
+  ), file.path(dir, "manifest.yaml"))
+
+  agent <- bridle_agent(dir)
+  policy <- resolve_policy(agent$engine, "start")
+  expect_equal(policy$max_iterations, 5L)
+})
