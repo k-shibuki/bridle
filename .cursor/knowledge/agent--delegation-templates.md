@@ -3,7 +3,11 @@ trigger: CI-wait template, CI-wait only, merge template, sequential merge, depen
 ---
 # Subagent Delegation Templates
 
-Four reusable templates for delegating blocking operations to background subagents.
+Reusable templates for delegating blocking operations to background subagents.
+
+**Preferred**: For single PRs after `pr-review`, use `gh pr merge --auto --squash`
+(see `pr-merge.md` § Auto-merge) instead of delegating. Templates below are for
+cases where auto-merge is unavailable or multiple PRs need coordination.
 
 ## Template 1: CI-Wait + Merge
 
@@ -20,7 +24,7 @@ Monitor CI for PR #<N> until all checks pass, then merge it.
    - Use elapsed time (max 5 min) as upper bound
 
 2. When all checks pass:
-   `gh pr merge <N> --squash --delete-branch`
+   `gh pr merge <N> --squash`
 
 3. After merge, verify:
    `gh pr view <N> --json state -q '.state'`
@@ -43,16 +47,15 @@ Report: "MERGED: PR #<N> squash-merged at <sha>" or "FAILED: <reason>"
 
 ```
 ## Goal
-Merge PRs #<A>, #<B>, #<C> sequentially (each depends on the previous).
+Merge PRs #<A>, #<B>, #<C> sequentially.
 
 ## Steps
 
 For each PR in order:
-1. Rebase onto main: `gh pr view <N> --json headRefName -q '.headRefName'` then verify it's up to date
-2. Wait for CI: poll with `gh pr checks <N>` (max 5 min per PR)
-3. Merge: `gh pr merge <N> --squash --delete-branch`
-4. Verify merge: `gh pr view <N> --json state -q '.state'`
-5. Proceed to next PR
+1. Wait for CI: poll with `gh pr checks <N>` (max 5 min per PR)
+2. Merge: `gh pr merge <N> --squash`
+3. Verify merge: `gh pr view <N> --json state -q '.state'`
+4. Proceed to next PR
 
 ## Prohibitions
 - Do NOT run `git checkout`, `git switch`, `git branch`, or `git rebase`
@@ -97,7 +100,7 @@ squash-merging #<A>, use `git rebase --onto` to rebase #<B> cleanly.
 ## Steps
 
 1. Poll CI for PR #<A> using Adaptive Polling Strategy from `ci--job-dependency-graph.md` § Adaptive Polling Strategy:
-2. Merge PR #<A>: `gh pr merge <A> --squash --delete-branch`
+2. Merge PR #<A>: `gh pr merge <A> --squash`
 3. Verify: `gh pr view <A> --json state -q '.state'` → "MERGED"
 4. Check PR #<B> mergeability: `gh pr view <B> --json mergeable -q '.mergeable'`
 5. If CONFLICTING, rebase #<B> onto updated main:
@@ -110,7 +113,7 @@ squash-merging #<A>, use `git rebase --onto` to rebase #<B> cleanly.
    e. `git rebase --onto origin/main <boundary-commit> <branch-B>`
    f. `git push --force-with-lease origin <branch-B>`
 6. Poll CI for PR #<B> using Adaptive Polling Strategy from `ci--job-dependency-graph.md` § Adaptive Polling Strategy:
-7. Merge PR #<B>: `gh pr merge <B> --squash --delete-branch`
+7. Merge PR #<B>: `gh pr merge <B> --squash`
 8. Verify: `gh pr view <B> --json state -q '.state'` → "MERGED"
 
 ## Git operations allowed (scoped)

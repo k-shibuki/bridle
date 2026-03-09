@@ -52,11 +52,3 @@ Closes #<!-- issue number -->
 
 -
 
-## Review Checklist
-
-<!-- These items require human/agent judgment — CI cannot verify them.
-     Checked during pr-review; verified by pr-merge before merge.
-     Leave unchecked at PR creation. -->
-
-- [ ] Acceptance criteria from linked Issue are met
-- [ ] No untested new functionality introduced

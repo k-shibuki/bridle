@@ -9,13 +9,13 @@ Run before starting any work when multiple agents may be active:
 - [ ] Main agent and subagent work on **different branches**
 - [ ] Before starting work, run `git status` to detect unexpected state
 - [ ] After subagent completion, verify branch state before continuing
-- [ ] Avoid force-push in the normal PR flow — use new commits, not `amend` + force-push. For BEHIND recovery, use `git merge origin/main` instead of rebase (see `git--strict-merge-sync.md`). When force-push is unavoidable (recovery scenarios like `--onto` rebase), use `--force-with-lease` (never `--force`)
+- [ ] Avoid force-push in the normal PR flow — use new commits, not `amend` + force-push. When force-push is unavoidable (recovery scenarios like `--onto` rebase), use `--force-with-lease` (never `--force`)
 - [ ] Never use `--admin` on `gh pr merge` — diagnose the block instead
 - [ ] PRs always target `main` (never `--base feat/<branch>`)
 
 ## PR Auto-Close Prevention
 
-**Symptom**: A PR targeting `feat/A-branch` is auto-closed by GitHub when PR #A is merged with `--delete-branch`.
+**Symptom**: A PR targeting `feat/A-branch` is auto-closed by GitHub when PR #A is merged (branch auto-deleted by `delete_branch_on_merge` setting).
 
 **Cause**: GitHub auto-closes PRs whose base branch is deleted.
 

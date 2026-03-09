@@ -23,40 +23,38 @@ These checks are the first step of `pr-merge` and cannot be skipped:
    - `pr-review` concluded "Mergeable"
    - User explicitly instructed to merge
 
-3. **Review Checklist verification gate**:
-   Read the `## Review Checklist` in the PR body. Both items must be `- [x]` (checked during `pr-review`).
-
-   If any `- [ ]` remains: **STOP**. Do not merge. Return to `pr-review` or implementation to address the gap. Only resume merge after the fix is pushed and CI re-passes.
-
-4. **Record CI evidence** (audit trail):
+3. **Record CI evidence** (audit trail):
    If `## Test Evidence` is empty, paste a CI summary (e.g., `gh pr checks` output or "CI all pass — R jobs skipped, no R changes"). This is a record, not a gate — CI green is already enforced by precondition 1.
 
    ```bash
    gh api repos/{owner}/{repo}/pulls/<PR-number> -X PATCH -f body="<updated body>"
    ```
 
-5. **Branch must be up to date with main** (required by `strict: true` branch protection):
+4. **Branch must be mergeable** (merge state check):
 
    ```bash
    gh pr view <PR-number> --json mergeStateStatus -q '.mergeStateStatus'
    ```
 
-   - `CLEAN` or `HAS_HOOKS`: proceed to merge.
-   - `BEHIND`: merge main into the branch (no force-push needed) and wait for CI to re-pass.
+   | Value | Meaning | Action |
+   |-------|---------|--------|
+   | `CLEAN` | All checks pass, no conflicts | Merge |
+   | `HAS_HOOKS` | Mergeable, pre-receive hooks will run | Merge |
+   | `BEHIND` | Branch is behind main (no conflict) | Merge (allowed by `strict: false`) |
+   | `UNSTABLE` | Some non-required checks failed | Merge if required checks pass |
+   | `DIRTY` | Merge conflict exists | Resolve conflict, push, wait for CI |
+   | `BLOCKED` | Required checks failed or reviews missing | Investigate; do not force-merge |
+   | `UNKNOWN` | GitHub is computing merge status | Wait and re-query |
 
-     ```bash
-     git fetch origin
-     git checkout <branch>
-     git merge origin/main --no-edit
-     git push origin <branch>
-     ```
+   With `strict: false`, `BEHIND` does not block the merge. GitHub allows merging
+   as long as required checks have passed and there are no conflicts.
 
-     After push, return to precondition 1 (CI must be green) — CI will re-trigger.
-   - `BLOCKED` or `UNKNOWN`: investigate; do not force-merge.
+   **Design note**: Solo + sequential agent model has near-zero risk of conflicting
+   PRs. Post-merge CI (`R-CMD-check.yaml` on push to main) acts as safety net.
+   If the project moves to parallel multi-agent development, reconsider enabling
+   `strict: true` or GitHub Merge Queue.
 
-   See `@.cursor/knowledge/git--strict-merge-sync.md` for detailed recovery procedures.
-
-If any precondition (1-5) is not met, do not proceed to merge. Report the blocking condition and the required action.
+If any precondition (1-4) is not met, do not proceed to merge. Report the blocking condition and the required action.
 
 ## Inputs
 
@@ -103,11 +101,14 @@ Merge only after CI passes and review is complete.
 
 ```bash
 # Squash merge (consolidates commits)
-gh pr merge <PR-number> --squash --delete-branch
+gh pr merge <PR-number> --squash
 
 # Normal merge (preserves history)
-gh pr merge <PR-number> --merge --delete-branch
+gh pr merge <PR-number> --merge
 ```
+
+Remote branches are automatically deleted after merge (`delete_branch_on_merge` is
+enabled in repository settings). No `--delete-branch` flag needed.
 
 After merge, sync local tracking information:
 
@@ -117,7 +118,8 @@ git pull origin main
 git fetch --prune origin
 ```
 
-`--prune` removes local remote-tracking references (e.g. `origin/feat/...`) for branches that have been deleted on the remote (typically by `--delete-branch` above).
+`--prune` removes local remote-tracking references (e.g. `origin/feat/...`) for
+branches deleted by the automatic branch cleanup.
 
 ### Clean up local feature branch
 
@@ -161,14 +163,38 @@ Refs: #<issue-number>"
 
 After `--squash`, you must run `git commit` with a message following `commit-format.mdc`.
 
+## Auto-merge (preferred for single PRs)
+
+After `pr-review` concludes "Mergeable" and CI is still running, use auto-merge
+to let GitHub merge automatically when all required checks pass:
+
+```bash
+gh pr merge <PR-number> --auto --squash
+```
+
+This moves the "merge after CI" operation from Steering (agent polls and merges)
+to Deterministic (GitHub enforces required checks and merges automatically).
+
+After setting auto-merge, the agent can immediately proceed to the next task.
+If CI fails, GitHub cancels auto-merge automatically.
+
+**Verify auto-merge was set** (optional):
+
+```bash
+gh pr view <PR-number> --json autoMergeRequest -q '.autoMergeRequest'
+```
+
+**Fallback**: If `gh pr merge --auto` fails (e.g., token scope issue), fall back
+to the delegated merge pattern below.
+
 ## Delegated merge (background subagent)
 
 CI polling is always delegated to a background subagent (see `@.cursor/rules/subagent-policy.mdc`). This frees the main agent for productive work — whether implementing the next Issue or performing housekeeping.
 
 ### When to use
 
-- CI is still running on a PR (always — inline polling is prohibited)
-- Multiple PRs need sequential merge (rebase → CI → merge chain)
+- Auto-merge is not available or not suitable
+- Multiple PRs need sequential merge
 - Dependent PRs with shared commit history need `--onto` rebase after squash merge
 
 ### How to delegate
@@ -194,7 +220,7 @@ The main agent checks the subagent transcript at the next `next` re-assessment c
 - Use non-interactive git flags (`--no-edit`, `--no-pager`) to avoid hangs
 - Per `@.cursor/rules/agent-safety.mdc` `HS-CI-MERGE`: CI must be green before merge
 - Merge is permitted when `pr-review` concluded "Mergeable" or the user explicitly instructs to merge
-- **NEVER use `--admin` flag** on `gh pr merge`. `enforce_admins` does not reliably block repo-owner bypass on personal repositories. If merge is blocked, diagnose the cause (pending checks, BEHIND status) instead of overriding.
+- **NEVER use `--admin` flag** on `gh pr merge`. `enforce_admins` does not reliably block repo-owner bypass on personal repositories. If merge is blocked, diagnose the cause (pending checks, merge conflicts) instead of overriding.
 - **NEVER use `git commit --amend` + force-push** in the normal PR flow. Always create a new commit for fixes. Amend+force-push leaves stale failed checks visible in the GitHub PR GUI, causing confusion between CLI and GUI state.
 
 ## Output (response format)
