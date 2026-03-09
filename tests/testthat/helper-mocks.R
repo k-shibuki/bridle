@@ -250,6 +250,21 @@ make_session_context <- function(variables = list(),
   ctx
 }
 
+# -- Pipeline test helpers (used by test-pipeline-metafor.R) -------------------
+
+mock_openalex_for_doi <- function(doi) {
+  mock_openalex_response(
+    doi = doi,
+    title = paste("Paper on", doi),
+    authors = list(list(author = list(display_name = "Test Author"))),
+    abstract_inverted_index = list(
+      Meta = list(0L), analysis = list(1L), methodology = list(2L)
+    ),
+    journal = "Statistical Methods in Medical Research",
+    year = 2023L
+  )
+}
+
 # -- GraphEngine mock factory (used by graph_engine, console, integration) -----
 
 make_test_engine <- function(nodes = NULL, entry = "start",
