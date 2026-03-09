@@ -1,0 +1,13 @@
+graph:
+  entry_node: start
+  template: simple
+
+  nodes:
+    start:
+      type: context_gathering
+      transitions:
+        - to: mid_start
+          always: true
+    finish:
+      type: context_gathering
+      transitions: []

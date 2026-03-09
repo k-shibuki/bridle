@@ -1,0 +1,6 @@
+graph:
+  entry_node: only
+  nodes:
+    only:
+      type: execution
+      transitions: []

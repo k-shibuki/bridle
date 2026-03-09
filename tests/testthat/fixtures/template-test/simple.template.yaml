@@ -1,0 +1,20 @@
+template:
+  id: simple
+  entry_point: mid_start
+  exit_point: mid_end
+  nodes:
+    mid_start:
+      type: decision
+      topic: mid_topic
+      parameter: mid_param
+      transitions:
+        - to: mid_step
+          always: true
+    mid_step:
+      type: execution
+      transitions:
+        - to: mid_end
+          always: true
+    mid_end:
+      type: execution
+      transitions: []
