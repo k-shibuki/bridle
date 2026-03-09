@@ -30,6 +30,7 @@ jobs:
       renv_deps: ${{ steps.filter.outputs.renv_deps }}
       schemas: ${{ steps.filter.outputs.schemas }}
       ci_config: ${{ steps.filter.outputs.ci_config }}
+      kb_files: ${{ steps.filter.outputs.kb_files }}
     steps:
       - uses: dorny/paths-filter@v3
         id: filter
@@ -57,6 +58,9 @@ jobs:
               - 'containers/**'
               - '.pre-commit-config.yaml'
               - '.lintr'
+            kb_files:
+              - '.cursor/knowledge/**'
+              - '.cursor/rules/knowledge-index.mdc'
 
   ci-config:
     needs: changes
@@ -319,12 +323,23 @@ jobs:
           }
         shell: Rscript {0}
 
+  kb-validate:
+    needs: changes
+    if: needs.changes.outputs.kb_files == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate knowledge base consistency
+        run: make kb-validate
+
   # Required status check that always runs.
   # Use this as the single required check in branch protection settings.
   # It passes when all relevant jobs pass or are correctly skipped.
   ci-pass:
     if: always()
-    needs: [ci-config, renv-check, validate-schemas, format-check, lint, test, check, coverage]
+    needs: [ci-config, renv-check, validate-schemas, format-check, lint, test, check, coverage, kb-validate]
     runs-on: ubuntu-latest
     steps:
       - name: Verify all jobs passed or were skipped
@@ -336,7 +351,8 @@ jobs:
                    "${{ needs.lint.result }}" \
                    "${{ needs.test.result }}" \
                    "${{ needs.check.result }}" \
-                   "${{ needs.coverage.result }}")
+                   "${{ needs.coverage.result }}" \
+                   "${{ needs.kb-validate.result }}")
           for r in "${results[@]}"; do
             if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
               echo "Job failed or was cancelled: $r"
@@ -347,7 +363,7 @@ jobs:
 
   ci-summary:
     if: always()
-    needs: [ci-config, renv-check, validate-schemas, format-check, lint, test, check, coverage]
+    needs: [ci-config, renv-check, validate-schemas, format-check, lint, test, check, coverage, kb-validate]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -365,7 +381,8 @@ jobs:
               'lint': '${{ needs.lint.result }}',
               'test': '${{ needs.test.result }}',
               'check': '${{ needs.check.result }}',
-              'coverage': '${{ needs.coverage.result }}'
+              'coverage': '${{ needs.coverage.result }}',
+              'kb-validate': '${{ needs.kb-validate.result }}'
             };
             const rows = Object.entries(jobs).map(([name, result]) => {
               const icon = result === 'success' ? '✅' :

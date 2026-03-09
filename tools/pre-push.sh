@@ -23,9 +23,10 @@ fi
 r_changed=$(echo "$changed" | grep -E '^(R/|tests/|DESCRIPTION|NAMESPACE)' || true)
 schema_changed=$(echo "$changed" | grep -E '^(docs/schemas/|tools/validate)' || true)
 renv_changed=$(echo "$changed" | grep -E '^(DESCRIPTION|renv\.lock|renv/)' || true)
+kb_changed=$(echo "$changed" | grep -E '^\.cursor/(knowledge/|rules/knowledge-index\.mdc)' || true)
 
 # --- Nothing to verify ---
-if [[ -z "$r_changed" && -z "$schema_changed" && -z "$renv_changed" ]]; then
+if [[ -z "$r_changed" && -z "$schema_changed" && -z "$renv_changed" && -z "$kb_changed" ]]; then
   exit 0
 fi
 
@@ -61,4 +62,7 @@ elif [[ -n "$schema_changed" ]]; then
 elif [[ -n "$renv_changed" ]]; then
   echo "pre-push: DESCRIPTION/renv changes detected — running renv-check..."
   make renv-check || { echo "BLOCKED (HS-LOCAL-VERIFY): make renv-check failed" >&2; exit 1; }
+elif [[ -n "$kb_changed" ]]; then
+  echo "pre-push: Knowledge base changes detected — running kb-validate..."
+  make kb-validate || { echo "BLOCKED (HS-LOCAL-VERIFY): make kb-validate failed. Run 'make kb-manifest' to update the index, then stage and commit." >&2; exit 1; }
 fi
