@@ -6,5 +6,6 @@
 \description{
 S7 classes representing the output of \code{scan_package()}. \code{ParameterInfo}
 captures a single parameter's metadata; \code{ScanResult} aggregates all
-scanner layers' output for one package function (ADR-0004, ADR-0008).
+scanner layers' output for one package function; \code{PackageScanResult}
+aggregates scan results for an entire package (ADR-0004, ADR-0008).
 }

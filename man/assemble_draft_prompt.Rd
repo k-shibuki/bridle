@@ -2,11 +2,11 @@
 % Please edit documentation in R/draft_knowledge.R
 \name{assemble_draft_prompt}
 \alias{assemble_draft_prompt}
-\title{Assemble the draft prompt from ScanResult and references}
+\title{Assemble the draft prompt from scan data and references}
 \usage{
 assemble_draft_prompt(scan_result, references = NULL)
 }
 \description{
-Assemble the draft prompt from ScanResult and references
+Assemble the draft prompt from scan data and references
 }
 \keyword{internal}
