@@ -28,7 +28,7 @@ Each Hard Stop is classified by its enforcement mechanism. See `controls--ai-dev
 
 | Hard Stop | Tier | Enforcement mechanism |
 |---|---|---|
-| HS#1 (CI green before merge) | **Deterministic** | GitHub Branch Protection required status checks (#92) |
+| HS#1 (CI green before merge) | **Deterministic** | GitHub Branch Protection: required status checks + admin bypass disabled (#92) |
 | HS#2 (local verification) | **Cond. Deterministic** | `pre-push` Git hook (#93) — requires `make install-hooks`. Note: `SKIP_PRE_PUSH=1` emergency bypass exists in `tools/pre-push.sh` |
 | HS#3 (no step skipping) | Steering | Agent self-policing (procedural discipline) |
 | HS#4 (gate evidence) | Steering | Agent self-policing (evidence requirement) |
