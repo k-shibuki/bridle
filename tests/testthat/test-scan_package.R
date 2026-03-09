@@ -178,7 +178,10 @@ test_that("scan_package: data_input classification for data params", {
   # Given: parameters matching data_input patterns
   # When:  scanning
   # Then:  classified as data_input
-  mock_fn <- function(event.e = NULL, n.e = NULL, data = NULL) NULL # nolint: object_name_linter. matches R package parameter naming
+  mock_fn <- function(x = NULL, y = NULL, data = NULL) NULL
+  formals(mock_fn) <- list(
+    event.e = NULL, n.e = NULL, data = NULL
+  )
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
   local_mocked_bindings(get_rd_db = mock_empty_rd_db)
@@ -212,7 +215,8 @@ test_that("scan_package: presentation classification", {
   # Given: parameters matching presentation patterns
   # When:  scanning
   # Then:  classified as presentation
-  mock_fn <- function(digits = 2, label.e = "exp", title = "My plot") NULL # nolint: object_name_linter. matches R package parameter naming
+  mock_fn <- function(digits = 2, x = "exp", title = "My plot") NULL
+  formals(mock_fn) <- list(digits = 2, label.e = "exp", title = "My plot")
   local_mocked_bindings(resolve_function = mock_resolve(mock_fn))
   local_mocked_bindings(get_package_version = mock_version)
   local_mocked_bindings(get_rd_db = mock_empty_rd_db)

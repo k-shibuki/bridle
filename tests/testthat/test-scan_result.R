@@ -326,7 +326,9 @@ test_that("PackageScanResult: full construction with functions", {
     function_roles = c(rma.uni = "analysis"), # nolint: object_name_linter. matches R package function naming
     function_families = list(rma = list(
       name = "rma", common_parameters = c("yi", "vi"),
-      members = list(rma.uni = list(unique_parameters = c("sei"))) # nolint: object_name_linter. matches R package function naming
+      members = list( # nolint: object_name_linter. R package naming
+        rma.uni = list(unique_parameters = c("sei"))
+      )
     )),
     cross_function_constraints = list(list(
       function_name = "rma.peto", constraint = "measure == \"OR\"",

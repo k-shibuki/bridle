@@ -187,7 +187,9 @@ test_that("scan_package: returns PackageScanResult with mocked package", {
     get_namespace_exports = function(pkg) c("rma.uni", "forest.rma", "helper_fn"),
     exclude_s3_methods = function(exports, pkg) exports,
     classify_functions = function(func_names, ns, pkg) {
-      c(rma.uni = "analysis", forest.rma = "visualization", helper_fn = "utility") # nolint: object_name_linter. matches R package function naming
+      roles <- c("analysis", "visualization", "utility")
+      names(roles) <- c("rma.uni", "forest.rma", "helper_fn")
+      roles
     },
     scan_function = function(pkg, func) {
       ScanResult(

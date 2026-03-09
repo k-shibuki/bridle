@@ -41,7 +41,8 @@ draft_knowledge <- function(scan_result, references = NULL,
   )
 
   drafts <- parse_draft_response(response)
-  label <- if (S7::S7_inherits(scan_result, PackageScanResult)) { # nolint: object_usage_linter. S7 class in scan_result.R
+  is_pkg_result <- S7::S7_inherits(scan_result, PackageScanResult) # nolint: object_usage_linter. S7 in scan_result.R
+  label <- if (is_pkg_result) {
     scan_result@package
   } else {
     scan_result@func
