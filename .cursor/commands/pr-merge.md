@@ -35,7 +35,28 @@ These checks are the first step of `pr-merge` and cannot be skipped:
    gh api repos/{owner}/{repo}/pulls/<PR-number> -X PATCH -f body="<updated body>"
    ```
 
-If any precondition (1-3) is not met, do not proceed to merge. Report the blocking condition and the required action.
+5. **Branch must be up to date with main** (required by `strict: true` branch protection):
+
+   ```bash
+   gh pr view <PR-number> --json mergeStateStatus -q '.mergeStateStatus'
+   ```
+
+   - `CLEAN` or `HAS_HOOKS`: proceed to merge.
+   - `BEHIND`: rebase onto main, push, and wait for CI to re-pass before merging.
+
+     ```bash
+     git fetch origin
+     git checkout <branch>
+     git rebase origin/main
+     git push --force-with-lease origin <branch>
+     ```
+
+     After push, return to precondition 1 (CI must be green) — CI will re-trigger.
+   - `BLOCKED` or `UNKNOWN`: investigate; do not force-merge.
+
+   See `@.cursor/knowledge/git--strict-merge-sync.md` for detailed recovery procedures.
+
+If any precondition (1-5) is not met, do not proceed to merge. Report the blocking condition and the required action.
 
 ## Inputs
 
