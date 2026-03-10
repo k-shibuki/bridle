@@ -116,12 +116,17 @@ gh api repos/{owner}/{repo}/issues/<N>/comments \
 |-------|-----------|------------|
 | **Reviewed (findings)** | Bot review + inline comments exist | Both |
 | **Reviewed (clean)** | Bot PR/walkthrough comment exists | Both |
-| **In progress** | Eyes reaction present (Codex only) | Codex |
+| **In progress** | Trigger ack posted, no new review/walkthrough after trigger time | CodeRabbit |
+| **In progress** | Eyes reaction present | Codex |
 | **Rate limited** | Body contains "usage limits" | Both |
-| **Completion** | Output in ANY channel > 0 | Both |
+| **Completion** | New review or walkthrough with timestamp > trigger time | Both |
 
 **Rule**: Always use API checks to determine state. Do not infer state
 from timing, absence of activity, or activity on other PRs.
+
+**Critical**: CodeRabbit's "Review triggered" ack is NOT completion.
+See `review--coderabbit-completion-signals.md` for the correct polling
+algorithm and common mistakes.
 
 ## Timing
 
