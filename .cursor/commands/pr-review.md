@@ -66,19 +66,21 @@ All required checks must pass. If any check fails, the PR is not ready for merge
 
 **Prerequisite**: Read `@.cursor/knowledge/review--bot-lifecycle.md` (SSOT for detection commands, login patterns, and state signals).
 
-Bot review is triggered in `pr-create` Step 5 (or `review-fix` Step 5b) and waited on by a background subagent. The subagent tries the primary reviewer first; if rate-limited, it falls back to the secondary. By the time `pr-review` runs, the subagent has already reported which reviewer responded.
+Bot reviews are triggered in `pr-create` Step 5 (or `review-fix` Step 5b) and polled by a background subagent. By the time `pr-review` runs, the subagent has reported which reviewers responded.
 
-Use the detection commands from `review--bot-lifecycle.md` § Output Detection to retrieve findings from whichever reviewer responded (primary or secondary).
+Use the detection commands from `review--bot-lifecycle.md` § Output Detection to retrieve findings from **each triggered reviewer** (CodeRabbit and/or Codex).
 
-| Status | Action |
-|--------|--------|
-| **Reviewed (findings)** | Include bot findings in Step 7 |
-| **Reviewed (clean)** | Note "Bot review: no findings" in report |
-| **Both rate-limited** | Note in report; proceed without bot review |
-| **Timeout** | Note in report; proceed without bot review |
-| **Not requested** | Note "Bot review: not requested" with reason |
+| Reviewer | Status | Action |
+|----------|--------|--------|
+| CodeRabbit | **Reviewed (findings)** | Include findings in Step 7 |
+| CodeRabbit | **Reviewed (clean)** | Note "CodeRabbit: no findings" |
+| CodeRabbit | **Rate-limited / Timeout** | Note in report; proceed without |
+| Codex | **Reviewed (findings)** | Include findings in Step 7 |
+| Codex | **Reviewed (clean)** | Note "Codex: no findings" |
+| Codex | **Rate-limited / Timeout** | Note in report; proceed without |
+| Either | **Not triggered** | Note "not triggered" with reason |
 
-When re-reviewing after `review-fix`: check the bot review `submitted_at` timestamp against the latest commit date. Use only the most recent bot review.
+When both reviewers produce findings, deduplicate (same file + same issue = one finding, note both sources). When re-reviewing after `review-fix`: check `submitted_at` timestamps against the latest commit date. Use only the most recent review from each reviewer.
 
 ### 7. Code review
 
@@ -119,7 +121,8 @@ Evaluate each bot comment on technical merit — Cursor and bot reviewers have e
 - [ ] Criterion 2: met / not met
 
 ### Bot review status
-- Status: Reviewed (<reviewer>) / Both rate-limited / Timeout / Not requested
+- CodeRabbit: Reviewed / Rate-limited / Timeout / Not triggered
+- Codex: Reviewed / Rate-limited / Timeout / Not triggered
 - Findings incorporated: <count> (valid: N, false positive: N)
 
 ### Cursor findings
@@ -139,7 +142,7 @@ If the conclusion is "Changes required", recommend running `review-fix` to addre
 - **PR summary**: title, branch, files changed, diff size
 - **Issue**: `#<number>` linked, DoD fulfillment status
 - **CI status**: pass / fail (with details)
-- **Bot review status**: reviewed (<reviewer>) / both rate-limited / timeout / not requested
+- **Bot review status**: per-reviewer (CodeRabbit / Codex): reviewed / rate-limited / timeout / not triggered
 - **Review findings**: grouped by category, with source (Cursor / bot review)
 - **Merge decision**: mergeable (recommended strategy) / changes required (list)
 - **Next step**: `pr-merge` (if mergeable) / `review-fix` (if changes required)

@@ -126,14 +126,17 @@ gh pr create --title "<type>(<scope>): <description>" \
 
 Per `subagent-policy.mdc`: blocking operations (CI polling, bot review wait) MUST be delegated to a background subagent. The main agent must not poll inline with `sleep` loops.
 
-#### 5a. Decide whether bot review is needed
+#### 5a. Decide review scope (two-tier trigger model)
 
-Read `@.cursor/knowledge/review--bot-lifecycle.md` for decision guidelines and the reviewer priority chain (primary → secondary → skip).
+Read `@.cursor/knowledge/review--bot-lifecycle.md` § Two-Tier Trigger Model for the full decision table. Summary:
 
-| Change type | Request bot review? |
-|-------------|---------------------|
-| R code, shell scripts, schemas, security | Yes |
-| Docs only, workflow files, CI config | No |
+| Change type | CodeRabbit | Codex |
+|-------------|-----------|-------|
+| R code, schemas, security, ADRs | Yes | **Yes** |
+| CI config, shell scripts, workflow files | Yes | No |
+| Docs only (non-ADR `.md`) | No | No |
+
+CodeRabbit is triggered for all non-docs PRs. Codex is added only for complex changes (R code, schemas, security, ADRs).
 
 #### 5b. Trigger bot review and delegate wait
 
@@ -141,18 +144,21 @@ Read `@.cursor/knowledge/review--bot-lifecycle.md` for decision guidelines and t
 # Quick initial CI check
 gh pr checks <PR_NUMBER>
 
-# If bot review is needed (triggers primary reviewer):
+# CodeRabbit (always for non-docs PRs):
+gh pr comment <PR_NUMBER> --body "@coderabbitai review"
+
+# Codex (only for complex changes — R code, schemas, security, ADRs):
 gh pr comment <PR_NUMBER> --body "@codex review"
 ```
 
 **Delegation** (choose based on review decision):
 
-| Bot review requested? | Template |
+| Bot review triggered? | Template |
 |-----------------------|----------|
-| Yes | Template 4: CI + Bot Review Wait (`agent--delegation-templates.md`) |
-| No | Template 2: CI-Wait Only (`agent--delegation-templates.md`) |
+| Yes (any reviewer) | Template 4: CI + Bot Review Wait (`agent--delegation-templates.md`) |
+| No (docs-only) | Template 2: CI-Wait Only (`agent--delegation-templates.md`) |
 
-The fallback chain (primary rate-limited → secondary → proceed without) is handled automatically by the template. No action needed from the main agent. See `review--bot-lifecycle.md` § Fallback Decision Tree.
+Tell the subagent which reviewers were triggered (CodeRabbit: YES/NO, Codex: YES/NO). Each reviewer is polled independently — no fallback chain.
 
 **Preferred shortcut**: If `pr-review` has already concluded "Mergeable" (e.g., user pre-approved the merge), set auto-merge immediately and skip polling:
 

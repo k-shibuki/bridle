@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 #
-# CodeRabbit configuration — Free Plan, supplementary fallback reviewer.
-# Triggered manually via @coderabbitai review when Codex is rate-limited.
+# CodeRabbit configuration — Pro/OSS, primary bot reviewer.
+# Triggered manually via @coderabbitai review (auto_review OFF).
 # See .cursor/knowledge/review--bot-lifecycle.md for lifecycle details.
 
 language: "en-US"
@@ -14,6 +14,7 @@ reviews:
   high_level_summary_in_walkthrough: true
   poem: false
   review_status: false
+  commit_status: false
   review_details: true
   collapse_walkthrough: true
   changed_files_summary: true

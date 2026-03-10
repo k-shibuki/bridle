@@ -1,6 +1,6 @@
 # Cursor AI Configuration
 
-This directory contains the AI development system for bridle, organized into two domains: **Design** and **Controls**. Two AI agents operate on this repository: **Cursor** (implementation and review) and **Codex Cloud** (automated PR review).
+This directory contains the AI development system for bridle, organized into two domains: **Design** and **Controls**. Three AI agents operate on this repository: **Cursor** (implementation and review), **CodeRabbit** (primary bot reviewer), and **Codex Cloud** (supplementary bot reviewer).
 
 ## AI Development System
 
@@ -32,19 +32,24 @@ AI Development System
 
 ### AI Code Review Integration
 
-AI code reviewers (Codex Cloud as primary, CodeRabbit Free Plan as
-fallback) operate as external PR reviewers via `AGENTS.md` (repo root).
-The Cursor agent **actively orchestrates** bot reviews — auto-review is
-OFF for both, and the agent triggers Codex explicitly via `@codex review`.
-If Codex is rate-limited, the subagent automatically falls back to
-CodeRabbit via `@coderabbitai review`.
+Two AI code reviewers operate as external PR reviewers via `AGENTS.md`
+(repo root). Auto-review is OFF for both — the Cursor agent **actively
+orchestrates** reviews using a two-tier trigger model:
 
-**Active orchestration model**: The agent decides whether bot review is
-needed (based on change type), triggers it, delegates the wait to a
-background subagent, and integrates findings into `pr-review`. See
-`review--bot-lifecycle.md` for the SSOT on bot review behavior.
+- **CodeRabbit** (Pro/OSS, primary): triggered for all non-docs PRs via
+  `@coderabbitai review`. Provides walkthrough, tool integrations
+  (shellcheck, yamllint, markdownlint), and incremental review.
+- **Codex Cloud** (supplementary): triggered only for complex changes
+  (R code, schemas, security, ADRs) via `@codex review`. Provides
+  cross-file logic consistency and deep semantic understanding.
 
-```
+**Orchestration model**: The agent decides review scope based on change
+type (`review--bot-lifecycle.md` § Two-Tier Trigger Model), triggers
+the appropriate reviewers, delegates the wait to a background subagent,
+and integrates findings into `pr-review`. Each reviewer is independent
+— no fallback chain.
+
+```text
 AGENTS.md (AI reviewer entry point — read by Codex and CodeRabbit)
   ├── Review guidelines (P0/P1 severity — stable base criteria)
   └── References:
@@ -59,7 +64,7 @@ AGENTS.md (AI reviewer entry point — read by Codex and CodeRabbit)
 - **Cursor** reads `.cursor/` directly via rules, commands, knowledge
 - **Codex** reads `AGENTS.md` first, then follows references into `.cursor/` files
 - **CodeRabbit** reads `AGENTS.md` via code_guidelines auto-detection + `.coderabbit.yaml` for config
-- **Active trigger**: Agent triggers Codex via `@codex review` comment in `pr-create` Step 5 or `review-fix` Step 5b. Wait is delegated to background subagents (Template 4/5 in `agent--delegation-templates.md`). CodeRabbit fallback is automatic within the templates
+- **Two-tier trigger**: Agent triggers CodeRabbit (always for non-docs) and Codex (complex changes only) in `pr-create` Step 5 or `review-fix` Step 5b. Wait is delegated to background subagents (Template 4/5 in `agent--delegation-templates.md`) polling all triggered reviewers in parallel
 - **Feedback loop**: recurring false positives become knowledge atoms (`review--*.md`), benefiting all reviewers
 - **Drift detection**: `make review-sync-check` verifies that `AGENTS.md` and `pr-review.md` cover the same review categories (enforced in CI)
 
@@ -169,7 +174,7 @@ doctor → issue-create → implement ─────────→ test-create
                                                              (Mode 2:
                                                               Update)
                                                                  │
-                                                  commit → pr-create → [Codex trigger + CI] → pr-review → review-fix (if needed) → pr-merge
+                                                  commit → pr-create → [bot review trigger + CI] → pr-review → review-fix (if needed) → pr-merge
 ```
 
 When CI is pending, `next` always delegates CI-wait to a background subagent (see `subagent-policy.mdc`). The main agent proceeds with independent Issues or housekeeping. After CI passes, `pr-review` runs before merge:
@@ -229,7 +234,7 @@ Use when: justified exception (e.g., meta-implementation of workflow, documentat
 | Docs | `docs-discover` | Find (Mode 1) and update (Mode 2) related docs |
 | Git | `commit` | Create git commits (+ docs direct push via `no-issue` exception) |
 | Git | `pr-create` | Create feature branch + PR (with `Closes #<issue>`) |
-| Git | `pr-review` | Review PR (Cursor + Codex findings) and produce merge recommendation |
+| Git | `pr-review` | Review PR (Cursor + bot review findings) and produce merge recommendation |
 | Git | `review-fix` | Address review findings from `pr-review`, re-push for re-review |
 | Git | `pr-merge` | Execute merge (GitHub or local) |
 | Knowledge | `knowledge-create` | Capture new pattern/gotcha as atomic knowledge file |

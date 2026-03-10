@@ -90,23 +90,25 @@ git push
 
 ### 5b. Bot re-review decision
 
-**Prerequisite**: Read `@.cursor/knowledge/review--bot-lifecycle.md`.
+**Prerequisite**: Read `@.cursor/knowledge/review--bot-lifecycle.md` § Re-review after review-fix.
 
-Bot reviewers do NOT re-review on push. The agent decides whether to re-trigger and delegates the wait to a subagent. The fallback chain (primary → secondary → skip) is handled by Template 5 automatically.
+Bot reviewers do NOT re-review on push. The agent decides which reviewers to re-trigger and delegates the wait to a subagent. Each reviewer is independent — no fallback chain.
 
-| Condition | Action |
-|-----------|--------|
-| Addressed a bot P0 finding with code change | Trigger re-review + delegate Template 5 |
-| Addressed a bot P1 finding with significant code change | Trigger re-review + delegate Template 5 |
-| Minor fix, docs, or workflow adjustment | Skip; proceed directly to `pr-review` |
-| Bot review was not requested in initial review | Skip; no re-review needed |
+| Condition | CodeRabbit | Codex |
+|-----------|-----------|-------|
+| Addressed a bot P0/P1 finding with code change | Yes (always) | Only if addressing a Codex-sourced finding |
+| Minor fix, docs, or workflow adjustment | No | No |
+| Reviewer was not triggered in initial review | No | No |
 
 ```bash
-# Trigger re-review (starts with primary, falls back to secondary if rate-limited)
+# CodeRabbit re-review (if re-triggering):
+gh pr comment <PR> --body "@coderabbitai review"
+
+# Codex re-review (only if a Codex-sourced finding was addressed):
 gh pr comment <PR> --body "@codex review"
 ```
 
-When re-review is triggered, delegate the wait to a background subagent using Template 5 from `@.cursor/knowledge/agent--delegation-templates.md`. The main agent proceeds with other work (Two-Tier Gate).
+When re-review is triggered, delegate the wait to a background subagent using Template 5 from `@.cursor/knowledge/agent--delegation-templates.md`. Tell the subagent which reviewers were triggered (CodeRabbit: YES/NO, Codex: YES/NO). The main agent proceeds with other work (Two-Tier Gate).
 
 ### 6. Report
 

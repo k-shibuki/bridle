@@ -3,9 +3,9 @@
 # AGENTS.md
 
 This file configures AI code reviewers that operate on this repository
-(Codex Cloud as primary, CodeRabbit Free Plan as fallback). Cursor uses
-`.cursor/rules/` and `.cursor/commands/` instead but shares these review
-guidelines via the knowledge base.
+(CodeRabbit Pro/OSS as primary, Codex Cloud as supplementary). Cursor
+uses `.cursor/rules/` and `.cursor/commands/` instead but shares these
+review guidelines via the knowledge base.
 
 ## Project context
 
