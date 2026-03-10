@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 #
 # CodeRabbit configuration — Pro/OSS, primary bot reviewer.
-# Triggered manually via @coderabbitai review (auto_review OFF).
+# Auto-review enabled: CodeRabbit reviews every PR automatically.
+# Manual @coderabbitai review is used for re-review only.
 # See .cursor/knowledge/review--bot-lifecycle.md for lifecycle details.
 
 language: "en-US"
@@ -13,15 +14,32 @@ reviews:
   high_level_summary: true
   high_level_summary_in_walkthrough: true
   poem: false
+  fortune: false
   review_status: false
   commit_status: false
   review_details: true
   collapse_walkthrough: true
-  changed_files_summary: true
-  sequence_diagrams: true
+  changed_files_summary: false
+  sequence_diagrams: false
+  estimated_effort_to_review_docs: false
+  prompt_for_ai_agents: false
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  auto_apply_labels: false
+  suggested_reviewers: false
+  auto_assign_reviewers: false
   auto_review:
-    enabled: false
+    enabled: true
     drafts: false
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT MERGE"
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
   path_instructions:
     - path: "R/**"
       instructions: |
