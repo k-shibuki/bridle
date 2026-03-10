@@ -74,16 +74,36 @@ gh api repos/{owner}/{repo}/pulls/<PR>/reviews \
 # Fetch bot inline comments
 gh api repos/{owner}/{repo}/pulls/<PR>/comments \
   --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i"))) | {id, path, line: (.line // .original_line), body, created_at}]'
+
+# Check for eyes reaction (👀) indicating Codex review in progress
+gh api repos/{owner}/{repo}/issues/<PR>/reactions \
+  --jq '[.[] | select(.content == "eyes")] | length'
 ```
 
-Classify the Codex review status:
+Classify the Codex review status using this decision tree:
+
+1. Bot review comments exist → **Reviewed**
+2. "usage limits" comment from Codex → **Rate limited**
+3. Eyes reaction (👀) present on the PR → **In progress**
+4. No reactions, but Codex reviewed a recent PR in the same repo → **In progress** (Codex is enabled but has not yet reached this PR)
+5. None of the above → **Not configured**
+
+For step 4, check recent PRs for Codex activity:
+
+```bash
+# Check if Codex has reviewed any of the last 5 merged PRs
+gh pr list --state merged --limit 5 --json number --jq '.[].number' | while read pr; do
+  gh api "repos/{owner}/{repo}/pulls/$pr/reviews" \
+    --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length' 2>/dev/null
+done
+```
 
 | Status | Signals | Action |
 |--------|---------|--------|
 | **Reviewed** | Bot review comments exist | Include Codex findings in the review below |
-| **In progress** | PR has reaction (eyes emoji) but no review yet | Note in report; do not block on it |
+| **In progress** | Eyes reaction (👀) on PR, or Codex active on recent PRs but no review yet | **Wait** (Codex typically completes within minutes); recheck before concluding the review |
 | **Rate limited** | "usage limits" comment from Codex | Note in report; proceed without Codex input |
-| **Not configured** | No bot activity at all | Note in report; proceed without Codex input |
+| **Not configured** | No bot activity on this PR or any recent PR in the repo | Note in report; proceed without Codex input |
 
 ### 7. Code review
 

@@ -10,8 +10,8 @@
 
 set -e
 
-AGENTS_FILE="AGENTS.md"
-PR_REVIEW_FILE=".cursor/commands/pr-review.md"
+AGENTS_FILE="${AGENTS_FILE:-AGENTS.md}"
+PR_REVIEW_FILE="${PR_REVIEW_FILE:-.cursor/commands/pr-review.md}"
 
 if [ ! -f "$AGENTS_FILE" ]; then
   echo "SKIP: $AGENTS_FILE not found (Codex review not configured)" >&2

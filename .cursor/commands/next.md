@@ -72,11 +72,13 @@ git branch --merged origin/main | grep -v '^\*\|main$' || true
 git branch --no-merged origin/main --format='%(refname:short) %(upstream:track)' | grep '\[gone\]' || true
 
 # Codex review status (lightweight — pr-review does the detailed check)
-# Just detect if Codex is still in progress (eyes reaction, no review yet)
+# Detect: reviewed (bot reviews exist), in-progress (eyes reaction), or pending
 gh pr list --state open --json number --jq '.[].number' | head -5 | while read pr; do
   bot_reviews=$(gh api "repos/{owner}/{repo}/pulls/$pr/reviews" \
-    --jq '[.[] | select(.user.type == "Bot")] | length' 2>/dev/null || echo 0)
-  echo "PR #$pr: codex_reviews=$bot_reviews"
+    --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length' 2>/dev/null || echo 0)
+  eyes=$(gh api "repos/{owner}/{repo}/issues/$pr/reactions" \
+    --jq '[.[] | select(.content == "eyes")] | length' 2>/dev/null || echo 0)
+  echo "PR #$pr: codex_reviews=$bot_reviews eyes_reactions=$eyes"
 done
 ```
 
@@ -101,8 +103,8 @@ Use the evidence to classify the current state into one of these positions:
 | Open PR, CI still running, no independent Issue | **CI pending (housekeeping)** | Delegate CI-wait to background subagent (see `subagent-policy.mdc`), then do housekeeping (see Step 6). |
 | Stale local branches detected | **Cleanup needed** | Delete stale branches (see `pr-merge.md` "Post-merge cleanup"). Can be done during housekeeping. |
 | Background subagent running | **Background task in progress** | Check transcript for completion; continue independent work |
-| Open PR, CI all green, Codex still reviewing (👀 but no review posted) | **Codex reviewing** | Wait briefly (Codex typically completes within minutes). Once done (or timed out), proceed to `pr-review`. |
-| Open PR, CI all green | **CI green** | `pr-review` (checks Codex status internally: reviewed / rate limited / not configured) |
+| Open PR, CI all green, Codex still reviewing (eyes reaction present OR `codex_reviews=0` but Codex reviewed recent PRs in the repo) | **Codex reviewing** | Wait briefly (Codex typically completes within 1-3 minutes). Recheck with `gh api repos/{owner}/{repo}/pulls/<PR>/reviews`. Once Codex review appears (or 5 min timeout), proceed to `pr-review`. |
+| Open PR, CI all green, Codex reviewed or not configured | **CI green** | `pr-review` (checks Codex status internally: reviewed / rate limited / not configured) |
 | Open PR, CI failed | **CI failure** | `debug` or fix + re-push |
 | PR reviewed, changes required | **Changes required** | `review-fix` (address findings from `pr-review`, then re-push and re-review) |
 | PR reviewed, mergeable | **Review done** | `pr-merge` |
