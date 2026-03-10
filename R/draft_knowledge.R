@@ -15,8 +15,10 @@ NULL
 #' the specified output directory. Accepts either a [ScanResult]
 #' (single function) or a [PackageScanResult] (full package).
 #'
-#' In addition to the three LLM-generated sections (decision graph,
-#' knowledge, constraints), this function generates `context_schema.yaml`
+#' The initial LLM call produces a decision graph, one knowledge topic,
+#' and constraints. If the generated graph contains multiple distinct
+#' topics, supplementary LLM calls generate knowledge for each
+#' additional topic. The function also generates `context_schema.yaml`
 #' and `manifest.yaml` heuristically from the decision graph structure.
 #'
 #' @param scan_result A [ScanResult] or [PackageScanResult] object.
@@ -26,8 +28,8 @@ NULL
 #'   `"anthropic"`, `"openai"`. If `NULL`, uses ellmer default.
 #' @param model Model name (character). If `NULL`, uses provider default.
 #' @param output_dir Directory to write draft YAML files (character).
-#' @return A list with `decision_graph`, `knowledge`, `constraints`,
-#'   `context_schema`, and `manifest` elements.
+#' @return A list with `decision_graph`, `knowledge_list` (named list of
+#'   raw YAML per topic), `constraints`, `context_schema`, and `manifest`.
 #' @export
 draft_knowledge <- function(scan_result, references = NULL,
                             provider = NULL, model = NULL,
@@ -46,17 +48,75 @@ draft_knowledge <- function(scan_result, references = NULL,
 
   drafts <- parse_draft_response(response)
   is_pkg_result <- S7::S7_inherits(scan_result, PackageScanResult) # nolint: object_usage_linter. S7 in scan_result.R
-  label <- if (is_pkg_result) {
-    scan_result@package
+  package <- scan_result@package
+  func <- if (is_pkg_result) {
+    fns <- names(scan_result@functions)
+    if (length(fns) > 0L) fns[[1L]] else package
   } else {
     scan_result@func
   }
 
+  drafts$knowledge_list <- generate_multi_topic_knowledge(
+    drafts, package, func, provider, model
+  )
+
   drafts$context_schema <- generate_draft_context_schema(drafts)
   drafts$manifest <- generate_draft_manifest(drafts)
 
-  write_draft_files(drafts, output_dir, scan_result@package, label)
+  label <- if (is_pkg_result) package else scan_result@func
+  write_draft_files(drafts, output_dir, package, label)
   drafts
+}
+
+#' Generate knowledge for all graph topics
+#'
+#' Uses the first-call knowledge section plus supplementary LLM calls
+#' for any additional topics found in the decision graph.
+#' @keywords internal
+generate_multi_topic_knowledge <- function(drafts, package, func,
+                                           provider, model) {
+  first_knowledge <- drafts$knowledge
+  first_topic <- first_knowledge[["topic"]]
+
+  all_topics <- extract_graph_topics(drafts$decision_graph)
+  if (length(all_topics) <= 1L) {
+    topic_name <- first_topic %||% "default"
+    return(stats::setNames(list(first_knowledge), topic_name))
+  }
+
+  knowledge_list <- stats::setNames(list(first_knowledge), first_topic)
+  remaining <- setdiff(names(all_topics), first_topic)
+
+  for (topic in remaining) {
+    params <- all_topics[[topic]]
+    topic_prompt <- assemble_topic_prompt(
+      topic, params, package, func
+    )
+    topic_response <- tryCatch(
+      bridle_chat(topic_prompt, provider = provider, model = model),
+      error = function(e) {
+        cli::cli_warn(
+          "Failed to generate knowledge for topic {.val {topic}}: {conditionMessage(e)}"
+        )
+        NULL
+      }
+    )
+    if (is.null(topic_response)) next
+    topic_knowledge <- tryCatch(
+      yaml::yaml.load(topic_response),
+      error = function(e) {
+        cli::cli_warn(
+          "Failed to parse knowledge YAML for topic {.val {topic}}: {conditionMessage(e)}"
+        )
+        NULL
+      }
+    )
+    if (!is.null(topic_knowledge)) {
+      knowledge_list[[topic]] <- topic_knowledge
+    }
+  }
+
+  knowledge_list
 }
 
 #' Send a prompt to an LLM via ellmer (mockable wrapper)
@@ -275,6 +335,73 @@ parse_draft_response <- function(response) {
   )
 }
 
+#' Extract unique topic-to-parameter mapping from graph nodes
+#'
+#' Scans the raw decision graph for nodes with `topic` fields and builds
+#' a named list mapping each unique topic to its associated parameter(s).
+#' @keywords internal
+extract_graph_topics <- function(graph_raw) {
+  nodes_raw <- graph_raw[["graph"]][["nodes"]] %||% graph_raw[["nodes"]]
+  if (is.null(nodes_raw) || length(nodes_raw) == 0L) {
+    return(list())
+  }
+  node_names <- names(nodes_raw)
+  if (is.null(node_names)) {
+    return(list())
+  }
+
+  topic_params <- list()
+  for (nm in node_names) {
+    node <- nodes_raw[[nm]]
+    topic <- node[["topic"]]
+    if (is.null(topic) || !nzchar(topic)) next
+    if (is.null(topic_params[[topic]])) {
+      topic_params[[topic]] <- character(0)
+    }
+    param <- node[["parameter"]]
+    if (!is.null(param)) {
+      if (is.list(param)) param <- unlist(param)
+      topic_params[[topic]] <- unique(c(topic_params[[topic]], param))
+    }
+  }
+  topic_params
+}
+
+#' Assemble a focused prompt for a single knowledge topic
+#'
+#' Builds a prompt requesting knowledge entries for one specific topic,
+#' used for supplementary LLM calls after the initial draft.
+#' @keywords internal
+assemble_topic_prompt <- function(topic, params, package, func) {
+  param_str <- if (length(params) > 0L) {
+    paste(params, collapse = ", ")
+  } else {
+    "general"
+  }
+  paste(
+    sprintf("Package: %s", package),
+    sprintf("Function: %s", func),
+    sprintf("Topic: %s", topic),
+    sprintf("Target parameters: %s", param_str),
+    "",
+    "Generate a SINGLE YAML document (no --- separators) for a bridle",
+    "knowledge store covering the above topic. Required fields:",
+    sprintf("  topic: %s", topic),
+    sprintf("  target_parameter: %s", if (length(params) == 1L) params else param_str),
+    sprintf("  package: %s", package),
+    sprintf("  function: %s", func),
+    "  entries: (list of entries, each with id, when, properties)",
+    "",
+    "Each entry must have:",
+    "  - id: unique identifier",
+    "  - when: natural language condition",
+    "  - properties: list of factual statements",
+    "",
+    "Output ONLY valid YAML, no markdown fences or commentary.",
+    sep = "\n"
+  )
+}
+
 #' Generate context_schema from graph structure (heuristic)
 #'
 #' Derives [ContextVariable] definitions from the decision graph's node
@@ -379,9 +506,19 @@ write_draft_files <- function(drafts, output_dir, package, func) {
   if (!dir.exists(knowledge_dir)) {
     dir.create(knowledge_dir, recursive = TRUE)
   }
-  knowledge_path <- file.path(knowledge_dir, paste0(func, ".yaml"))
-  yaml::write_yaml(drafts$knowledge, knowledge_path)
-  cli::cli_inform("Draft knowledge: {.path {knowledge_path}}")
+  kl <- drafts$knowledge_list
+  if (!is.null(kl) && length(kl) > 0L) {
+    for (topic_name in names(kl)) {
+      fname <- paste0(topic_name, ".yaml")
+      knowledge_path <- file.path(knowledge_dir, fname)
+      yaml::write_yaml(kl[[topic_name]], knowledge_path)
+      cli::cli_inform("Draft knowledge ({topic_name}): {.path {knowledge_path}}")
+    }
+  } else {
+    knowledge_path <- file.path(knowledge_dir, paste0(func, ".yaml"))
+    yaml::write_yaml(drafts$knowledge, knowledge_path)
+    cli::cli_inform("Draft knowledge: {.path {knowledge_path}}")
+  }
 
   constraints_dir <- file.path(output_dir, "constraints")
   if (!dir.exists(constraints_dir)) {

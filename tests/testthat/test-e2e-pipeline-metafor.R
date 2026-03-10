@@ -1,13 +1,13 @@
 # E2E pipeline bridge: scan_package → draft_knowledge → bridle_agent → bridle_console
 # Issue #167: Validates that draft_knowledge output is directly consumable
 # by bridle_agent without manual intervention.
+# Issue #173: Multi-topic knowledge generation via supplementary LLM calls.
 #
-# Design note — discovered gaps:
-# 1. draft_knowledge() writes a single knowledge file (knowledge/<pkg>.yaml).
-#    Realistic plugins need multiple knowledge files (one per topic). All
-#    decision/diagnosis nodes share a single topic in this test to stay
-#    consistent with what draft_knowledge actually produces.
-# 2. context_schema.yaml and manifest.yaml are now generated heuristically
+# Design notes:
+# 1. draft_knowledge() now generates one knowledge file per graph topic
+#    via supplementary LLM calls (Issue #173). Single-topic tests validate
+#    backward compatibility; multi-topic tests validate the new flow.
+# 2. context_schema.yaml and manifest.yaml are generated heuristically
 #    from the decision graph structure (Issue #172).
 # 3. The draft graph is flat (no template composition). build_graph() handles
 #    this correctly (ADR-0009 § flat graph path).
@@ -365,6 +365,222 @@ test_that("T-E2E-09: agent loads draft with context_schema and validates", {
   expect_equal(length(result@errors), 0L)
 })
 
+# -- T-E2E-10: Multi-topic knowledge generation --------------------------------
+
+mock_multi_topic_response <- function() {
+  paste(
+    "graph:",
+    "  entry_node: gather_data",
+    "  global_policy:",
+    "    max_iterations: 3",
+    "  nodes:",
+    "    gather_data:",
+    "      type: context_gathering",
+    "      description: Inspect data structure",
+    "      transitions:",
+    "        - to: measure_selection",
+    "          always: true",
+    "    measure_selection:",
+    "      type: decision",
+    "      topic: effect_measures",
+    "      parameter: measure",
+    "      description: Select effect size measure",
+    "      transitions:",
+    "        - to: analysis_approach",
+    "          always: true",
+    "    analysis_approach:",
+    "      type: decision",
+    "      topic: estimation_methods",
+    "      parameter: method",
+    "      description: Choose estimation method",
+    "      transitions:",
+    "        - to: run_analysis",
+    "          always: true",
+    "    run_analysis:",
+    "      type: execution",
+    "      description: Execute analysis",
+    "      transitions:",
+    "        - to: check_heterogeneity",
+    "          always: true",
+    "    check_heterogeneity:",
+    "      type: diagnosis",
+    "      topic: heterogeneity",
+    "      description: Assess heterogeneity",
+    "      transitions:",
+    "        - to: complete",
+    "          always: true",
+    "    complete:",
+    "      type: context_gathering",
+    "      description: Summarize results",
+    "      transitions: []",
+    "---",
+    "topic: effect_measures",
+    "target_parameter: measure",
+    "package: metafor",
+    "function: rma.uni",
+    "entries:",
+    "  - id: smd_default",
+    "    when: continuous outcome data is available",
+    "    properties:",
+    "      - SMD is the default for continuous outcomes",
+    "---",
+    "package: metafor",
+    "function: rma.uni",
+    "constraints:",
+    "  - id: valid_measure",
+    "    source: formals_default",
+    "    type: valid_values",
+    "    param: measure",
+    "    values:",
+    "      - SMD",
+    "      - OR",
+    "    confidence: high",
+    sep = "\n"
+  )
+}
+
+mock_supplementary_knowledge <- function(topic) {
+  if (topic == "estimation_methods") {
+    paste(
+      "topic: estimation_methods",
+      "target_parameter: method",
+      "package: metafor",
+      "function: rma.uni",
+      "entries:",
+      "  - id: reml_default",
+      "    when: random-effects model is appropriate",
+      "    properties:",
+      "      - REML is the recommended estimator",
+      sep = "\n"
+    )
+  } else if (topic == "heterogeneity") {
+    paste(
+      "topic: heterogeneity",
+      "target_parameter: method",
+      "package: metafor",
+      "function: rma.uni",
+      "entries:",
+      "  - id: i2_threshold",
+      "    when: heterogeneity assessment is needed",
+      "    properties:",
+      "      - I-squared above 75 percent indicates substantial heterogeneity",
+      sep = "\n"
+    )
+  } else {
+    stop("unexpected topic")
+  }
+}
+
+test_that("T-E2E-10: multi-topic draft produces separate knowledge files", {
+  # Given: mock LLM returns multi-topic graph, supplementary calls return per-topic knowledge
+  # When:  draft_knowledge is called
+  # Then:  knowledge/ contains one file per topic
+
+  pkg <- scan_package("metafor")
+  tmp <- withr::local_tempdir()
+  call_idx <- 0L
+
+  local_mocked_bindings(
+    bridle_chat = function(prompt, provider, model) { # nolint: object_usage_linter. mock binding
+      call_idx <<- call_idx + 1L
+      if (call_idx == 1L) {
+        return(mock_multi_topic_response())
+      }
+      if (grepl("estimation_methods", prompt)) {
+        return(mock_supplementary_knowledge("estimation_methods"))
+      }
+      if (grepl("heterogeneity", prompt)) {
+        return(mock_supplementary_knowledge("heterogeneity"))
+      }
+      stop("unexpected prompt")
+    }
+  )
+
+  result <- draft_knowledge(pkg, output_dir = tmp)
+
+  expect_true(length(result$knowledge_list) >= 3L)
+
+  knowledge_dir <- file.path(tmp, "knowledge")
+  knowledge_files <- list.files(knowledge_dir, pattern = "\\.yaml$")
+  expect_true(length(knowledge_files) >= 3L)
+  expect_true("effect_measures.yaml" %in% knowledge_files)
+  expect_true("estimation_methods.yaml" %in% knowledge_files)
+  expect_true("heterogeneity.yaml" %in% knowledge_files)
+})
+
+test_that("T-E2E-11: multi-topic draft loadable by bridle_agent", {
+  # Given: multi-topic draft output
+  # When:  bridle_agent loads the directory
+  # Then:  agent has multiple knowledge stores matching graph topics
+
+  pkg <- scan_package("metafor")
+  tmp <- withr::local_tempdir()
+  call_idx <- 0L
+
+  local_mocked_bindings(
+    bridle_chat = function(prompt, provider, model) { # nolint: object_usage_linter. mock binding
+      call_idx <<- call_idx + 1L
+      if (call_idx == 1L) {
+        return(mock_multi_topic_response())
+      }
+      if (grepl("estimation_methods", prompt)) {
+        return(mock_supplementary_knowledge("estimation_methods"))
+      }
+      if (grepl("heterogeneity", prompt)) {
+        return(mock_supplementary_knowledge("heterogeneity"))
+      }
+      stop("unexpected prompt")
+    }
+  )
+
+  draft_knowledge(pkg, output_dir = tmp)
+  agent <- bridle_agent(tmp)
+
+  expect_s3_class(agent, "bridle_agent")
+  expect_true(length(agent$knowledge) >= 3L)
+
+  topics <- vapply(agent$knowledge, function(k) k@topic, character(1))
+  expect_true("effect_measures" %in% topics)
+  expect_true("estimation_methods" %in% topics)
+  expect_true("heterogeneity" %in% topics)
+})
+
+test_that("T-E2E-12: multi-topic draft passes validate_plugin", {
+  # Given: multi-topic draft output loaded by bridle_agent
+  # When:  validate_plugin is called
+  # Then:  0 errors (all graph topics have corresponding knowledge)
+
+  pkg <- scan_package("metafor")
+  tmp <- withr::local_tempdir()
+  call_idx <- 0L
+
+  local_mocked_bindings(
+    bridle_chat = function(prompt, provider, model) { # nolint: object_usage_linter. mock binding
+      call_idx <<- call_idx + 1L
+      if (call_idx == 1L) {
+        return(mock_multi_topic_response())
+      }
+      if (grepl("estimation_methods", prompt)) {
+        return(mock_supplementary_knowledge("estimation_methods"))
+      }
+      if (grepl("heterogeneity", prompt)) {
+        return(mock_supplementary_knowledge("heterogeneity"))
+      }
+      stop("unexpected prompt")
+    }
+  )
+
+  draft_knowledge(pkg, output_dir = tmp)
+  agent <- bridle_agent(tmp)
+
+  cs <- read_context_schema(file.path(tmp, "context_schema.yaml"))
+  result <- validate_plugin(
+    agent$graph, agent$knowledge, agent$constraints, cs
+  )
+  expect_equal(length(result@errors), 0L)
+  expect_equal(length(result@warnings), 0L)
+})
+
 # -- T-E2E-05: Malformed draft rejected ---------------------------------------
 
 test_that("T-E2E-05: malformed draft without graph key is rejected", {
@@ -470,7 +686,9 @@ test_that("T-E2E-06: topic mismatch between knowledge and graph is detected", {
   draft_knowledge(pkg, output_dir = tmp)
 
   graph <- read_decision_graph(file.path(tmp, "decision_graph.yaml"))
-  ks <- read_knowledge(file.path(tmp, "knowledge", "metafor.yaml"))
+  ks <- read_knowledge(
+    file.path(tmp, "knowledge", "nonexistent_topic.yaml")
+  )
   cs <- read_constraints(file.path(tmp, "constraints", "technical.yaml"))
 
   result <- validate_plugin(graph, list(ks), list(cs))
@@ -525,7 +743,7 @@ test_that("T-E2E-07: empty knowledge section causes reader error", {
 
   draft_knowledge(pkg, output_dir = tmp)
 
-  knowledge_path <- file.path(tmp, "knowledge", "metafor.yaml")
+  knowledge_path <- file.path(tmp, "knowledge", "default.yaml")
   expect_true(file.exists(knowledge_path))
   expect_error(read_knowledge(knowledge_path), "topic", class = "rlang_error")
 })
