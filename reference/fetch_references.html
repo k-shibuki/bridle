@@ -5,7 +5,8 @@ ScanResult reference list for the AI Drafter.
 Takes a ScanResult or PackageScanResult and resolves reference
 strings into structured bibliographic metadata. OpenAlex is the primary
 source; Semantic Scholar supplements missing abstracts or serves as
-fallback when OpenAlex returns 404."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
+fallback when fetch_openalex() returns NULL (covers 404, other HTTP
+errors, and request failures)."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]--></head><body data-spy="scroll" data-target="#toc">
@@ -58,7 +59,8 @@ abstract) via OpenAlex and Semantic Scholar APIs to enrich the
 <p>Takes a <a href="ScanResult.html">ScanResult</a> or <a href="PackageScanResult.html">PackageScanResult</a> and resolves reference
 strings into structured bibliographic metadata. OpenAlex is the primary
 source; Semantic Scholar supplements missing abstracts or serves as
-fallback when OpenAlex returns 404.</p>
+fallback when <code><a href="fetch_openalex.html">fetch_openalex()</a></code> returns <code>NULL</code> (covers 404, other HTTP
+errors, and request failures).</p>
     </div>
 
     <div id="ref-usage">

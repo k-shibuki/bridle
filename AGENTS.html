@@ -121,7 +121,29 @@
 <li>The project uses renv for dependency management. <code>renv.lock</code> is committed.</li>
 <li>Container-based development: R commands run inside a <code>bridle-dev</code> container.</li>
 <li>Build targets are managed via <code>Makefile</code> (run <code>make help</code> for the list).</li>
-</ul></div>
+</ul><div class="section level3">
+<h3 id="three-layer-quality-gate-model">Three-layer quality gate model<a class="anchor" aria-label="anchor" href="#three-layer-quality-gate-model"></a></h3>
+<p>Quality enforcement uses three layers with increasing scope:</p>
+<table class="table"><colgroup><col width="21%"><col width="28%"><col width="28%"><col width="21%"></colgroup><thead><tr class="header"><th>Layer</th>
+<th>Context</th>
+<th>Purpose</th>
+<th>Scope</th>
+</tr></thead><tbody><tr class="odd"><td>Local</td>
+<td>
+<code>pre-push</code> hook</td>
+<td>Fail-fast filter</td>
+<td>Differential: <code>format-check</code>, <code>changed-lint</code>, <code>changed-test</code> for R; validators for schemas/renv/kb</td>
+</tr><tr class="even"><td>PR CI</td>
+<td><code>ci.yaml</code></td>
+<td>Merge gate</td>
+<td>Full: parallel <code>lint</code> | <code>test</code> | <code>check --no-tests</code> + validators</td>
+</tr><tr class="odd"><td>Main push</td>
+<td><code>R-CMD-check.yaml</code></td>
+<td>Full verification</td>
+<td>5-matrix R CMD check + coverage (80% threshold, auto-Issue on failure)</td>
+</tr></tbody></table><p>Coverage is <strong>not</strong> on the PR critical path. It runs post-merge on main push. See <code>.cursor/knowledge/ci--three-layer-gate.md</code> for details.</p>
+</div>
+</div>
 <div class="section level2">
 <h2 id="project-knowledge-base">Project knowledge base<a class="anchor" aria-label="anchor" href="#project-knowledge-base"></a></h2>
 <p>This project maintains a shared knowledge base that all AI reviewers (Codex, CodeRabbit) and Cursor can read. Use it to understand project-specific patterns and avoid known pitfalls.</p>
