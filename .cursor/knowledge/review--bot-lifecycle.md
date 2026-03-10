@@ -1,5 +1,5 @@
 ---
-trigger: bot review, Codex review, Codex trigger, @codex review, CodeRabbit, @coderabbitai review, eyes reaction, Codex lifecycle, Codex re-review, Codex rate limit, CodeRabbit rate limit, Codex wait, Codex Cloud Review, review fallback, coderabbit fallback, supplementary review, coderabbit detection
+trigger: bot review, Codex review, Codex trigger, @codex review, CodeRabbit, @coderabbitai review, eyes reaction, Codex lifecycle, Codex re-review, Codex rate limit, CodeRabbit rate limit, Codex wait, Codex Cloud Review, review fallback, coderabbit fallback, supplementary review, coderabbit detection, CodeRabbit completion, Review triggered, coderabbit in progress, coderabbit done, coderabbit polling, review ack vs completion, bot state machine, eyes reaction delay, empty body review
 ---
 # Bot Review Lifecycle
 
@@ -79,9 +79,9 @@ Both reviewers produce output through three API channels:
 Bot login pattern: `coderabbit`.
 
 ```bash
-# Reviews
+# Reviews (filter empty body to exclude bot-to-bot reply artifacts)
 gh api repos/{owner}/{repo}/pulls/<N>/reviews \
-  --jq '[.[] | select(.user.login | test("coderabbit"; "i")) | {id, state, body, submitted_at}]'
+  --jq '[.[] | select(.user.login | test("coderabbit"; "i")) | select(.body != "") | {id, state, body, submitted_at}]'
 
 # Inline comments
 gh api repos/{owner}/{repo}/pulls/<N>/comments \
@@ -94,45 +94,132 @@ gh api repos/{owner}/{repo}/issues/<N>/comments \
 
 ### Codex detection
 
-Bot login pattern: `codex|openai`.
+Bot login pattern: `chatgpt-codex-connector|codex|openai`.
+Observed login: `chatgpt-codex-connector[bot]`. The broader pattern
+provides backward compatibility if the login changes.
 
 ```bash
-# Reviews
+# Reviews (filter empty body to exclude bot-to-bot reply artifacts)
 gh api repos/{owner}/{repo}/pulls/<N>/reviews \
-  --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i"))) | {id, state, body, submitted_at}]'
+  --jq '[.[] | select(.user.login | test("chatgpt-codex-connector|codex|openai"; "i")) | select(.body != "") | {id, state, body, submitted_at}]'
 
 # Inline comments
 gh api repos/{owner}/{repo}/pulls/<N>/comments \
-  --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i"))) | {id, path, line: (.line // .original_line), body, created_at}]'
+  --jq '[.[] | select(.user.login | test("chatgpt-codex-connector|codex|openai"; "i")) | {id, path, line: (.line // .original_line), body, created_at}]'
 
 # PR comments
 gh api repos/{owner}/{repo}/issues/<N>/comments \
-  --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i"))) | {id, body, created_at}]'
+  --jq '[.[] | select(.user.login | test("chatgpt-codex-connector|codex|openai"; "i")) | {id, body, created_at}]'
 ```
 
 ## State Detection
 
 | State | Detection | Applies to |
 |-------|-----------|------------|
-| **Reviewed (findings)** | Bot review + inline comments exist | Both |
-| **Reviewed (clean)** | Bot PR/walkthrough comment exists | Both |
-| **In progress** | Trigger ack posted, no new review/walkthrough after trigger time | CodeRabbit |
-| **In progress** | Eyes reaction present | Codex |
-| **Rate limited** | Body contains "usage limits" | Both |
-| **Completion** | New review or walkthrough with timestamp > trigger time | Both |
+| **TRIGGERED** | Agent posted trigger comment | Both |
+| **ACKNOWLEDGED** | Eyes reaction on trigger comment | CodeRabbit only |
+| **ACCEPTED** | "Review triggered" ack comment after trigger time | CodeRabbit only |
+| **COMPLETED** | Review entry with `submitted_at > trigger_time` AND `body != ""` | Both |
+| **COMPLETED_CLEAN** | Thumbs-up on trigger comment (no findings) | Codex only |
+| **RATE_LIMITED** | Review body contains "usage limits" | Both |
+| **TIMED_OUT** | Timeout elapsed, no completion signal | Both |
 
 **Rule**: Always use API checks to determine state. Do not infer state
 from timing, absence of activity, or activity on other PRs.
 
-**Critical**: CodeRabbit's "Review triggered" ack is NOT completion.
-See `review--coderabbit-completion-signals.md` for the correct polling
-algorithm and common mistakes.
+**Critical**: CodeRabbit's "Review triggered" ack is NOT completion —
+it is an intermediate signal (ACCEPTED). See § State Machine below.
+
+## State Machine
+
+### CodeRabbit (4 states + timeout)
+
+```text
+TRIGGERED ──[eyes on trigger]──→ ACKNOWLEDGED
+TRIGGERED ──[review, body!="", submitted_at > t]──→ COMPLETED
+ACKNOWLEDGED ──[ack "Review triggered"]──→ ACCEPTED
+ACKNOWLEDGED ──[review, body!="", submitted_at > t]──→ COMPLETED
+ACCEPTED ──[review, body!="", submitted_at > t]──→ COMPLETED
+any state ──[timeout elapsed]──→ TIMED_OUT
+```
+
+- **TRIGGERED**: agent posted `@coderabbitai review`
+- **ACKNOWLEDGED**: eyes reaction on trigger comment (delay: 0s–5min+)
+- **ACCEPTED**: "Review triggered" ack posted (delay: 0s–5min+)
+- **COMPLETED**: new review entry (`submitted_at > trigger_time`, `body != ""`)
+- **TIMED_OUT**: timeout elapsed, no review output
+
+ACKNOWLEDGED and ACCEPTED are **informational early signals** — they
+confirm progress but must NOT be used for completion judgment.
+
+No "Declined" state: eyes/ack delays of 5min+ were observed (PR #187
+trigger 3). Timeout is the only way to determine non-response.
+
+### Codex (3 states)
+
+```text
+TRIGGERED ──[review, submitted_at > t]──→ COMPLETED
+TRIGGERED ──[👍 on trigger comment]──→ COMPLETED_CLEAN
+TRIGGERED ──[timeout elapsed]──→ TIMED_OUT
+```
+
+- **COMPLETED**: review entry from `chatgpt-codex-connector[bot]`
+- **COMPLETED_CLEAN**: thumbs-up on trigger comment (no findings)
+- **TIMED_OUT**: timeout elapsed, no output
+
+Codex produces NO intermediate signals (no eyes, no ack comment).
+
+## Polling Algorithm
+
+```text
+INPUTS:
+  trigger_time  — trigger comment created_at
+  trigger_id    — trigger comment ID
+  reviewer      — "coderabbit" | "codex"
+  timeout       — 7 min (default)
+
+POLL (every 30s):
+  1. GET pulls/<N>/reviews
+     → filter by reviewer login pattern
+     → filter submitted_at > trigger_time
+     → filter body != "" (exclude empty bot-to-bot replies)
+     → if any → COMPLETED
+
+  2. IF reviewer == "coderabbit":
+     a. GET reactions on trigger_id → eyes > 0 → ACKNOWLEDGED
+     b. GET issues/<N>/comments → filter CR bot,
+        created_at > trigger_time, body contains "Review triggered"
+        → ACCEPTED
+
+  3. IF reviewer == "codex":
+     a. GET reactions on trigger_id → "+1" > 0 → COMPLETED_CLEAN
+
+  4. IF elapsed > timeout → TIMED_OUT
+```
+
+ACKNOWLEDGED/ACCEPTED are reported as progress but do NOT terminate
+polling. Completion = COMPLETED | COMPLETED_CLEAN | TIMED_OUT.
+
+## Edge Cases
+
+- **Empty body review**: CodeRabbit replying to another bot's inline
+  comment creates a review entry with `body: ""`. Always filter with
+  `select(.body != "")` to avoid false completion signals.
+- **Eyes/Ack delay**: Up to 5min+ observed (PR #187 trigger 3). These
+  are unreliable for early termination — only timeout is definitive.
+- **Codex thumbs-up vs findings**: When Codex finds no issues, it reacts
+  with thumbs-up on the trigger comment instead of posting a review.
+  Poll both `pulls/<N>/reviews` and trigger comment reactions.
+- **Incremental review scope**: CodeRabbit reviews only new commits
+  pushed after its last review. The "does not re-review already reviewed
+  commits" note describes scope, not completion status.
 
 ## Timing
 
 | | CodeRabbit | Codex |
 |---|---|---|
-| Typical completion | 2–5 min | 1–5 min |
+| Typical completion | 2–7 min | 1–7 min |
+| Eyes/Ack delay | 0s–5min+ | N/A |
 | Polling interval | 30 s | 30 s |
 | Timeout | 7 min | 7 min |
 
