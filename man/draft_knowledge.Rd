@@ -26,8 +26,8 @@ draft_knowledge(
 \item{output_dir}{Directory to write draft YAML files (character).}
 }
 \value{
-A list with \code{decision_graph}, \code{knowledge}, and \code{constraints}
-elements containing the parsed draft content.
+A list with \code{decision_graph}, \code{knowledge}, \code{constraints},
+\code{context_schema}, and \code{manifest} elements.
 }
 \description{
 Uses ellmer to generate draft plugin artifacts (decision graph,
@@ -38,4 +38,9 @@ Assembles a prompt from scan data and optional references,
 sends it to an LLM via ellmer, and writes draft YAML files to
 the specified output directory. Accepts either a \link{ScanResult}
 (single function) or a \link{PackageScanResult} (full package).
+}
+\details{
+In addition to the three LLM-generated sections (decision graph,
+knowledge, constraints), this function generates \code{context_schema.yaml}
+and \code{manifest.yaml} heuristically from the decision graph structure.
 }

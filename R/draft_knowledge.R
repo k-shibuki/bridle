@@ -15,6 +15,10 @@ NULL
 #' the specified output directory. Accepts either a [ScanResult]
 #' (single function) or a [PackageScanResult] (full package).
 #'
+#' In addition to the three LLM-generated sections (decision graph,
+#' knowledge, constraints), this function generates `context_schema.yaml`
+#' and `manifest.yaml` heuristically from the decision graph structure.
+#'
 #' @param scan_result A [ScanResult] or [PackageScanResult] object.
 #' @param references Optional list of reference metadata from
 #'   [fetch_references()].
@@ -22,8 +26,8 @@ NULL
 #'   `"anthropic"`, `"openai"`. If `NULL`, uses ellmer default.
 #' @param model Model name (character). If `NULL`, uses provider default.
 #' @param output_dir Directory to write draft YAML files (character).
-#' @return A list with `decision_graph`, `knowledge`, and `constraints`
-#'   elements containing the parsed draft content.
+#' @return A list with `decision_graph`, `knowledge`, `constraints`,
+#'   `context_schema`, and `manifest` elements.
 #' @export
 draft_knowledge <- function(scan_result, references = NULL,
                             provider = NULL, model = NULL,
@@ -47,6 +51,10 @@ draft_knowledge <- function(scan_result, references = NULL,
   } else {
     scan_result@func
   }
+
+  drafts$context_schema <- generate_draft_context_schema(drafts)
+  drafts$manifest <- generate_draft_manifest(drafts)
+
   write_draft_files(drafts, output_dir, scan_result@package, label)
   drafts
 }
@@ -267,6 +275,77 @@ parse_draft_response <- function(response) {
   )
 }
 
+#' Generate context_schema from graph structure (heuristic)
+#'
+#' Derives [ContextVariable] definitions from the decision graph's node
+#' types: `decision` nodes with `parameter` yield `parameter_decided`
+#' variables; `execution` nodes yield a `post_fit` variable.
+#' A baseline `data_loaded` variable (`k`) is always included.
+#' @keywords internal
+generate_draft_context_schema <- function(drafts) {
+  graph_raw <- drafts$decision_graph
+  nodes_raw <- graph_raw[["graph"]][["nodes"]] %||% graph_raw[["nodes"]]
+  if (is.null(nodes_raw) || length(nodes_raw) == 0L) {
+    return(NULL)
+  }
+
+  variables <- list(list(
+    name = "k",
+    description = "number of studies",
+    available_from = "data_loaded",
+    source_expression = "nrow(data)"
+  ))
+
+  node_names <- names(nodes_raw)
+  if (is.null(node_names)) {
+    return(list(variables = variables))
+  }
+
+  for (nm in node_names) {
+    node <- nodes_raw[[nm]]
+    node_type <- node[["type"]]
+
+    if (identical(node_type, "decision") && !is.null(node[["parameter"]])) {
+      params <- node[["parameter"]]
+      if (is.list(params)) params <- unlist(params)
+      for (p in params) {
+        variables <- c(variables, list(list(
+          name = p,
+          description = sprintf("selected %s", gsub("_", " ", p)),
+          available_from = "parameter_decided",
+          depends_on_node = nm,
+          source_expression = sprintf("decisions$%s", p)
+        )))
+      }
+    }
+
+    if (identical(node_type, "execution")) {
+      variables <- c(variables, list(list(
+        name = "fit_result",
+        description = "fitted model result object",
+        available_from = "post_fit",
+        depends_on_node = nm,
+        source_expression = "result"
+      )))
+    }
+  }
+
+  list(variables = variables)
+}
+
+#' Generate manifest with sensible defaults
+#'
+#' Extracts `max_iterations` from the draft graph's `global_policy` if
+#' present, otherwise defaults to 20.
+#' @keywords internal
+generate_draft_manifest <- function(drafts) {
+  graph_raw <- drafts$decision_graph
+  gp <- graph_raw[["graph"]][["global_policy"]] %||%
+    graph_raw[["global_policy"]]
+  max_iter <- gp[["max_iterations"]] %||% 20L
+  list(policy_defaults = list(max_iterations = as.integer(max_iter)))
+}
+
 #' Write draft YAML files to the output directory
 #' @keywords internal
 write_draft_files <- function(drafts, output_dir, package, func) {
@@ -293,4 +372,16 @@ write_draft_files <- function(drafts, output_dir, package, func) {
   constraints_path <- file.path(constraints_dir, "technical.yaml")
   yaml::write_yaml(drafts$constraints, constraints_path)
   cli::cli_inform("Draft constraints: {.path {constraints_path}}")
+
+  if (!is.null(drafts$context_schema)) {
+    cs_path <- file.path(output_dir, "context_schema.yaml")
+    yaml::write_yaml(drafts$context_schema, cs_path)
+    cli::cli_inform("Draft context schema: {.path {cs_path}}")
+  }
+
+  if (!is.null(drafts$manifest)) {
+    manifest_path <- file.path(output_dir, "manifest.yaml")
+    yaml::write_yaml(drafts$manifest, manifest_path)
+    cli::cli_inform("Draft manifest: {.path {manifest_path}}")
+  }
 }

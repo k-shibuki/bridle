@@ -7,8 +7,8 @@
 #    Realistic plugins need multiple knowledge files (one per topic). All
 #    decision/diagnosis nodes share a single topic in this test to stay
 #    consistent with what draft_knowledge actually produces.
-# 2. No context_schema.yaml or manifest.yaml generation from draft pipeline.
-#    Variable scope validation (ADR-0007) is skipped. Acceptable per Issue spec.
+# 2. context_schema.yaml and manifest.yaml are now generated heuristically
+#    from the decision graph structure (Issue #172).
 # 3. The draft graph is flat (no template composition). build_graph() handles
 #    this correctly (ADR-0009 § flat graph path).
 
@@ -321,6 +321,48 @@ test_that("T-E2E-04: audit log records visits to key nodes", {
     expect_true("node_id" %in% names(entry))
     expect_true("node_type" %in% names(entry))
   }
+})
+
+# -- T-E2E-08: Draft generates context_schema.yaml and manifest.yaml ----------
+
+test_that("T-E2E-08: draft output includes context_schema and manifest", {
+  # Given: scan_package(metafor) + mocked draft_knowledge
+  # When:  draft output directory is inspected
+  # Then:  context_schema.yaml and manifest.yaml exist and are loadable
+
+  tmp <- withr::local_tempdir()
+  draft_to_dir(tmp)
+
+  cs_path <- file.path(tmp, "context_schema.yaml")
+  mf_path <- file.path(tmp, "manifest.yaml")
+
+  expect_true(file.exists(cs_path))
+  expect_true(file.exists(mf_path))
+
+  cs <- read_context_schema(cs_path)
+  expect_s3_class(cs, "bridle::ContextSchema")
+  expect_true(length(cs@variables) >= 1L)
+
+  mf <- yaml::yaml.load_file(mf_path)
+  expect_equal(mf$policy_defaults$max_iterations, 3L)
+})
+
+test_that("T-E2E-09: agent loads draft with context_schema and validates", {
+  # Given: draft output with context_schema.yaml + manifest.yaml
+  # When:  bridle_agent loads and validates the plugin
+  # Then:  validate_plugin with context_schema passes (0 errors)
+
+  tmp <- withr::local_tempdir()
+  draft_to_dir(tmp)
+
+  agent <- bridle_agent(tmp)
+  expect_s3_class(agent, "bridle_agent")
+
+  cs <- read_context_schema(file.path(tmp, "context_schema.yaml"))
+  result <- validate_plugin(
+    agent$graph, agent$knowledge, agent$constraints, cs
+  )
+  expect_equal(length(result@errors), 0L)
 })
 
 # -- T-E2E-05: Malformed draft rejected ---------------------------------------
