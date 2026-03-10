@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Address review findings from `pr-review`. This includes findings from both the Cursor review and Codex Cloud review (if available). Evaluate each finding for validity, apply fixes, and re-push.
+Address review findings from `pr-review`. This includes findings from both the Cursor review and bot review (if available). Evaluate each finding for validity, apply fixes, and re-push.
 
 ## When to use
 
@@ -15,7 +15,7 @@ Address review findings from `pr-review`. This includes findings from both the C
 2. If the PR number is missing, ask for it and stop.
 3. Do NOT dismiss findings without analysis. Evaluate each on its merits.
 4. After fixes, run quality gates before committing.
-5. For recurring false positives, create or update a knowledge atom (`.cursor/knowledge/review--*.md`) to capture the pattern. Both Cursor and Codex can read these files.
+5. For recurring false positives, create or update a knowledge atom (`.cursor/knowledge/review--*.md`) to capture the pattern. All reviewers can read these files.
 
 ## Inputs (ask if missing)
 
@@ -37,18 +37,15 @@ If `pr-review` was just run in this session, use its "Required changes" list dir
 gh pr view <PR> --json reviews --jq '.reviews[-1].body'
 ```
 
-**Source B: Codex inline comments** (if `pr-review` reported Codex status as "Reviewed")
+**Source B: Bot inline comments** (if `pr-review` reported bot review status as "Reviewed")
 
-```bash
-gh api repos/{owner}/{repo}/pulls/<PR>/comments \
-  --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i"))) | {id, path, line: (.line // .original_line), body, created_at}]'
-```
+Use the detection commands from `@.cursor/knowledge/review--bot-lifecycle.md` § Output Detection to retrieve inline comments from whichever reviewer responded.
 
-Merge both sources, deduplicating where Cursor and Codex flagged the same issue.
+Merge all sources, deduplicating where Cursor and bot review flagged the same issue.
 
 ### 2. Classify and validate findings
 
-Evaluate every finding on technical merit regardless of source. Cursor and Codex have equal weight — neither is authoritative over the other.
+Evaluate every finding on technical merit regardless of source. Cursor and bot reviewers have equal weight.
 
 | Classification | Action |
 |---|---|
@@ -66,7 +63,7 @@ For each P0 and P1 finding (in priority order):
 1. Read the referenced file and surrounding context (at least ±10 lines around the flagged line).
 2. Determine whether the finding is valid.
 3. If valid: propose a fix and apply it after user confirmation.
-4. If false positive: note the reason. If the same pattern has recurred, propose creating a knowledge atom (`.cursor/knowledge/review--<pattern>.md`) via `knowledge-create` so both Cursor and Codex learn from it.
+4. If false positive: note the reason. If the same pattern has recurred, propose creating a knowledge atom (`.cursor/knowledge/review--<pattern>.md`) via `knowledge-create` so all reviewers learn from it.
 
 ### 4. Quality gate
 
@@ -91,21 +88,21 @@ Refs: #<issue>"
 git push
 ```
 
-### 5b. Codex re-review decision
+### 5b. Bot re-review decision
 
-**Prerequisite**: Read `@.cursor/knowledge/codex--review-lifecycle.md`.
+**Prerequisite**: Read `@.cursor/knowledge/review--bot-lifecycle.md`.
 
-Codex does NOT re-review on push. The agent decides whether to re-trigger and delegates the wait to a subagent.
+Bot reviewers do NOT re-review on push. The agent decides whether to re-trigger and delegates the wait to a subagent. The fallback chain (primary → secondary → skip) is handled by Template 5 automatically.
 
 | Condition | Action |
 |-----------|--------|
-| Addressed a Codex P0 finding with code change | `@codex review` + delegate Template 5: Codex-Wait Only |
-| Addressed a Codex P1 finding with significant code change | `@codex review` + delegate Template 5: Codex-Wait Only |
+| Addressed a bot P0 finding with code change | Trigger re-review + delegate Template 5 |
+| Addressed a bot P1 finding with significant code change | Trigger re-review + delegate Template 5 |
 | Minor fix, docs, or workflow adjustment | Skip; proceed directly to `pr-review` |
-| Codex was not requested in initial review | Skip; no re-review needed |
+| Bot review was not requested in initial review | Skip; no re-review needed |
 
 ```bash
-# Trigger re-review (only when needed)
+# Trigger re-review (starts with primary, falls back to secondary if rate-limited)
 gh pr comment <PR> --body "@codex review"
 ```
 
@@ -115,7 +112,7 @@ When re-review is triggered, delegate the wait to a background subagent using Te
 
 Summarize what was done:
 
-- **Findings addressed**: count by source (Cursor / Codex) and severity (P0 / P1)
+- **Findings addressed**: count by source (Cursor / bot review) and severity (P0 / P1)
 - **False positives**: count (with brief reasons, replies posted)
 - **Deferred**: count (with justification)
 - **Quality gate**: pass / fail
@@ -124,7 +121,7 @@ Summarize what was done:
 ## Output (response format)
 
 - **PR**: `#<number>`, title
-- **Findings processed**: total count, by source (Cursor / Codex)
+- **Findings processed**: total count, by source (Cursor / bot review)
 - **Classification summary**: P0 / P1 / false positive / already addressed
 - **Fixes applied**: list of changes with file and line
 - **Quality gate result**: pass / fail

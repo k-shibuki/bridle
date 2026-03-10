@@ -71,8 +71,8 @@ make doctor 2>&1 | tail -5
 git branch --merged origin/main | grep -v '^\*\|main$' || true
 git branch --no-merged origin/main --format='%(refname:short) %(upstream:track)' | grep '\[gone\]' || true
 
-# Note: Codex review is triggered and waited on by pr-create (Step 5) via
-# subagent delegation. next does not manage Codex state directly.
+# Note: Bot review is triggered and waited on by pr-create (Step 5) via
+# subagent delegation. next does not manage bot review state directly.
 ```
 
 **Background task check**: If a background subagent was previously launched (e.g., for CI-wait), check its transcript file for completion. See `subagent-policy.mdc` "Completion guarantee" for the protocol. Incorporate results into the state assessment.
@@ -96,7 +96,7 @@ Use the evidence to classify the current state into one of these positions:
 | Open PR, CI still running, no independent Issue | **CI pending (housekeeping)** | Delegate CI-wait to background subagent (see `subagent-policy.mdc`), then do housekeeping (see Step 6). |
 | Stale local branches detected | **Cleanup needed** | Delete stale branches (see `pr-merge.md` "Post-merge cleanup"). Can be done during housekeeping. |
 | Background subagent running | **Background task in progress** | Check transcript for completion; continue independent work |
-| Open PR, CI all green, wait subagent done | **Ready for review** | `pr-review` (retrieves Codex findings if available) |
+| Open PR, CI all green, wait subagent done | **Ready for review** | `pr-review` (retrieves bot review findings if available) |
 | Open PR, CI failed | **CI failure** | `debug` or fix + re-push |
 | PR reviewed, changes required | **Changes required** | `review-fix` (address findings from `pr-review`, then re-push and re-review) |
 | PR reviewed, mergeable | **Review done** | `pr-merge` |
@@ -213,11 +213,11 @@ If an error or unexpected state occurs during execution:
               └────────────┬────────────┘
                            │
               ┌────────────▼────────────┐
-              │  [CI] + Codex review   │
+              │  [CI] + bot review     │
               └────────────┬────────────┘
                            │
               ┌────────────▼────────────┐
-              │      pr-review         │ (Cursor + Codex findings)
+              │      pr-review         │ (Cursor + bot findings)
               └──────┬─────┬──────┘
                     │     │
              Mergeable  Changes required

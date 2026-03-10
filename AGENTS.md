@@ -1,10 +1,11 @@
-<!-- sync-check: .cursor/commands/pr-review.md Step 6 categories -->
+<!-- sync-check: .cursor/commands/pr-review.md Step 7 categories -->
 <!-- last-synced: 2026-03-10 -->
 # AGENTS.md
 
-This file configures AI coding agents that operate on this repository
-(primarily OpenAI Codex Cloud). Cursor uses `.cursor/rules/` and
-`.cursor/commands/` instead — this file is listed in `.cursorignore`.
+This file configures AI code reviewers that operate on this repository
+(Codex Cloud as primary, CodeRabbit Free Plan as fallback). Cursor uses
+`.cursor/rules/` and `.cursor/commands/` instead but shares these review
+guidelines via the knowledge base.
 
 ## Project context
 
@@ -111,9 +112,9 @@ setting a value.
 
 ## Project knowledge base
 
-This project maintains a shared knowledge base that both Cursor and Codex
-can read. Use it to understand project-specific patterns and avoid known
-pitfalls.
+This project maintains a shared knowledge base that all AI reviewers
+(Codex, CodeRabbit) and Cursor can read. Use it to understand
+project-specific patterns and avoid known pitfalls.
 
 ### Entry point
 

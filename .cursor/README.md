@@ -30,27 +30,37 @@ AI Development System
 | **Guards** | `.pre-commit-config.yaml`, `.github/workflows/*.yaml`, `tools/` | Hooks, CI, Branch Protection | Deterministic (tool-enforced) |
 | **Surface** | `Makefile`, `README.md`, `.github/CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/` | Entry points, development API | Discovery / onboarding |
 
-### Codex Cloud Integration
+### AI Code Review Integration
 
-Codex Cloud Review operates as an external PR reviewer via `AGENTS.md` (repo root). The Cursor agent **actively orchestrates** Codex reviews — automatic review is OFF, and the agent triggers Codex explicitly via `@codex review` when needed.
+AI code reviewers (Codex Cloud as primary, CodeRabbit Free Plan as
+fallback) operate as external PR reviewers via `AGENTS.md` (repo root).
+The Cursor agent **actively orchestrates** bot reviews — auto-review is
+OFF for both, and the agent triggers Codex explicitly via `@codex review`.
+If Codex is rate-limited, the subagent automatically falls back to
+CodeRabbit via `@coderabbitai review`.
 
-**Active orchestration model**: The agent decides whether Codex review is needed (based on change type), triggers it, delegates the wait to a background subagent, and integrates findings into `pr-review`. See `codex--review-lifecycle.md` for the SSOT on Codex behavior.
+**Active orchestration model**: The agent decides whether bot review is
+needed (based on change type), triggers it, delegates the wait to a
+background subagent, and integrates findings into `pr-review`. See
+`review--bot-lifecycle.md` for the SSOT on bot review behavior.
 
 ```
-AGENTS.md (Codex entry point — in .cursorignore, invisible to Cursor)
+AGENTS.md (AI reviewer entry point — read by Codex and CodeRabbit)
   ├── Review guidelines (P0/P1 severity — stable base criteria)
   └── References:
       ├── .cursor/rules/knowledge-index.mdc  ← shared lookup table
-      ├── .cursor/knowledge/codex--review-lifecycle.md  ← Codex behavior SSOT
+      ├── .cursor/knowledge/review--bot-lifecycle.md  ← bot review behavior SSOT
       ├── .cursor/knowledge/review--*.md     ← feedback loop accumulates here
       ├── .cursor/commands/pr-review.md      ← review procedure
       └── .cursor/commands/review-fix.md     ← fix procedure
+.coderabbit.yaml (CodeRabbit config — auto_review OFF, assertive profile)
 ```
 
 - **Cursor** reads `.cursor/` directly via rules, commands, knowledge
 - **Codex** reads `AGENTS.md` first, then follows references into `.cursor/` files
-- **Active trigger**: Agent triggers Codex via `@codex review` comment in `pr-create` Step 5 or `review-fix` Step 5b. Wait is delegated to background subagents (Template 4/5 in `agent--delegation-templates.md`)
-- **Feedback loop**: recurring false positives become knowledge atoms (`review--*.md`), benefiting both agents
+- **CodeRabbit** reads `AGENTS.md` via code_guidelines auto-detection + `.coderabbit.yaml` for config
+- **Active trigger**: Agent triggers Codex via `@codex review` comment in `pr-create` Step 5 or `review-fix` Step 5b. Wait is delegated to background subagents (Template 4/5 in `agent--delegation-templates.md`). CodeRabbit fallback is automatic within the templates
+- **Feedback loop**: recurring false positives become knowledge atoms (`review--*.md`), benefiting all reviewers
 - **Drift detection**: `make review-sync-check` verifies that `AGENTS.md` and `pr-review.md` cover the same review categories (enforced in CI)
 
 **Domain relationships**: Design constrains Controls — implementation choices must follow accepted ADRs. Within Controls: Rules declare policies; Guards enforce them deterministically. Commands define procedures constrained by Rules and referencing Knowledge. Surface provides entry points for both human and AI workflows. Each piece of information exists in exactly one place (Single Source of Truth).

@@ -102,17 +102,18 @@ Monitor CI for PR #<N> and report when all checks complete.
 Report: "CI PASSED: all checks green for PR #<N>" or "CI FAILED: <check-name> failed — <details>"
 ```
 
-## Template 4: CI + Codex Wait
+## Template 4: CI + Codex Wait (with CodeRabbit Fallback)
 
 Use after `pr-create` when the agent has triggered Codex review (`@codex review`)
-and CI is also pending. Waits for both to complete.
+and CI is also pending. Waits for both to complete. If Codex is rate-limited,
+automatically triggers CodeRabbit as fallback.
 
-See `codex--review-lifecycle.md` for Codex behavioral details (detection commands,
-timing, state signals).
+See `review--bot-lifecycle.md` for behavioral details of both reviewers.
 
 ```
 ## Goal
-Monitor CI and Codex Cloud Review for PR #<N>. Report when both complete.
+Monitor CI and Codex Cloud Review for PR #<N>. If Codex is rate-limited,
+trigger CodeRabbit as fallback. Report when both CI and bot review complete.
 
 ## Steps
 
@@ -124,8 +125,18 @@ Monitor CI and Codex Cloud Review for PR #<N>. Report when both complete.
 
 2. CI is done when: all checks pass, or any check fails.
 3. Codex is done when: bot output in ANY channel > 0 (reviews, inline comments, or PR comments), or 7 min timeout.
-4. If bot output body contains "usage limits", report RATE_LIMITED.
-5. When both are done, report final status.
+4. If bot output body contains "usage limits" → RATE_LIMITED. Proceed to Step 6 (CodeRabbit fallback).
+5. When both CI and Codex are done (and Codex is not RATE_LIMITED), report final status.
+
+## Step 6: CodeRabbit fallback (only when Codex is RATE_LIMITED)
+
+6a. Trigger CodeRabbit: `gh pr comment <N> --body "@coderabbitai review"`
+6b. Poll CodeRabbit (30s intervals, max 7 min elapsed):
+   - Reviews: `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("coderabbit"; "i"))] | length'`
+   - Inline comments: `gh api repos/{owner}/{repo}/pulls/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i"))] | length'`
+   - Walkthrough: `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i"))] | length'`
+6c. CodeRabbit is done when: walkthrough comment exists, or 7 min timeout.
+6d. Report final status.
 
 ## Prohibitions
 - Do NOT run `git checkout`, `git switch`, `git branch`, or `git rebase`
@@ -135,21 +146,27 @@ Monitor CI and Codex Cloud Review for PR #<N>. Report when both complete.
 
 ## Error handling
 - If a CI check fails: report which check failed and the details URL
-- If Codex times out: report TIMEOUT (not an error — pr-review proceeds without Codex)
+- If Codex times out: report TIMEOUT (not an error — pr-review proceeds without Codex). Do NOT trigger CodeRabbit for timeout.
+- If CodeRabbit also fails or is rate-limited: report and proceed without bot review
 
 ## Return format
 CI: PASSED / FAILED (<check-name> — <details-url>)
 CODEX: REVIEWED (<N> inline comments) / TIMEOUT / RATE_LIMITED
+CODERABBIT: REVIEWED (<N> inline comments) / TIMEOUT / RATE_LIMITED / NOT_TRIGGERED
 ```
 
-## Template 5: Codex-Wait Only
+## Template 5: Codex-Wait Only (with CodeRabbit Fallback)
 
 Use after `review-fix` when the agent has triggered Codex re-review
 (`@codex review`) but CI has already passed or is being monitored separately.
+If Codex is rate-limited, triggers CodeRabbit as fallback.
+
+See `review--bot-lifecycle.md` for CodeRabbit detection details.
 
 ```
 ## Goal
 Monitor Codex Cloud Review for PR #<N> and report when complete.
+If Codex is rate-limited, trigger CodeRabbit as fallback.
 
 ## Steps
 1. Poll (30s intervals, max 7 min elapsed):
@@ -157,7 +174,16 @@ Monitor Codex Cloud Review for PR #<N> and report when complete.
    - Codex inline comments: `gh api repos/{owner}/{repo}/pulls/<N>/comments --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
    - Codex PR comment: `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
 2. Done when bot output in ANY channel > 0, or timeout.
-3. If bot output body contains "usage limits", report RATE_LIMITED.
+3. If bot output body contains "usage limits" → RATE_LIMITED. Proceed to Step 4 (CodeRabbit fallback).
+
+## Step 4: CodeRabbit fallback (only when Codex is RATE_LIMITED)
+
+4a. Trigger CodeRabbit: `gh pr comment <N> --body "@coderabbitai review"`
+4b. Poll CodeRabbit (30s intervals, max 7 min elapsed):
+   - Reviews: `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("coderabbit"; "i"))] | length'`
+   - Inline comments: `gh api repos/{owner}/{repo}/pulls/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i"))] | length'`
+   - Walkthrough: `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i"))] | length'`
+4c. CodeRabbit is done when: walkthrough comment exists, or 7 min timeout.
 
 ## Prohibitions
 - Do NOT run `git checkout`, `git switch`, `git branch`, or `git rebase`
@@ -166,6 +192,7 @@ Monitor Codex Cloud Review for PR #<N> and report when complete.
 
 ## Return format
 CODEX: REVIEWED (<N> inline comments) / TIMEOUT / RATE_LIMITED
+CODERABBIT: REVIEWED (<N> inline comments) / TIMEOUT / RATE_LIMITED / NOT_TRIGGERED
 ```
 
 ## Template 3: Dependent PR Merge Chain (rebase-enabled)

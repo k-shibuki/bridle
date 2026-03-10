@@ -122,35 +122,37 @@ gh pr create --title "<type>(<scope>): <description>" \
   --body "<body from PULL_REQUEST_TEMPLATE.md with Exception section filled>"
 ```
 
-### 5. Codex review decision and CI monitoring
+### 5. Bot review decision and CI monitoring
 
-Per `subagent-policy.mdc`: blocking operations (CI polling, Codex review wait) MUST be delegated to a background subagent. The main agent must not poll inline with `sleep` loops.
+Per `subagent-policy.mdc`: blocking operations (CI polling, bot review wait) MUST be delegated to a background subagent. The main agent must not poll inline with `sleep` loops.
 
-#### 5a. Decide whether Codex review is needed
+#### 5a. Decide whether bot review is needed
 
-Read `@.cursor/knowledge/codex--review-lifecycle.md` for decision guidelines. Codex auto-review is OFF — the agent must explicitly trigger it via `@codex review` comment.
+Read `@.cursor/knowledge/review--bot-lifecycle.md` for decision guidelines and the reviewer priority chain (primary → secondary → skip).
 
-| Change type | Request Codex? |
-|-------------|---------------|
+| Change type | Request bot review? |
+|-------------|---------------------|
 | R code, shell scripts, schemas, security | Yes |
 | Docs only, workflow files, CI config | No |
 
-#### 5b. Trigger Codex and delegate wait
+#### 5b. Trigger bot review and delegate wait
 
 ```bash
 # Quick initial CI check
 gh pr checks <PR_NUMBER>
 
-# If Codex review is needed:
+# If bot review is needed (triggers primary reviewer):
 gh pr comment <PR_NUMBER> --body "@codex review"
 ```
 
-**Delegation** (choose based on Codex decision):
+**Delegation** (choose based on review decision):
 
-| Codex requested? | Template |
-|------------------|----------|
-| Yes | Template 4: CI + Codex Wait (`agent--delegation-templates.md`) |
+| Bot review requested? | Template |
+|-----------------------|----------|
+| Yes | Template 4: CI + Bot Review Wait (`agent--delegation-templates.md`) |
 | No | Template 2: CI-Wait Only (`agent--delegation-templates.md`) |
+
+The fallback chain (primary rate-limited → secondary → proceed without) is handled automatically by the template. No action needed from the main agent. See `review--bot-lifecycle.md` § Fallback Decision Tree.
 
 **Preferred shortcut**: If `pr-review` has already concluded "Mergeable" (e.g., user pre-approved the merge), set auto-merge immediately and skip polling:
 
