@@ -118,12 +118,13 @@ Monitor CI and Codex Cloud Review for PR #<N>. Report when both complete.
 
 1. Poll in parallel (30s intervals, max 10 min elapsed):
    - CI: `gh pr checks <N>`
-   - Codex reviews: `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
-   - Codex comments: `gh api repos/{owner}/{repo}/pulls/<N>/comments --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
+   - Codex reviews (findings): `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
+   - Codex inline comments: `gh api repos/{owner}/{repo}/pulls/<N>/comments --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
+   - Codex PR comment (no-findings): `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
 
 2. CI is done when: all checks pass, or any check fails.
-3. Codex is done when: bot review count > 0, or 7 min timeout.
-4. If Codex review body contains "usage limits", report RATE_LIMITED.
+3. Codex is done when: bot output in ANY channel > 0 (reviews, inline comments, or PR comments), or 7 min timeout.
+4. If bot output body contains "usage limits", report RATE_LIMITED.
 5. When both are done, report final status.
 
 ## Prohibitions
@@ -152,10 +153,11 @@ Monitor Codex Cloud Review for PR #<N> and report when complete.
 
 ## Steps
 1. Poll (30s intervals, max 7 min elapsed):
-   - `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
-   - `gh api repos/{owner}/{repo}/pulls/<N>/comments --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
-2. Done when bot review count > 0, or timeout.
-3. If review body contains "usage limits", report RATE_LIMITED.
+   - Codex reviews: `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
+   - Codex inline comments: `gh api repos/{owner}/{repo}/pulls/<N>/comments --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
+   - Codex PR comment: `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
+2. Done when bot output in ANY channel > 0, or timeout.
+3. If bot output body contains "usage limits", report RATE_LIMITED.
 
 ## Prohibitions
 - Do NOT run `git checkout`, `git switch`, `git branch`, or `git rebase`

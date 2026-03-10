@@ -24,22 +24,36 @@ Events that do **NOT** trigger Codex:
 
 ## Output
 
-Codex produces two kinds of output on the PR:
+Codex produces output through **three channels** depending on whether it
+finds issues:
 
-1. **Top-level review** — appears in `pulls/<N>/reviews` API with
-   `state: "COMMENTED"` and `user.type: "Bot"`.
-2. **Inline comments** — appears in `pulls/<N>/comments` API with
-   `path`, `line`, and `body` fields. Each may carry a severity badge
-   (P0/P1).
+### When findings exist (P0/P1 comments)
+
+1. **Top-level review** — `pulls/<N>/reviews` API, `state: "COMMENTED"`,
+   `user.type: "Bot"`. Contains summary header.
+2. **Inline comments** — `pulls/<N>/comments` API with `path`, `line`,
+   and `body` fields. Each carries a severity badge (P0/P1).
+
+### When no findings exist
+
+3. **PR comment** — `issues/<N>/comments` API (not a review, not inline).
+   Body contains "Didn't find any major issues" or similar clean-bill
+   message, often with a 👍 reaction.
 
 ## State Detection (API-based, no guessing)
 
-| State | Detection command | Condition |
-|-------|-------------------|-----------|
-| **Reviewed** | `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] \| select(.user.type == "Bot" or (.user.login \| test("codex\|openai"; "i")))]'` | Result is non-empty |
-| **Inline findings** | `gh api repos/{owner}/{repo}/pulls/<N>/comments --jq '[.[] \| select(.user.type == "Bot" or (.user.login \| test("codex\|openai"; "i")))]'` | Result is non-empty |
-| **In progress** | `gh api repos/{owner}/{repo}/issues/<N>/reactions --jq '[.[] \| select(.content == "eyes")]'` | Eyes reaction (👀) present |
-| **Rate limited** | Check review/comment body | Contains "usage limits" |
+All three channels must be checked to determine Codex completion:
+
+| State | Detection | Commands |
+|-------|-----------|----------|
+| **Reviewed (with findings)** | Bot review exists in reviews API | `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] \| select(.user.type == "Bot" or (.user.login \| test("codex\|openai"; "i")))]'` |
+| **Reviewed (no findings)** | Bot comment exists in PR comments | `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] \| select(.user.type == "Bot" or (.user.login \| test("codex\|openai"; "i")))]'` |
+| **Inline findings** | Bot inline comments on specific lines | `gh api repos/{owner}/{repo}/pulls/<N>/comments --jq '[.[] \| select(.user.type == "Bot" or (.user.login \| test("codex\|openai"; "i")))]'` |
+| **In progress** | Eyes reaction present | `gh api repos/{owner}/{repo}/issues/<N>/reactions --jq '[.[] \| select(.content == "eyes")]'` |
+| **Rate limited** | Review/comment body contains "usage limits" | Check body text of any bot output |
+
+**Completion** = bot output in ANY of the three channels (reviews, inline
+comments, or PR comments). The eyes reaction alone does NOT mean complete.
 
 **Rule**: Always use these API checks to determine state. Do not infer
 state from timing, absence of activity, or activity on other PRs.

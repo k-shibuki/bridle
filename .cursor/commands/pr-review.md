@@ -68,20 +68,27 @@ All required checks must pass. If any check fails, the PR is not ready for merge
 
 Codex review is triggered by the agent in `pr-create` Step 5 (or `review-fix` Step 5b) and waited on by a background subagent. By the time `pr-review` runs, the subagent has already reported the result. This step retrieves and classifies the findings.
 
+Codex outputs through three channels (see `codex--review-lifecycle.md` § Output):
+
 ```bash
-# Fetch bot reviews (top-level)
+# Channel 1: Bot reviews (findings with summary)
 gh api repos/{owner}/{repo}/pulls/<PR>/reviews \
   --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i"))) | {id, state, body, submitted_at}]'
 
-# Fetch bot inline comments
+# Channel 2: Bot inline comments (line-level findings)
 gh api repos/{owner}/{repo}/pulls/<PR>/comments \
   --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i"))) | {id, path, line: (.line // .original_line), body, created_at}]'
+
+# Channel 3: Bot PR comments (no-findings case: "Didn't find any major issues")
+gh api repos/{owner}/{repo}/issues/<PR>/comments \
+  --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i"))) | {id, body, created_at}]'
 ```
 
 | Status | Signal | Action |
 |--------|--------|--------|
-| **Reviewed** | Bot review exists | Include Codex findings in Step 7 |
-| **Rate limited** | Review/comment body contains "usage limits" | Note in report; proceed without Codex |
+| **Reviewed (findings)** | Bot review + inline comments exist | Include Codex findings in Step 7 |
+| **Reviewed (clean)** | Bot PR comment exists ("Didn't find any major issues") | Note "Codex: no findings" in report |
+| **Rate limited** | Bot output body contains "usage limits" | Note in report; proceed without Codex |
 | **Timeout** | Subagent reported TIMEOUT | Note in report; proceed without Codex |
 | **Not requested** | Agent decided Codex review was unnecessary | Note "Codex review: not requested" with reason |
 
