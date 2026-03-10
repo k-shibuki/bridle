@@ -198,13 +198,19 @@ test_that("ContextSchema: valid without data_expectations", {
   expect_equal(cs@data_expectations, list())
 })
 
-test_that("ContextSchema: error when variables is empty", {
-  # Given: empty variables list
+test_that("ContextSchema: accepts empty variables list", {
+  # Given: empty variables list (valid for plugins without context_schema.yaml)
   # When:  constructing a ContextSchema
-  # Then:  validation error
+  # Then:  succeeds with empty variables
+  cs <- ContextSchema(variables = list())
+  expect_equal(cs@variables, list())
+  expect_equal(cs@data_expectations, list())
+})
+
+test_that("ContextSchema: NULL variables rejected", {
   expect_error(
-    ContextSchema(variables = list()),
-    "variables.*at least one"
+    ContextSchema(variables = NULL),
+    "variables"
   )
 })
 

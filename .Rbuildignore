@@ -16,3 +16,4 @@
 ^AGENTS\.md$
 ^\.cursorignore$
 ^\.gitmessage$
+^\.coderabbit\.yaml$

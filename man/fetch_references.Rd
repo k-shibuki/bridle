@@ -7,7 +7,7 @@
 fetch_references(scan_result, timeout = 10)
 }
 \arguments{
-\item{scan_result}{A \link{ScanResult} object.}
+\item{scan_result}{A \link{ScanResult} or \link{PackageScanResult} object.}
 
 \item{timeout}{Request timeout in seconds (numeric).}
 }
@@ -20,12 +20,16 @@ Resolves DOIs and retrieves bibliographic metadata (title, authors,
 abstract) via OpenAlex and Semantic Scholar APIs to enrich the
 \code{ScanResult} reference list for the AI Drafter.
 
-Takes a \link{ScanResult} and resolves its reference strings into structured
-bibliographic metadata. OpenAlex is the primary source; Semantic Scholar
-supplements missing abstracts or serves as fallback when OpenAlex
-returns 404.
+Takes a \link{ScanResult} or \link{PackageScanResult} and resolves reference
+strings into structured bibliographic metadata. OpenAlex is the primary
+source; Semantic Scholar supplements missing abstracts or serves as
+fallback when OpenAlex returns 404.
 }
 \details{
+For \link{PackageScanResult}, DOIs are collected from all scanned functions
+and deduplicated before fetching — the same paper referenced by
+multiple functions is fetched only once.
+
 API access profiles are configured via environment variables:
 \itemize{
 \item \code{BRIDLE_OPENALEX_EMAIL}: enables identified (polite) pool
