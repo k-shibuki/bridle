@@ -11,7 +11,6 @@ Lookup table for `.cursor/knowledge/` atoms and `docs/adr/` ADRs. Use triggers t
 | File | Triggers |
 |------|----------|
 | `agent--delegation-templates.md` | CI-wait template, CI-wait only, merge template, batch auto-merge, dependent PR merge, delegation template, subagent prompt template, background subagent, Codex wait, CI Codex wait |
-| `codex--review-lifecycle.md` | Codex review, Codex trigger, @codex review, bot review, eyes reaction, Codex lifecycle, Codex re-review, Codex rate limit, Codex wait, Codex Cloud Review |
 | `agent--task-prefix-convention.md` | task prefix, multi-agent artifact, hypothesis ID, concurrent agent naming |
 | `ci--failure-triage.md` | CI failure, CI check failed, gh run view --log-failed, failure classification, flaky test, CI rerun |
 | `ci--job-dependency-graph.md` | CI job, job dependency, filter category, coverage gate, coverage threshold, ci-pass, CI polling, poll interval, adaptive polling, time budget, CI wait, make coverage-check |
@@ -31,6 +30,7 @@ Lookup table for `.cursor/knowledge/` atoms and `docs/adr/` ADRs. Use triggers t
 | `r--post-rebase-collate-drift.md` | rebase Collate, DESCRIPTION Collate, missing from Collate, roxygenise after rebase, R CMD check Collate |
 | `r--s7-include-directive.md` | S7 @include, cross-file class, Collate field, load order, S7 object not found, roxygenise, load_all |
 | `r--suggests-dynamic-load.md` | Suggests package, getFromNamespace, optional dependency, requireNamespace, R CMD check Suggests |
+| `review--bot-lifecycle.md` | bot review, Codex review, Codex trigger, @codex review, CodeRabbit, @coderabbitai review, eyes reaction, Codex lifecycle, Codex re-review, Codex rate limit, CodeRabbit rate limit, Codex wait, Codex Cloud Review, review fallback, coderabbit fallback, supplementary review, coderabbit detection |
 | `test--layered-mock-strategy.md` | layered mock, integration test mock, scan_package mock, orchestrator mock, with_scan_mocks, mock all layers |
 | `test--mock-external-function.md` | mock external function, mock system function, namespace locking, packageVersion mock, wrapper pattern, mock base function |
 | `test--mock-scope-constraint.md` | local_mocked_bindings, mock scope, mock scope limitation, mock helper, mock calling environment, object_usage_linter test helper, nolint test co-location |

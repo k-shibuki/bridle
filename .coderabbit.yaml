@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# CodeRabbit configuration — Pro/OSS, primary bot reviewer.
+# Triggered manually via @coderabbitai review (auto_review OFF).
+# See .cursor/knowledge/review--bot-lifecycle.md for lifecycle details.
+
+language: "en-US"
+early_access: false
+
+reviews:
+  profile: "assertive"
+  request_changes_workflow: false
+  high_level_summary: true
+  high_level_summary_in_walkthrough: true
+  poem: false
+  review_status: false
+  commit_status: false
+  review_details: true
+  collapse_walkthrough: true
+  changed_files_summary: true
+  sequence_diagrams: true
+  auto_review:
+    enabled: false
+    drafts: false
+  path_instructions:
+    - path: "R/**"
+      instructions: |
+        R package using S7 class system (ADR-0001). Key review points beyond
+        AGENTS.md: every S7 property needs an explicit type (no class_any),
+        cross-file class references require @include roxygen directive,
+        NULL assignment to list elements silently removes the field.
+    - path: "tests/**"
+      instructions: |
+        Boundary values (0, min, max, +/-1, empty, NULL) must be covered.
+        Exception tests must validate both error class and message pattern.
+        New function parameters need wiring tests and effect tests.
+    - path: "docs/schemas/**"
+      instructions: |
+        YAML schemas must stay consistent with S7 classes in R/.
+        Validate that property names, types, and constraints match.
+  tools:
+    shellcheck:
+      enabled: true
+    yamllint:
+      enabled: true
+    markdownlint:
+      enabled: true
+    github-checks:
+      enabled: true
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  code_guidelines:
+    enabled: true

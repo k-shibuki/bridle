@@ -1,6 +1,6 @@
 # Cursor AI Configuration
 
-This directory contains the AI development system for bridle, organized into two domains: **Design** and **Controls**. Two AI agents operate on this repository: **Cursor** (implementation and review) and **Codex Cloud** (automated PR review).
+This directory contains the AI development system for bridle, organized into two domains: **Design** and **Controls**. Three AI agents operate on this repository: **Cursor** (implementation and review), **CodeRabbit** (primary bot reviewer), and **Codex Cloud** (supplementary bot reviewer).
 
 ## AI Development System
 
@@ -30,27 +30,42 @@ AI Development System
 | **Guards** | `.pre-commit-config.yaml`, `.github/workflows/*.yaml`, `tools/` | Hooks, CI, Branch Protection | Deterministic (tool-enforced) |
 | **Surface** | `Makefile`, `README.md`, `.github/CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/` | Entry points, development API | Discovery / onboarding |
 
-### Codex Cloud Integration
+### AI Code Review Integration
 
-Codex Cloud Review operates as an external PR reviewer via `AGENTS.md` (repo root). The Cursor agent **actively orchestrates** Codex reviews — automatic review is OFF, and the agent triggers Codex explicitly via `@codex review` when needed.
+Two AI code reviewers operate as external PR reviewers via `AGENTS.md`
+(repo root). Auto-review is OFF for both — the Cursor agent **actively
+orchestrates** reviews using a two-tier trigger model:
 
-**Active orchestration model**: The agent decides whether Codex review is needed (based on change type), triggers it, delegates the wait to a background subagent, and integrates findings into `pr-review`. See `codex--review-lifecycle.md` for the SSOT on Codex behavior.
+- **CodeRabbit** (Pro/OSS, primary): triggered for all non-docs PRs via
+  `@coderabbitai review`. Provides walkthrough, tool integrations
+  (shellcheck, yamllint, markdownlint), and incremental review.
+- **Codex Cloud** (supplementary): triggered only for complex changes
+  (R code, schemas, security, ADRs) via `@codex review`. Provides
+  cross-file logic consistency and deep semantic understanding.
 
-```
-AGENTS.md (Codex entry point — in .cursorignore, invisible to Cursor)
+**Orchestration model**: The agent decides review scope based on change
+type (`review--bot-lifecycle.md` § Two-Tier Trigger Model), triggers
+the appropriate reviewers, delegates the wait to a background subagent,
+and integrates findings into `pr-review`. Each reviewer is independent
+— no fallback chain.
+
+```text
+AGENTS.md (AI reviewer entry point — read by Codex and CodeRabbit)
   ├── Review guidelines (P0/P1 severity — stable base criteria)
   └── References:
       ├── .cursor/rules/knowledge-index.mdc  ← shared lookup table
-      ├── .cursor/knowledge/codex--review-lifecycle.md  ← Codex behavior SSOT
+      ├── .cursor/knowledge/review--bot-lifecycle.md  ← bot review behavior SSOT
       ├── .cursor/knowledge/review--*.md     ← feedback loop accumulates here
       ├── .cursor/commands/pr-review.md      ← review procedure
       └── .cursor/commands/review-fix.md     ← fix procedure
+.coderabbit.yaml (CodeRabbit config — auto_review OFF, assertive profile)
 ```
 
 - **Cursor** reads `.cursor/` directly via rules, commands, knowledge
 - **Codex** reads `AGENTS.md` first, then follows references into `.cursor/` files
-- **Active trigger**: Agent triggers Codex via `@codex review` comment in `pr-create` Step 5 or `review-fix` Step 5b. Wait is delegated to background subagents (Template 4/5 in `agent--delegation-templates.md`)
-- **Feedback loop**: recurring false positives become knowledge atoms (`review--*.md`), benefiting both agents
+- **CodeRabbit** reads `AGENTS.md` via code_guidelines auto-detection + `.coderabbit.yaml` for config
+- **Two-tier trigger**: Agent triggers CodeRabbit (always for non-docs) and Codex (complex changes only) in `pr-create` Step 5 or `review-fix` Step 5b. Wait is delegated to background subagents (Template 4/5 in `agent--delegation-templates.md`) polling all triggered reviewers in parallel
+- **Feedback loop**: recurring false positives become knowledge atoms (`review--*.md`), benefiting all reviewers
 - **Drift detection**: `make review-sync-check` verifies that `AGENTS.md` and `pr-review.md` cover the same review categories (enforced in CI)
 
 **Domain relationships**: Design constrains Controls — implementation choices must follow accepted ADRs. Within Controls: Rules declare policies; Guards enforce them deterministically. Commands define procedures constrained by Rules and referencing Knowledge. Surface provides entry points for both human and AI workflows. Each piece of information exists in exactly one place (Single Source of Truth).
@@ -159,7 +174,7 @@ doctor → issue-create → implement ─────────→ test-create
                                                              (Mode 2:
                                                               Update)
                                                                  │
-                                                  commit → pr-create → [Codex trigger + CI] → pr-review → review-fix (if needed) → pr-merge
+                                                  commit → pr-create → [bot review trigger + CI] → pr-review → review-fix (if needed) → pr-merge
 ```
 
 When CI is pending, `next` always delegates CI-wait to a background subagent (see `subagent-policy.mdc`). The main agent proceeds with independent Issues or housekeeping. After CI passes, `pr-review` runs before merge:
@@ -219,7 +234,7 @@ Use when: justified exception (e.g., meta-implementation of workflow, documentat
 | Docs | `docs-discover` | Find (Mode 1) and update (Mode 2) related docs |
 | Git | `commit` | Create git commits (+ docs direct push via `no-issue` exception) |
 | Git | `pr-create` | Create feature branch + PR (with `Closes #<issue>`) |
-| Git | `pr-review` | Review PR (Cursor + Codex findings) and produce merge recommendation |
+| Git | `pr-review` | Review PR (Cursor + bot review findings) and produce merge recommendation |
 | Git | `review-fix` | Address review findings from `pr-review`, re-push for re-review |
 | Git | `pr-merge` | Execute merge (GitHub or local) |
 | Knowledge | `knowledge-create` | Capture new pattern/gotcha as atomic knowledge file |

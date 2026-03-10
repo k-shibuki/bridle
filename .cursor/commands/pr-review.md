@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Review a pull request: inspect the diff, verify CI status, check Issue DoD fulfillment, incorporate Codex Cloud review feedback (if available), and produce a merge recommendation.
+Review a pull request: inspect the diff, verify CI status, check Issue DoD fulfillment, incorporate bot review feedback (if available), and produce a merge recommendation.
 
 **This command produces a judgment only.** Merge execution is handled by `pr-merge`. If changes are required, delegate fixes to `review-fix`.
 
@@ -10,7 +10,7 @@ Review a pull request: inspect the diff, verify CI status, check Issue DoD fulfi
 
 - After `pr-create` and CI has run
 - When reviewing a PR from another contributor or AI agent
-- As **manual fallback** when Codex Cloud Review is unavailable (rate limited or not configured)
+- As **manual fallback** when bot reviewers are unavailable (both rate limited or not configured)
 
 ## Contract
 
@@ -62,41 +62,29 @@ gh pr checks <PR-number>
 
 All required checks must pass. If any check fails, the PR is not ready for merge.
 
-### 6. Retrieve Codex findings
+### 6. Retrieve bot review findings
 
-**Prerequisite**: Read `@.cursor/knowledge/codex--review-lifecycle.md` for Codex behavioral details.
+**Prerequisite**: Read `@.cursor/knowledge/review--bot-lifecycle.md` (SSOT for detection commands, login patterns, and state signals).
 
-Codex review is triggered by the agent in `pr-create` Step 5 (or `review-fix` Step 5b) and waited on by a background subagent. By the time `pr-review` runs, the subagent has already reported the result. This step retrieves and classifies the findings.
+Bot reviews are triggered in `pr-create` Step 5 (or `review-fix` Step 5b) and polled by a background subagent. By the time `pr-review` runs, the subagent has reported which reviewers responded.
 
-Codex outputs through three channels (see `codex--review-lifecycle.md` § Output):
+Use the detection commands from `review--bot-lifecycle.md` § Output Detection to retrieve findings from **each triggered reviewer** (CodeRabbit and/or Codex).
 
-```bash
-# Channel 1: Bot reviews (findings with summary)
-gh api repos/{owner}/{repo}/pulls/<PR>/reviews \
-  --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i"))) | {id, state, body, submitted_at}]'
+| Reviewer | Status | Action |
+|----------|--------|--------|
+| CodeRabbit | **Reviewed (findings)** | Include findings in Step 7 |
+| CodeRabbit | **Reviewed (clean)** | Note "CodeRabbit: no findings" |
+| CodeRabbit | **Rate-limited / Timeout** | Note in report; proceed without |
+| Codex | **Reviewed (findings)** | Include findings in Step 7 |
+| Codex | **Reviewed (clean)** | Note "Codex: no findings" |
+| Codex | **Rate-limited / Timeout** | Note in report; proceed without |
+| Either | **Not triggered** | Note "not triggered" with reason |
 
-# Channel 2: Bot inline comments (line-level findings)
-gh api repos/{owner}/{repo}/pulls/<PR>/comments \
-  --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i"))) | {id, path, line: (.line // .original_line), body, created_at}]'
-
-# Channel 3: Bot PR comments (no-findings case: "Didn't find any major issues")
-gh api repos/{owner}/{repo}/issues/<PR>/comments \
-  --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i"))) | {id, body, created_at}]'
-```
-
-| Status | Signal | Action |
-|--------|--------|--------|
-| **Reviewed (findings)** | Bot review + inline comments exist | Include Codex findings in Step 7 |
-| **Reviewed (clean)** | Bot PR comment exists ("Didn't find any major issues") | Note "Codex: no findings" in report |
-| **Rate limited** | Bot output body contains "usage limits" | Note in report; proceed without Codex |
-| **Timeout** | Subagent reported TIMEOUT | Note in report; proceed without Codex |
-| **Not requested** | Agent decided Codex review was unnecessary | Note "Codex review: not requested" with reason |
-
-When re-reviewing after `review-fix`: check the Codex review `submitted_at` timestamp against the latest commit date. If `review-fix` pushed new commits and requested re-review, use only the most recent Codex review.
+When both reviewers produce findings, deduplicate (same file + same issue = one finding, note both sources). When re-reviewing after `review-fix`: check `submitted_at` timestamps against the latest commit date. Use only the most recent review from each reviewer.
 
 ### 7. Code review
 
-Perform the Cursor-side review, then integrate any Codex findings.
+Perform the Cursor-side review, then integrate any bot findings.
 
 **Cursor review categories:**
 
@@ -112,9 +100,9 @@ Perform the Cursor-side review, then integrate any Codex findings.
 | **Security** | authentication, authorization, network boundary, or credential changes flagged |
 | **Risk / Rollback** | risk assessment and rollback plan documented in PR |
 
-**Codex findings integration** (if Codex status is "Reviewed"):
+**Bot findings integration** (if bot review status is "Reviewed"):
 
-Evaluate each Codex comment on technical merit — Cursor and Codex have equal weight:
+Evaluate each bot comment on technical merit — Cursor and bot reviewers have equal weight:
 - **Valid**: add to findings (deduplicate if Cursor flagged the same issue)
 - **False positive**: note with reason; if a pattern recurs, flag for knowledge atom creation (`.cursor/knowledge/review--*.md`)
 
@@ -132,8 +120,9 @@ Evaluate each Codex comment on technical merit — Cursor and Codex have equal w
 - [ ] Criterion 1: met / not met
 - [ ] Criterion 2: met / not met
 
-### Codex review status
-- Status: Reviewed / Rate limited / Timeout / Not requested
+### Bot review status
+- CodeRabbit: Reviewed / Rate-limited / Timeout / Not triggered
+- Codex: Reviewed / Rate-limited / Timeout / Not triggered
 - Findings incorporated: <count> (valid: N, false positive: N)
 
 ### Cursor findings
@@ -141,7 +130,7 @@ Evaluate each Codex comment on technical merit — Cursor and Codex have equal w
 
 ### Required changes (if any)
 1. Fix xxx (source: Cursor)
-2. Fix yyy (source: Codex)
+2. Fix yyy (source: bot review)
 ```
 
 If the conclusion is "Mergeable", recommend running `pr-merge` as the next step.
@@ -153,8 +142,8 @@ If the conclusion is "Changes required", recommend running `review-fix` to addre
 - **PR summary**: title, branch, files changed, diff size
 - **Issue**: `#<number>` linked, DoD fulfillment status
 - **CI status**: pass / fail (with details)
-- **Codex status**: reviewed / rate limited / timeout / not requested
-- **Review findings**: grouped by category, with source (Cursor / Codex)
+- **Bot review status**: per-reviewer (CodeRabbit / Codex): reviewed / rate-limited / timeout / not triggered
+- **Review findings**: grouped by category, with source (Cursor / bot review)
 - **Merge decision**: mergeable (recommended strategy) / changes required (list)
 - **Next step**: `pr-merge` (if mergeable) / `review-fix` (if changes required)
 

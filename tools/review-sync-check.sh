@@ -1,7 +1,7 @@
 #!/bin/sh
 # review-sync-check.sh — Detect drift between AGENTS.md and pr-review.md review categories.
 #
-# Both files define review criteria for different tools (Codex and Cursor).
+# Both files define review criteria for different consumers (AI code reviewers and Cursor).
 # They are intentionally separate (not SSOT) but should cover the same core
 # categories. This script warns when a core category keyword appears in only
 # one of the two files.
@@ -14,7 +14,7 @@ AGENTS_FILE="${AGENTS_FILE:-AGENTS.md}"
 PR_REVIEW_FILE="${PR_REVIEW_FILE:-.cursor/commands/pr-review.md}"
 
 if [ ! -f "$AGENTS_FILE" ]; then
-  echo "SKIP: $AGENTS_FILE not found (Codex review not configured)" >&2
+  echo "SKIP: $AGENTS_FILE not found (AI code review not configured)" >&2
   exit 0
 fi
 
@@ -71,8 +71,8 @@ if [ -f /tmp/review_sync_warn_flag ]; then
   rm -f /tmp/review_sync_warn_flag
   echo ""
   echo "WARN: Review category drift detected. Update both files to stay in sync."
-  echo "  AGENTS.md: Codex Cloud review guidelines"
-  echo "  pr-review.md: Cursor manual review categories (Step 6)"
+  echo "  AGENTS.md: AI code review guidelines (Codex / CodeRabbit)"
+  echo "  pr-review.md: Cursor manual review categories (Step 7)"
   exit 1
 fi
 
