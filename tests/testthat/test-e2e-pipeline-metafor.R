@@ -172,7 +172,7 @@ mock_full_draft_response <- function() {
 
 draft_to_dir <- function(tmp) {
   pkg <- scan_package("metafor")
-  local_mocked_bindings(
+  testthat::local_mocked_bindings(
     bridle_chat = function(prompt, provider, model) {
       mock_full_draft_response()
     }
