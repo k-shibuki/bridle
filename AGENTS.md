@@ -110,6 +110,19 @@ setting a value.
 - Container-based development: R commands run inside a `bridle-dev` container.
 - Build targets are managed via `Makefile` (run `make help` for the list).
 
+### Three-layer quality gate model
+
+Quality enforcement uses three layers with increasing scope:
+
+| Layer | Context | Purpose | Scope |
+|-------|---------|---------|-------|
+| Local | `pre-push` hook | Fail-fast filter | Differential: `format-check`, `changed-lint`, `changed-test` for R; validators for schemas/renv/kb |
+| PR CI | `ci.yaml` | Merge gate | Full: parallel `lint` \| `test` \| `check --no-tests` + validators |
+| Main push | `R-CMD-check.yaml` | Full verification | 5-matrix R CMD check + coverage (80% threshold, auto-Issue on failure) |
+
+Coverage is **not** on the PR critical path. It runs post-merge on main push.
+See `.cursor/knowledge/ci--three-layer-gate.md` for details.
+
 ## Project knowledge base
 
 This project maintains a shared knowledge base that all AI reviewers
