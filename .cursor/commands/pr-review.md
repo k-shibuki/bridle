@@ -62,9 +62,11 @@ gh pr checks <PR-number>
 
 All required checks must pass. If any check fails, the PR is not ready for merge.
 
-### 6. Check Codex Cloud review status
+### 6. Retrieve Codex findings
 
-Check whether Codex has reviewed this PR and what it found.
+**Prerequisite**: Read `@.cursor/knowledge/codex--review-lifecycle.md` for Codex behavioral details.
+
+Codex review is triggered by the agent in `pr-create` Step 5 (or `review-fix` Step 5b) and waited on by a background subagent. By the time `pr-review` runs, the subagent has already reported the result. This step retrieves and classifies the findings.
 
 ```bash
 # Fetch bot reviews (top-level)
@@ -74,36 +76,16 @@ gh api repos/{owner}/{repo}/pulls/<PR>/reviews \
 # Fetch bot inline comments
 gh api repos/{owner}/{repo}/pulls/<PR>/comments \
   --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i"))) | {id, path, line: (.line // .original_line), body, created_at}]'
-
-# Check for eyes reaction (👀) indicating Codex review in progress
-gh api repos/{owner}/{repo}/issues/<PR>/reactions \
-  --jq '[.[] | select(.content == "eyes")] | length'
 ```
 
-Classify the Codex review status using this decision tree:
+| Status | Signal | Action |
+|--------|--------|--------|
+| **Reviewed** | Bot review exists | Include Codex findings in Step 7 |
+| **Rate limited** | Review/comment body contains "usage limits" | Note in report; proceed without Codex |
+| **Timeout** | Subagent reported TIMEOUT | Note in report; proceed without Codex |
+| **Not requested** | Agent decided Codex review was unnecessary | Note "Codex review: not requested" with reason |
 
-1. Bot review comments exist → **Reviewed**
-2. "usage limits" comment from Codex → **Rate limited**
-3. Eyes reaction (👀) present on the PR → **In progress**
-4. No reactions, but Codex reviewed a recent PR in the same repo → **In progress** (Codex is enabled but has not yet reached this PR)
-5. None of the above → **Not configured**
-
-For step 4, check recent PRs for Codex activity:
-
-```bash
-# Check if Codex has reviewed any of the last 5 merged PRs
-gh pr list --state merged --limit 5 --json number --jq '.[].number' | while read pr; do
-  gh api "repos/{owner}/{repo}/pulls/$pr/reviews" \
-    --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length' 2>/dev/null
-done
-```
-
-| Status | Signals | Action |
-|--------|---------|--------|
-| **Reviewed** | Bot review comments exist | Include Codex findings in the review below |
-| **In progress** | Eyes reaction (👀) on PR, or Codex active on recent PRs but no review yet | **Wait** (Codex typically completes within minutes); recheck before concluding the review |
-| **Rate limited** | "usage limits" comment from Codex | Note in report; proceed without Codex input |
-| **Not configured** | No bot activity on this PR or any recent PR in the repo | Note in report; proceed without Codex input |
+When re-reviewing after `review-fix`: check the Codex review `submitted_at` timestamp against the latest commit date. If `review-fix` pushed new commits and requested re-review, use only the most recent Codex review.
 
 ### 7. Code review
 
@@ -144,7 +126,7 @@ Evaluate each Codex comment on technical merit — Cursor and Codex have equal w
 - [ ] Criterion 2: met / not met
 
 ### Codex review status
-- Status: Reviewed / In progress / Rate limited / Not configured
+- Status: Reviewed / Rate limited / Timeout / Not requested
 - Findings incorporated: <count> (valid: N, false positive: N)
 
 ### Cursor findings
@@ -164,7 +146,7 @@ If the conclusion is "Changes required", recommend running `review-fix` to addre
 - **PR summary**: title, branch, files changed, diff size
 - **Issue**: `#<number>` linked, DoD fulfillment status
 - **CI status**: pass / fail (with details)
-- **Codex status**: reviewed / in progress / rate limited / not configured
+- **Codex status**: reviewed / rate limited / timeout / not requested
 - **Review findings**: grouped by category, with source (Cursor / Codex)
 - **Merge decision**: mergeable (recommended strategy) / changes required (list)
 - **Next step**: `pr-merge` (if mergeable) / `review-fix` (if changes required)

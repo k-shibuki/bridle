@@ -1,5 +1,5 @@
 ---
-trigger: CI-wait template, CI-wait only, merge template, batch auto-merge, dependent PR merge, delegation template, subagent prompt template, background subagent
+trigger: CI-wait template, CI-wait only, merge template, batch auto-merge, dependent PR merge, delegation template, subagent prompt template, background subagent, Codex wait, CI Codex wait
 ---
 # Subagent Delegation Templates
 
@@ -10,15 +10,19 @@ Reusable templates for delegating blocking operations to background subagents.
 Before choosing a template, follow this decision tree:
 
 ```
-PR ready to merge?
-├── No (CI monitoring only) ──→ Template 2: CI-Wait Only
-└── Yes
-    ├── Single PR?
-    │   ├── Yes ──→ `gh pr merge --auto --squash` (preferred, Deterministic)
-    │   │          └── Auto-merge failed? ──→ Template 1: CI-Wait + Merge (Fallback)
-    │   └── No (multiple PRs)
-    │       ├── Independent PRs ──→ Batch Auto-Merge (set --auto on each)
-    │       └── Dependent PRs (shared commits) ──→ Template 3: Dependent Chain
+Codex review requested?
+├── Yes + CI also pending ──→ Template 4: CI + Codex Wait
+├── Yes + CI already passed ──→ Template 5: Codex-Wait Only
+└── No
+    └── PR ready to merge?
+        ├── No (CI monitoring only) ──→ Template 2: CI-Wait Only
+        └── Yes
+            ├── Single PR?
+            │   ├── Yes ──→ `gh pr merge --auto --squash` (preferred, Deterministic)
+            │   │          └── Auto-merge failed? ──→ Template 1: CI-Wait + Merge (Fallback)
+            │   └── No (multiple PRs)
+            │       ├── Independent PRs ──→ Batch Auto-Merge (set --auto on each)
+            │       └── Dependent PRs (shared commits) ──→ Template 3: Dependent Chain
 ```
 
 **Primary path**: For single PRs after `pr-review`, use `gh pr merge --auto --squash`
@@ -96,6 +100,70 @@ Monitor CI for PR #<N> and report when all checks complete.
 
 ## Return format
 Report: "CI PASSED: all checks green for PR #<N>" or "CI FAILED: <check-name> failed — <details>"
+```
+
+## Template 4: CI + Codex Wait
+
+Use after `pr-create` when the agent has triggered Codex review (`@codex review`)
+and CI is also pending. Waits for both to complete.
+
+See `codex--review-lifecycle.md` for Codex behavioral details (detection commands,
+timing, state signals).
+
+```
+## Goal
+Monitor CI and Codex Cloud Review for PR #<N>. Report when both complete.
+
+## Steps
+
+1. Poll in parallel (30s intervals, max 10 min elapsed):
+   - CI: `gh pr checks <N>`
+   - Codex reviews: `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
+   - Codex comments: `gh api repos/{owner}/{repo}/pulls/<N>/comments --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
+
+2. CI is done when: all checks pass, or any check fails.
+3. Codex is done when: bot review count > 0, or 7 min timeout.
+4. If Codex review body contains "usage limits", report RATE_LIMITED.
+5. When both are done, report final status.
+
+## Prohibitions
+- Do NOT run `git checkout`, `git switch`, `git branch`, or `git rebase`
+- Do NOT run `gh pr merge`
+- Do NOT modify any files
+- Use only `gh` CLI commands and `sleep`
+
+## Error handling
+- If a CI check fails: report which check failed and the details URL
+- If Codex times out: report TIMEOUT (not an error — pr-review proceeds without Codex)
+
+## Return format
+CI: PASSED / FAILED (<check-name> — <details-url>)
+CODEX: REVIEWED (<N> inline comments) / TIMEOUT / RATE_LIMITED
+```
+
+## Template 5: Codex-Wait Only
+
+Use after `review-fix` when the agent has triggered Codex re-review
+(`@codex review`) but CI has already passed or is being monitored separately.
+
+```
+## Goal
+Monitor Codex Cloud Review for PR #<N> and report when complete.
+
+## Steps
+1. Poll (30s intervals, max 7 min elapsed):
+   - `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
+   - `gh api repos/{owner}/{repo}/pulls/<N>/comments --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
+2. Done when bot review count > 0, or timeout.
+3. If review body contains "usage limits", report RATE_LIMITED.
+
+## Prohibitions
+- Do NOT run `git checkout`, `git switch`, `git branch`, or `git rebase`
+- Do NOT run `gh pr merge`
+- Do NOT modify any files
+
+## Return format
+CODEX: REVIEWED (<N> inline comments) / TIMEOUT / RATE_LIMITED
 ```
 
 ## Template 3: Dependent PR Merge Chain (rebase-enabled)

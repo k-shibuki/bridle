@@ -91,7 +91,25 @@ Refs: #<issue>"
 git push
 ```
 
-The push triggers a `synchronize` event on the PR. If Codex automatic reviews are enabled, a re-review will follow.
+### 5b. Codex re-review decision
+
+**Prerequisite**: Read `@.cursor/knowledge/codex--review-lifecycle.md`.
+
+Codex does NOT re-review on push. The agent decides whether to re-trigger and delegates the wait to a subagent.
+
+| Condition | Action |
+|-----------|--------|
+| Addressed a Codex P0 finding with code change | `@codex review` + delegate Template 5: Codex-Wait Only |
+| Addressed a Codex P1 finding with significant code change | `@codex review` + delegate Template 5: Codex-Wait Only |
+| Minor fix, docs, or workflow adjustment | Skip; proceed directly to `pr-review` |
+| Codex was not requested in initial review | Skip; no re-review needed |
+
+```bash
+# Trigger re-review (only when needed)
+gh pr comment <PR> --body "@codex review"
+```
+
+When re-review is triggered, delegate the wait to a background subagent using Template 5 from `@.cursor/knowledge/agent--delegation-templates.md`. The main agent proceeds with other work (Two-Tier Gate).
 
 ### 6. Report
 

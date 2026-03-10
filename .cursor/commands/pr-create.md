@@ -122,26 +122,43 @@ gh pr create --title "<type>(<scope>): <description>" \
   --body "<body from PULL_REQUEST_TEMPLATE.md with Exception section filled>"
 ```
 
-### 5. Monitor CI until completion
+### 5. Codex review decision and CI monitoring
 
-Per `subagent-policy.mdc`: CI polling MUST be delegated to a background subagent. The main agent must not poll CI inline with `sleep` loops.
+Per `subagent-policy.mdc`: blocking operations (CI polling, Codex review wait) MUST be delegated to a background subagent. The main agent must not poll inline with `sleep` loops.
 
-**Preferred shortcut**: If `pr-review` has already concluded "Mergeable" (e.g., user pre-approved the merge), set auto-merge immediately and skip polling entirely:
+#### 5a. Decide whether Codex review is needed
+
+Read `@.cursor/knowledge/codex--review-lifecycle.md` for decision guidelines. Codex auto-review is OFF — the agent must explicitly trigger it via `@codex review` comment.
+
+| Change type | Request Codex? |
+|-------------|---------------|
+| R code, shell scripts, schemas, security | Yes |
+| Docs only, workflow files, CI config | No |
+
+#### 5b. Trigger Codex and delegate wait
+
+```bash
+# Quick initial CI check
+gh pr checks <PR_NUMBER>
+
+# If Codex review is needed:
+gh pr comment <PR_NUMBER> --body "@codex review"
+```
+
+**Delegation** (choose based on Codex decision):
+
+| Codex requested? | Template |
+|------------------|----------|
+| Yes | Template 4: CI + Codex Wait (`agent--delegation-templates.md`) |
+| No | Template 2: CI-Wait Only (`agent--delegation-templates.md`) |
+
+**Preferred shortcut**: If `pr-review` has already concluded "Mergeable" (e.g., user pre-approved the merge), set auto-merge immediately and skip polling:
 
 ```bash
 gh pr merge <PR_NUMBER> --auto --squash
 ```
 
 See `@.cursor/commands/pr-merge.md` § Auto-merge for details.
-
-**Delegation**: Use `@.cursor/rules/subagent-policy.mdc` delegation pattern with prompt templates from `@.cursor/knowledge/agent--delegation-templates.md` (Template 2: CI-Wait Only). Do not use Template 1 (CI-Wait + Merge) here — merge requires `pr-review` first.
-
-**Polling strategy**: The subagent follows the Adaptive Polling Strategy defined in `@.cursor/knowledge/ci--job-dependency-graph.md` § Adaptive Polling Strategy (the SSOT for polling intervals and time budgets).
-
-```bash
-# Quick initial check (before delegating to subagent)
-gh pr checks <PR_NUMBER>
-```
 
 ### 6. If CI fails: diagnose, fix, re-push
 
