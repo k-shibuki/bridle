@@ -14,9 +14,11 @@ For single-PR merges, prefer auto-merge (Deterministic) over subagent delegation
 
 | Situation | Action |
 |---|---|
+| PR created, Codex review requested, CI pending | Delegate using **Template 4: CI + Codex Wait** |
+| review-fix pushed, Codex re-review requested | Delegate using **Template 5: Codex-Wait Only** |
+| PR created, Codex not requested, CI pending | Delegate using Template 2: CI-Wait Only |
 | Single PR, pr-review done, CI pending | **Auto-merge**: `gh pr merge --auto --squash`. No subagent needed. |
 | Single PR, auto-merge failed | Delegate using Template 1: CI-Wait + Merge (Fallback) |
-| Single PR, pr-review not yet done | Delegate using Template 2: CI-Wait Only (no merge) |
 | Multiple independent PRs, pr-review done | **Batch Auto-Merge**: `gh pr merge --auto --squash` on each. No subagent needed. |
 | Dependent PR chain (shared commits) | Delegate using Template 3: Dependent PR Merge Chain with `--onto` rebase |
 | CI monitoring only (no merge intent) | Delegate using Template 2: CI-Wait Only |

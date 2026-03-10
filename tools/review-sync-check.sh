@@ -10,8 +10,8 @@
 
 set -e
 
-AGENTS_FILE="AGENTS.md"
-PR_REVIEW_FILE=".cursor/commands/pr-review.md"
+AGENTS_FILE="${AGENTS_FILE:-AGENTS.md}"
+PR_REVIEW_FILE="${PR_REVIEW_FILE:-.cursor/commands/pr-review.md}"
 
 if [ ! -f "$AGENTS_FILE" ]; then
   echo "SKIP: $AGENTS_FILE not found (Codex review not configured)" >&2
@@ -34,7 +34,7 @@ Security|security|authentication|authorization
 Code quality|code.quality|readability|naming|duplication
 "
 
-warnings=0
+rm -f /tmp/review_sync_warn_flag
 
 echo "Checking review category coverage between:"
 echo "  AGENTS:    $AGENTS_FILE"
@@ -48,16 +48,15 @@ echo "$CATEGORIES" | while IFS='|' read -r name patterns; do
   in_agents=0
   in_review=0
 
-  for pattern in $patterns; do
-    pattern=$(echo "$pattern" | sed 's/^[[:space:]]*//')
-    [ -z "$pattern" ] && continue
-    if grep -qiE "$pattern" "$AGENTS_FILE" 2>/dev/null; then
-      in_agents=1
-    fi
-    if grep -qiE "$pattern" "$PR_REVIEW_FILE" 2>/dev/null; then
-      in_review=1
-    fi
-  done
+  # $patterns is already a pipe-delimited ERE alternation (e.g. "traceability|Closes #|Refs: #").
+  # Quoting prevents word-splitting on spaces within patterns.
+  patterns=$(echo "$patterns" | sed 's/^[[:space:]]*//')
+  if grep -qiE "$patterns" "$AGENTS_FILE" 2>/dev/null; then
+    in_agents=1
+  fi
+  if grep -qiE "$patterns" "$PR_REVIEW_FILE" 2>/dev/null; then
+    in_review=1
+  fi
 
   if [ "$in_agents" -eq 1 ] && [ "$in_review" -eq 0 ]; then
     echo "WARN: '$name' found in $AGENTS_FILE but not in $PR_REVIEW_FILE" >&2

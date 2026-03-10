@@ -32,13 +32,16 @@ AI Development System
 
 ### Codex Cloud Integration
 
-Codex Cloud Review operates as an external PR reviewer via `AGENTS.md` (repo root). It shares knowledge with Cursor through a common knowledge base:
+Codex Cloud Review operates as an external PR reviewer via `AGENTS.md` (repo root). The Cursor agent **actively orchestrates** Codex reviews — automatic review is OFF, and the agent triggers Codex explicitly via `@codex review` when needed.
+
+**Active orchestration model**: The agent decides whether Codex review is needed (based on change type), triggers it, delegates the wait to a background subagent, and integrates findings into `pr-review`. See `codex--review-lifecycle.md` for the SSOT on Codex behavior.
 
 ```
 AGENTS.md (Codex entry point — in .cursorignore, invisible to Cursor)
   ├── Review guidelines (P0/P1 severity — stable base criteria)
   └── References:
       ├── .cursor/rules/knowledge-index.mdc  ← shared lookup table
+      ├── .cursor/knowledge/codex--review-lifecycle.md  ← Codex behavior SSOT
       ├── .cursor/knowledge/review--*.md     ← feedback loop accumulates here
       ├── .cursor/commands/pr-review.md      ← review procedure
       └── .cursor/commands/review-fix.md     ← fix procedure
@@ -46,6 +49,7 @@ AGENTS.md (Codex entry point — in .cursorignore, invisible to Cursor)
 
 - **Cursor** reads `.cursor/` directly via rules, commands, knowledge
 - **Codex** reads `AGENTS.md` first, then follows references into `.cursor/` files
+- **Active trigger**: Agent triggers Codex via `@codex review` comment in `pr-create` Step 5 or `review-fix` Step 5b. Wait is delegated to background subagents (Template 4/5 in `agent--delegation-templates.md`)
 - **Feedback loop**: recurring false positives become knowledge atoms (`review--*.md`), benefiting both agents
 - **Drift detection**: `make review-sync-check` verifies that `AGENTS.md` and `pr-review.md` cover the same review categories (enforced in CI)
 
@@ -155,7 +159,7 @@ doctor → issue-create → implement ─────────→ test-create
                                                              (Mode 2:
                                                               Update)
                                                                  │
-                                                  commit → pr-create → [CI + Codex] → pr-review → review-fix (if needed) → pr-merge
+                                                  commit → pr-create → [Codex trigger + CI] → pr-review → review-fix (if needed) → pr-merge
 ```
 
 When CI is pending, `next` always delegates CI-wait to a background subagent (see `subagent-policy.mdc`). The main agent proceeds with independent Issues or housekeeping. After CI passes, `pr-review` runs before merge:

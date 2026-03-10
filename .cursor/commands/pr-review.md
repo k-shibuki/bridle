@@ -62,28 +62,37 @@ gh pr checks <PR-number>
 
 All required checks must pass. If any check fails, the PR is not ready for merge.
 
-### 6. Check Codex Cloud review status
+### 6. Retrieve Codex findings
 
-Check whether Codex has reviewed this PR and what it found.
+**Prerequisite**: Read `@.cursor/knowledge/codex--review-lifecycle.md` for Codex behavioral details.
+
+Codex review is triggered by the agent in `pr-create` Step 5 (or `review-fix` Step 5b) and waited on by a background subagent. By the time `pr-review` runs, the subagent has already reported the result. This step retrieves and classifies the findings.
+
+Codex outputs through three channels (see `codex--review-lifecycle.md` § Output):
 
 ```bash
-# Fetch bot reviews (top-level)
+# Channel 1: Bot reviews (findings with summary)
 gh api repos/{owner}/{repo}/pulls/<PR>/reviews \
   --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i"))) | {id, state, body, submitted_at}]'
 
-# Fetch bot inline comments
+# Channel 2: Bot inline comments (line-level findings)
 gh api repos/{owner}/{repo}/pulls/<PR>/comments \
   --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i"))) | {id, path, line: (.line // .original_line), body, created_at}]'
+
+# Channel 3: Bot PR comments (no-findings case: "Didn't find any major issues")
+gh api repos/{owner}/{repo}/issues/<PR>/comments \
+  --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i"))) | {id, body, created_at}]'
 ```
 
-Classify the Codex review status:
+| Status | Signal | Action |
+|--------|--------|--------|
+| **Reviewed (findings)** | Bot review + inline comments exist | Include Codex findings in Step 7 |
+| **Reviewed (clean)** | Bot PR comment exists ("Didn't find any major issues") | Note "Codex: no findings" in report |
+| **Rate limited** | Bot output body contains "usage limits" | Note in report; proceed without Codex |
+| **Timeout** | Subagent reported TIMEOUT | Note in report; proceed without Codex |
+| **Not requested** | Agent decided Codex review was unnecessary | Note "Codex review: not requested" with reason |
 
-| Status | Signals | Action |
-|--------|---------|--------|
-| **Reviewed** | Bot review comments exist | Include Codex findings in the review below |
-| **In progress** | PR has reaction (eyes emoji) but no review yet | Note in report; do not block on it |
-| **Rate limited** | "usage limits" comment from Codex | Note in report; proceed without Codex input |
-| **Not configured** | No bot activity at all | Note in report; proceed without Codex input |
+When re-reviewing after `review-fix`: check the Codex review `submitted_at` timestamp against the latest commit date. If `review-fix` pushed new commits and requested re-review, use only the most recent Codex review.
 
 ### 7. Code review
 
@@ -124,7 +133,7 @@ Evaluate each Codex comment on technical merit — Cursor and Codex have equal w
 - [ ] Criterion 2: met / not met
 
 ### Codex review status
-- Status: Reviewed / In progress / Rate limited / Not configured
+- Status: Reviewed / Rate limited / Timeout / Not requested
 - Findings incorporated: <count> (valid: N, false positive: N)
 
 ### Cursor findings
@@ -144,7 +153,7 @@ If the conclusion is "Changes required", recommend running `review-fix` to addre
 - **PR summary**: title, branch, files changed, diff size
 - **Issue**: `#<number>` linked, DoD fulfillment status
 - **CI status**: pass / fail (with details)
-- **Codex status**: reviewed / in progress / rate limited / not configured
+- **Codex status**: reviewed / rate limited / timeout / not requested
 - **Review findings**: grouped by category, with source (Cursor / Codex)
 - **Merge decision**: mergeable (recommended strategy) / changes required (list)
 - **Next step**: `pr-merge` (if mergeable) / `review-fix` (if changes required)
