@@ -97,7 +97,6 @@ jobs:
           cov <- covr::package_coverage()
           pct <- covr::percent_coverage(cov)
           cat(sprintf("Line coverage: %.1f%%\n", pct))
-          covr::codecov(coverage = cov, quiet = FALSE)
 
           cat(sprintf("pct=%.1f\n", pct),
               file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
