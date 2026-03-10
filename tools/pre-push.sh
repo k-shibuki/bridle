@@ -70,6 +70,7 @@ if [[ -n "$renv_changed" ]]; then
 fi
 
 if [[ -n "$kb_changed" ]]; then
-  echo "pre-push: Knowledge base changes detected — running kb-validate..."
+  echo "pre-push: Knowledge base changes detected — running kb-validate + review-sync-check..."
   make kb-validate || { echo "BLOCKED (HS-LOCAL-VERIFY): make kb-validate failed. Run 'make kb-manifest' to update the index, then stage and commit." >&2; exit 1; }
+  make review-sync-check || { echo "BLOCKED (HS-LOCAL-VERIFY): make review-sync-check failed. AGENTS.md and pr-review.md categories are out of sync." >&2; exit 1; }
 fi

@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 #
 # CodeRabbit configuration — Pro/OSS, primary bot reviewer.
-# Auto-review enabled: CodeRabbit reviews every PR automatically.
-# Manual @coderabbitai review is used for re-review only.
+# Auto-review OFF (requires paid seat). Agent triggers @coderabbitai review
+# explicitly in pr-create Step 5a and review-fix Step 5b.
 # See .cursor/knowledge/review--bot-lifecycle.md for lifecycle details.
 
 language: "en-US"
@@ -30,7 +30,7 @@ reviews:
   suggested_reviewers: false
   auto_assign_reviewers: false
   auto_review:
-    enabled: true
+    enabled: false
     drafts: false
     ignore_title_keywords:
       - "WIP"

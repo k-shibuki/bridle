@@ -18,7 +18,7 @@ Quality enforcement is distributed across three execution contexts with distinct
 | R source (`R/`, `tests/`, `DESCRIPTION`, `NAMESPACE`) | `format-check` + `changed-lint` + `changed-test` |
 | Schemas (`docs/schemas/`, `tools/validate-schemas.R`) | `validate-schemas` |
 | renv (`DESCRIPTION`, `renv.lock`, `renv/`) | `renv-check` |
-| Knowledge base (`.cursor/knowledge/`, `knowledge-index.mdc`, `AGENTS.md`, `pr-review.md`) | `kb-validate` |
+| Knowledge base (`.cursor/knowledge/`, `knowledge-index.mdc`, `AGENTS.md` (repo root), `.cursor/commands/pr-review.md`) | `kb-validate` + `review-sync-check` |
 
 All matching change types trigger independently (no elif single-match).
 

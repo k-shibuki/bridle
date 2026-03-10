@@ -12,7 +12,7 @@ that interact with bot reviewers (`pr-create`, `pr-review`, `review-fix`,
 
 | Role | Reviewer | When triggered | Strength |
 |------|----------|---------------|----------|
-| **Primary** | CodeRabbit (Pro/OSS) | All PRs (auto) | Walkthrough, tool integrations (shellcheck, yamllint), AGENTS.md auto-detect, no rate limit concern |
+| **Primary** | CodeRabbit (Pro/OSS) | All PRs (agent-triggered) | Walkthrough, tool integrations (shellcheck, yamllint), AGENTS.md auto-detect, no rate limit concern |
 | **Supplementary** | Codex Cloud | Complex PRs only | Cross-file logic consistency, deep semantic understanding |
 
 Both reviewers read `AGENTS.md` and apply its review guidelines
@@ -21,8 +21,13 @@ uses `knowledge_base.code_guidelines.enabled: true` to detect the file.
 
 ## Trigger
 
-**CodeRabbit**: Auto-review on every PR (`.coderabbit.yaml` `auto_review.enabled: true`).
-No agent action required. Manual `@coderabbitai review` is used **only for re-review** after `review-fix`.
+**CodeRabbit**: Agent triggers `@coderabbitai review` on every PR in `pr-create`
+Step 5a and `review-fix` Step 5b. Auto-review is OFF (requires paid seat).
+
+```bash
+# CodeRabbit (always — every PR):
+gh pr comment <PR> --body "@coderabbitai review"
+```
 
 **Codex**: Triggered **manually** via PR comment for complex changes only.
 
@@ -31,9 +36,9 @@ No agent action required. Manual `@coderabbitai review` is used **only for re-re
 gh pr comment <PR> --body "@codex review"
 ```
 
-Events that trigger CodeRabbit auto-review:
-- PR open
-- Push / synchronize (new commits on existing PR)
+Agent triggers CodeRabbit in:
+- `pr-create` Step 5a (after PR creation)
+- `review-fix` Step 5b (after fix push)
 
 Events that do **NOT** trigger Codex:
 - PR open / draft → ready (must be triggered manually)
@@ -42,19 +47,19 @@ Events that do **NOT** trigger Codex:
 
 ## Two-Tier Trigger Model
 
-CodeRabbit auto-reviews **every PR** (Deterministic — no agent decision).
-The agent only decides whether to trigger Codex (Steering — conditional).
+Agent triggers CodeRabbit on **every PR** (Procedural — agent always triggers).
+Agent decides whether to also trigger Codex (Steering — conditional).
 
 | Change type | CodeRabbit | Codex | Rationale |
 |-------------|-----------|-------|-----------|
-| R code changes | Yes (auto) | **Yes** | Cross-file S7 class logic, NULL traps |
-| Schema changes (`docs/schemas/`) | Yes (auto) | **Yes** | Schema-class consistency |
-| Security-related changes | Yes (auto) | **Yes** | High risk, needs deep review |
-| ADRs (`docs/adr/`) | Yes (auto) | **Yes** | Architecture-code alignment |
-| CI config (`.github/workflows/`) | Yes (auto) | No | Breakage risk; yamllint covers syntax |
-| Shell scripts (`tools/`) | Yes (auto) | No | shellcheck covers syntax |
-| Workflow files (`.cursor/`) | Yes (auto) | No | Cross-reference consistency |
-| Docs only (`.md`, non-ADR) | Yes (auto) | No | Low risk but still reviewed |
+| R code changes | Yes (agent) | **Yes** | Cross-file S7 class logic, NULL traps |
+| Schema changes (`docs/schemas/`) | Yes (agent) | **Yes** | Schema-class consistency |
+| Security-related changes | Yes (agent) | **Yes** | High risk, needs deep review |
+| ADRs (`docs/adr/`) | Yes (agent) | **Yes** | Architecture-code alignment |
+| CI config (`.github/workflows/`) | Yes (agent) | No | Breakage risk; yamllint covers syntax |
+| Shell scripts (`tools/`) | Yes (agent) | No | shellcheck covers syntax |
+| Workflow files (`.cursor/`) | Yes (agent) | No | Cross-reference consistency |
+| Docs only (`.md`, non-ADR) | Yes (agent) | No | Low risk but still reviewed |
 
 **Rate limit handling**: If either reviewer is rate-limited, proceed
 without it. No fallback chain — each reviewer is independent.
@@ -138,17 +143,14 @@ OSS repositories get Pro features free. Rate limits are generous:
 
 ### Re-review after review-fix
 
-CodeRabbit re-reviews automatically on every push (incremental auto-review).
-The agent only decides whether to re-trigger Codex.
+Agent re-triggers CodeRabbit after every review-fix push (`review-fix` Step 5b).
+Agent decides whether to also re-trigger Codex.
 
 | Condition | CodeRabbit | Codex |
 |-----------|-----------|-------|
-| Any push to PR branch | Auto (incremental) | — |
-| Push addresses a Codex-sourced finding | Auto (incremental) | Yes — `@codex review` |
-| Push addresses only CodeRabbit/Cursor findings | Auto (incremental) | No |
-
-Manual `@coderabbitai review` is only needed if incremental auto-review
-is paused (after 5 reviewed commits — see Rate Limits above).
+| Any push to PR branch | Agent triggers `@coderabbitai review` | — |
+| Push addresses a Codex-sourced finding | Agent triggers `@coderabbitai review` | Yes — `@codex review` |
+| Push addresses only CodeRabbit/Cursor findings | Agent triggers `@coderabbitai review` | No |
 
 ## Finding Integration
 
@@ -173,5 +175,5 @@ Both templates poll all triggered reviewers in parallel.
 
 - `agent--delegation-templates.md` — Template 4/5 implement the wait
   logic
-- `.coderabbit.yaml` — CodeRabbit configuration (auto_review ON,
-  assertive profile, path_instructions)
+- `.coderabbit.yaml` — CodeRabbit configuration (auto_review OFF,
+  agent-triggered, assertive profile, path_instructions)

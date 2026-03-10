@@ -126,9 +126,15 @@ gh pr create --title "<type>(<scope>): <description>" \
 
 Per `subagent-policy.mdc`: blocking operations (CI polling, bot review wait) MUST be delegated to a background subagent. The main agent must not poll inline with `sleep` loops.
 
-#### 5a. CodeRabbit (automatic — no agent action required)
+#### 5a. CodeRabbit (agent-triggered — always)
 
-CodeRabbit auto-reviews every PR on creation (`.coderabbit.yaml` `auto_review.enabled: true`). The agent does NOT need to trigger it manually. Manual `@coderabbitai review` is only used for re-review after `review-fix`.
+Agent triggers CodeRabbit on every PR immediately after creation:
+
+```bash
+gh pr comment <PR> --body "@coderabbitai review"
+```
+
+Auto-review is OFF (requires paid seat). The agent MUST trigger explicitly.
 
 #### 5b. Codex (manual — agent decision required)
 
@@ -150,10 +156,10 @@ gh pr checks <PR_NUMBER>
 
 | Codex triggered? | Template |
 |------------------|----------|
-| Yes | Template 4: CI + Bot Review Wait (`agent--delegation-templates.md`) — CodeRabbit: YES (auto), Codex: YES |
-| No | Template 4: CI + Bot Review Wait (`agent--delegation-templates.md`) — CodeRabbit: YES (auto), Codex: NO |
+| Yes | Template 4: CI + Bot Review Wait (`agent--delegation-templates.md`) — CodeRabbit: YES (agent-triggered), Codex: YES |
+| No | Template 4: CI + Bot Review Wait (`agent--delegation-templates.md`) — CodeRabbit: YES (agent-triggered), Codex: NO |
 
-Tell the subagent that CodeRabbit is always YES (auto-triggered). Each reviewer is polled independently.
+Tell the subagent that CodeRabbit is always YES (agent-triggered in Step 5a). Each reviewer is polled independently.
 
 **Preferred shortcut**: If `pr-review` has already concluded "Mergeable" (e.g., user pre-approved the merge), set auto-merge immediately and skip polling:
 
