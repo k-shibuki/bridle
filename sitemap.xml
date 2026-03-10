@@ -1,5 +1,6 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>/404.html</loc></url>
+<url><loc>/AGENTS.html</loc></url>
 <url><loc>/CONTRIBUTING.html</loc></url>
 <url><loc>/LICENSE-text.html</loc></url>
 <url><loc>/LICENSE.html</loc></url>
@@ -47,6 +48,7 @@
 <url><loc>/reference/bridle_readline.html</loc></url>
 <url><loc>/reference/bridle_runtime_chat.html</loc></url>
 <url><loc>/reference/build_dependency_graph.html</loc></url>
+<url><loc>/reference/build_graph.html</loc></url>
 <url><loc>/reference/check_availability.html</loc></url>
 <url><loc>/reference/check_iteration_limit.html</loc></url>
 <url><loc>/reference/classify_functions.html</loc></url>
@@ -56,6 +58,7 @@
 <url><loc>/reference/collect_calls.html</loc></url>
 <url><loc>/reference/collect_conditional_stops.html</loc></url>
 <url><loc>/reference/collect_node_hints.html</loc></url>
+<url><loc>/reference/collect_package_dois.html</loc></url>
 <url><loc>/reference/compute_node_order.html</loc></url>
 <url><loc>/reference/console.html</loc></url>
 <url><loc>/reference/constraints.html</loc></url>
@@ -65,6 +68,8 @@
 <url><loc>/reference/detect_families.html</loc></url>
 <url><loc>/reference/detect_profiles.html</loc></url>
 <url><loc>/reference/detect_rd_deprecated.html</loc></url>
+<url><loc>/reference/dot-load_manifest.html</loc></url>
+<url><loc>/reference/dot-merge_manifest_policy.html</loc></url>
 <url><loc>/reference/draft_knowledge.html</loc></url>
 <url><loc>/reference/enforce_rate_limit.html</loc></url>
 <url><loc>/reference/engine_current_node.html</loc></url>
@@ -85,10 +90,12 @@
 <url><loc>/reference/extract_stop_message.html</loc></url>
 <url><loc>/reference/extract_unquoted_values.html</loc></url>
 <url><loc>/reference/extract_values_from_text.html</loc></url>
+<url><loc>/reference/fetch_dois.html</loc></url>
 <url><loc>/reference/fetch_openalex.html</loc></url>
 <url><loc>/reference/fetch_references.html</loc></url>
 <url><loc>/reference/fetch_s2.html</loc></url>
 <url><loc>/reference/fetch_s2_abstract.html</loc></url>
+<url><loc>/reference/find_exit_transitions.html</loc></url>
 <url><loc>/reference/find_function_rd.html</loc></url>
 <url><loc>/reference/find_match_arg_values.html</loc></url>
 <url><loc>/reference/find_stop_constraints.html</loc></url>
@@ -116,6 +123,7 @@
 <url><loc>/reference/llm_utils.html</loc></url>
 <url><loc>/reference/log_visit.html</loc></url>
 <url><loc>/reference/make_graph_engine.html</loc></url>
+<url><loc>/reference/merge_template.html</loc></url>
 <url><loc>/reference/merge_valid_values.html</loc></url>
 <url><loc>/reference/openalex_get.html</loc></url>
 <url><loc>/reference/parse_draft_response.html</loc></url>

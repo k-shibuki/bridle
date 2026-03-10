@@ -375,7 +375,7 @@
 <h2 id="development-status">Development Status<a class="anchor" aria-label="anchor" href="#development-status"></a>
 </h2>
 <blockquote>
-<p><strong>Phase 2 in progress — real-package integration (metafor)</strong></p>
+<p><strong>Phase 3 next — vitals evaluation suite</strong></p>
 </blockquote>
 <table class="table">
 <colgroup>
@@ -402,7 +402,7 @@
 <tr class="odd">
 <td>Phase 2</td>
 <td>Runtime engine (REPL) + real-package integration</td>
-<td><strong>In progress</strong></td>
+<td><strong>Done</strong></td>
 </tr>
 <tr class="even">
 <td>Phase 3</td>
@@ -416,7 +416,7 @@
 </tr>
 </tbody>
 </table>
-<p>Phase 2 core components (Graph Engine, Knowledge Retriever, Prompt Assembler, Response Parser, Code Sandbox, Decision Logger, REPL) are implemented. Phase 2c extends validation to a real package (metafor) — see <a href="https://github.com/k-shibuki/bridle/issues/129" class="external-link">#129</a>.</p>
+<p>Phase 2 delivered the runtime engine (Graph Engine, Knowledge Retriever, Prompt Assembler, Response Parser, Code Sandbox, Decision Logger, REPL), template composition (<code><a href="reference/build_graph.html">build_graph()</a></code> per <a href="docs/adr/0009-graph-template-composition.html">ADR-0009</a>), 3-layer policy inheritance (per <a href="docs/adr/0005-graph-policy-layer.html">ADR-0005</a>), and end-to-end validation with the metafor plugin. ADR compliance audit confirmed all 10 design decisions are faithfully implemented — see <a href="https://github.com/k-shibuki/bridle/issues/135" class="external-link">#135</a> for the full audit report.</p>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
