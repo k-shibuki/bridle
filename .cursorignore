@@ -1,2 +1,6 @@
 # Secrets (API keys) — see .Renviron.example for setup guidance
 .Renviron
+
+# AI agent configs (tool-specific, prevent cross-contamination)
+AGENTS.md
+**/AGENTS.md

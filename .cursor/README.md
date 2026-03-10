@@ -1,6 +1,6 @@
 # Cursor AI Configuration
 
-This directory contains the AI development system for bridle, organized into two domains: **Design** and **Controls**.
+This directory contains the AI development system for bridle, organized into two domains: **Design** and **Controls**. Two AI agents operate on this repository: **Cursor** (implementation and review) and **Codex Cloud** (automated PR review).
 
 ## AI Development System
 
@@ -29,6 +29,25 @@ AI Development System
 | **Knowledge** | `.cursor/knowledge/*.md` | Patterns, playbooks, reference | Advisory (referenced by rules/commands) |
 | **Guards** | `.pre-commit-config.yaml`, `.github/workflows/*.yaml`, `tools/` | Hooks, CI, Branch Protection | Deterministic (tool-enforced) |
 | **Surface** | `Makefile`, `README.md`, `.github/CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/` | Entry points, development API | Discovery / onboarding |
+
+### Codex Cloud Integration
+
+Codex Cloud Review operates as an external PR reviewer via `AGENTS.md` (repo root). It shares knowledge with Cursor through a common knowledge base:
+
+```
+AGENTS.md (Codex entry point — in .cursorignore, invisible to Cursor)
+  ├── Review guidelines (P0/P1 severity — stable base criteria)
+  └── References:
+      ├── .cursor/rules/knowledge-index.mdc  ← shared lookup table
+      ├── .cursor/knowledge/review--*.md     ← feedback loop accumulates here
+      ├── .cursor/commands/pr-review.md      ← review procedure
+      └── .cursor/commands/review-fix.md     ← fix procedure
+```
+
+- **Cursor** reads `.cursor/` directly via rules, commands, knowledge
+- **Codex** reads `AGENTS.md` first, then follows references into `.cursor/` files
+- **Feedback loop**: recurring false positives become knowledge atoms (`review--*.md`), benefiting both agents
+- **Drift detection**: `make review-sync-check` verifies that `AGENTS.md` and `pr-review.md` cover the same review categories (enforced in CI)
 
 **Domain relationships**: Design constrains Controls — implementation choices must follow accepted ADRs. Within Controls: Rules declare policies; Guards enforce them deterministically. Commands define procedures constrained by Rules and referencing Knowledge. Surface provides entry points for both human and AI workflows. Each piece of information exists in exactly one place (Single Source of Truth).
 
@@ -136,7 +155,7 @@ doctor → issue-create → implement ─────────→ test-create
                                                              (Mode 2:
                                                               Update)
                                                                  │
-                                                  commit → pr-create → [CI] → pr-review → pr-merge
+                                                  commit → pr-create → [CI + Codex] → pr-review → review-fix (if needed) → pr-merge
 ```
 
 When CI is pending, `next` always delegates CI-wait to a background subagent (see `subagent-policy.mdc`). The main agent proceeds with independent Issues or housekeeping. After CI passes, `pr-review` runs before merge:
@@ -196,7 +215,8 @@ Use when: justified exception (e.g., meta-implementation of workflow, documentat
 | Docs | `docs-discover` | Find (Mode 1) and update (Mode 2) related docs |
 | Git | `commit` | Create git commits (+ docs direct push via `no-issue` exception) |
 | Git | `pr-create` | Create feature branch + PR (with `Closes #<issue>`) |
-| Git | `pr-review` | Review PR + test quality and produce merge recommendation |
+| Git | `pr-review` | Review PR (Cursor + Codex findings) and produce merge recommendation |
+| Git | `review-fix` | Address review findings from `pr-review`, re-push for re-review |
 | Git | `pr-merge` | Execute merge (GitHub or local) |
 | Knowledge | `knowledge-create` | Capture new pattern/gotcha as atomic knowledge file |
 | Knowledge | `session-retro` | Reflect on session activity, extract learnings, propose control system improvements |

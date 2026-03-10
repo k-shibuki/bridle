@@ -33,7 +33,7 @@ endif
 	ci ci-fast ci-pr pr-ready doctor doctor-json validate-schemas \
 	changed-lint changed-test test-json lint-json scaffold-test scaffold-class \
 	status new-branch install-hooks \
-	kb-manifest kb-validate kb-new
+	kb-manifest kb-validate kb-new review-sync-check
 
 # === Help ===
 
@@ -213,6 +213,9 @@ kb-manifest: ## Regenerate knowledge-index.mdc from atom frontmatter
 
 kb-validate: ## Validate knowledge base consistency (naming, frontmatter, index sync)
 	@sh tools/kb-validate.sh
+
+review-sync-check: ## Check AGENTS.md and pr-review.md review categories are in sync
+	@sh tools/review-sync-check.sh
 
 kb-new: ## Scaffold new knowledge atom (usage: make kb-new NAME=test--new-topic)
 	@sh tools/kb-new.sh NAME=$(NAME)
