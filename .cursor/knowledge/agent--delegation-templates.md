@@ -108,7 +108,7 @@ Use after `pr-create` when bot review has been triggered and CI is also
 pending. Polls all triggered reviewers in parallel — no fallback chain.
 
 The main agent tells the subagent which reviewers were triggered
-(CodeRabbit always for non-docs PRs, Codex only for complex changes).
+(CodeRabbit always, agent-triggered in pr-create/review-fix; Codex only for complex changes).
 See `review--bot-lifecycle.md` for the two-tier trigger model.
 
 ```text
@@ -119,25 +119,38 @@ triggered bot reviews complete (or timeout).
 ## Inputs (provided by main agent)
 - PR number: <N>
 - CodeRabbit triggered: YES / NO
+- CodeRabbit trigger_time: <ISO timestamp> (created_at of trigger comment)
+- CodeRabbit trigger_id: <comment ID>
 - Codex triggered: YES / NO
+- Codex trigger_time: <ISO timestamp> (if triggered)
+- Codex trigger_id: <comment ID> (if triggered)
 
 ## Steps
+
+Use the polling algorithm from review--bot-lifecycle.md § Polling Algorithm.
+Key principle: detect completion by TIMESTAMP, not by count.
 
 1. Poll in parallel (30s intervals, max 10 min elapsed):
    - CI: `gh pr checks <N>`
    - CodeRabbit (if triggered):
-     - Reviews: `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("coderabbit"; "i"))] | length'`
-     - Inline: `gh api repos/{owner}/{repo}/pulls/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i"))] | length'`
-     - Walkthrough: `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i"))] | length'`
+     - Reviews (timestamp-filtered, empty body excluded):
+       `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("coderabbit"; "i")) | select(.body != "") | select(.submitted_at > "<trigger_time>")] | length'`
+     - Early signals (informational, do not terminate polling):
+       Eyes: `gh api repos/{owner}/{repo}/issues/comments/<trigger_id> --jq '.reactions.eyes'`
+       Ack: `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i")) | select(.created_at > "<trigger_time>") | select(.body | test("Review triggered"))] | length'`
    - Codex (if triggered):
-     - Reviews: `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
-     - Inline: `gh api repos/{owner}/{repo}/pulls/<N>/comments --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
-     - PR comment: `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
+     - Reviews (timestamp-filtered):
+       `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("chatgpt-codex-connector|codex|openai"; "i")) | select(.body != "") | select(.submitted_at > "<trigger_time>")] | length'`
+     - Clean bill (thumbs-up on trigger):
+       `gh api repos/{owner}/{repo}/issues/comments/<trigger_id> --jq '.reactions["+1"]'`
 
 2. CI is done when: all checks pass, or any check fails.
-3. A reviewer is done when: output in ANY channel > 0, or 7 min timeout.
-4. If a reviewer's output body contains "usage limits" → RATE_LIMITED.
-5. Report final status when CI and all triggered reviewers are done.
+3. A reviewer is done when:
+   - COMPLETED: review count > 0 (timestamp-filtered, non-empty body)
+   - COMPLETED_CLEAN: Codex thumbs-up > 0 on trigger comment
+   - RATE_LIMITED: review body contains "usage limits"
+   - TIMED_OUT: 7 min elapsed with no completion signal
+4. Report final status when CI and all triggered reviewers are done.
 
 ## Prohibitions
 - Do NOT run `git checkout`, `git switch`, `git branch`, or `git rebase`
@@ -153,7 +166,7 @@ triggered bot reviews complete (or timeout).
 ## Return format
 CI: PASSED / FAILED (<check-name> — <details-url>)
 CODERABBIT: REVIEWED (<N> inline comments) / TIMEOUT / RATE_LIMITED / NOT_TRIGGERED
-CODEX: REVIEWED (<N> inline comments) / TIMEOUT / RATE_LIMITED / NOT_TRIGGERED
+CODEX: REVIEWED (<N> inline comments) / CLEAN (👍) / TIMEOUT / RATE_LIMITED / NOT_TRIGGERED
 ```
 
 ## Template 5: Bot Review Wait Only
@@ -171,20 +184,32 @@ Monitor bot reviews for PR #<N> and report when complete.
 ## Inputs (provided by main agent)
 - PR number: <N>
 - CodeRabbit triggered: YES / NO
+- CodeRabbit trigger_time: <ISO timestamp> (created_at of trigger comment)
+- CodeRabbit trigger_id: <comment ID>
 - Codex triggered: YES / NO
+- Codex trigger_time: <ISO timestamp> (if triggered)
+- Codex trigger_id: <comment ID> (if triggered)
 
 ## Steps
+
+Use the polling algorithm from review--bot-lifecycle.md § Polling Algorithm.
+Key principle: detect completion by TIMESTAMP, not by count.
+
 1. Poll triggered reviewers in parallel (30s intervals, max 7 min elapsed):
    - CodeRabbit (if triggered):
-     - Reviews: `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("coderabbit"; "i"))] | length'`
-     - Inline: `gh api repos/{owner}/{repo}/pulls/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i"))] | length'`
-     - Walkthrough: `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i"))] | length'`
+     - Reviews (timestamp-filtered, empty body excluded):
+       `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("coderabbit"; "i")) | select(.body != "") | select(.submitted_at > "<trigger_time>")] | length'`
    - Codex (if triggered):
-     - Reviews: `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
-     - Inline: `gh api repos/{owner}/{repo}/pulls/<N>/comments --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
-     - PR comment: `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("codex|openai"; "i")))] | length'`
-2. A reviewer is done when: output in ANY channel > 0, or 7 min timeout.
-3. If a reviewer's output body contains "usage limits" → RATE_LIMITED.
+     - Reviews (timestamp-filtered):
+       `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("chatgpt-codex-connector|codex|openai"; "i")) | select(.body != "") | select(.submitted_at > "<trigger_time>")] | length'`
+     - Clean bill (thumbs-up on trigger):
+       `gh api repos/{owner}/{repo}/issues/comments/<trigger_id> --jq '.reactions["+1"]'`
+2. A reviewer is done when:
+   - COMPLETED: review count > 0 (timestamp-filtered, non-empty body)
+   - COMPLETED_CLEAN: Codex thumbs-up > 0 on trigger comment
+   - RATE_LIMITED: review body contains "usage limits"
+   - TIMED_OUT: 7 min elapsed with no completion signal
+3. Report final status when all triggered reviewers are done.
 
 ## Prohibitions
 - Do NOT run `git checkout`, `git switch`, `git branch`, or `git rebase`
@@ -193,7 +218,7 @@ Monitor bot reviews for PR #<N> and report when complete.
 
 ## Return format
 CODERABBIT: REVIEWED (<N> inline comments) / TIMEOUT / RATE_LIMITED / NOT_TRIGGERED
-CODEX: REVIEWED (<N> inline comments) / TIMEOUT / RATE_LIMITED / NOT_TRIGGERED
+CODEX: REVIEWED (<N> inline comments) / CLEAN (👍) / TIMEOUT / RATE_LIMITED / NOT_TRIGGERED
 ```
 
 ## Template 3: Dependent PR Merge Chain (rebase-enabled)

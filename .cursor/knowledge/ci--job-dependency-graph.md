@@ -56,6 +56,8 @@ Coverage runs post-merge on main. If coverage drops below threshold (80%), a tem
 | `check` | `r_source OR r_deps` | R CMD check is affected by dependency and .Rbuildignore changes |
 | `validate-schemas` | `schemas OR r_source` | Schema-code consistency requires both sides |
 | `ci-config` | `ci_config` | CI infrastructure validation |
+| `renv-check` | `renv_deps` | DESCRIPTION/renv.lock sync verification |
+| `kb-validate` | `kb_files` | Knowledge base consistency (naming, frontmatter, index sync, review category sync) |
 
 ## Coverage Gate
 
@@ -63,8 +65,15 @@ Coverage enforcement runs on **main push** (`R-CMD-check.yaml`), not on PR CI. T
 
 Local equivalent: `make coverage-check` (override with `COVERAGE_THRESHOLD=N`).
 
-Additional checks (PR-only): `check-policy`, `dependency-review`
-Skippable: `ci-config`, `auto-merge`
+### Related PR workflows (separate from `ci.yaml`)
+
+| Workflow | File | Trigger | Purpose |
+|----------|------|---------|---------|
+| `check-policy` | `pr-policy.yaml` | All PRs (unconditional) | PR body, labels, title format, base branch |
+| `dependency-review` | `dependency-review.yaml` | PRs changing `DESCRIPTION` or `renv.lock` | Vulnerability scan |
+| `auto-merge` | `dependabot-auto-merge.yaml` | Dependabot PRs only | Auto-merge minor dependency updates |
+
+All `ci.yaml` jobs (except `ci-pass`) are conditional on path filters — they run only when matching files change. `ci-pass` always runs as the required status check aggregator.
 
 ## Adaptive Polling Strategy (SSOT)
 

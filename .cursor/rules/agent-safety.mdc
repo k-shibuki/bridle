@@ -40,7 +40,7 @@ Each Hard Stop is classified by its enforcement mechanism. See `controls--ai-dev
 
 Bot review uses a two-tier enforcement model to minimize agent judgment:
 
-- **CodeRabbit**: **Deterministic** — auto-review on every PR (`.coderabbit.yaml` `auto_review.enabled: true`). No agent action required. This eliminates the risk of `HS-NO-SKIP` violations for CodeRabbit triggering.
+- **CodeRabbit**: **Procedural** — agent triggers `@coderabbitai review` in `pr-create` Step 5a and `review-fix` Step 5b. Auto-review is OFF (requires paid seat). Skipping is visible in `pr-create` output (`Bot review:` field).
 - **Codex**: **Steering** — agent must manually trigger for complex changes (R code, schemas, security, ADRs). The `pr-create` output format requires explicit `Bot review:` evidence to make skipping visible.
 
 See `review--bot-lifecycle.md` § Two-Tier Trigger Model for the full decision table.

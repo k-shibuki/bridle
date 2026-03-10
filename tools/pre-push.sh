@@ -23,7 +23,9 @@ fi
 r_changed=$(echo "$changed" | grep -E '^(R/|tests/|DESCRIPTION|NAMESPACE)' || true)
 schema_changed=$(echo "$changed" | grep -E '^(docs/schemas/|tools/validate)' || true)
 renv_changed=$(echo "$changed" | grep -E '^(DESCRIPTION|renv\.lock|renv/)' || true)
-kb_changed=$(echo "$changed" | grep -E '^\.cursor/(knowledge/|rules/knowledge-index\.mdc)' || true)
+# kb-validate checks atom/index consistency; review-sync-check validates
+# AGENTS.md ↔ pr-review.md category parity. Both run when any KB file changes.
+kb_changed=$(echo "$changed" | grep -E '^(\.cursor/(knowledge/|rules/knowledge-index\.mdc|commands/pr-review\.md)|AGENTS\.md)' || true)
 
 # --- Nothing to verify ---
 if [[ -z "$r_changed" && -z "$schema_changed" && -z "$renv_changed" && -z "$kb_changed" ]]; then
@@ -70,6 +72,7 @@ if [[ -n "$renv_changed" ]]; then
 fi
 
 if [[ -n "$kb_changed" ]]; then
-  echo "pre-push: Knowledge base changes detected — running kb-validate..."
+  echo "pre-push: Knowledge base changes detected — running kb-validate + review-sync-check..."
   make kb-validate || { echo "BLOCKED (HS-LOCAL-VERIFY): make kb-validate failed. Run 'make kb-manifest' to update the index, then stage and commit." >&2; exit 1; }
+  make review-sync-check || { echo "BLOCKED (HS-LOCAL-VERIFY): make review-sync-check failed. AGENTS.md and pr-review.md categories are out of sync." >&2; exit 1; }
 fi
