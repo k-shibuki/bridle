@@ -51,18 +51,25 @@ if [[ "${BRIDLE_IN_CONTAINER:-}" != "1" ]]; then
   fi
 fi
 
-# --- Run verification gates ---
+# --- Run verification gates (independent blocks — all matching types trigger) ---
 if [[ -n "$r_changed" ]]; then
-  echo "pre-push: R source changes detected — running ci-fast + format-check..."
-  make ci-fast || { echo "BLOCKED (HS-LOCAL-VERIFY): make ci-fast failed" >&2; exit 1; }
+  echo "pre-push: R source changes detected — running format-check + changed-lint + changed-test..."
   make format-check || { echo "BLOCKED (HS-LOCAL-VERIFY): make format-check failed" >&2; exit 1; }
-elif [[ -n "$schema_changed" ]]; then
+  make changed-lint || { echo "BLOCKED (HS-LOCAL-VERIFY): make changed-lint failed" >&2; exit 1; }
+  make changed-test || { echo "BLOCKED (HS-LOCAL-VERIFY): make changed-test failed" >&2; exit 1; }
+fi
+
+if [[ -n "$schema_changed" ]]; then
   echo "pre-push: Schema changes detected — running validate-schemas..."
   make validate-schemas || { echo "BLOCKED (HS-LOCAL-VERIFY): make validate-schemas failed" >&2; exit 1; }
-elif [[ -n "$renv_changed" ]]; then
+fi
+
+if [[ -n "$renv_changed" ]]; then
   echo "pre-push: DESCRIPTION/renv changes detected — running renv-check..."
   make renv-check || { echo "BLOCKED (HS-LOCAL-VERIFY): make renv-check failed" >&2; exit 1; }
-elif [[ -n "$kb_changed" ]]; then
+fi
+
+if [[ -n "$kb_changed" ]]; then
   echo "pre-push: Knowledge base changes detected — running kb-validate..."
   make kb-validate || { echo "BLOCKED (HS-LOCAL-VERIFY): make kb-validate failed. Run 'make kb-manifest' to update the index, then stage and commit." >&2; exit 1; }
 fi

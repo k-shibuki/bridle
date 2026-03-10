@@ -44,14 +44,14 @@ git status --short
 
 ### 3. Local verification gate (REQUIRED before push)
 
-Run the following locally and confirm zero issues before pushing:
+The `pre-push` hook automatically runs differential checks appropriate to the changed files:
 
-```bash
-make ci-fast        # validate-schemas + lint
-make format-check   # styler dry-run
-```
+- **R changes**: `format-check` + `changed-lint` + `changed-test`
+- **Schema changes**: `validate-schemas`
+- **renv changes**: `renv-check`
+- **KB changes**: `kb-validate`
 
-If either fails, fix before proceeding. Do NOT push with the intent of "CI will catch it."
+All matching change types trigger independently (no `elif` single-match). If any check fails, fix before proceeding. Do NOT push with the intent of "CI will catch it."
 
 ### 3b. Push branch to remote
 
