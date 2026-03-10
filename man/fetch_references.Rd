@@ -23,7 +23,8 @@ abstract) via OpenAlex and Semantic Scholar APIs to enrich the
 Takes a \link{ScanResult} or \link{PackageScanResult} and resolves reference
 strings into structured bibliographic metadata. OpenAlex is the primary
 source; Semantic Scholar supplements missing abstracts or serves as
-fallback when OpenAlex returns 404.
+fallback when \code{fetch_openalex()} returns \code{NULL} (covers 404, other HTTP
+errors, and request failures).
 }
 \details{
 For \link{PackageScanResult}, DOIs are collected from all scanned functions

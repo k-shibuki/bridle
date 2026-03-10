@@ -421,7 +421,8 @@ fetch_dois <- function(dois, timeout = 10) {
 #' Takes a [ScanResult] or [PackageScanResult] and resolves reference
 #' strings into structured bibliographic metadata. OpenAlex is the primary
 #' source; Semantic Scholar supplements missing abstracts or serves as
-#' fallback when OpenAlex returns 404.
+#' fallback when `fetch_openalex()` returns `NULL` (covers 404, other HTTP
+#' errors, and request failures).
 #'
 #' For [PackageScanResult], DOIs are collected from all scanned functions
 #' and deduplicated before fetching — the same paper referenced by
