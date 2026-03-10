@@ -336,7 +336,7 @@ parse_transition <- function(raw) {
 #'
 #' Merges a shared template YAML and a function-specific YAML into a flat
 #' [DecisionGraph]. If the function-specific YAML has no `template` key,
-#' delegates to [read_decision_graph()] (no composition needed).
+#' the in-memory graph section is parsed directly (no composition needed).
 #'
 #' @param func_graph_path Path to the function-specific `decision_graph.yaml`.
 #' @param template_dir Directory containing `*.template.yaml` files.

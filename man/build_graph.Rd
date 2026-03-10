@@ -18,5 +18,5 @@ A flat \link{DecisionGraph} S7 object (runtime-ready).
 \description{
 Merges a shared template YAML and a function-specific YAML into a flat
 \link{DecisionGraph}. If the function-specific YAML has no \code{template} key,
-delegates to \code{\link[=read_decision_graph]{read_decision_graph()}} (no composition needed).
+the in-memory graph section is parsed directly (no composition needed).
 }
