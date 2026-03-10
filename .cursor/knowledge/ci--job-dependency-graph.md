@@ -7,22 +7,19 @@ trigger: CI job, job dependency, filter category, coverage gate, coverage thresh
 changes ──┬── validate-schemas  (r_source OR schemas)
           ├── format-check      (r_source)
           ├── lint              (r_source)
-          │     │
-          │     └── test        (r_source)
-          │           │
-          │           ├── check    (r_source OR r_deps; runs even if test was skipped)
-          │           │
-          │           └── coverage (r_source)
-          │
-          └── ci-config         (ci_config)
+          ├── test              (r_source)
+          ├── check             (r_source OR r_deps; --no-tests)
+          ├── coverage          (r_source)
+          ├── ci-config         (ci_config)
+          ├── renv-check        (renv_deps)
+          └── kb-validate       (kb_files)
                     │
                ci-pass (final gate, always runs)
 ```
 
-Independent jobs (can run in parallel): `validate-schemas`, `format-check`, `lint`, `ci-config`
-Sequential chain: `lint` → `test` → `check` → `coverage`
-Special case: `check` uses `always()` so it runs when `test` is skipped (r_deps-only changes)
-Final gate: `ci-pass` depends on all above; skipped jobs are treated as passing
+All jobs depend only on `changes` and run in parallel.
+`check` uses `--no-tests` flag — tests are handled by the dedicated `test` job.
+Final gate: `ci-pass` depends on all above; skipped jobs are treated as passing.
 
 ## Filter Categories
 
@@ -32,6 +29,8 @@ Final gate: `ci-pass` depends on all above; skipped jobs are treated as passing
 | `r_deps` | `renv.lock`, `.Rbuildignore` | Dependency or build-config changes |
 | `schemas` | `docs/schemas/**`, `tools/validate-schemas.R` | Schema file changes |
 | `ci_config` | `Makefile`, `tools/**`, `.github/workflows/**`, `containers/**`, `.pre-commit-config.yaml`, `.lintr` | CI/build infrastructure changes |
+| `renv_deps` | `DESCRIPTION`, `renv.lock`, `renv/settings.json` | renv dependency changes |
+| `kb_files` | `.cursor/knowledge/**`, `.cursor/rules/knowledge-index.mdc`, `AGENTS.md`, `.cursor/commands/pr-review.md` | Knowledge base changes |
 
 ## Job Trigger Conditions
 
@@ -65,8 +64,8 @@ Fixed-interval polling wastes time. Use a stage-aware strategy:
 | Stage | Condition | Interval | Rationale |
 |-------|-----------|----------|-----------|
 | Early | No jobs completed | 20s | Initial queue + startup time |
-| Mid | format-check + lint pass | 15s | test is running, takes ~70s |
-| Late | test passes | 10s | check/coverage are the last jobs, ~90s each |
+| Mid | Any of lint/test/check still running | 15s | Parallel jobs in progress, longest is ~90s |
+| Late | All of lint/test/check completed | 10s | Only ci-pass remains |
 | Final | All except ci-pass | 5s | ci-pass completes in seconds |
 
 **Time budget**: Use elapsed time (max 5 minutes) rather than poll count as the upper bound. Poll count limits (e.g., 10 polls) can expire before long jobs finish.

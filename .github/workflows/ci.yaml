@@ -225,7 +225,7 @@ jobs:
           retention-days: 7
 
   test:
-    needs: [changes, lint]
+    needs: [changes]
     if: needs.changes.outputs.r_source == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -265,12 +265,9 @@ jobs:
           retention-days: 7
 
   check:
-    needs: [changes, test]
+    needs: [changes]
     if: |
-      always() &&
-      !cancelled() &&
-      (needs.test.result == 'success' || needs.test.result == 'skipped') &&
-      (needs.changes.outputs.r_source == 'true' || needs.changes.outputs.r_deps == 'true')
+      needs.changes.outputs.r_source == 'true' || needs.changes.outputs.r_deps == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -286,7 +283,7 @@ jobs:
 
       - uses: r-lib/actions/check-r-package@v2
         with:
-          args: 'c("--no-manual", "--as-cran")'
+          args: 'c("--no-manual", "--as-cran", "--no-tests")'
           error-on: '"note"'
 
       - name: Upload check results
