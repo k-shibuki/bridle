@@ -8,6 +8,8 @@ generate_draft_manifest(drafts)
 }
 \description{
 Extracts \code{max_iterations} from the draft graph's \code{global_policy} if
-present, otherwise defaults to 20.
+present. Falls back to \code{10L}, matching the runtime default in
+\code{graph_engine.R} (\code{.default_max_iterations}). Non-numeric or
+non-whole-number values are silently replaced by the default.
 }
 \keyword{internal}

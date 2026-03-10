@@ -334,17 +334,41 @@ test_that("generate_draft_context_schema: empty graph returns NULL", {
   expect_null(bridle:::generate_draft_context_schema(drafts))
 })
 
-test_that("generate_draft_context_schema: unnamed node list", {
-  # Given: graph with unnamed node list (no graph: wrapper)
+test_that("generate_draft_context_schema: unnamed node list uses id fallback", {
+  # Given: graph with unnamed (sequence-form) node list
   # When:  generating context schema
-  # Then:  returns minimal schema with k only
+  # Then:  falls back to node id for depends_on_node
   drafts <- list(decision_graph = list(
-    nodes = list(list(id = "n1", type = "decision"))
+    nodes = list(
+      list(id = "n1", type = "decision", parameter = "method"),
+      list(id = "n2", type = "execution")
+    )
   ))
 
   result <- bridle:::generate_draft_context_schema(drafts)
   names_out <- vapply(result$variables, `[[`, character(1), "name")
-  expect_equal(names_out, "k")
+  expect_true("method" %in% names_out)
+  expect_true("fit_result" %in% names_out)
+
+  method_var <- result$variables[[which(names_out == "method")]]
+  expect_equal(method_var$depends_on_node, "n1")
+})
+
+test_that("generate_draft_context_schema: multiple execution nodes no duplicate", {
+  # Given: graph with two execution nodes
+  # When:  generating context schema
+  # Then:  only one fit_result variable (from first execution node)
+  drafts <- list(decision_graph = list(graph = list(nodes = list(
+    run1 = list(type = "execution"),
+    run2 = list(type = "execution")
+  ))))
+
+  result <- bridle:::generate_draft_context_schema(drafts)
+  names_out <- vapply(result$variables, `[[`, character(1), "name")
+  expect_equal(sum(names_out == "fit_result"), 1L)
+
+  fit_var <- result$variables[[which(names_out == "fit_result")]]
+  expect_equal(fit_var$depends_on_node, "run1")
 })
 
 test_that("generate_draft_context_schema: multi-param decision node", {
@@ -376,26 +400,62 @@ test_that("generate_draft_manifest: extracts max_iterations from graph", {
   expect_equal(result$policy_defaults$max_iterations, 5L)
 })
 
-test_that("generate_draft_manifest: defaults to 20 when no global_policy", {
+test_that("generate_draft_manifest: defaults to 10 when no global_policy", {
   # Given: graph without global_policy
   # When:  generating manifest
-  # Then:  manifest defaults to max_iterations = 20
+  # Then:  manifest defaults to 10 (matching runtime .default_max_iterations)
   drafts <- list(decision_graph = list(graph = list(nodes = list())))
 
   result <- bridle:::generate_draft_manifest(drafts)
 
-  expect_equal(result$policy_defaults$max_iterations, 20L)
+  expect_equal(result$policy_defaults$max_iterations, 10L)
 })
 
-test_that("generate_draft_manifest: empty graph defaults to 20", {
+test_that("generate_draft_manifest: empty graph defaults to 10", {
   # Given: completely empty decision_graph
   # When:  generating manifest
-  # Then:  manifest defaults to max_iterations = 20
+  # Then:  manifest defaults to 10 (matching runtime .default_max_iterations)
   drafts <- list(decision_graph = list())
 
   result <- bridle:::generate_draft_manifest(drafts)
 
-  expect_equal(result$policy_defaults$max_iterations, 20L)
+  expect_equal(result$policy_defaults$max_iterations, 10L)
+})
+
+test_that("generate_draft_manifest: non-numeric max_iterations falls back", {
+  # Given: graph with non-numeric max_iterations
+  # When:  generating manifest
+  # Then:  falls back to default 10
+  drafts <- list(decision_graph = list(
+    graph = list(global_policy = list(max_iterations = "abc"))
+  ))
+
+  result <- bridle:::generate_draft_manifest(drafts)
+  expect_equal(result$policy_defaults$max_iterations, 10L)
+})
+
+test_that("generate_draft_manifest: fractional max_iterations falls back", {
+  # Given: graph with fractional max_iterations
+  # When:  generating manifest
+  # Then:  falls back to default 10
+  drafts <- list(decision_graph = list(
+    graph = list(global_policy = list(max_iterations = 5.5))
+  ))
+
+  result <- bridle:::generate_draft_manifest(drafts)
+  expect_equal(result$policy_defaults$max_iterations, 10L)
+})
+
+test_that("generate_draft_manifest: whole double accepted as integer", {
+  # Given: graph with max_iterations as double 8.0 (YAML often parses as double)
+  # When:  generating manifest
+  # Then:  coerced to integer 8L
+  drafts <- list(decision_graph = list(
+    graph = list(global_policy = list(max_iterations = 8.0))
+  ))
+
+  result <- bridle:::generate_draft_manifest(drafts)
+  expect_equal(result$policy_defaults$max_iterations, 8L)
 })
 
 # -- write_draft_files with context_schema + manifest -------------------------

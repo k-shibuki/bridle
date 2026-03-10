@@ -281,6 +281,11 @@ parse_draft_response <- function(response) {
 #' types: `decision` nodes with `parameter` yield `parameter_decided`
 #' variables; `execution` nodes yield a `post_fit` variable.
 #' A baseline `data_loaded` variable (`k`) is always included.
+#'
+#' Handles both named-map and sequence-form node lists. For unnamed
+#' nodes, falls back to the `id` field or a positional name.
+#' Only the first `execution` node generates a `fit_result` variable
+#' to avoid duplicate names in the schema.
 #' @keywords internal
 generate_draft_context_schema <- function(drafts) {
   graph_raw <- drafts$decision_graph
@@ -297,12 +302,11 @@ generate_draft_context_schema <- function(drafts) {
   ))
 
   node_names <- names(nodes_raw)
-  if (is.null(node_names)) {
-    return(list(variables = variables))
-  }
+  has_execution <- FALSE
 
-  for (nm in node_names) {
-    node <- nodes_raw[[nm]]
+  for (idx in seq_along(nodes_raw)) {
+    node <- nodes_raw[[idx]]
+    nm <- node_names[[idx]] %||% node[["id"]] %||% paste0("node_", idx)
     node_type <- node[["type"]]
 
     if (identical(node_type, "decision") && !is.null(node[["parameter"]])) {
@@ -319,7 +323,8 @@ generate_draft_context_schema <- function(drafts) {
       }
     }
 
-    if (identical(node_type, "execution")) {
+    if (identical(node_type, "execution") && !has_execution) {
+      has_execution <- TRUE
       variables <- c(variables, list(list(
         name = "fit_result",
         description = "fitted model result object",
@@ -336,14 +341,27 @@ generate_draft_context_schema <- function(drafts) {
 #' Generate manifest with sensible defaults
 #'
 #' Extracts `max_iterations` from the draft graph's `global_policy` if
-#' present, otherwise defaults to 20.
+#' present. Falls back to `10L`, matching the runtime default in
+#' `graph_engine.R` (`.default_max_iterations`). Non-numeric or
+#' non-whole-number values are silently replaced by the default.
 #' @keywords internal
 generate_draft_manifest <- function(drafts) {
   graph_raw <- drafts$decision_graph
   gp <- graph_raw[["graph"]][["global_policy"]] %||%
     graph_raw[["global_policy"]]
-  max_iter <- gp[["max_iterations"]] %||% 20L
-  list(policy_defaults = list(max_iterations = as.integer(max_iter)))
+  raw <- gp[["max_iterations"]]
+  max_iter <- if (
+    !is.null(raw) &&
+      length(raw) == 1L &&
+      !is.na(raw) &&
+      is.numeric(raw) &&
+      raw == floor(raw)
+  ) {
+    as.integer(raw)
+  } else {
+    10L
+  }
+  list(policy_defaults = list(max_iterations = max_iter))
 }
 
 #' Write draft YAML files to the output directory

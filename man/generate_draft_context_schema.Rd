@@ -12,4 +12,10 @@ types: \code{decision} nodes with \code{parameter} yield \code{parameter_decided
 variables; \code{execution} nodes yield a \code{post_fit} variable.
 A baseline \code{data_loaded} variable (\code{k}) is always included.
 }
+\details{
+Handles both named-map and sequence-form node lists. For unnamed
+nodes, falls back to the \code{id} field or a positional name.
+Only the first \code{execution} node generates a \code{fit_result} variable
+to avoid duplicate names in the schema.
+}
 \keyword{internal}
