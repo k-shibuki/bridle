@@ -107,9 +107,6 @@ ContextSchema <- S7::new_class("ContextSchema",
     data_expectations = S7::new_property(S7::class_list, default = list())
   ),
   validator = function(self) {
-    if (length(self@variables) == 0L) {
-      return("`variables` must contain at least one ContextVariable")
-    }
     for (i in seq_along(self@variables)) {
       if (!S7::S7_inherits(self@variables[[i]], ContextVariable)) {
         return(sprintf(
