@@ -12,7 +12,7 @@ that interact with bot reviewers (`pr-create`, `pr-review`, `review-fix`,
 
 | Role | Reviewer | When triggered | Strength |
 |------|----------|---------------|----------|
-| **Primary** | CodeRabbit (Pro/OSS) | All non-docs PRs | Walkthrough, tool integrations (shellcheck, yamllint), AGENTS.md auto-detect, no rate limit concern |
+| **Primary** | CodeRabbit (Pro/OSS) | All PRs (auto) | Walkthrough, tool integrations (shellcheck, yamllint), AGENTS.md auto-detect, no rate limit concern |
 | **Supplementary** | Codex Cloud | Complex PRs only | Cross-file logic consistency, deep semantic understanding |
 
 Both reviewers read `AGENTS.md` and apply its review guidelines
@@ -173,5 +173,5 @@ Both templates poll all triggered reviewers in parallel.
 
 - `agent--delegation-templates.md` — Template 4/5 implement the wait
   logic
-- `.coderabbit.yaml` — CodeRabbit configuration (auto_review OFF,
+- `.coderabbit.yaml` — CodeRabbit configuration (auto_review ON,
   assertive profile, path_instructions)

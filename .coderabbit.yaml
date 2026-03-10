@@ -23,7 +23,7 @@ reviews:
   sequence_diagrams: false
   estimated_effort_to_review_docs: false
   prompt_for_ai_agents: false
-  related_issues: false
+  related_issues: true
   related_prs: false
   suggested_labels: false
   auto_apply_labels: false
@@ -43,19 +43,41 @@ reviews:
   path_instructions:
     - path: "R/**"
       instructions: |
-        R package using S7 class system (ADR-0001). Key review points beyond
-        AGENTS.md: every S7 property needs an explicit type (no class_any),
-        cross-file class references require @include roxygen directive,
-        NULL assignment to list elements silently removes the field.
+        S7 class system (ADR-0001). Reinforce AGENTS.md § S7 type safety:
+        explicit property types (no class_any), new_union() for known unions,
+        validators for constraints types cannot express, @include for
+        cross-file class refs. NULL-assignment trap: x$field <- NULL silently
+        removes the field. Security (P0): flag auth/authz, network boundary,
+        credential, or PII changes.
     - path: "tests/**"
       instructions: |
+        P0 if changed code has no tests; P1 if tests are incomplete.
         Boundary values (0, min, max, +/-1, empty, NULL) must be covered.
         Exception tests must validate both error class and message pattern.
-        New function parameters need wiring tests and effect tests.
+        New parameters need wiring tests and effect tests.
+        Mock conventions: local_mocked_bindings() must be inline in each
+        test_that block (not extracted to helpers). Shared mock factories
+        go in helper-mocks.R.
     - path: "docs/schemas/**"
       instructions: |
-        YAML schemas must stay consistent with S7 classes in R/.
+        YAML schemas must stay consistent with S7 classes in R/ (ADR-0001).
         Validate that property names, types, and constraints match.
+        If a schema changes, the S7 class must be updated (or follow-up
+        task created). Run validate-schemas to verify.
+    - path: "docs/adr/**"
+      instructions: |
+        Architecture Decision Records govern codebase-wide design.
+        Key ADRs: ADR-0001 (S7), ADR-0002 (decision graph), ADR-0004
+        (scanner), ADR-0008 (scanner resilience). Flag P1 if changes
+        contradict existing ADRs or if schema/S7 classes are not updated
+        to match.
+    - path: ".github/workflows/**"
+      instructions: |
+        CI config changes affect the three-layer gate (local/PR/main).
+        ci-pass is the required status check aggregator in ci.yaml.
+        check-policy (pr-policy.yaml) enforces PR template and labels.
+        Verify changes maintain consistency across all three layers.
+        Do not duplicate yamllint or actionlint findings.
   tools:
     shellcheck:
       enabled: true

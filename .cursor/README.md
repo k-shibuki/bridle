@@ -33,21 +33,21 @@ AI Development System
 ### AI Code Review Integration
 
 Two AI code reviewers operate as external PR reviewers via `AGENTS.md`
-(repo root). Auto-review is OFF for both — the Cursor agent **actively
-orchestrates** reviews using a two-tier trigger model:
+(repo root), using a two-tier trigger model:
 
-- **CodeRabbit** (Pro/OSS, primary): triggered for all non-docs PRs via
-  `@coderabbitai review`. Provides walkthrough, tool integrations
-  (shellcheck, yamllint, markdownlint), and incremental review.
-- **Codex Cloud** (supplementary): triggered only for complex changes
-  (R code, schemas, security, ADRs) via `@codex review`. Provides
+- **CodeRabbit** (Pro/OSS, primary): auto-reviews every PR
+  (`.coderabbit.yaml` `auto_review.enabled: true`). Provides walkthrough,
+  tool integrations (shellcheck, yamllint, markdownlint), and incremental
+  review on each push. Manual `@coderabbitai review` is only for re-review.
+- **Codex Cloud** (supplementary): triggered **manually** only for complex
+  changes (R code, schemas, security, ADRs) via `@codex review`. Provides
   cross-file logic consistency and deep semantic understanding.
 
-**Orchestration model**: The agent decides review scope based on change
-type (`review--bot-lifecycle.md` § Two-Tier Trigger Model), triggers
-the appropriate reviewers, delegates the wait to a background subagent,
-and integrates findings into `pr-review`. Each reviewer is independent
-— no fallback chain.
+**Orchestration model**: CodeRabbit reviews automatically — no agent action
+required. The agent only decides whether to trigger Codex based on change
+type (`review--bot-lifecycle.md` § Two-Tier Trigger Model), delegates the
+wait to a background subagent, and integrates findings into `pr-review`.
+Each reviewer is independent — no fallback chain.
 
 ```text
 AGENTS.md (AI reviewer entry point — read by Codex and CodeRabbit)
@@ -58,13 +58,13 @@ AGENTS.md (AI reviewer entry point — read by Codex and CodeRabbit)
       ├── .cursor/knowledge/review--*.md     ← feedback loop accumulates here
       ├── .cursor/commands/pr-review.md      ← review procedure
       └── .cursor/commands/review-fix.md     ← fix procedure
-.coderabbit.yaml (CodeRabbit config — auto_review OFF, assertive profile)
+.coderabbit.yaml (CodeRabbit config — auto_review ON, assertive profile)
 ```
 
 - **Cursor** reads `.cursor/` directly via rules, commands, knowledge
 - **Codex** reads `AGENTS.md` first, then follows references into `.cursor/` files
 - **CodeRabbit** reads `AGENTS.md` via code_guidelines auto-detection + `.coderabbit.yaml` for config
-- **Two-tier trigger**: Agent triggers CodeRabbit (always for non-docs) and Codex (complex changes only) in `pr-create` Step 5 or `review-fix` Step 5b. Wait is delegated to background subagents (Template 4/5 in `agent--delegation-templates.md`) polling all triggered reviewers in parallel
+- **Two-tier trigger**: CodeRabbit auto-reviews all PRs. Agent triggers Codex (complex changes only) in `pr-create` Step 5 or `review-fix` Step 5b. Wait is delegated to background subagents (Template 4/5 in `agent--delegation-templates.md`) polling all triggered reviewers in parallel
 - **Feedback loop**: recurring false positives become knowledge atoms (`review--*.md`), benefiting all reviewers
 - **Drift detection**: `make review-sync-check` verifies that `AGENTS.md` and `pr-review.md` cover the same review categories (enforced in CI)
 

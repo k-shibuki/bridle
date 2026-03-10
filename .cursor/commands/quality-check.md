@@ -26,7 +26,7 @@ make format
 # Step 2: Verify formatting is clean (dry-run)
 make format-check
 
-# Step 3: Fast gate (schema validation + lint)
+# Step 3: Fast gate (validate-schemas + renv-check + kb-validate + lint)
 make ci-fast
 
 # Step 4: Full CI (adds test + R CMD check)
@@ -46,7 +46,7 @@ Skipping Step 1 and going directly to `make ci-fast` will cause lint failures on
 Use `make` commands (run `make help` for all options):
 
 ```bash
-# Fast gate: schema validation + lint
+# Fast gate: validate-schemas + renv-check + kb-validate + lint
 make ci-fast
 
 # Full CI: validate-schemas + lint + test + check

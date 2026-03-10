@@ -70,7 +70,7 @@ For each P0 and P1 finding (in priority order):
 After all fixes are applied:
 
 ```bash
-make ci-fast        # validate-schemas + lint
+make ci-fast        # validate-schemas + renv-check + kb-validate + lint
 make format-check   # styler dry-run
 ```
 

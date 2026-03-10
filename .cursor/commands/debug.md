@@ -45,7 +45,7 @@ make help    # Show available commands
 make test    # Run tests
 make check   # R CMD check (full validation)
 make lint    # Lint check
-make ci-fast # Quick gate: validate-schemas + lint
+make ci-fast # Fast gate: validate-schemas + renv-check + kb-validate + lint
 make ci      # Full gate: validate-schemas + lint + test + check
 ```
 

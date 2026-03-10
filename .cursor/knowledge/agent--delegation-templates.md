@@ -108,7 +108,7 @@ Use after `pr-create` when bot review has been triggered and CI is also
 pending. Polls all triggered reviewers in parallel — no fallback chain.
 
 The main agent tells the subagent which reviewers were triggered
-(CodeRabbit always for non-docs PRs, Codex only for complex changes).
+(CodeRabbit always via auto-review, Codex only for complex changes).
 See `review--bot-lifecycle.md` for the two-tier trigger model.
 
 ```text

@@ -23,7 +23,7 @@ fi
 r_changed=$(echo "$changed" | grep -E '^(R/|tests/|DESCRIPTION|NAMESPACE)' || true)
 schema_changed=$(echo "$changed" | grep -E '^(docs/schemas/|tools/validate)' || true)
 renv_changed=$(echo "$changed" | grep -E '^(DESCRIPTION|renv\.lock|renv/)' || true)
-kb_changed=$(echo "$changed" | grep -E '^\.cursor/(knowledge/|rules/knowledge-index\.mdc)' || true)
+kb_changed=$(echo "$changed" | grep -E '^(\.cursor/(knowledge/|rules/knowledge-index\.mdc|commands/pr-review\.md)|AGENTS\.md)' || true)
 
 # --- Nothing to verify ---
 if [[ -z "$r_changed" && -z "$schema_changed" && -z "$renv_changed" && -z "$kb_changed" ]]; then
