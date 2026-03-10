@@ -138,14 +138,17 @@ OSS repositories get Pro features free. Rate limits are generous:
 
 ### Re-review after review-fix
 
+CodeRabbit re-reviews automatically on every push (incremental auto-review).
+The agent only decides whether to re-trigger Codex.
+
 | Condition | CodeRabbit | Codex |
 |-----------|-----------|-------|
-| Addressed a bot P0/P1 finding with code change | Yes (always) | Only if addressing a Codex-sourced finding |
-| Minor fix, docs, or workflow adjustment | No | No |
-| Bot review was not requested in initial review | No | No |
+| Any push to PR branch | Auto (incremental) | — |
+| Push addresses a Codex-sourced finding | Auto (incremental) | Yes — `@codex review` |
+| Push addresses only CodeRabbit/Cursor findings | Auto (incremental) | No |
 
-Re-review triggers: `@coderabbitai review` (always), plus
-`@codex review` only when a Codex finding was addressed.
+Manual `@coderabbitai review` is only needed if incremental auto-review
+is paused (after 5 reviewed commits — see Rate Limits above).
 
 ## Finding Integration
 

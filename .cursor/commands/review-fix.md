@@ -92,23 +92,17 @@ git push
 
 **Prerequisite**: Read `@.cursor/knowledge/review--bot-lifecycle.md` § Re-review after review-fix.
 
-Bot reviewers do NOT re-review on push. The agent decides which reviewers to re-trigger and delegates the wait to a subagent. Each reviewer is independent — no fallback chain.
+CodeRabbit re-reviews automatically on push (incremental auto-review). The agent only decides whether to re-trigger Codex.
 
 | Condition | CodeRabbit | Codex |
 |-----------|-----------|-------|
-| Addressed a bot P0/P1 finding with code change | Yes (always) | Only if addressing a Codex-sourced finding |
-| Minor fix, docs, or workflow adjustment | No | No |
-| Reviewer was not triggered in initial review | No | No |
+| Any push to PR branch | Auto (incremental) | — |
+| Push addresses a Codex-sourced finding | Auto (incremental) | Yes — `gh pr comment <PR> --body "@codex review"` |
+| Push addresses only CodeRabbit/Cursor findings | Auto (incremental) | No |
 
-```bash
-# CodeRabbit re-review (if re-triggering):
-gh pr comment <PR> --body "@coderabbitai review"
+Manual `@coderabbitai review` is only needed if incremental auto-review is paused (after 5 reviewed commits).
 
-# Codex re-review (only if a Codex-sourced finding was addressed):
-gh pr comment <PR> --body "@codex review"
-```
-
-When re-review is triggered, delegate the wait to a background subagent using Template 5 from `@.cursor/knowledge/agent--delegation-templates.md`. Tell the subagent which reviewers were triggered (CodeRabbit: YES/NO, Codex: YES/NO). The main agent proceeds with other work (Two-Tier Gate).
+When Codex re-review is triggered, delegate the wait to a background subagent using Template 5 from `@.cursor/knowledge/agent--delegation-templates.md`. Tell the subagent: CodeRabbit: YES (auto), Codex: YES. The main agent proceeds with other work (Two-Tier Gate).
 
 ### 6. Report
 
