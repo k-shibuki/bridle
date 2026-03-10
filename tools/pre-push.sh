@@ -23,6 +23,8 @@ fi
 r_changed=$(echo "$changed" | grep -E '^(R/|tests/|DESCRIPTION|NAMESPACE)' || true)
 schema_changed=$(echo "$changed" | grep -E '^(docs/schemas/|tools/validate)' || true)
 renv_changed=$(echo "$changed" | grep -E '^(DESCRIPTION|renv\.lock|renv/)' || true)
+# kb-validate checks atom/index consistency; review-sync-check validates
+# AGENTS.md ↔ pr-review.md category parity. Both run when any KB file changes.
 kb_changed=$(echo "$changed" | grep -E '^(\.cursor/(knowledge/|rules/knowledge-index\.mdc|commands/pr-review\.md)|AGENTS\.md)' || true)
 
 # --- Nothing to verify ---

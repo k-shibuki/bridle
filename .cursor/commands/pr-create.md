@@ -223,7 +223,7 @@ If the repository requires a review before merge (branch protection), report the
 - **Branch**: name
 - **Commits**: list of commits on the branch
 - **PR URL**: link to the created PR
-- **Bot review**: CodeRabbit: auto (all PRs) / Codex: triggered (comment URL) | skipped (reason)
+- **Bot review**: CodeRabbit: triggered (comment URL) / Codex: triggered (comment URL) | skipped (reason)
 - **CI result**: all pass / failure details and actions taken
 
 ## Related
