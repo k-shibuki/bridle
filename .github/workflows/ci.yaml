@@ -61,6 +61,8 @@ jobs:
             kb_files:
               - '.cursor/knowledge/**'
               - '.cursor/rules/knowledge-index.mdc'
+              - 'AGENTS.md'
+              - '.cursor/commands/pr-review.md'
 
   ci-config:
     needs: changes
@@ -333,6 +335,9 @@ jobs:
 
       - name: Validate knowledge base consistency
         run: make kb-validate
+
+      - name: Check review category sync (AGENTS.md vs pr-review.md)
+        run: make review-sync-check
 
   # Required status check that always runs.
   # Use this as the single required check in branch protection settings.

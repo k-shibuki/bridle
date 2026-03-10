@@ -70,6 +70,14 @@ make doctor 2>&1 | tail -5
 # Stale branch check (squash-merged branches linger after PR merge)
 git branch --merged origin/main | grep -v '^\*\|main$' || true
 git branch --no-merged origin/main --format='%(refname:short) %(upstream:track)' | grep '\[gone\]' || true
+
+# Codex review status (lightweight — pr-review does the detailed check)
+# Just detect if Codex is still in progress (eyes reaction, no review yet)
+gh pr list --state open --json number --jq '.[].number' | head -5 | while read pr; do
+  bot_reviews=$(gh api "repos/{owner}/{repo}/pulls/$pr/reviews" \
+    --jq '[.[] | select(.user.type == "Bot")] | length' 2>/dev/null || echo 0)
+  echo "PR #$pr: codex_reviews=$bot_reviews"
+done
 ```
 
 **Background task check**: If a background subagent was previously launched (e.g., for CI-wait), check its transcript file for completion. See `subagent-policy.mdc` "Completion guarantee" for the protocol. Incorporate results into the state assessment.
@@ -93,8 +101,10 @@ Use the evidence to classify the current state into one of these positions:
 | Open PR, CI still running, no independent Issue | **CI pending (housekeeping)** | Delegate CI-wait to background subagent (see `subagent-policy.mdc`), then do housekeeping (see Step 6). |
 | Stale local branches detected | **Cleanup needed** | Delete stale branches (see `pr-merge.md` "Post-merge cleanup"). Can be done during housekeeping. |
 | Background subagent running | **Background task in progress** | Check transcript for completion; continue independent work |
-| Open PR, CI all green | **CI green** | `pr-review` |
+| Open PR, CI all green, Codex still reviewing (👀 but no review posted) | **Codex reviewing** | Wait briefly (Codex typically completes within minutes). Once done (or timed out), proceed to `pr-review`. |
+| Open PR, CI all green | **CI green** | `pr-review` (checks Codex status internally: reviewed / rate limited / not configured) |
 | Open PR, CI failed | **CI failure** | `debug` or fix + re-push |
+| PR reviewed, changes required | **Changes required** | `review-fix` (address findings from `pr-review`, then re-push and re-review) |
 | PR reviewed, mergeable | **Review done** | `pr-merge` |
 | PR merged, back on `main` | **Cycle complete** | Post-cycle signal scan (see Step 3), then `implement` (next Issue) or `issue-create` |
 | Environment not ready | **Environment issue** | `doctor` |
@@ -209,8 +219,21 @@ If an error or unexpected state occurs during execution:
               └────────────┬────────────┘
                            │
               ┌────────────▼────────────┐
-              │    [CI] → pr-review     │
+              │  [CI] + Codex review   │
               └────────────┬────────────┘
+                           │
+              ┌────────────▼────────────┐
+              │      pr-review         │ (Cursor + Codex findings)
+              └──────┬─────┬──────┘
+                    │     │
+             Mergeable  Changes required
+                    │     │
+                    │     ┌────▼────────────┐
+                    │     │   review-fix       │
+                    │     └────┬────────────┘
+                    │          │ (re-push → re-review)
+                    │          └──────┐
+                    ▼               │
                            │
               ┌────────────▼────────────┐
               │      pr-merge           │
