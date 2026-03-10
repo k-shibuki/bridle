@@ -150,7 +150,6 @@ For snapshot test guidelines (`expect_snapshot`, `_snaps/` management), see `@.c
 
 - **Line coverage**: >= 80% (enforced by `make coverage-check` locally and `R-CMD-check.yaml` on main push)
 - **Patch coverage**: >= 90% (advisory target for new/changed code in PRs)
-- **Threshold tolerance**: 2% drop allowed
 
 ### Enforcement model
 
