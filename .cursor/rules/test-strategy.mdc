@@ -148,9 +148,12 @@ For snapshot test guidelines (`expect_snapshot`, `_snaps/` management), see `@.c
 
 ### Project targets
 
-- **Line coverage**: >= 80% (enforced by `make coverage-check` and CI)
-- **Patch coverage**: >= 90% (enforced by Codecov for new/changed code in PRs)
-- **Threshold tolerance**: 2% drop allowed (Codecov `threshold` setting)
+- **Line coverage**: >= 80% (enforced by `make coverage-check` locally and `R-CMD-check.yaml` on main push)
+- **Patch coverage**: >= 90% (advisory target for new/changed code in PRs)
+
+### Enforcement model
+
+Coverage is **not** on the PR CI critical path. It runs post-merge on main push (`R-CMD-check.yaml`). If coverage drops below threshold, a template-compliant GitHub Issue is automatically created for batched remediation. This trades immediate enforcement for faster PR turnaround.
 
 ### When coverage is below threshold
 

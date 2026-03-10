@@ -294,34 +294,6 @@ jobs:
           path: check
           retention-days: 7
 
-  coverage:
-    needs: [changes, check]
-    if: needs.changes.outputs.r_source == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: r-lib/actions/setup-r@v2
-        with:
-          use-public-rspm: true
-
-      - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::covr
-
-      - name: Test coverage
-        run: |
-          cov <- covr::package_coverage()
-          pct <- covr::percent_coverage(cov)
-          cat(sprintf("Line coverage: %.1f%%\n", pct))
-          covr::codecov(coverage = cov, quiet = FALSE)
-          # Coverage threshold SSOT: test-strategy.mdc § Coverage Threshold Policy
-          if (pct < 80) {
-            stop(sprintf("Coverage %.1f%% is below the 80%% threshold", pct))
-          }
-        shell: Rscript {0}
-
   kb-validate:
     needs: changes
     if: needs.changes.outputs.kb_files == 'true'
@@ -341,7 +313,7 @@ jobs:
   # It passes when all relevant jobs pass or are correctly skipped.
   ci-pass:
     if: always()
-    needs: [ci-config, renv-check, validate-schemas, format-check, lint, test, check, coverage, kb-validate]
+    needs: [ci-config, renv-check, validate-schemas, format-check, lint, test, check, kb-validate]
     runs-on: ubuntu-latest
     steps:
       - name: Verify all jobs passed or were skipped
@@ -353,7 +325,6 @@ jobs:
                    "${{ needs.lint.result }}" \
                    "${{ needs.test.result }}" \
                    "${{ needs.check.result }}" \
-                   "${{ needs.coverage.result }}" \
                    "${{ needs.kb-validate.result }}")
           for r in "${results[@]}"; do
             if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
@@ -365,7 +336,7 @@ jobs:
 
   ci-summary:
     if: always()
-    needs: [ci-config, renv-check, validate-schemas, format-check, lint, test, check, coverage, kb-validate]
+    needs: [ci-config, renv-check, validate-schemas, format-check, lint, test, check, kb-validate]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -383,7 +354,6 @@ jobs:
               'lint': '${{ needs.lint.result }}',
               'test': '${{ needs.test.result }}',
               'check': '${{ needs.check.result }}',
-              'coverage': '${{ needs.coverage.result }}',
               'kb-validate': '${{ needs.kb-validate.result }}'
             };
             const rows = Object.entries(jobs).map(([name, result]) => {

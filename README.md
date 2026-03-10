@@ -5,7 +5,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/k-shibuki/bridle/actions/workflows/ci.yaml/badge.svg)](https://github.com/k-shibuki/bridle/actions/workflows/ci.yaml)
 [![R-CMD-check](https://github.com/k-shibuki/bridle/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/k-shibuki/bridle/actions/workflows/R-CMD-check.yaml)
-[![codecov](https://codecov.io/gh/k-shibuki/bridle/graph/badge.svg)](https://codecov.io/gh/k-shibuki/bridle)
 
 Knowledge harness framework that structures R package expertise for LLM-guided statistical analysis
 

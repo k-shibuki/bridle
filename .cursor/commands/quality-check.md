@@ -134,7 +134,7 @@ make coverage-check           # Verify threshold (see test-strategy.mdc § Cover
 make coverage-check COVERAGE_THRESHOLD=70  # Override threshold (investigation only)
 ```
 
-In CI, coverage results are uploaded to Codecov. See `codecov.yml` for configuration.
+In CI, coverage runs on main push (`R-CMD-check.yaml`) with auto-Issue on threshold failure.
 
 ### Schema validation errors
 
