@@ -21,37 +21,40 @@ uses `knowledge_base.code_guidelines.enabled: true` to detect the file.
 
 ## Trigger
 
-Both reviewers are triggered **manually** via PR comments.
-Auto-review is OFF for both (`.coderabbit.yaml`).
+**CodeRabbit**: Auto-review on every PR (`.coderabbit.yaml` `auto_review.enabled: true`).
+No agent action required. Manual `@coderabbitai review` is used **only for re-review** after `review-fix`.
+
+**Codex**: Triggered **manually** via PR comment for complex changes only.
 
 ```bash
-# Primary (always for non-docs PRs):
-gh pr comment <PR> --body "@coderabbitai review"
-
-# Supplementary (complex PRs only — R code, schemas, security, ADRs):
+# Codex (only for complex changes — R code, schemas, security, ADRs):
 gh pr comment <PR> --body "@codex review"
 ```
 
-Events that do **NOT** trigger either reviewer:
-- PR open / draft → ready
+Events that trigger CodeRabbit auto-review:
+- PR open
 - Push / synchronize (new commits on existing PR)
+
+Events that do **NOT** trigger Codex:
+- PR open / draft → ready (must be triggered manually)
+- Push / synchronize
 - Rebase, label changes, PR body edits
 
 ## Two-Tier Trigger Model
 
-The agent decides review scope based on change type. CodeRabbit is
-always triggered for non-docs PRs; Codex is added for complex changes.
+CodeRabbit auto-reviews **every PR** (Deterministic — no agent decision).
+The agent only decides whether to trigger Codex (Steering — conditional).
 
 | Change type | CodeRabbit | Codex | Rationale |
 |-------------|-----------|-------|-----------|
-| R code changes | Yes | **Yes** | Cross-file S7 class logic, NULL traps |
-| Schema changes (`docs/schemas/`) | Yes | **Yes** | Schema-class consistency |
-| Security-related changes | Yes | **Yes** | High risk, needs deep review |
-| ADRs (`docs/adr/`) | Yes | **Yes** | Architecture-code alignment |
-| CI config (`.github/workflows/`) | Yes | No | Breakage risk; yamllint covers syntax |
-| Shell scripts (`tools/`) | Yes | No | shellcheck covers syntax |
-| Workflow files (`.cursor/`) | Yes | No | Cross-reference consistency |
-| Docs only (`.md`, non-ADR) | No | No | Low risk |
+| R code changes | Yes (auto) | **Yes** | Cross-file S7 class logic, NULL traps |
+| Schema changes (`docs/schemas/`) | Yes (auto) | **Yes** | Schema-class consistency |
+| Security-related changes | Yes (auto) | **Yes** | High risk, needs deep review |
+| ADRs (`docs/adr/`) | Yes (auto) | **Yes** | Architecture-code alignment |
+| CI config (`.github/workflows/`) | Yes (auto) | No | Breakage risk; yamllint covers syntax |
+| Shell scripts (`tools/`) | Yes (auto) | No | shellcheck covers syntax |
+| Workflow files (`.cursor/`) | Yes (auto) | No | Cross-reference consistency |
+| Docs only (`.md`, non-ADR) | Yes (auto) | No | Low risk but still reviewed |
 
 **Rate limit handling**: If either reviewer is rate-limited, proceed
 without it. No fallback chain — each reviewer is independent.

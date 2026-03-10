@@ -36,6 +36,15 @@ Each Hard Stop is classified by its enforcement mechanism. See `controls--ai-dev
 | `HS-NOLINT` | **Cond. Deterministic** (annotation format) / **Steering** (knowledge consultation) | `pre-commit` hook validates annotation format — requires `make install-hooks`. Knowledge file consultation obligation is Steering (agent self-policing) |
 | `HS-PR-BASE` | **Deterministic** | `pr-policy.yaml` CI check |
 
+## Bot Review Enforcement
+
+Bot review uses a two-tier enforcement model to minimize agent judgment:
+
+- **CodeRabbit**: **Deterministic** — auto-review on every PR (`.coderabbit.yaml` `auto_review.enabled: true`). No agent action required. This eliminates the risk of `HS-NO-SKIP` violations for CodeRabbit triggering.
+- **Codex**: **Steering** — agent must manually trigger for complex changes (R code, schemas, security, ADRs). The `pr-create` output format requires explicit `Bot review:` evidence to make skipping visible.
+
+See `review--bot-lifecycle.md` § Two-Tier Trigger Model for the full decision table.
+
 ## Multi-Agent Safety Rules
 
 When multiple AI agents (or a main agent + subagents) work concurrently:

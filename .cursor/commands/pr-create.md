@@ -122,43 +122,38 @@ gh pr create --title "<type>(<scope>): <description>" \
   --body "<body from PULL_REQUEST_TEMPLATE.md with Exception section filled>"
 ```
 
-### 5. Bot review decision and CI monitoring
+### 5. Bot review and CI monitoring
 
 Per `subagent-policy.mdc`: blocking operations (CI polling, bot review wait) MUST be delegated to a background subagent. The main agent must not poll inline with `sleep` loops.
 
-#### 5a. Decide review scope (two-tier trigger model)
+#### 5a. CodeRabbit (automatic — no agent action required)
 
-Read `@.cursor/knowledge/review--bot-lifecycle.md` § Two-Tier Trigger Model for the full decision table. Summary:
+CodeRabbit auto-reviews every PR on creation (`.coderabbit.yaml` `auto_review.enabled: true`). The agent does NOT need to trigger it manually. Manual `@coderabbitai review` is only used for re-review after `review-fix`.
 
-| Change type | CodeRabbit | Codex |
-|-------------|-----------|-------|
-| R code, schemas, security, ADRs | Yes | **Yes** |
-| CI config, shell scripts, workflow files | Yes | No |
-| Docs only (non-ADR `.md`) | No | No |
+#### 5b. Codex (manual — agent decision required)
 
-CodeRabbit is triggered for all non-docs PRs. Codex is added only for complex changes (R code, schemas, security, ADRs).
+Read `@.cursor/knowledge/review--bot-lifecycle.md` § Two-Tier Trigger Model. Codex is triggered only for complex changes:
 
-#### 5b. Trigger bot review and delegate wait
+| Change type | Codex |
+|-------------|-------|
+| R code, schemas, security, ADRs | **Yes** — `gh pr comment <PR> --body "@codex review"` |
+| CI config, shell scripts, workflow, docs | No |
+
+#### 5c. Delegate CI + review wait
 
 ```bash
 # Quick initial CI check
 gh pr checks <PR_NUMBER>
-
-# CodeRabbit (always for non-docs PRs):
-gh pr comment <PR_NUMBER> --body "@coderabbitai review"
-
-# Codex (only for complex changes — R code, schemas, security, ADRs):
-gh pr comment <PR_NUMBER> --body "@codex review"
 ```
 
-**Delegation** (choose based on review decision):
+**Delegation**:
 
-| Bot review triggered? | Template |
-|-----------------------|----------|
-| Yes (any reviewer) | Template 4: CI + Bot Review Wait (`agent--delegation-templates.md`) |
-| No (docs-only) | Template 2: CI-Wait Only (`agent--delegation-templates.md`) |
+| Codex triggered? | Template |
+|------------------|----------|
+| Yes | Template 4: CI + Bot Review Wait (`agent--delegation-templates.md`) — CodeRabbit: YES (auto), Codex: YES |
+| No | Template 4: CI + Bot Review Wait (`agent--delegation-templates.md`) — CodeRabbit: YES (auto), Codex: NO |
 
-Tell the subagent which reviewers were triggered (CodeRabbit: YES/NO, Codex: YES/NO). Each reviewer is polled independently — no fallback chain.
+Tell the subagent that CodeRabbit is always YES (auto-triggered). Each reviewer is polled independently.
 
 **Preferred shortcut**: If `pr-review` has already concluded "Mergeable" (e.g., user pre-approved the merge), set auto-merge immediately and skip polling:
 
@@ -222,6 +217,7 @@ If the repository requires a review before merge (branch protection), report the
 - **Branch**: name
 - **Commits**: list of commits on the branch
 - **PR URL**: link to the created PR
+- **Bot review**: CodeRabbit: auto (all PRs) / Codex: triggered (comment URL) | skipped (reason)
 - **CI result**: all pass / failure details and actions taken
 
 ## Related
