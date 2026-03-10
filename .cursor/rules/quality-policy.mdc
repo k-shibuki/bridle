@@ -30,7 +30,7 @@ The following are prohibited in principle (exception only with stated justificat
 1. **lintr** — `lintr::lint_package()`: errors and warnings
 2. **styler** — `styler::style_pkg(dry = "on")`: format diffs
 3. **R CMD check** — `devtools::check()`: errors, warnings, and notes
-4. **coverage** — `covr::package_coverage()`: line coverage >= threshold (see `test-strategy.mdc` § Coverage Threshold Policy; enforced via `make coverage-check`)
+4. **coverage** — `covr::package_coverage()`: line coverage >= threshold (see `test-strategy.mdc` § Coverage Threshold Policy; enforced via `make coverage-check` locally and `R-CMD-check.yaml` on main push — not on PR CI path)
 5. Inappropriate `# nolint` introduction (new additions, propagation)
 6. Clear security issues (authentication/authorization, input validation, data retention)
 

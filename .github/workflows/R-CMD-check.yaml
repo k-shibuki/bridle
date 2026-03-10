@@ -16,6 +16,7 @@ name: R-CMD-check
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: r-cmd-check-${{ github.ref }}
@@ -74,3 +75,180 @@ jobs:
         with:
           name: ${{ runner.os }}-r${{ matrix.config.r }}-results
           path: check
+
+  coverage:
+    needs: R-CMD-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::covr, any::jsonlite
+
+      - name: Measure coverage
+        id: coverage
+        run: |
+          cov <- covr::package_coverage()
+          pct <- covr::percent_coverage(cov)
+          cat(sprintf("Line coverage: %.1f%%\n", pct))
+          covr::codecov(coverage = cov, quiet = FALSE)
+
+          cat(sprintf("pct=%.1f\n", pct),
+              file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+
+          cov_df <- as.data.frame(cov)
+          per_file <- tapply(
+            cov_df$value > 0, cov_df$filename,
+            function(x) round(mean(x) * 100, 1)
+          )
+          file_tbl <- data.frame(
+            file = names(per_file),
+            pct  = as.numeric(per_file),
+            stringsAsFactors = FALSE
+          )
+          file_tbl <- file_tbl[order(file_tbl$pct), ]
+          writeLines(
+            jsonlite::toJSON(file_tbl, auto_unbox = TRUE),
+            "coverage-by-file.json"
+          )
+
+          # Coverage threshold SSOT: test-strategy.mdc § Coverage Threshold Policy
+          if (pct < 80) {
+            stop(sprintf("Coverage %.1f%% is below the 80%% threshold", pct))
+          }
+        shell: Rscript {0}
+
+      - name: Upload coverage evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-evidence
+          path: coverage-by-file.json
+          retention-days: 30
+
+      - name: Create or update coverage regression Issue
+        if: failure() && steps.coverage.outcome == 'failure'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const pct = '${{ steps.coverage.outputs.pct }}';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const sha = context.sha.substring(0, 7);
+
+            let fileTable = '(file-level data unavailable)';
+            try {
+              const raw = JSON.parse(fs.readFileSync('coverage-by-file.json', 'utf8'));
+              const rows = raw
+                .filter(f => f.pct < 80)
+                .map(f => `| \`${f.file}\` | ${f.pct}% |`);
+              if (rows.length > 0) {
+                fileTable = '| File | Coverage |\n|------|----------|\n' + rows.join('\n');
+              } else {
+                fileTable = 'No individual files below 80%. Overall coverage dropped due to aggregate effect.';
+              }
+            } catch (e) {
+              core.warning(`Could not read coverage-by-file.json: ${e.message}`);
+            }
+
+            const body = [
+              '## Summary',
+              '',
+              `Coverage dropped to **${pct}%** (threshold: 80%) on main after commit ${sha}.`,
+              `Detected by [R-CMD-check workflow run](${runUrl}).`,
+              '',
+              '## Motivation',
+              '',
+              'Automatic Issue created by `R-CMD-check.yaml` coverage gate (post-merge).',
+              'This is an opportunity to review and improve test coverage comprehensively.',
+              '',
+              '## Related ADR',
+              '',
+              '- ADR: None (test coverage remediation)',
+              '',
+              '## Schema Impact',
+              '',
+              '- [x] No schema impact',
+              '',
+              '## Proposed Approach',
+              '',
+              '### Files below threshold',
+              '',
+              fileTable,
+              '',
+              '### Remediation steps',
+              '',
+              '1. Run `make coverage-check` locally to reproduce',
+              '2. Identify which merged PR(s) caused the regression',
+              '3. Add or improve tests for files listed above',
+              '4. Verify with `make coverage-check` before pushing',
+              '',
+              '## Acceptance Criteria (Definition of Done)',
+              '',
+              '- [ ] `make coverage-check` passes locally (>= 80%)',
+              '- [ ] New/improved tests cover the regressed files',
+              '- [ ] No existing tests removed or weakened',
+              '',
+              '## Test Plan',
+              '',
+              '| Scenario | Input / Precondition | Expected Result | Notes |',
+              '|----------|---------------------|-----------------|-------|',
+              `| Coverage restored | Run \`make coverage-check\` after fix | Coverage >= 80% | Threshold gate |`,
+              `| Regressed files improved | Check file-level coverage for files listed above | Each file >= 70% or justified | Per-file review |`,
+              `| No test regression | Run \`make test\` | All existing tests still pass | Safety check |`,
+              '',
+              '## Risks / Open Questions',
+              '',
+              '- Coverage remediation is batched (post-merge, not PR-blocking). Multiple PRs may merge before this Issue is addressed.',
+              '- File-level coverage targets are guidelines; some files (e.g., pure configuration) may have legitimately lower coverage.',
+              '',
+              '## Priority / Affected Area',
+              '',
+              `- Priority: medium`,
+              `- Affected area: tests/testthat/`,
+              '',
+              '---',
+              `*Auto-generated by R-CMD-check.yaml coverage gate. Commit: ${context.sha}*`,
+            ].join('\n');
+
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'test',
+              state: 'open',
+              per_page: 100
+            });
+            const coverageIssue = existing.data.find(
+              i => i.title.startsWith('test: coverage regression')
+            );
+
+            if (coverageIssue) {
+              core.info(`Adding evidence to existing Issue #${coverageIssue.number}`);
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: coverageIssue.number,
+                body: [
+                  `## Coverage update (${new Date().toISOString().slice(0, 10)})`,
+                  '',
+                  `Coverage: **${pct}%** after commit ${sha} ([workflow run](${runUrl}))`,
+                  '',
+                  fileTable,
+                ].join('\n')
+              });
+            } else {
+              const dateStr = new Date().toISOString().slice(0, 10);
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `test: coverage regression detected on main (${dateStr})`,
+                body: body,
+                labels: ['test']
+              });
+            }
