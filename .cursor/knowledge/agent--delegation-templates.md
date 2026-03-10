@@ -135,7 +135,7 @@ trigger CodeRabbit as fallback. Report when both CI and bot review complete.
    - Reviews: `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("coderabbit"; "i"))] | length'`
    - Inline comments: `gh api repos/{owner}/{repo}/pulls/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i"))] | length'`
    - Walkthrough: `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i"))] | length'`
-6c. CodeRabbit is done when: walkthrough comment exists, or 7 min timeout.
+6c. CodeRabbit is done when: output in ANY channel > 0 (reviews, inline comments, or walkthrough), or 7 min timeout.
 6d. Report final status.
 
 ## Prohibitions
@@ -183,7 +183,7 @@ If Codex is rate-limited, trigger CodeRabbit as fallback.
    - Reviews: `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("coderabbit"; "i"))] | length'`
    - Inline comments: `gh api repos/{owner}/{repo}/pulls/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i"))] | length'`
    - Walkthrough: `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i"))] | length'`
-4c. CodeRabbit is done when: walkthrough comment exists, or 7 min timeout.
+4c. CodeRabbit is done when: output in ANY channel > 0 (reviews, inline comments, or walkthrough), or 7 min timeout.
 
 ## Prohibitions
 - Do NOT run `git checkout`, `git switch`, `git branch`, or `git rebase`
