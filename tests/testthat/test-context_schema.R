@@ -207,6 +207,13 @@ test_that("ContextSchema: accepts empty variables list", {
   expect_equal(cs@data_expectations, list())
 })
 
+test_that("ContextSchema: NULL variables rejected", {
+  expect_error(
+    ContextSchema(variables = NULL),
+    "variables"
+  )
+})
+
 test_that("ContextSchema: error with non-ContextVariable in variables", {
   # Given: a plain list instead of ContextVariable
   # When:  constructing a ContextSchema

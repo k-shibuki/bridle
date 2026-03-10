@@ -369,7 +369,8 @@ test_that("T-E2E-05: malformed draft without graph key is rejected", {
   draft_knowledge(pkg, output_dir = tmp)
   expect_error(
     bridle_agent(tmp),
-    "must contain a top-level.*graph.*key"
+    "must contain a top-level.*graph.*key",
+    class = "rlang_error"
   )
 })
 
@@ -484,5 +485,5 @@ test_that("T-E2E-07: empty knowledge section causes reader error", {
 
   knowledge_path <- file.path(tmp, "knowledge", "metafor.yaml")
   expect_true(file.exists(knowledge_path))
-  expect_error(read_knowledge(knowledge_path), "topic")
+  expect_error(read_knowledge(knowledge_path), "topic", class = "rlang_error")
 })
