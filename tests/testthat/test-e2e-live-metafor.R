@@ -120,7 +120,7 @@ test_that("T-LIVE-02: validate_plugin() documents quality of real draft", {
     if (n_warnings > 0L) c("!" = "Warnings: {paste(result@warnings, collapse = '; ')}")
   ))
 
-  expect_s3_class(result, "bridle::ValidationResult")
+  expect_true(S7::S7_inherits(result, ValidationResult)) # nolint: object_usage_linter. S7 class
 })
 
 # -- T-LIVE-03: Single-turn runtime smoke test ---------------------------------
