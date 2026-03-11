@@ -145,6 +145,7 @@
 <url><loc>/reference/read_knowledge.html</loc></url>
 <url><loc>/reference/reconstruct_abstract.html</loc></url>
 <url><loc>/reference/reset_api_state.html</loc></url>
+<url><loc>/reference/resolve_chat_provider.html</loc></url>
 <url><loc>/reference/resolve_function.html</loc></url>
 <url><loc>/reference/resolve_policy.html</loc></url>
 <url><loc>/reference/response_parser.html</loc></url>
