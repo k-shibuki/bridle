@@ -77,7 +77,7 @@ For copy-paste reply templates with examples, see
 Post a threaded reply to an inline review comment:
 
 ```bash
-gh api repos/{owner}/{repo}/pulls/<N>/comments/<comment_id>/replies \
+gh api -X POST repos/{owner}/{repo}/pulls/<N>/comments/<comment_id>/replies \
   -f body="Fixed in \`abc1234\`. Aligned timeout values to 20 min."
 ```
 
