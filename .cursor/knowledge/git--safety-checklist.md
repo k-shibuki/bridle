@@ -8,7 +8,11 @@ Run before starting any work when multiple agents may be active:
 - [ ] Subagent prompts explicitly prohibit `git checkout`, `git switch`, `git rebase` (exception: "Dependent PR Merge Chain" template allows scoped `--onto` rebase)
 - [ ] Main agent and subagent work on **different branches**
 - [ ] Before starting work, run `git status` to detect unexpected state
-- [ ] After subagent completion, verify branch state before continuing
+- [ ] After subagent completion, verify branch state before continuing:
+  - `git fetch origin` to sync tracking refs
+  - `git ls-remote origin <branch>` to confirm remote ref matches expected SHA
+  - If subagent pushed: `gh pr view <N> --json headRefOid -q '.headRefOid'` to verify PR head matches
+  - If mismatch: see `git--quick-recovery.md` § Force-with-Lease Rejected
 - [ ] Avoid force-push in the normal PR flow — use new commits, not `amend` + force-push. When force-push is unavoidable (recovery scenarios like `--onto` rebase), use `--force-with-lease` (never `--force`)
 - [ ] Never use `--admin` on `gh pr merge` — diagnose the block instead
 - [ ] PRs always target `main` (never `--base feat/<branch>`)

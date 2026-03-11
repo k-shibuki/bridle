@@ -1,5 +1,5 @@
 ---
-trigger: lost commit, reflog, commit disappeared, rebase lost, push rejected, diverged branch, non-fast-forward, force-with-lease
+trigger: lost commit, reflog, commit disappeared, rebase lost, push rejected, diverged branch, non-fast-forward, force-with-lease, force-with-lease failure, force-with-lease rejected, remote ref updated
 ---
 # Quick Git Recovery
 
@@ -16,6 +16,33 @@ git reflog --all | grep "<part-of-commit-message>"
 # 2. Cherry-pick it back
 git cherry-pick <found-sha>
 ```
+
+## Force-with-Lease Rejected
+
+**Symptom**: `git push --force-with-lease` fails with `remote rejected` or `stale info`. This typically occurs when a background process (subagent, prior push) updated the remote ref after the local tracking ref was last fetched.
+
+```bash
+# 1. Sync local tracking refs with remote
+git fetch origin
+
+# 2. Compare remote SHA with local HEAD
+remote_sha=$(git ls-remote origin <branch> | awk '{print $1}')
+local_sha=$(git rev-parse HEAD)
+
+# 3a. If SHAs match: a prior push already succeeded, no action needed
+
+# 3b. If SHAs differ: the remote was updated by another process.
+#     Do NOT blindly retry — investigate first.
+#     Check git log to understand what the remote has:
+git log --oneline HEAD..origin/<branch>
+
+# 3c. If the remote commit is from your own workflow (e.g., an earlier
+#     non-rebased push), re-rebase onto current state:
+git rebase --onto origin/main <new-boundary> <branch>
+git push --force-with-lease origin <branch>
+```
+
+**Root cause pattern**: A background subagent's `git push` completes between your `git fetch` and `git push --force-with-lease`. The lease check compares against the stale local tracking ref, not the now-updated remote.
 
 ## Diverged Local and Remote
 

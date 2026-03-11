@@ -19,7 +19,7 @@ Lookup table for `.cursor/knowledge/` atoms and `docs/adr/` ADRs. Use triggers t
 | `debug--instrumentation-template.md` | instrumentation, debug log, agent log, propagation tracking, R message logging, cli_inform, boundary logging |
 | `debug--method-priority.md` | debug method, reprex, R browser(), rlang last_error, last_trace, rlang entrace, R debugging, debug priority |
 | `git--pr-consolidation-split.md` | PR consolidation, multiple issues one PR, split PR, 1:1 principle |
-| `git--quick-recovery.md` | lost commit, reflog, commit disappeared, rebase lost, push rejected, diverged branch, non-fast-forward, force-with-lease |
+| `git--quick-recovery.md` | lost commit, reflog, commit disappeared, rebase lost, push rejected, diverged branch, non-fast-forward, force-with-lease, force-with-lease failure, force-with-lease rejected, remote ref updated |
 | `git--safety-checklist.md` | git safety, concurrent agent, pre-work verification, force-with-lease, PR auto-close, base branch deleted |
 | `git--squash-merge-dependent-branch.md` | squash merge conflict, rebase --onto, dependent branch, dependent PR |
 | `git--subagent-branch-interference.md` | subagent branch, misplaced commit, git checkout interference, cherry-pick recovery, commit on wrong branch |
