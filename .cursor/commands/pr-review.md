@@ -67,7 +67,7 @@ All required checks must pass. If any check fails, the PR is not ready for merge
 
 Bot reviews are triggered in `pr-create` Step 5 (or `review-fix` Step 5b) and polled by a background subagent. By the time `pr-review` runs, the subagent has reported which reviewers responded.
 
-**Inline fallback**: If no subagent was launched (e.g., continuous execution mode), the agent MUST poll directly using the algorithm in `review--bot-lifecycle.md` § Polling Algorithm (30s intervals, 7-min timeout). Do NOT classify a bot as timed out before the 7-min threshold — intermediate states like ACKNOWLEDGED and ACCEPTED mean the bot is still processing.
+**Inline fallback**: If no subagent was launched (e.g., continuous execution mode), the agent MUST poll directly using the algorithm in `review--bot-lifecycle.md` § Polling Algorithm (30s intervals, 20-min timeout). Do NOT classify a bot as timed out before the 20-min threshold — intermediate states like ACKNOWLEDGED and ACCEPTED mean the bot is still processing.
 
 Use the detection commands from `review--bot-lifecycle.md` § Output Detection to scan **all known reviewers** (CodeRabbit and Codex), regardless of whether the agent triggered them. Reviews from external sources (user via GitHub GUI, GitHub App auto-trigger, other bots) are equally valid review sources.
 
@@ -75,10 +75,10 @@ Use the detection commands from `review--bot-lifecycle.md` § Output Detection t
 |----------|--------|--------|
 | CodeRabbit | **Reviewed (findings)** | Include findings in Step 7 |
 | CodeRabbit | **Reviewed (clean)** | Note "CodeRabbit: no findings" |
-| CodeRabbit | **RATE_LIMITED / TIMED_OUT** | Note in report; proceed without. "TIMED_OUT" = 7 min elapsed per `review--bot-lifecycle.md` § Timing |
+| CodeRabbit | **RATE_LIMITED / TIMED_OUT** | Note in report; proceed without. "TIMED_OUT" = 20 min elapsed per `review--bot-lifecycle.md` § Timing |
 | Codex | **Reviewed (findings)** | Include findings in Step 7 |
 | Codex | **Reviewed (clean)** | Note "Codex: no findings" |
-| Codex | **RATE_LIMITED / TIMED_OUT** | Note in report; proceed without. "TIMED_OUT" = 7 min elapsed per `review--bot-lifecycle.md` § Timing |
+| Codex | **RATE_LIMITED / TIMED_OUT** | Note in report; proceed without. "TIMED_OUT" = 20 min elapsed per `review--bot-lifecycle.md` § Timing |
 | Either | **Externally reviewed** | Include findings (not agent-triggered but valid) |
 | Either | **Not triggered** | Note "not triggered" with reason |
 
