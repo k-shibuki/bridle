@@ -61,8 +61,14 @@ Auto-review is OFF.
 |---|---|
 | **COMPLETED** | Review with `submitted_at > trigger_time` and `body != ""` |
 | **COMPLETED_CLEAN** | Codex only: thumbs-up on trigger comment |
+| **COMPLETED_SILENT** | CR incremental review only: trigger acked, > 7 min elapsed, no review object, no inline comments, no rate limit, no new threads |
 | **RATE_LIMITED** | PR comment contains "Rate limit exceeded" (after `trigger_time`) |
 | **TIMED_OUT** | 20 min elapsed, no completion signal |
+
+**COMPLETED_SILENT**: When CR's incremental review finds no new issues,
+it does not post a review object. The absence of output after sufficient
+time IS the signal. This is distinct from TIMED_OUT (which uses the
+20 min threshold).
 
 Always use API checks — never infer from timing alone.
 

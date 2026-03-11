@@ -54,22 +54,31 @@ These checks are the first step of `pr-merge` and cannot be skipped:
    If the project moves to parallel multi-agent development, reconsider enabling
    `strict: true` or GitHub Merge Queue.
 
-5. **Last bot review must post-date the last push** (review freshness):
+5. **Bot review must cover the latest push** (review freshness):
 
+   The agent must have evidence that the latest push has been reviewed.
+   Acceptable evidence (any one is sufficient):
+
+   **(a) Review object exists after last push**:
    ```bash
-   # Last push to PR
    last_push=$(gh pr view <PR-number> --json commits \
      --jq '.commits[-1].committedDate')
-
-   # Last CodeRabbit review completion
    last_review=$(gh api repos/{owner}/{repo}/pulls/<PR-number>/reviews \
      --jq '[.[] | select(.user.login | test("coderabbit";"i"))
             | select(.body != "") | .submitted_at] | sort | last')
+   # last_review > last_push → fresh
    ```
 
-   If `last_review < last_push` (or no review exists after last push), a re-review is pending. **STOP** — wait for the re-review to complete and confirm no new findings before merging.
+   **(b) Silent clean bill** — incremental review found no new issues:
+   All of the following must be true:
+   - Re-review was triggered after the last push (trigger comment exists)
+   - Trigger was acknowledged by CR (ack comment exists)
+   - Sufficient time elapsed (> 7 min, beyond typical completion range)
+   - No new review object, no new inline comments, no rate limit
+   - No new unresolved threads
 
-   This prevents the agent from merging on stale review evidence when a re-review has been triggered but not yet completed.
+   If neither (a) nor (b) is satisfied, a re-review is pending. **STOP** —
+   wait for the re-review to complete before merging.
 
 If any precondition (1-5) is not met, do not proceed to merge. Report the blocking condition and the required action.
 
