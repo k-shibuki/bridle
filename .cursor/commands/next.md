@@ -131,11 +131,19 @@ Once the user approves (or modifies the choice):
 
 1. **Read the command specification**: Load `.cursor/commands/<command>.md`
 2. **Follow the command's steps exactly**: Do not abbreviate or skip steps defined in the command.
-3. **On completion, loop back to Step 1**: Re-assess state, propose and execute the next action without waiting for further user confirmation. Continue until the user stops or the workflow cycle completes.
+3. **On completion, loop back to Step 1**: Re-assess state, propose and execute the next action without waiting for further user confirmation.
 
 Report progress at each gate with a one-line summary (e.g., "PR #13 created, CI pending — delegated. Starting #9.").
 
 **Approval scope**: User approval removes the confirmation pause between steps — nothing else. All policies remain invariant: subagent delegation (`subagent-policy.mdc`), verification gates, command specifications (`HS-NO-SKIP`), and Hard Stops. Approval is never a basis for skipping steps or changing execution methods.
+
+**Termination conditions**: After initial approval, return to Step 1 after every action. End the turn ONLY when:
+
+1. The user's stated scope is fulfilled — if no scope was stated, when no actionable work remains (no open Issues, no open PRs, no pending CI, no active subagents)
+2. A decision requires user judgment
+3. An error persists after fix attempt
+
+Intermediate milestones (completing todos, pushing, posting replies) are never termination conditions.
 
 If the user modifies the choice (e.g., "do #8 instead of #7"), adjust and proceed.
 
