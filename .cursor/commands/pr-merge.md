@@ -235,8 +235,7 @@ Compare the remote SHA with the expected value from the subagent's return. If th
 - Use non-interactive git flags (`--no-edit`, `--no-pager`) to avoid hangs
 - Per `@.cursor/rules/agent-safety.mdc` `HS-CI-MERGE`: CI must be green before merge
 - Merge is permitted when `pr-review` concluded "Mergeable" or the user explicitly instructs to merge
-- **NEVER use `--admin` flag** on `gh pr merge`. `enforce_admins` does not reliably block repo-owner bypass on personal repositories. If merge is blocked, diagnose the cause (pending checks, merge conflicts) instead of overriding.
-- **NEVER use `git commit --amend` + force-push** in the normal PR flow. Always create a new commit for fixes. Amend+force-push leaves stale failed checks visible in the GitHub PR GUI, causing confusion between CLI and GUI state.
+- Per `@.cursor/rules/agent-safety.mdc` `HS-CI-MERGE`: NEVER use `--admin` flag on `gh pr merge`, NEVER use amend+force-push in normal PR flow. See the Hard Stop definition for rationale and enforcement details.
 
 ## Output (response format)
 

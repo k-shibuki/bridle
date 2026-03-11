@@ -17,7 +17,7 @@ Follow the quality policy here:
 
 ## Recommended Execution Order
 
-Always format before linting. Running lint on unformatted code produces false positives from styler/lintr indentation conflicts (see `@.cursor/knowledge/lint--styler-lintr-conflict.md`).
+Per `@.cursor/rules/quality-policy.mdc` § Execution Order: always format before linting. See the rule for rationale.
 
 ```bash
 # Step 1: Auto-format (fixes style issues)

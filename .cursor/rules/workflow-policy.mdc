@@ -95,6 +95,14 @@ Exception labels do NOT replace the type label — a PR has both (e.g., `fix` + 
 - `pr-create` assigns the type label at PR creation (`--label "<type>"`), plus exception label if applicable.
 - `pr-policy.yaml` validates that every PR has at least one recognized type label.
 
+## Command Separation of Concerns
+
+Each workflow command has a defined role. Commands must not perform actions that belong to another command's scope:
+
+- **Review does not merge**: `pr-review` produces a judgment only. Merge execution is always delegated to `pr-merge`.
+- **Review does not fix**: `pr-review` identifies issues. Fix execution is always delegated to `review-fix`.
+- **Merge does not review**: `pr-merge` executes merge decisions. Review judgment is handled by `pr-review`.
+
 ## Container Prerequisite
 
 All R commands MUST run inside container `bridle-dev`. Run `make doctor` to verify; `make container-up` to start.

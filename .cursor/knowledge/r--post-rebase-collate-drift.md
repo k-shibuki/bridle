@@ -10,10 +10,6 @@ Error in .install_package_code_files(".", instdir) :
   files in '.../R' missing from 'Collate' field: .R
 ```
 
-**Rule**: After every `git rebase` that incorporates new R source files:
-
-1. Run `roxygen2::roxygenise()` (updates Collate and NAMESPACE)
-2. Commit the updated DESCRIPTION and NAMESPACE
-3. Then proceed with `make format` and `make ci-fast`
+**Policy** (defined in `@.cursor/rules/quality-policy.mdc` § Post-Rebase Collate Drift): After every rebase with new R files, run `roxygen2::roxygenise()`, commit the updated DESCRIPTION/NAMESPACE, then proceed with `make format` and `make ci-fast`.
 
 **Detection**: If `git diff origin/main --name-only` after rebase shows new `.R` files not authored by the current branch, roxygen regeneration is needed.
