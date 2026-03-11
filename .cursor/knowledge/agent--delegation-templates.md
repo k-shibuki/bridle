@@ -136,7 +136,7 @@ trigger mistaken for current trigger, or current trigger's ack missed).
 Use the polling algorithm from review--bot-lifecycle.md § Polling Algorithm.
 Key principle: detect completion by TIMESTAMP, not by count.
 
-1. Poll in parallel (30s intervals, max 10 min elapsed):
+1. Poll in parallel (30s intervals, max 20 min elapsed):
    - CI: `gh pr checks <N>`
    - CodeRabbit (if triggered):
      - Reviews (timestamp-filtered, empty body excluded):
@@ -155,7 +155,7 @@ Key principle: detect completion by TIMESTAMP, not by count.
    - COMPLETED: review count > 0 (timestamp-filtered, non-empty body)
    - COMPLETED_CLEAN: Codex thumbs-up > 0 on trigger comment
    - RATE_LIMITED: PR comment from reviewer contains "Rate limit exceeded"
-   - TIMED_OUT: 7 min elapsed with no completion signal
+   - TIMED_OUT: 20 min elapsed with no completion signal
 3a. IF reviewer reports RATE_LIMITED (per `subagent-policy.mdc` § Rate-Limit Recovery Policy):
    - Parse wait time from the rate-limit comment (see `review--bot-lifecycle.md` § Rate-Limit Detection and Recovery Pattern; 30s buffer is already included in the parsed value)
    - Sleep for parsed_seconds
@@ -216,7 +216,7 @@ trigger mistaken for current trigger, or current trigger's ack missed).
 Use the polling algorithm from review--bot-lifecycle.md § Polling Algorithm.
 Key principle: detect completion by TIMESTAMP, not by count.
 
-1. Poll triggered reviewers in parallel (30s intervals, max 7 min elapsed):
+1. Poll triggered reviewers in parallel (30s intervals, max 20 min elapsed):
    - CodeRabbit (if triggered):
      - Reviews (timestamp-filtered, empty body excluded):
        `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("coderabbit"; "i")) | select(.body != "") | select(.submitted_at > "<trigger_time>")] | length'`
@@ -229,7 +229,7 @@ Key principle: detect completion by TIMESTAMP, not by count.
    - COMPLETED: review count > 0 (timestamp-filtered, non-empty body)
    - COMPLETED_CLEAN: Codex thumbs-up > 0 on trigger comment
    - RATE_LIMITED: PR comment from reviewer contains "Rate limit exceeded"
-   - TIMED_OUT: 7 min elapsed with no completion signal
+   - TIMED_OUT: 20 min elapsed with no completion signal
 2a. IF reviewer reports RATE_LIMITED (per `subagent-policy.mdc` § Rate-Limit Recovery Policy):
    - Parse wait time from the rate-limit comment (see `review--bot-lifecycle.md` § Rate-Limit Detection and Recovery Pattern; 30s buffer is already included in the parsed value)
    - Sleep for parsed_seconds
