@@ -156,8 +156,8 @@ gh pr checks <PR_NUMBER>
 
 | Codex triggered? | Template |
 |------------------|----------|
-| Yes | Template 4: CI + Bot Review Wait (`agent--delegation-templates.md`) — CodeRabbit: YES (agent-triggered), Codex: YES |
-| No | Template 4: CI + Bot Review Wait (`agent--delegation-templates.md`) — CodeRabbit: YES (agent-triggered), Codex: NO |
+| Yes | CI + Bot Review Wait (`.cursor/templates/delegation--ci-bot-review-wait.md`) — CodeRabbit: YES (agent-triggered), Codex: YES |
+| No | CI + Bot Review Wait (`.cursor/templates/delegation--ci-bot-review-wait.md`) — CodeRabbit: YES (agent-triggered), Codex: NO |
 
 Tell the subagent that CodeRabbit is always YES (agent-triggered in Step 5a). Each reviewer is polled independently.
 

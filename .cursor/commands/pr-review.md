@@ -69,7 +69,7 @@ Bot reviews are triggered in `pr-create` Step 5 (or `review-fix` Step 5b) and po
 
 **Recovery checkpoint**: If bot review wait was not delegated to a subagent before `pr-review` started:
 
-- **Action**: Delegate now per `@.cursor/rules/subagent-policy.mdc` (`agent--delegation-templates.md` Template 5) before proceeding.
+- **Action**: Delegate now per `@.cursor/rules/subagent-policy.mdc` (`.cursor/templates/delegation--bot-review-wait.md`) before proceeding.
 - **Polling rule**: Inline polling by the main agent is prohibited — except in the sequential fallback case defined in `subagent-policy.mdc` § Fallback (non-subagent environments), where inline sequential polling is permitted.
 - **Timeout**: TIMED_OUT = 20 min elapsed per `review--bot-timing.md` § Timing.
 - **Intermediate states**: ACKNOWLEDGED and ACCEPTED mean the bot is still processing.

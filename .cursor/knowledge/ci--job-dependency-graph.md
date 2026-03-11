@@ -77,7 +77,7 @@ All `ci.yaml` jobs (except `ci-pass`) are conditional on path filters — they r
 
 ## Adaptive Polling Strategy (SSOT)
 
-This section is the **single source of truth** for CI polling intervals and time budgets. All other files (`pr-create.md`, `agent--delegation-templates.md`, etc.) reference this section instead of restating specific numbers.
+This section is the **single source of truth** for CI polling intervals and time budgets. All other files (`pr-create.md`, `.cursor/templates/delegation--*.md`, etc.) reference this section instead of restating specific numbers.
 
 Fixed-interval polling wastes time. Use a stage-aware strategy:
 

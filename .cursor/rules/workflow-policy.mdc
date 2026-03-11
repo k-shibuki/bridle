@@ -117,7 +117,7 @@ Certain task types require reading a specific knowledge file **before** starting
 
 | Task type | Read these atoms | Referenced by |
 |---|---|---|
-| Debugging / investigation | `debug--method-priority.md`, `debug--instrumentation-template.md` | `debug-strategy.mdc` |
+| Debugging / investigation | `debug--method-priority.md`, `.cursor/templates/debug--instrumentation.md` | `debug-strategy.mdc` |
 | Writing / reviewing tests | `test--mock-scope-constraint.md`, `test--mock-external-function.md`, `test--layered-mock-strategy.md`, `r--null-assignment-trap.md` | `test-strategy.mdc` |
 | Fixing lint / format issues | `lint--nolint-accepted-patterns.md`, `lint--styler-lintr-conflict.md` | `quality-policy.mdc` |
 | Responding to review comments | `review--comment-response.md` | `workflow-policy.mdc` § Review Comment Response |

@@ -153,8 +153,8 @@ Delegate the wait to a background subagent. Choose template based on CI state:
 
 | CI state | Template |
 |----------|----------|
-| CI pending (push re-triggered CI) | Template 4: CI + Bot Review Wait (`agent--delegation-templates.md`) |
-| CI already passed | Template 5: Bot Review Wait Only (`agent--delegation-templates.md`) |
+| CI pending (push re-triggered CI) | CI + Bot Review Wait (`.cursor/templates/delegation--ci-bot-review-wait.md`) |
+| CI already passed | Bot Review Wait Only (`.cursor/templates/delegation--bot-review-wait.md`) |
 
 Tell the subagent: CodeRabbit: YES (agent-triggered), Codex: YES/NO. The main agent proceeds with other work (Two-Tier Gate).
 

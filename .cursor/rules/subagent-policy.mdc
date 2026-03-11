@@ -12,7 +12,7 @@ The main agent **MUST** delegate all blocking operations (CI polling, sequential
 
 For single-PR merges, prefer auto-merge (Deterministic) over subagent delegation (Steering).
 
-Follow the **Decision Flowchart** in `agent--delegation-templates.md` § Decision Flowchart to select the correct template. The flowchart is the SSOT for template selection — do not duplicate it here.
+Follow the **Decision Flowchart** in `agent--delegation-decision.md` § Decision Flowchart to select the correct template. The flowchart is the SSOT for template selection — do not duplicate it here.
 
 The only situation that MUST NOT be delegated: code review, implementation, and user interaction (requires main agent judgment).
 
@@ -21,7 +21,7 @@ The only situation that MUST NOT be delegated: code review, implementation, and 
 When a bot reviewer returns RATE_LIMITED during subagent polling, the subagent **MUST** attempt recovery — not skip. Maximum 1 recovery attempt per reviewer per PR; a second RATE_LIMITED falls back to TIMED_OUT.
 
 For detection mechanics and wait-time parsing: `review--bot-timing.md` § Rate-Limit Detection and Recovery Pattern.
-For execution steps within templates: `agent--delegation-templates.md` Template 4 Step 3a / Template 5 Step 2a.
+For execution steps within templates: `.cursor/templates/delegation--ci-bot-review-wait.md` Step 3a / `delegation--bot-review-wait.md` Step 2a.
 
 ### Anti-pattern: inline sleep polling
 
@@ -57,7 +57,7 @@ Switching branches or starting new work before delegating is prohibited. The del
 - **MUST** use `model: "fast"` for routine operations (CI poll, merge, rebase). Omit `model` (inherit parent) for tasks requiring judgment. Never hardcode specific model names.
 - **MUST** include in every prompt: Goal, Steps, Prohibitions, Error handling, and Return format
 
-For `subagent_type` selection, configuration defaults, and reusable prompt templates: see `agent--delegation-templates.md`.
+For `subagent_type` selection and the decision flowchart: see `agent--delegation-decision.md`. For reusable prompt templates: see `.cursor/templates/delegation--*.md`.
 
 ### Productive work during delegation (Two-Tier Gate)
 

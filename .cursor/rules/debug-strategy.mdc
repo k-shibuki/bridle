@@ -9,7 +9,7 @@ alwaysApply: false
 Per `@.cursor/rules/workflow-policy.mdc` § Knowledge Consultation Triggers, the agent MUST read these knowledge atoms before starting any debug or investigation work:
 
 - `@.cursor/knowledge/debug--method-priority.md` — debug method priority, R tools reference, phase-specific checks
-- `@.cursor/knowledge/debug--instrumentation-template.md` — R instrumentation template and boundary placement
+- `@.cursor/templates/debug--instrumentation.md` — R instrumentation template and boundary placement
 
 Do not rely on memory — read the atoms every time.
 
@@ -72,4 +72,4 @@ All debugging MUST follow a hypothesis-driven cycle: the agent forms hypotheses 
 
 ### Templates and Placement
 
-For R instrumentation templates and placement strategy, see `@.cursor/knowledge/debug--instrumentation-template.md`. For R debugging tools and method priority, see `@.cursor/knowledge/debug--method-priority.md`.
+For R instrumentation templates and placement strategy, see `@.cursor/templates/debug--instrumentation.md`. For R debugging tools and method priority, see `@.cursor/knowledge/debug--method-priority.md`.

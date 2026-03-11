@@ -200,7 +200,7 @@ to the delegated merge pattern below.
 ## Delegated merge (background subagent)
 
 Delegation is the **fallback** when auto-merge is not available. See
-`@.cursor/knowledge/agent--delegation-templates.md` § Decision Flowchart for the
+`@.cursor/knowledge/agent--delegation-decision.md` § Decision Flowchart for the
 full decision tree (auto-merge → fallback → delegation).
 
 ### When to use
@@ -213,17 +213,17 @@ full decision tree (auto-merge → fallback → delegation).
 
 Launch a `shell` subagent with `model: "fast"` and `run_in_background: true`.
 
-Choose the appropriate template from `@.cursor/knowledge/agent--delegation-templates.md`:
+Choose the appropriate template from `.cursor/templates/`:
 
 | Scenario | Template |
 |----------|----------|
-| Single PR, auto-merge failed, pr-review done | Template 1: "CI-Wait + Merge (Fallback)" |
-| CI monitoring only (no merge intent) | Template 2: "CI-Wait Only" |
-| PRs with shared commits (branched from each other) | Template 3: "Dependent PR Merge Chain" (includes `--onto` rebase) |
+| Single PR, auto-merge failed, pr-review done | `delegation--ci-wait-merge.md` |
+| CI monitoring only (no merge intent) | `delegation--ci-wait-only.md` |
+| PRs with shared commits (branched from each other) | `delegation--dependent-chain.md` (includes `--onto` rebase) |
 
 Scenarios **not listed** (single PR with pr-review done, multiple independent PRs)
 are handled by auto-merge — see § Auto-merge and § Batch Auto-Merge in
-`agent--delegation-templates.md`.
+`agent--delegation-decision.md`.
 
 ### Completion detection
 

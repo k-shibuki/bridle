@@ -184,7 +184,7 @@ Issue A: implement → ... → pr-create
 
 ### Step 6: Subagent delegation for blocking operations
 
-When Step 2 identifies any **CI pending** state, delegate to a background subagent per `@.cursor/rules/subagent-policy.mdc` (delegation pattern, Two-Tier Gate, completion guarantee). Use prompt templates from `@.cursor/knowledge/agent--delegation-templates.md`.
+When Step 2 identifies any **CI pending** state, delegate to a background subagent per `@.cursor/rules/subagent-policy.mdc` (delegation pattern, Two-Tier Gate, completion guarantee). Use the decision flowchart from `@.cursor/knowledge/agent--delegation-decision.md` and prompt templates from `.cursor/templates/delegation--*.md`.
 
 ### Step 7: Handle interruptions
 

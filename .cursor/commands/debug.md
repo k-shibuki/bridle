@@ -53,7 +53,7 @@ make ci      # Full gate: validate-schemas + lint + test + check
 
 ## R Debugging Tools and Patterns
 
-For R-specific debugging tools (reprex, browser, rlang), instrumentation templates, placement strategy, and phase-specific debugging guidance, see `@.cursor/knowledge/debug--method-priority.md` and `@.cursor/knowledge/debug--instrumentation-template.md`.
+For R-specific debugging tools (reprex, browser, rlang), instrumentation templates, placement strategy, and phase-specific debugging guidance, see `@.cursor/knowledge/debug--method-priority.md` and `@.cursor/templates/debug--instrumentation.md`.
 
 ---
 
