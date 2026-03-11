@@ -15,15 +15,27 @@ Bot review triggered?
 ├── Yes + CI also pending ──→ delegation--ci-bot-review-wait.md
 ├── Yes + CI already passed ──→ delegation--bot-review-wait.md
 └── No
-    └── PR ready to merge?
-        ├── No (CI monitoring only) ──→ delegation--ci-wait-only.md
-        └── Yes
-            ├── Single PR?
-            │   ├── Yes ──→ `gh pr merge --auto --squash` (preferred, Deterministic)
-            │   │          └── Auto-merge failed? ──→ delegation--ci-wait-merge.md (Fallback)
-            │   └── No (multiple PRs)
-            │       ├── Independent PRs ──→ Batch Auto-Merge (below)
-            │       └── Dependent PRs (shared commits) ──→ delegation--dependent-chain.md
+    └── Bot review completed? (*)
+        ├── No (review pending) ──→ WAIT — do NOT set auto-merge (see pr-create.md § 5d)
+        └── Yes (or not triggered)
+            └── PR ready to merge? (**)
+                ├── No (CI monitoring only) ──→ delegation--ci-wait-only.md
+                └── Yes
+                    ├── Single PR?
+                    │   ├── Yes ──→ `gh pr merge --auto --squash` (preferred, Deterministic)
+                    │   │          └── Auto-merge failed? ──→ delegation--ci-wait-merge.md (Fallback)
+                    │   └── No (multiple PRs)
+                    │       ├── Independent PRs ──→ Batch Auto-Merge (below)
+                    │       └── Dependent PRs (shared commits) ──→ delegation--dependent-chain.md
+
+(*) Bot review completed = monitoring subagent reported REVIEWED / CLEAN / TIMED_OUT.
+    Setting auto-merge while review is pending causes review-less merges
+    (no review → no threads → conversation resolution does not block).
+
+(**) PR ready to merge = all of:
+    - pr-review concluded "Mergeable" on current HEAD
+    - No unresolved review threads
+    - No re-review pending (no push since last completed review)
 ```
 
 **Primary path**: For single PRs after `pr-review`, use `gh pr merge --auto --squash`

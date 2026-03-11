@@ -14,7 +14,22 @@ For single-PR merges, prefer auto-merge (Deterministic) over subagent delegation
 
 Follow the **Decision Flowchart** in `agent--delegation-decision.md` § Decision Flowchart to select the correct template. The flowchart is the SSOT for template selection — do not duplicate it here.
 
-The only situation that MUST NOT be delegated: code review, implementation, and user interaction (requires main agent judgment).
+### Delegation tiers
+
+| Tier | Scope | Delegable? | Guard |
+|------|-------|-----------|-------|
+| **Tier 1**: Mechanical wait | CI polling, merge wait, bot review polling | Yes | Templates in `.cursor/templates/delegation--*.md` |
+| **Tier 2**: Constrained implementation | Independent Issue implementation (file changes only) | Yes | Post-verification gate (see below) |
+| **Tier 3**: Judgment-required | `review-fix` (disposition replies), `pr-review`, architecture decisions, user interaction | **No** | Main agent only |
+
+**Tier 2 constraints** (all MUST be satisfied):
+
+- The subagent **MUST NOT** run `git commit`, `git push`, or `gh pr` commands
+- The subagent writes file changes only; the main agent reviews the diff, runs `make kb-validate`, and commits
+- Disposition replies (`Acknowledged`, `Fixed`, etc.) MUST NOT be part of a Tier 2 delegation — they require PR lifecycle awareness (Tier 3)
+- The main agent MUST verify that the subagent's changes do not introduce broken references or policy violations before committing
+
+**Tier 3 rationale**: Disposition replies require knowledge of what the PR closes, what other PRs are in flight, and the semantic intent of review comments. This context cannot be reliably conveyed in a subagent prompt.
 
 ### Rate-Limit Recovery Policy
 
@@ -54,7 +69,7 @@ Switching branches or starting new work before delegating is prohibited. The del
 ### Subagent configuration and prompts
 
 - **MUST** use `run_in_background: true` for all delegated operations
-- **MUST** use `model: "fast"` for routine operations (CI poll, merge, rebase). Omit `model` (inherit parent) for tasks requiring judgment. Never hardcode specific model names.
+- **MUST** use `model: "fast"` for Tier 1 operations (CI poll, merge, rebase). Omit `model` (inherit parent) for Tier 2 tasks requiring implementation judgment. Never hardcode specific model names.
 - **MUST** include in every prompt: Goal, Steps, Prohibitions, Error handling, and Return format
 
 For `subagent_type` selection and the decision flowchart: see `agent--delegation-decision.md`. For reusable prompt templates: see `.cursor/templates/delegation--*.md`.
