@@ -24,15 +24,23 @@ squash-merging #<A>, use `git rebase --onto` to rebase #<B> cleanly.
       `git ls-remote origin <branch-B> | awk '{print $1}'` must equal `git rev-parse HEAD`
       If mismatch, see Error handling § force-with-lease rejected.
 6. Poll CI for PR #<B> using Adaptive Polling Strategy from `ci--job-dependency-graph.md` § Adaptive Polling Strategy:
-7. Merge PR #<B>: `gh pr merge <B> --squash`
-8. Verify: `gh pr view <B> --json state -q '.state'` → "MERGED"
+7. STOP — report CI status and rebased HEAD to main agent.
+   The main agent MUST run `pr-review` on the rebased HEAD before merge.
+   Do NOT merge PR #<B> directly — the rebase changed the commit history,
+   and the previous review (if any) was on a different HEAD.
 
 ## Git operations allowed (scoped)
 - `git fetch origin main` — read-only sync
 - `git checkout <branch-B>` — only the specific branch listed above
 - `git rebase --onto origin/main <commit> <branch-B>` — targeted rebase
 - `git push --force-with-lease origin <branch-B>` — only the rebased branch
+
+## Prohibitions
 - NEVER push to main directly
+- NEVER merge PR #<B> after rebase — the main agent must run `pr-review` first
+- NEVER use `git push --force` (without `--force-with-lease`)
+- NEVER modify files or create new commits — only rebase existing commits
+- NEVER run `pr-review` or `review-fix` — these are Tier 3 (main agent only)
 
 ## Error handling
 - If CI fails on either PR: stop, report which check failed and the details URL
@@ -49,8 +57,9 @@ squash-merging #<A>, use `git rebase --onto` to rebase #<B> cleanly.
 ## Return format
 Report:
 - PR #<A>: merged (yes/no), merge SHA
-- PR #<B>: merged (yes/no), merge SHA
+- PR #<B>: CI status (pass/fail/pending), rebased HEAD: <sha>
 - Branch #<B> post-rebase HEAD: <sha> (from `git rev-parse HEAD`)
 - Push verification: remote SHA matches local HEAD (yes/no)
+- Next action required: main agent runs `pr-review` on PR #<B>
 - Any errors encountered
 ```
