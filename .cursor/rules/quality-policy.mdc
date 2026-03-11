@@ -56,7 +56,7 @@ Before writing `# nolint`, the agent MUST satisfy the following conditions in pr
 
 ### Prerequisite: Consult Knowledge
 
-Per `workflow-policy.mdc` § Knowledge Consultation Triggers, read the listed atoms before starting work. If in test code, also read `test-strategy.mdc` §7 (Helper Colocation).
+Per `workflow-policy.mdc` § Knowledge Consultation Triggers, read the listed atoms before starting work. If in test code, also read `@.cursor/knowledge/test--helper-conventions.md` (Colocation rule).
 
 ### Priority 1: Code Restructuring
 
@@ -73,7 +73,7 @@ If restructuring resolves the lint, no `# nolint` is needed and the process ends
 
 ### Priority 2: Co-location (Test Code Only)
 
-If the lint is `object_usage_linter` in test/helper code and Priority 1 does not apply, the agent MUST attempt co-location: move the referenced function into the **same** `helper-*.R` file so the linter can resolve the reference (see `@.cursor/rules/test-strategy.mdc` §7).
+If the lint is `object_usage_linter` in test/helper code and Priority 1 does not apply, the agent MUST attempt co-location: move the referenced function into the **same** `helper-*.R` file so the linter can resolve the reference (see `@.cursor/knowledge/test--helper-conventions.md` § Colocation rule).
 
 If co-location resolves the lint, no `# nolint` is needed and the process ends.
 
