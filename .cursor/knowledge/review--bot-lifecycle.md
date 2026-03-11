@@ -234,6 +234,7 @@ recovery. The **policy** (recover vs skip) is in `subagent-policy.mdc`
 ```bash
 gh api repos/{owner}/{repo}/issues/<N>/comments \
   --jq '[.[] | select(.user.login | test("coderabbit"; "i"))
+        | select(.created_at > "<trigger_time>")
         | select(.body | test("Rate limit exceeded"))
         | {id, created_at, body}]'
 ```
@@ -260,7 +261,7 @@ Convert to seconds: `minutes * 60 + seconds + 30` (30s safety buffer included).
 2. Parse wait time from comment body (includes 30s buffer per formula above)
 3. Sleep for `parsed_seconds`
 4. Re-trigger: `gh pr comment <N> --body "@coderabbitai review"`
-5. Reset state to TRIGGERED and resume normal polling
+5. Reset both `trigger_time` and `trigger_id` to the new comment's `created_at` and ID, reset state to TRIGGERED, and resume normal polling
 6. If a second RATE_LIMITED occurs: stop, report as TIMED_OUT
 
 Maximum 1 recovery attempt per reviewer per PR.

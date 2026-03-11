@@ -162,7 +162,7 @@ Key principle: detect completion by TIMESTAMP, not by count.
    - Re-trigger the same reviewer that was rate-limited:
      - CodeRabbit: `gh pr comment <N> --body "@coderabbitai review"`
      - Codex: `gh pr comment <N> --body "@codex review"`
-   - Reset trigger_time to the new comment's created_at
+   - Reset both trigger_time and trigger_id to the new comment's created_at and ID
    - Resume polling from Step 1
    - IF second RATE_LIMITED: treat as TIMED_OUT (max 1 retry)
 4. Report final status when CI and all triggered reviewers are done.
@@ -236,7 +236,7 @@ Key principle: detect completion by TIMESTAMP, not by count.
    - Re-trigger the same reviewer that was rate-limited:
      - CodeRabbit: `gh pr comment <N> --body "@coderabbitai review"`
      - Codex: `gh pr comment <N> --body "@codex review"`
-   - Reset trigger_time to the new comment's created_at
+   - Reset both trigger_time and trigger_id to the new comment's created_at and ID
    - Resume polling from Step 1
    - IF second RATE_LIMITED: treat as TIMED_OUT (max 1 retry)
 3. Report final status when all triggered reviewers are done.
