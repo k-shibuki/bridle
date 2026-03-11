@@ -26,7 +26,9 @@ merge until every thread is resolved. This is a Deterministic guard.
 
 ## Disposition Categories (4, exhaustive)
 
-Every thread receives exactly one disposition reply (per `HS-REVIEW-RESOLVE`).
+Every thread receives a disposition reply before being resolved (per
+`HS-REVIEW-RESOLVE`). If the bot objects after the initial reply, the
+agent posts a new disposition reply per round until consensus is reached.
 
 | Category | When | Consensus requirement | Template |
 |---|---|---|---|

@@ -79,8 +79,10 @@ Always use API checks — never infer from timing alone.
 1. Detect: PR comment from bot containing "Rate limit exceeded"
 2. Parse wait time: `wait \*\*(\d+) minutes? and (\d+) seconds?\*\*`
    → `minutes * 60 + seconds + 30` (30s buffer)
-3. Sleep, re-trigger same reviewer, reset `trigger_time`/`trigger_id`
-4. Second rate limit → treat as TIMED_OUT (max 1 recovery)
+3. Sleep, re-trigger same reviewer
+4. Fetch the new trigger comment's `id` and `created_at`, then reset
+   `trigger_time` and `trigger_id` to these fresh values before resuming
+5. Second rate limit → treat as TIMED_OUT (max 1 recovery)
 
 **Codex fallback**: When CodeRabbit TIMED_OUT on a Codex-eligible change
 type (R code, schemas, security, ADRs), trigger `@codex review` as
