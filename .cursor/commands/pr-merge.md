@@ -214,7 +214,7 @@ Choose the appropriate template from `.cursor/templates/`:
 
 | Scenario | Template |
 |----------|----------|
-| Single PR, auto-merge failed, pr-review done | `delegation--ci-wait-only.md` (poll CI, then `gh pr merge`) |
+| Single PR, auto-merge failed, pr-review done | `delegation--ci-wait-only.md` (poll CI only; main agent runs `gh pr merge <N> --squash` after subagent reports CI green) |
 | CI monitoring only (no merge intent) | `delegation--ci-wait-only.md` |
 | PRs with shared commits (branched from each other) | `delegation--dependent-chain.md` (includes `--onto` rebase) |
 
