@@ -6,7 +6,9 @@ make_test_node <- function(type = "decision", topic = "effect_measure",
                            parameter = "sm") {
   Node( # nolint: object_usage_linter. S7 class in R/decision_graph.R
     type = type, topic = topic, parameter = parameter,
-    transitions = list(Transition(to = "end", always = TRUE)) # nolint: object_usage_linter. S7 class in R/decision_graph.R
+    transitions = list(
+      Transition(to = "end", always = TRUE) # nolint: object_usage_linter. S7 class
+    )
   )
 }
 
@@ -78,14 +80,18 @@ test_that("PromptResult constructs correctly", {
 
 test_that("PromptResult validates node_type", {
   expect_error(
-    PromptResult(prompt_text = "x", node_type = "invalid"), # nolint: object_usage_linter. S7 class in R/prompt_assembler.R
+    PromptResult( # nolint: object_usage_linter. S7 class
+      prompt_text = "x", node_type = "invalid"
+    ),
     "node_type"
   )
 })
 
 test_that("PromptResult accepts all valid node types", {
   for (nt in c("decision", "diagnosis", "execution", "context_gathering")) {
-    pr <- PromptResult(prompt_text = "t", node_type = nt) # nolint: object_usage_linter. S7 class in R/prompt_assembler.R
+    pr <- PromptResult( # nolint: object_usage_linter. S7 class
+      prompt_text = "t", node_type = nt
+    )
     expect_equal(pr@node_type, nt)
   }
 })
