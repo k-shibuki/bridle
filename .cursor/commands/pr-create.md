@@ -136,14 +136,14 @@ gh pr comment <PR> --body "@coderabbitai review"
 
 Auto-review is OFF (requires paid seat). The agent MUST trigger explicitly.
 
-#### 5b. Codex (manual — agent decision required)
+#### 5b. Codex (user instruction only)
 
-Read `@.cursor/knowledge/review--bot-operations.md` § Two-Tier Trigger Table. Codex is triggered only for complex changes:
+Codex is triggered **only when the user explicitly instructs**. The agent
+never triggers Codex autonomously. If the user requests Codex review:
 
-| Change type | Codex |
-|-------------|-------|
-| R code, schemas, security, ADRs | **Yes** — `gh pr comment <PR> --body "@codex review"` |
-| CI config, shell scripts, workflow, docs | No |
+```bash
+gh pr comment <PR> --body "@codex review"
+```
 
 #### 5b′. Capture trigger metadata and delegate
 

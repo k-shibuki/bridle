@@ -104,9 +104,13 @@ git push
 
 ### 5b. Bot re-review (consensus verification)
 
-Re-trigger reviewers per `@.cursor/knowledge/review--bot-operations.md` § Re-review:
-- CodeRabbit: always (`@coderabbitai review`)
-- Codex: only if the push addresses a Codex-sourced finding
+Re-trigger per `@.cursor/knowledge/review--bot-operations.md` § Re-review:
+- CodeRabbit: `@coderabbitai review` (if CR review budget remaining)
+- Codex: only if the user instructs
+
+If the CR review budget (2 per PR) is exhausted, skip re-review and
+verify consensus using existing evidence (CR's disposition replies,
+auto-resolves, and agent verification).
 
 Delegate wait via `.cursor/templates/delegation--review-wait.md` (Monitor CI: YES if CI re-triggered, NO otherwise). The re-review result is needed by Step 3b to verify consensus — see `review--consensus-protocol.md` § Consensus Flow.
 

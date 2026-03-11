@@ -13,8 +13,8 @@ For the consensus model (disposition, resolve, agreement), see
 
 | Role | Reviewer | When triggered | Strength |
 |---|---|---|---|
-| **Primary** | CodeRabbit (Pro/OSS) | Every PR | Walkthrough, tool integrations, incremental review |
-| **Supplementary** | Codex Cloud | Complex PRs only | Cross-file logic, deep semantic understanding |
+| **Primary** | CodeRabbit (Pro/OSS) | Every PR (agent-triggered) | Walkthrough, tool integrations, incremental review |
+| **Supplementary** | Codex Cloud | User instruction only | Cross-file logic, deep semantic understanding |
 
 Both read `AGENTS.md` and apply its review guidelines.
 
@@ -24,24 +24,21 @@ Both read `AGENTS.md` and apply its review guidelines.
 # CodeRabbit (always — every PR):
 gh pr comment <PR> --body "@coderabbitai review"
 
-# Codex (complex changes only — R code, schemas, security, ADRs):
+# Codex (user instruction only):
 gh pr comment <PR> --body "@codex review"
 ```
 
 Agent triggers CodeRabbit in `pr-create` Step 5a and `review-fix` Step 5b.
-Auto-review is OFF.
+Auto-review is OFF. Codex is triggered **only when the user explicitly
+instructs** — the agent never triggers Codex autonomously.
 
-### Two-Tier Trigger Table
+### CR Review Budget
 
-| Change type | CodeRabbit | Codex | Rationale |
-|---|---|---|---|
-| R code | Yes | **Yes** | S7 class logic, NULL traps |
-| Schemas (`docs/schemas/`) | Yes | **Yes** | Schema-class consistency |
-| Security-related | Yes | **Yes** | High risk |
-| ADRs (`docs/adr/`) | Yes | **Yes** | Architecture-code alignment |
-| CI config, shell scripts | Yes | No | Tool linters cover syntax |
-| Workflow (`.cursor/`) | Yes | No | Cross-reference consistency |
-| Docs only (non-ADR `.md`) | Yes | No | Low risk |
+**Max 2 review requests per PR.** This includes the initial review and
+at most 1 re-review. If the budget is exhausted, the agent proceeds
+with the evidence already collected (existing review results + agent
+verification). Rate-limit recovery re-triggers do NOT count against
+the budget (the original request was not fulfilled).
 
 ## Detection
 
@@ -90,9 +87,7 @@ Always use API checks — never infer from timing alone.
    `trigger_time` and `trigger_id` to these fresh values before resuming
 5. Second rate limit → treat as TIMED_OUT (max 1 recovery)
 
-**Codex fallback**: When CodeRabbit TIMED_OUT and Codex was NOT already
-triggered for this review cycle, trigger `@codex review` as fallback
-(only for Codex-eligible change types: R code, schemas, security, ADRs).
+**Codex fallback**: None. Codex is triggered only by user instruction.
 
 ## Agreement Mechanics
 
@@ -112,12 +107,13 @@ is needed. For Codex, re-review is the only path to consensus.
 
 ## Re-review
 
-Agent re-triggers after every `review-fix` push:
+Agent re-triggers CR after `review-fix` push, subject to the budget:
 
 | Condition | CodeRabbit | Codex |
 |---|---|---|
-| Any push to PR branch | `@coderabbitai review` | — |
-| Push addresses Codex-sourced finding | `@coderabbitai review` | `@codex review` |
+| Push to PR branch (budget remaining) | `@coderabbitai review` | — |
+| Push to PR branch (budget exhausted) | No — use existing evidence | — |
+| User instructs Codex re-review | — | `@codex review` |
 
 All findings receive equal evaluation (P0/P1) regardless of source.
 Deduplicate when both reviewers flag the same issue.
