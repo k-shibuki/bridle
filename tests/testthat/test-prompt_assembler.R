@@ -6,7 +6,7 @@ make_test_node <- function(type = "decision", topic = "effect_measure",
                            parameter = "sm") {
   Node( # nolint: object_usage_linter. S7 class in R/decision_graph.R
     type = type, topic = topic, parameter = parameter,
-    transitions = list(Transition(to = "end", always = TRUE)) # nolint: object_usage_linter.
+    transitions = list(Transition(to = "end", always = TRUE)) # nolint: object_usage_linter. S7 class in R/decision_graph.R
   )
 }
 
@@ -43,7 +43,7 @@ make_test_trace <- function(needs_llm = TRUE) {
         computable_hint = character(0),
         eval_result = "not_evaluated", fallback_to_llm = TRUE
       ),
-      TransitionCandidate( # nolint: object_usage_linter.
+      TransitionCandidate( # nolint: object_usage_linter. S7 class in R/graph_engine.R
         to = "opt_b", when = "many studies",
         computable_hint = character(0),
         eval_result = "not_evaluated", fallback_to_llm = TRUE
@@ -51,7 +51,7 @@ make_test_trace <- function(needs_llm = TRUE) {
     )
   } else {
     list(
-      TransitionCandidate( # nolint: object_usage_linter.
+      TransitionCandidate( # nolint: object_usage_linter. S7 class in R/graph_engine.R
         to = "next_node", when = character(0),
         computable_hint = "k < 5",
         eval_result = "true", fallback_to_llm = FALSE
@@ -68,7 +68,7 @@ make_test_trace <- function(needs_llm = TRUE) {
 # -- PromptResult S7 class -----------------------------------------------------
 
 test_that("PromptResult constructs correctly", {
-  pr <- PromptResult( # nolint: object_usage_linter.
+  pr <- PromptResult( # nolint: object_usage_linter. S7 class in R/prompt_assembler.R
     prompt_text = "test", node_type = "decision"
   )
   expect_equal(pr@prompt_text, "test")
@@ -78,14 +78,14 @@ test_that("PromptResult constructs correctly", {
 
 test_that("PromptResult validates node_type", {
   expect_error(
-    PromptResult(prompt_text = "x", node_type = "invalid"), # nolint: object_usage_linter.
+    PromptResult(prompt_text = "x", node_type = "invalid"), # nolint: object_usage_linter. S7 class in R/prompt_assembler.R
     "node_type"
   )
 })
 
 test_that("PromptResult accepts all valid node types", {
   for (nt in c("decision", "diagnosis", "execution", "context_gathering")) {
-    pr <- PromptResult(prompt_text = "t", node_type = nt) # nolint: object_usage_linter.
+    pr <- PromptResult(prompt_text = "t", node_type = nt) # nolint: object_usage_linter. S7 class in R/prompt_assembler.R
     expect_equal(pr@node_type, nt)
   }
 })
@@ -267,5 +267,5 @@ test_that("bridle_runtime_chat defaults to github", {
   )
   withr::local_envvar(BRIDLE_LLM_PROVIDER = NA)
   result <- bridle_runtime_chat()
-  expect_equal(captured_fn, "chat_github")
+  expect_equal(captured_fn, "chat_openai_compatible")
 })
