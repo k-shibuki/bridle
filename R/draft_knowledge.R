@@ -73,7 +73,7 @@ bridle_chat <- function(prompt, provider = NULL, model = NULL) {
     "Output ONLY valid YAML, no markdown fences or commentary."
   )
 
-  resolved <- resolve_chat_provider(
+  resolved <- resolve_chat_provider( # nolint: object_usage_linter. function defined in R/llm_utils.R
     provider, model,
     extra_args = list(system_prompt = sys_prompt, echo = "none")
   )
