@@ -58,15 +58,15 @@ exec bash tools/check-commit-msg.sh \"\$1\"
 "
 
 # --- pre-commit hook ---
-install_hook "pre-commit" '#!/usr/bin/env bash
-'"${MARKER}"': nolint annotation validator
+install_hook "pre-commit" "#!/usr/bin/env bash
+${MARKER}: nolint annotation validator
 set -euo pipefail
 
-staged_r=$(git diff --cached --name-only --diff-filter=ACM -- "*.R" "*.r") || true
-if [[ -n "$staged_r" ]]; then
-  echo "$staged_r" | xargs bash tools/check-nolint.sh
+staged_r=\$(git diff --cached --name-only --diff-filter=ACM -- \"*.R\" \"*.r\") || true
+if [[ -n \"\$staged_r\" ]]; then
+  echo \"\$staged_r\" | xargs bash tools/check-nolint.sh
 fi
-'
+"
 
 # --- pre-push hook ---
 install_hook "pre-push" "#!/usr/bin/env bash
