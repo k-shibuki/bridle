@@ -161,13 +161,21 @@ gh pr checks <PR_NUMBER>
 
 Tell the subagent that CodeRabbit is always YES (agent-triggered in Step 5a). Each reviewer is polled independently.
 
-**Preferred shortcut**: If `pr-review` has already concluded "Mergeable" (e.g., user pre-approved the merge), set auto-merge immediately and skip polling:
+#### 5d. Auto-merge precondition (REQUIRED before setting auto-merge)
 
-```bash
-gh pr merge <PR_NUMBER> --auto --squash
-```
+Auto-merge MUST NOT be set until bot review has completed. Setting auto-merge while review is pending allows CI-green merges without review (no review → no threads → `required_conversation_resolution` does not block).
 
-See `@.cursor/commands/pr-merge.md` § Auto-merge for details.
+| Bot review state | Auto-merge permitted? |
+|---|---|
+| Not triggered (no bot review for this PR) | Yes — set immediately after CI green |
+| REVIEWED / CLEAN / TIMED_OUT (monitoring subagent reported completion) | Yes — proceed to `pr-review` first, then set auto-merge |
+| Pending / RATE_LIMITED with recovery in progress | **No** — wait for monitoring subagent to complete |
+
+**Correct flow**: `pr-create` → trigger bot review (5a/5b) → delegate CI+review monitoring (5c) → subagent reports completion → `pr-review` → auto-merge or `pr-merge`.
+
+**Anti-pattern**: Setting `gh pr merge --auto --squash` immediately after `pr-create` before bot review completes. This bypasses review entirely.
+
+See `@.cursor/commands/pr-merge.md` § Auto-merge for the full precondition list.
 
 ### 6. If CI fails: diagnose, fix, re-push
 

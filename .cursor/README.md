@@ -186,18 +186,21 @@ doctor → issue-create → implement ─────────→ test-create
                                                   commit → pr-create → [bot review trigger + CI] → pr-review → review-fix (if needed) → pr-merge
 ```
 
-When CI is pending, `next` always delegates CI-wait to a background subagent (see `subagent-policy.mdc`). The main agent proceeds with independent Issues or housekeeping. After CI passes, `pr-review` runs before merge:
+When CI is pending, `next` always delegates CI+review monitoring to a background subagent (see `subagent-policy.mdc`). The main agent proceeds with independent Issues (Tier 2 delegation allowed) or housekeeping. Auto-merge MUST NOT be set until bot review completes (see `pr-create.md` § 5d). After CI+review completes, `pr-review` runs before merge:
 
 ```
                          ┌──────────────────────────────────────────────┐
-                         │  Background subagent (fast)                  │
-pr-create → [CI pending] ┤  CI poll → report                           │
+                         │  Background subagent (Tier 1 — fast)         │
+pr-create → [CI pending] ┤  CI poll + bot review poll → report          │
                          └──────────────────────────────────────────────┘
                          │
             Main agent   │  implement (next Issue) → test-create → ...
-                         │
-                         └→ next re-assessment checks subagent transcript
+            (or Tier 2   │  [subagent writes files, main agent commits]
+             delegation) │
+                         └→ next re-assessment: CI+review done → pr-review → auto-merge
 ```
+
+Delegation follows a 3-tier model (see `subagent-policy.mdc` § Delegation tiers): Tier 1 (mechanical wait), Tier 2 (constrained implementation — subagent MUST NOT commit/push), Tier 3 (judgment-required — main agent only).
 
 - **`next`** can be invoked at any point to assess the current state and propose the appropriate next command. After approval, it delegates to the command and loops back for the next step. When blocking operations (CI polling) are detected, `next` delegates them to background subagents (see `subagent-policy.mdc`).
 - `implement` auto-selects the next Issue when no Issue number is provided (analyzes dependencies, priority, and blocked status).

@@ -36,6 +36,8 @@ resolved (per `agent-safety.mdc` `HS-REVIEW-RESOLVE`).
 | **False positive** | Bot misidentified an issue | `False positive. <why detection was wrong>.` |
 | **Acknowledged** | Valid but out of PR scope | `Acknowledged. <brief assessment>. Tracked in #<issue>.` |
 
+**Acknowledged invariant**: The tracking target (`#<issue>`) MUST differ from the Issue the PR closes. If the PR body contains `Closes #N`, then `Tracked in #N` is prohibited — the finding would be lost when the Issue is auto-closed on merge. Either fix the finding in this PR (use `Fixed`) or create a new Issue for tracking.
+
 ### Examples and Templates
 
 For copy-paste reply templates with examples, see `.cursor/templates/review--disposition-reply.md`.
@@ -126,6 +128,10 @@ See `review-fix.md` Step 3b for the full procedure.
   remains unresolved.
 - **Multiple comments in one thread**: Reply once to the root comment; the
   disposition covers the entire thread.
+- **Self-closing tracker**: If `Acknowledged. Tracked in #N` where the PR
+  `Closes #N`, the tracking is lost on merge. This occurred in PR #211
+  where 6 findings were tracked in #202 (the Issue being closed). Always
+  verify the tracking target survives the PR merge.
 
 ## Related
 

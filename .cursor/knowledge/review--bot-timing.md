@@ -75,6 +75,20 @@ Convert to seconds: `minutes * 60 + seconds + 30` (30s safety buffer included).
 
 Maximum 1 recovery attempt per reviewer per PR.
 
+## Codex Fallback on CodeRabbit TIMED_OUT
+
+When CodeRabbit reaches TIMED_OUT (including after a failed rate-limit recovery), the agent should consider triggering Codex as a fallback reviewer — but only if the change type warrants it.
+
+| Change type | Codex fallback? | Rationale |
+|---|---|---|
+| R code, schemas, security, ADRs | **Yes** — trigger `@codex review` | High-risk changes need at least one bot review |
+| CI config, shell scripts, workflow, docs | No | Low-risk; proceed to `pr-review` with Cursor self-review only |
+
+The fallback trigger follows the same flow as the initial Codex trigger
+(`review--bot-trigger.md` § Two-Tier Trigger Model) and uses the same
+monitoring template (`delegation--ci-bot-review-wait.md` or
+`delegation--bot-review-wait.md`).
+
 ## Related
 
 - `review--bot-trigger.md` — trigger rules and two-tier model

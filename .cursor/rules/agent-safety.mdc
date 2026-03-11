@@ -49,6 +49,10 @@ Bot review uses a two-tier enforcement model to minimize agent judgment:
 
 See `review--bot-trigger.md` § Two-Tier Trigger Model for the full decision table.
 
+**Auto-merge guard**: Auto-merge (`gh pr merge --auto --squash`) MUST NOT be set while bot review is pending. No review means no threads, which means `required_conversation_resolution` does not block — CI green alone triggers merge. See `pr-create.md` § 5d for the precondition check procedure, and `agent--delegation-decision.md` § Decision Flowchart for the routing guard.
+
+**Codex fallback**: When CodeRabbit is TIMED_OUT on a Codex-eligible change type, trigger Codex as fallback. See `review--bot-timing.md` § Codex Fallback.
+
 ## Multi-Agent Safety Rules
 
 When multiple AI agents (or a main agent + subagents) work concurrently:
