@@ -28,6 +28,13 @@ NULL
 #' Shared logic for `bridle_chat` and `bridle_runtime_chat`. Resolves
 #' provider name, selects the constructor, and injects GitHub Models
 #' credentials when needed.
+#'
+#' Provider resolution order:
+#' 1. Explicit `provider` argument
+#' 2. `BRIDLE_LLM_PROVIDER` environment variable
+#' 3. `"github"` if `GITHUB_PAT` is set
+#' 4. `ellmer::chat()` auto-detection (delegates to ellmer)
+#'
 #' @param provider Provider name (character or NULL).
 #' @param model Model name (character or NULL).
 #' @param extra_args Named list of additional args to include.
@@ -35,7 +42,19 @@ NULL
 #' @keywords internal
 resolve_chat_provider <- function(provider, model, extra_args = list()) {
   resolved <- provider %||%
-    Sys.getenv("BRIDLE_LLM_PROVIDER", unset = "github")
+    Sys.getenv("BRIDLE_LLM_PROVIDER", unset = "")
+
+  if (!nzchar(resolved)) {
+    pat <- Sys.getenv("GITHUB_PAT", unset = "")
+    resolved <- if (nzchar(pat)) "github" else "auto"
+  }
+
+  if (resolved == "auto") {
+    chat_fn <- utils::getFromNamespace("chat", "ellmer")
+    args <- extra_args
+    if (!is.null(model)) args$model <- model
+    return(list(constructor_fn = chat_fn, args = args))
+  }
 
   constructor_name <- .provider_constructors[[resolved]]
   if (is.null(constructor_name)) {
@@ -52,7 +71,9 @@ resolve_chat_provider <- function(provider, model, extra_args = list()) {
     args$base_url <- .github_models_base_url
     pat <- Sys.getenv("GITHUB_PAT", unset = "")
     if (!nzchar(pat)) {
-      cli::cli_abort("GITHUB_PAT environment variable is required for GitHub Models provider.")
+      cli::cli_abort(
+        "GITHUB_PAT environment variable is required for GitHub Models provider."
+      )
     }
     args$credentials <- function() pat
     if (is.null(model)) args$model <- .github_models_default_model
@@ -69,7 +90,8 @@ resolve_chat_provider <- function(provider, model, extra_args = list()) {
 #' Provider resolution order:
 #' 1. Explicit `provider` argument
 #' 2. `BRIDLE_LLM_PROVIDER` environment variable
-#' 3. Default: `"github"` (uses `GITHUB_PAT`)
+#' 3. `"github"` if `GITHUB_PAT` is set
+#' 4. `ellmer::chat()` auto-detection
 #'
 #' @param system_prompt System prompt for the chat session (character).
 #' @param provider Provider name (character or NULL for auto-detect).

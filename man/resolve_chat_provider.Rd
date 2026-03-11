@@ -21,4 +21,13 @@ Shared logic for \code{bridle_chat} and \code{bridle_runtime_chat}. Resolves
 provider name, selects the constructor, and injects GitHub Models
 credentials when needed.
 }
+\details{
+Provider resolution order:
+\enumerate{
+\item Explicit \code{provider} argument
+\item \code{BRIDLE_LLM_PROVIDER} environment variable
+\item \code{"github"} if \code{GITHUB_PAT} is set
+\item \code{ellmer::chat()} auto-detection (delegates to ellmer)
+}
+}
 \keyword{internal}

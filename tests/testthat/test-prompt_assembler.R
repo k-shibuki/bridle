@@ -258,7 +258,7 @@ test_that("bridle_runtime_chat resolves from env var", {
   expect_equal(captured_fn, "chat_anthropic")
 })
 
-test_that("bridle_runtime_chat defaults to github", {
+test_that("bridle_runtime_chat defaults to github when GITHUB_PAT set", {
   captured_fn <- NULL
   local_mocked_bindings(
     check_installed = function(pkg, ...) invisible(NULL), # nolint: object_usage_linter. mock
@@ -271,7 +271,25 @@ test_that("bridle_runtime_chat defaults to github", {
     },
     .package = "utils"
   )
-  withr::local_envvar(BRIDLE_LLM_PROVIDER = NA)
+  withr::local_envvar(BRIDLE_LLM_PROVIDER = NA, GITHUB_PAT = "fake-pat")
   result <- bridle_runtime_chat()
   expect_equal(captured_fn, "chat_openai_compatible")
+})
+
+test_that("bridle_runtime_chat uses auto-detection when no PAT", {
+  captured_fn <- NULL
+  local_mocked_bindings(
+    check_installed = function(pkg, ...) invisible(NULL), # nolint: object_usage_linter. mock
+    .package = "rlang"
+  )
+  local_mocked_bindings(
+    getFromNamespace = function(name, ns) { # nolint: object_usage_linter. mock
+      captured_fn <<- name
+      function(...) "mock_chat"
+    },
+    .package = "utils"
+  )
+  withr::local_envvar(BRIDLE_LLM_PROVIDER = NA, GITHUB_PAT = NA)
+  result <- bridle_runtime_chat()
+  expect_equal(captured_fn, "chat")
 })

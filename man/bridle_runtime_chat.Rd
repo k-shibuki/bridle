@@ -25,6 +25,7 @@ Provider resolution order:
 \enumerate{
 \item Explicit \code{provider} argument
 \item \code{BRIDLE_LLM_PROVIDER} environment variable
-\item Default: \code{"github"} (uses \code{GITHUB_PAT})
+\item \code{"github"} if \code{GITHUB_PAT} is set
+\item \code{ellmer::chat()} auto-detection
 }
 }
