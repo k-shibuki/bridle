@@ -160,45 +160,16 @@ Then delegate CI + review monitoring to a background subagent using `.cursor/tem
 
 ### 6. If CI fails: diagnose, fix, re-push
 
-Per `@.cursor/rules/coding-policy.mdc` § CI Failure Autonomy, the agent must autonomously diagnose and fix CI failures before escalating.
+Per `@.cursor/rules/coding-policy.mdc` § CI Failure Autonomy, the agent must autonomously diagnose and fix CI failures before escalating. See `@.cursor/knowledge/ci--failure-triage.md` for classification (code defect / format drift / infrastructure / policy / flaky) and diagnostic commands.
 
-1. **Identify the failed job(s)** from `gh pr checks` output.
-2. **Fetch failure logs**:
-   ```bash
-   gh run view <run_id> --log-failed
-   ```
-3. **Classify the failure** — infrastructure vs code:
+**For `check-policy` failures** (PR body issues): Update the PR body directly without a new commit:
+```bash
+gh api repos/{owner}/{repo}/pulls/<N> -X PATCH -f body="<corrected body>"
+```
 
-   **Infrastructure failures** (setup steps, package downloads, network timeouts):
-   - Read the full error context (not just the error line — check 10+ lines around it).
-   - Identify the root cause: missing env var, wrong config, transient network issue, etc.
-   - **If fixable** (e.g., missing `RENV_CONFIG_AUTOLOADER_ENABLED`, wrong CI config): fix the workflow/config file, commit, push. One retry with `gh run rerun <RUN_ID> --failed` is allowed only for genuinely transient issues (e.g., CDN outage) that cannot be fixed by code changes.
-   - **If the same infrastructure failure recurs**: it is NOT transient — investigate deeper (compare with passing jobs, check env vars, check config differences).
+For code fixes: commit the fix (follow `@.cursor/rules/commit-format.mdc`, `fix(scope):` prefix, `Refs: #<issue>`), push, and return to Step 5.
 
-   **Code failures** — choose the right fix:
-
-   | Failed job | Likely cause | Fix method |
-   |------------|-------------|------------|
-   | `check-policy` | PR body missing required sections | Edit PR body via `gh api repos/{owner}/{repo}/pulls/<N> -X PATCH -f body="..."` |
-   | `ci-config` | YAML/Makefile syntax error | Fix in working tree, commit, push |
-   | `format-check` | Unformatted R code | Run `make format`, commit, push |
-   | `lint` | Lint errors | Fix code, commit, push |
-   | `test` / `check` | Test failure or R CMD check error | Fix code, commit, push |
-   | `validate-schemas` | Schema/code inconsistency | Fix schema or S7 class, commit, push |
-
-   **For `check-policy` failures** (PR body issues): Update the PR body directly without a new commit:
-   ```bash
-   gh api repos/{owner}/{repo}/pulls/<N> -X PATCH -f body="<corrected body>"
-   ```
-   This triggers a `check-policy` re-run without polluting the commit history.
-
-4. **For code fixes**: Commit the fix (follow `@.cursor/rules/commit-format.mdc`, use `fix(scope):` prefix, include `Refs: #<issue>`), then push:
-   ```bash
-   git push
-   ```
-5. **Return to Step 5** (monitor CI again).
-
-Escalate to the user only when: (a) you have diagnosed the root cause, (b) attempted a fix, and (c) the fix did not resolve the issue. Include the diagnosis, what you tried, and why it didn't work.
+Escalate only after: (a) diagnosis, (b) fix attempt, (c) fix did not resolve.
 
 ### 7. Report status
 

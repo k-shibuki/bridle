@@ -99,49 +99,9 @@ When no R code changed (Makefile, docs, CI only) but schema-related files were m
 
 ## Troubleshooting
 
-### format-lint loop (styler formats, lintr rejects, repeat)
-
-**Symptom**: `make format` changes indentation, then `make lint` reports `indentation_linter` on the formatted code.
-
-**Cause**: styler and lintr disagree on indentation for multi-line `if` conditions and `switch()` blocks.
-
-**Fix**: Restructure the code to avoid the conflict. Extract multi-line conditions into named variables:
-
-```r
-# Before (triggers conflict):
-if (is.null(x) ||
-    length(x) == 0) {
-  ...
-}
-
-# After (no conflict):
-is_empty <- is.null(x) || length(x) == 0
-if (is_empty) {
-  ...
-}
-```
-
-See `@.cursor/knowledge/lint--styler-lintr-conflict.md` for details.
-
-### `object_usage_linter` false positives for S7 classes
-
-**Symptom**: `lintr` reports "no visible global function definition for 'MyClass'" on S7 constructor calls.
-
-**Cause**: `object_usage_linter` does not resolve S7 constructors defined in other files within the same package.
-
-**Fix**: Add a targeted `# nolint` with the linter name and reason:
-
-```r
-result <- MyClass(...) # nolint: object_usage_linter. S7 class defined in R/my_class.R
-```
-
-### CI lint passes locally but fails remotely (or vice versa)
-
-**Symptom**: `make ci-fast` passes locally but CI reports lint failures.
-
-**Cause**: Local run may use cached format state. The CI environment starts clean.
-
-**Fix**: Run the full sequence from scratch: `make format && make format-check && make ci-fast`.
+- **format-lint loop** (styler formats, lintr rejects): See `@.cursor/knowledge/lint--styler-lintr-conflict.md`
+- **`object_usage_linter` false positives for S7**: See `@.cursor/knowledge/lint--s7-cross-file-reference.md`
+- **CI lint passes locally but fails remotely**: See `@.cursor/knowledge/lint--ci-local-divergence.md`
 
 ## Coverage Commands
 
