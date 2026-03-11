@@ -41,30 +41,33 @@ agent posts a new disposition reply per round until consensus is reached.
 from the Issue the PR closes. If the PR `Closes #N`, then `Tracked in #N`
 is prohibited — the finding would be lost on merge.
 
-### Bot Agreement Signals
-
-| Signal | CodeRabbit | Codex |
-|---|---|---|
-| **Fix confirmed** | Re-review produces no new finding on the same file+lines | Re-review produces no new finding |
-| **Objection** | New comment on the same thread or new finding on same lines | New comment on the same thread |
-| **Acceptance** | No further comment after re-review completes | No further comment after re-review |
-| **Timeout** | 20 min without re-review completion | 20 min without re-review completion |
-
-**Timeout fallback**: When a bot times out on re-review, the agent may
-resolve with a documented justification: `<Category>. <explanation>.
-Bot re-review timed out; proceeding per consensus protocol timeout fallback.`
-
 ### Consensus Flow
 
 ```text
-1. Agent posts disposition reply on thread
-2. Agent triggers re-review (@coderabbitai review / @codex review)
-3. Wait for re-review (via delegation--review-wait.md)
-4. Check result:
-   ├── No new finding on thread → consensus reached → resolve thread
-   ├── New finding / objection  → address finding → go to step 1
-   └── Timeout                  → resolve with timeout justification
+1. Post disposition reply on thread
+2. Observe (collect evidence):
+   a. Thread state — isResolved? (bot may auto-resolve)
+   b. Thread replies — did bot confirm or object?
+   c. Re-review results — new findings on same area?
+3. Decide:
+   ├── Bot auto-resolved thread        → consensus confirmed
+   ├── Bot replied with confirmation   → resolve thread
+   ├── Bot replied with objection      → address, go to 1
+   ├── No response + reviewer available → trigger re-review, go to 2
+   └── No response + reviewer unavailable → agent resolves (see below)
 ```
+
+**Bot behavior differs** — see `review--bot-operations.md` § Agreement
+Mechanics for how each bot expresses agreement.
+
+### Reviewer Unavailable
+
+When a reviewer cannot respond (usage limit, service outage, timeout):
+
+- Agent resolves with justification: `<Category>. <explanation>.
+  Reviewer unavailable (<reason>); fix verified by <evidence>.`
+- Evidence examples: other bot confirmed, code change is mechanically
+  correct, independent reviewer (Cursor) verified
 
 For copy-paste reply templates with examples, see
 `templates/review--disposition-reply.md`.
@@ -127,8 +130,11 @@ The outer `id` is `<THREAD_ID>` for the GraphQL resolve API.
 
 ## Edge Cases
 
-- **CodeRabbit `✅ Addressed in commit`**: Informational only — does NOT
-  constitute consensus. Wait for re-review completion.
+- **CodeRabbit auto-resolve**: CR may confirm a fix and resolve the thread
+  itself after reading the disposition reply. This IS consensus — no
+  further action needed.
+- **CodeRabbit `✅ Addressed in commit`**: Informational marker only.
+  Check whether CR also replied with confirmation or auto-resolved.
 - **`isOutdated` threads**: Still valid; `required_conversation_resolution`
   does not distinguish outdated from current.
 - **Multiple comments in one thread**: Reply once to the root comment.

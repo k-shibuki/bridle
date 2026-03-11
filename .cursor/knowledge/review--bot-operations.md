@@ -88,6 +88,22 @@ Always use API checks — never infer from timing alone.
 type (R code, schemas, security, ADRs), trigger `@codex review` as
 fallback.
 
+## Agreement Mechanics
+
+How each bot expresses agreement after a disposition reply:
+
+| Behavior | CodeRabbit | Codex |
+|---|---|---|
+| Reads disposition replies | **Yes** — checks referenced commit | **No** |
+| Confirms fix | Replies with confirmation + **auto-resolves thread** | N/A (does not read replies) |
+| Objects | Replies with objection, thread stays unresolved | N/A |
+| Agreement via re-review | Also works (no new finding = agreement) | **Only method** (no new finding = implicit agreement) |
+| Usage limit (permanent) | Not observed | Possible — "reached your Codex usage limits" (not recoverable) |
+
+**Implication**: After posting a disposition reply, check thread state
+first. If CodeRabbit already confirmed and auto-resolved, no re-review
+is needed. For Codex, re-review is the only path to consensus.
+
 ## Re-review
 
 Agent re-triggers after every `review-fix` push:
