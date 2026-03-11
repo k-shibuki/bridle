@@ -139,7 +139,7 @@ Report progress at each gate with a one-line summary (e.g., "PR #13 created, CI 
 
 If the user modifies the choice (e.g., "do #8 instead of #7"), adjust and proceed.
 
-**Parallel execution**: When CI is pending and independent Issues exist, delegate CI-wait to a background subagent and start the next Issue in parallel:
+**Parallel execution**: When CI is pending and independent Issues exist, delegate CI-wait to a background subagent (Template 2, no merge) and start the next Issue in parallel. When CI completes, the main agent runs `pr-review` → `pr-merge` (or `gh pr merge --auto --squash`):
 
 ```
 Issue A: implement → ... → pr-create
@@ -148,11 +148,11 @@ Issue A: implement → ... → pr-create
                                 │
     ┌───────────────────────────┤
     │ Background subagent       │ Main agent
-    │ poll CI → merge PR #X     │ Issue B: implement → ...
+    │ poll CI → report          │ Issue B: implement → ...
     │                           │
     └───────────────────────────┤
                                 │
-    next re-assessment: check subagent transcript
+    next re-assessment: CI green → pr-review → pr-merge/auto-merge
 ```
 
 ### Step 6: Subagent delegation for blocking operations

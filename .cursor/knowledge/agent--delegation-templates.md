@@ -141,12 +141,16 @@ Key principle: detect completion by TIMESTAMP, not by count.
    - CodeRabbit (if triggered):
      - Reviews (timestamp-filtered, empty body excluded):
        `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("coderabbit"; "i")) | select(.body != "") | select(.submitted_at > "<trigger_time>")] | length'`
+     - Rate limit comments:
+       `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i")) | select(.created_at > "<trigger_time>") | select(.body | test("Rate limit exceeded"))] | length'`
      - Early signals (informational, do not terminate polling):
        Eyes: `gh api repos/{owner}/{repo}/issues/comments/<trigger_id> --jq '.reactions.eyes'`
        Ack: `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i")) | select(.created_at > "<trigger_time>") | select(.body | test("Review triggered"))] | length'`
    - Codex (if triggered):
      - Reviews (timestamp-filtered):
        `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("chatgpt-codex-connector|codex|openai"; "i")) | select(.body != "") | select(.submitted_at > "<trigger_time>")] | length'`
+     - Rate limit comments:
+       `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.login | test("chatgpt-codex-connector|codex|openai"; "i")) | select(.created_at > "<trigger_time>") | select(.body | test("Rate limit exceeded"))] | length'`
      - Clean bill (thumbs-up on trigger):
        `gh api repos/{owner}/{repo}/issues/comments/<trigger_id> --jq '.reactions["+1"]'`
 
@@ -154,7 +158,7 @@ Key principle: detect completion by TIMESTAMP, not by count.
 3. A reviewer is done when:
    - COMPLETED: review count > 0 (timestamp-filtered, non-empty body)
    - COMPLETED_CLEAN: Codex thumbs-up > 0 on trigger comment
-   - RATE_LIMITED: PR comment from reviewer contains "Rate limit exceeded"
+   - RATE_LIMITED: rate limit comment count > 0 (timestamp-filtered)
    - TIMED_OUT: 20 min elapsed with no completion signal
 3a. IF reviewer reports RATE_LIMITED (per `subagent-policy.mdc` § Rate-Limit Recovery Policy):
    - Parse wait time from the rate-limit comment (see `review--bot-lifecycle.md` § Rate-Limit Detection and Recovery Pattern; 30s buffer is already included in the parsed value)
@@ -220,15 +224,19 @@ Key principle: detect completion by TIMESTAMP, not by count.
    - CodeRabbit (if triggered):
      - Reviews (timestamp-filtered, empty body excluded):
        `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("coderabbit"; "i")) | select(.body != "") | select(.submitted_at > "<trigger_time>")] | length'`
+     - Rate limit comments:
+       `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i")) | select(.created_at > "<trigger_time>") | select(.body | test("Rate limit exceeded"))] | length'`
    - Codex (if triggered):
      - Reviews (timestamp-filtered):
        `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("chatgpt-codex-connector|codex|openai"; "i")) | select(.body != "") | select(.submitted_at > "<trigger_time>")] | length'`
+     - Rate limit comments:
+       `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.login | test("chatgpt-codex-connector|codex|openai"; "i")) | select(.created_at > "<trigger_time>") | select(.body | test("Rate limit exceeded"))] | length'`
      - Clean bill (thumbs-up on trigger):
        `gh api repos/{owner}/{repo}/issues/comments/<trigger_id> --jq '.reactions["+1"]'`
 2. A reviewer is done when:
    - COMPLETED: review count > 0 (timestamp-filtered, non-empty body)
    - COMPLETED_CLEAN: Codex thumbs-up > 0 on trigger comment
-   - RATE_LIMITED: PR comment from reviewer contains "Rate limit exceeded"
+   - RATE_LIMITED: rate limit comment count > 0 (timestamp-filtered)
    - TIMED_OUT: 20 min elapsed with no completion signal
 2a. IF reviewer reports RATE_LIMITED (per `subagent-policy.mdc` § Rate-Limit Recovery Policy):
    - Parse wait time from the rate-limit comment (see `review--bot-lifecycle.md` § Rate-Limit Detection and Recovery Pattern; 30s buffer is already included in the parsed value)
