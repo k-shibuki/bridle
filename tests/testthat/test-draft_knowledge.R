@@ -419,10 +419,10 @@ test_that("generate_multi_topic_knowledge: single topic returns one entry", {
   expect_equal(result$t1$topic, "t1")
 })
 
-test_that("generate_multi_topic_knowledge: blank topic falls back to default", {
+test_that("generate_multi_topic_knowledge: blank topic falls back to graph topic", {
   # Given: graph with one topic, knowledge has empty topic string
   # When:  generating multi-topic knowledge
-  # Then:  uses "default" as the topic key
+  # Then:  uses the graph's topic name as the key
   drafts <- list(
     decision_graph = list(graph = list(nodes = list(
       n1 = list(type = "decision", topic = "t1", parameter = "p1")
@@ -434,7 +434,32 @@ test_that("generate_multi_topic_knowledge: blank topic falls back to default", {
     drafts, "pkg", "fn", NULL, NULL
   )
 
-  expect_true("default" %in% names(result))
+  expect_true("t1" %in% names(result))
+  expect_equal(result$t1$topic, "")
+})
+
+test_that("generate_multi_topic_knowledge: zero-topic graph preserves knowledge", {
+  # Given: decision graph without topic fields
+  # When:  generating multi-topic knowledge
+  # Then:  no supplementary LLM call; existing knowledge returned with default key
+  drafts <- list(
+    decision_graph = list(graph = list(nodes = list(
+      n1 = list(type = "decision", parameter = "p1")
+    ))),
+    knowledge = list(topic = "existing", entries = list(list(id = "e1")))
+  )
+
+  local_mocked_bindings(
+    bridle_chat = function(...) stop("should not be called")
+  )
+
+  result <- bridle:::generate_multi_topic_knowledge(
+    drafts, "pkg", "fn", NULL, NULL
+  )
+
+  expect_equal(length(result), 1L)
+  expect_equal(names(result), "existing")
+  expect_equal(result$existing$topic, "existing")
 })
 
 test_that("generate_multi_topic_knowledge: multi-topic triggers extra calls", {
@@ -574,6 +599,58 @@ test_that("write_draft_files: falls back to func name when no knowledge_list", {
   bridle:::write_draft_files(drafts, tmp, "pkg", "fn")
 
   expect_true(file.exists(file.path(tmp, "knowledge", "fn.yaml")))
+})
+
+test_that("write_draft_files: sanitizes unsafe topic names", {
+  # Given: knowledge_list with path-traversal and dotfile topic names
+  # When:  writing files
+  # Then:  filenames are sanitized, no files escape knowledge/
+  drafts <- list(
+    decision_graph = list(nodes = list(list(id = "n1"))),
+    knowledge = list(topic = "ignored"),
+    constraints = list(constraints = list(list(id = "c1"))),
+    knowledge_list = list(
+      "..\\constraints\\technical" = list(
+        topic = "..\\constraints\\technical",
+        entries = list(list(id = "e1"))
+      ),
+      ".hidden" = list(
+        topic = ".hidden",
+        entries = list(list(id = "e2"))
+      )
+    )
+  )
+  tmp <- withr::local_tempdir()
+
+  bridle:::write_draft_files(drafts, tmp, "pkg", "fn")
+
+  expect_true(file.exists(file.path(tmp, "knowledge", "technical.yaml")))
+  expect_true(file.exists(file.path(tmp, "knowledge", "hidden.yaml")))
+  expect_false(file.exists(file.path(tmp, "..", "constraints", "technical.yaml")))
+})
+
+test_that("write_draft_files: detects filename collisions", {
+  # Given: two topics that sanitize to the same filename
+  # When:  writing files
+  # Then:  second file gets a suffix and a warning is raised
+  drafts <- list(
+    decision_graph = list(nodes = list(list(id = "n1"))),
+    knowledge = list(topic = "ignored"),
+    constraints = list(constraints = list(list(id = "c1"))),
+    knowledge_list = list(
+      "foo/bar" = list(topic = "bar", entries = list(list(id = "e1"))),
+      "baz/bar" = list(topic = "bar", entries = list(list(id = "e2")))
+    )
+  )
+  tmp <- withr::local_tempdir()
+
+  expect_warning(
+    bridle:::write_draft_files(drafts, tmp, "pkg", "fn"),
+    "collides with existing filename"
+  )
+
+  expect_true(file.exists(file.path(tmp, "knowledge", "bar.yaml")))
+  expect_true(file.exists(file.path(tmp, "knowledge", "bar_2.yaml")))
 })
 
 # -- generate_draft_context_schema() ------------------------------------------

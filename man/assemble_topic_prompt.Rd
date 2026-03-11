@@ -6,6 +6,15 @@
 \usage{
 assemble_topic_prompt(topic, params, package, func)
 }
+\arguments{
+\item{topic}{Character string, the topic name.}
+
+\item{params}{Character vector of parameter names for this topic.}
+
+\item{package}{Character string, the target package name.}
+
+\item{func}{Character string, the target function name.}
+}
 \description{
 Builds a prompt requesting knowledge entries for one specific topic,
 used for supplementary LLM calls after the initial draft.

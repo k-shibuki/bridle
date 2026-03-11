@@ -6,6 +6,9 @@
 \usage{
 extract_graph_topics(graph_raw)
 }
+\arguments{
+\item{graph_raw}{Raw decision graph list as parsed from YAML.}
+}
 \description{
 Scans the raw decision graph for nodes with \code{topic} fields and builds
 a named list mapping each unique topic to its associated parameter(s).

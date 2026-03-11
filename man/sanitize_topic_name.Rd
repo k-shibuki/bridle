@@ -6,6 +6,9 @@
 \usage{
 sanitize_topic_name(topic)
 }
+\arguments{
+\item{topic}{Character string, typically from LLM-generated YAML.}
+}
 \description{
 Strips path separators and leading dots, collapses to a safe basename.
 Falls back to \code{"default"} for empty or invalid inputs.

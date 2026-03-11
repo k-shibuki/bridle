@@ -72,12 +72,14 @@ draft_knowledge <- function(scan_result, references = NULL,
 #'
 #' Strips path separators and leading dots, collapses to a safe basename.
 #' Falls back to `"default"` for empty or invalid inputs.
+#' @param topic Character string, typically from LLM-generated YAML.
 #' @keywords internal
 sanitize_topic_name <- function(topic) {
   if (is.null(topic) || !nzchar(trimws(topic))) {
     return("default")
   }
-  safe <- basename(topic)
+  safe <- gsub("\\\\", "/", topic)
+  safe <- basename(safe)
   safe <- gsub("[^A-Za-z0-9._-]", "_", safe)
   safe <- sub("^\\.+", "", safe)
   if (!nzchar(safe)) "default" else safe
@@ -87,13 +89,29 @@ sanitize_topic_name <- function(topic) {
 #'
 #' Uses the first-call knowledge section plus supplementary LLM calls
 #' for any additional topics found in the decision graph.
+#' @param drafts List returned by the initial LLM call, containing
+#'   `decision_graph`, `knowledge`, and `constraints`.
+#' @param package Character string, the target package name.
+#' @param func Character string, the target function name.
+#' @param provider Optional LLM provider name.
+#' @param model Optional LLM model name.
 #' @keywords internal
 generate_multi_topic_knowledge <- function(drafts, package, func,
                                            provider, model) {
   first_knowledge <- drafts$knowledge
-  first_topic <- sanitize_topic_name(first_knowledge[["topic"]])
-
   all_topics <- extract_graph_topics(drafts$decision_graph)
+
+  raw_topic <- first_knowledge[["topic"]]
+  if (is.null(raw_topic) || !nzchar(trimws(raw_topic))) {
+    first_topic <- if (length(all_topics) == 1L) {
+      names(all_topics)[[1L]]
+    } else {
+      "default"
+    }
+  } else {
+    first_topic <- sanitize_topic_name(raw_topic)
+  }
+
   if (length(all_topics) <= 1L) {
     return(stats::setNames(list(first_knowledge), first_topic))
   }
@@ -353,6 +371,7 @@ parse_draft_response <- function(response) {
 #'
 #' Scans the raw decision graph for nodes with `topic` fields and builds
 #' a named list mapping each unique topic to its associated parameter(s).
+#' @param graph_raw Raw decision graph list as parsed from YAML.
 #' @keywords internal
 extract_graph_topics <- function(graph_raw) {
   nodes_raw <- graph_raw[["graph"]][["nodes"]] %||% graph_raw[["nodes"]]
@@ -385,6 +404,10 @@ extract_graph_topics <- function(graph_raw) {
 #'
 #' Builds a prompt requesting knowledge entries for one specific topic,
 #' used for supplementary LLM calls after the initial draft.
+#' @param topic Character string, the topic name.
+#' @param params Character vector of parameter names for this topic.
+#' @param package Character string, the target package name.
+#' @param func Character string, the target function name.
 #' @keywords internal
 assemble_topic_prompt <- function(topic, params, package, func) {
   param_str <- if (length(params) > 0L) {
@@ -522,8 +545,16 @@ write_draft_files <- function(drafts, output_dir, package, func) {
   }
   kl <- drafts$knowledge_list
   if (!is.null(kl) && length(kl) > 0L) {
+    written_names <- character(0)
     for (topic_name in names(kl)) {
       safe_name <- sanitize_topic_name(topic_name)
+      if (safe_name %in% written_names) {
+        cli::cli_warn(
+          "Topic {.val {topic_name}} collides with existing filename {.file {safe_name}.yaml}"
+        )
+        safe_name <- paste0(safe_name, "_", sum(written_names == safe_name) + 1L)
+      }
+      written_names <- c(written_names, safe_name)
       fname <- paste0(safe_name, ".yaml")
       knowledge_path <- file.path(knowledge_dir, fname)
       yaml::write_yaml(kl[[topic_name]], knowledge_path)
