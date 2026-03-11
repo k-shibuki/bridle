@@ -42,4 +42,5 @@ Exception labels do NOT replace the type label — a PR has both (e.g., `fix` + 
 
 - `issue-create` assigns the type label at Issue creation (`--label "<type>"`).
 - `pr-create` assigns the type label at PR creation (`--label "<type>"`), plus exception label if applicable.
-- `pr-policy.yaml` validates that every PR has at least one recognized type label.
+- Policy: every Issue/PR must have exactly one recognized type label.
+- Current CI enforcement: `pr-policy.yaml` validates that every PR has _at least_ one recognized type label (exact-one enforcement is a future improvement).

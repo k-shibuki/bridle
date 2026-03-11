@@ -87,7 +87,7 @@ result <- ScanResult(...) # nolint: object_usage_linter. S7 class defined in R/s
 
 ### Prohibited forms (always rejected)
 
-See `agent-safety.mdc` `HS-NOLINT` for the definitive list of prohibited annotation forms.
+See `agent-safety.mdc` `HS-NOLINT` for the hard-stop prohibited annotation forms (bare `# nolint`, `# nolint start/end`, missing linter name or reason). Additionally: using `# nolint` to avoid fixing code quality issues is always prohibited — suppression is for tool limitations, not code defects.
 
 ### Accepted Justifications
 
