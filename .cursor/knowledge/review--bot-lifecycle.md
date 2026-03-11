@@ -126,6 +126,13 @@ gh api repos/{owner}/{repo}/issues/<N>/comments \
 **Rule**: Always use API checks to determine state. Do not infer state
 from timing, absence of activity, or activity on other PRs.
 
+**Anti-pattern — premature timeout**: Classifying a bot as TIMED_OUT
+before the 10-min threshold has elapsed is prohibited. ACKNOWLEDGED and
+ACCEPTED are intermediate states meaning the bot is actively processing.
+The agent must continue polling (30s intervals) until a terminal state
+is reached: COMPLETED, COMPLETED_CLEAN, RATE_LIMITED, or TIMED_OUT
+(10 min elapsed). "Not responding after a brief wait" is not TIMED_OUT.
+
 **Trigger time tracking**: Each trigger creates a new `trigger_time`
 (the `created_at` of the trigger comment). All subsequent state
 detection (ack, review, rate-limit) MUST filter by this specific

@@ -21,7 +21,7 @@ Run tests in three stages to detect regressions efficiently:
 
 ## How to run (recommended)
 
-All R commands run inside the development container (see `@.cursor/rules/workflow-policy.mdc` § Container Prerequisite).
+Ensure the `bridle-dev` container is running (`make container-up`; verify with `make doctor`). All R commands run there (see `@.cursor/rules/workflow-policy.mdc` § Container Prerequisite).
 Use `make` commands (run `make help` for all options).
 
 ### Stage 1: session-scoped tests (recommended)
