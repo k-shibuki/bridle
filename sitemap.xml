@@ -41,6 +41,7 @@
 <url><loc>/reference/assemble_function_prompt.html</loc></url>
 <url><loc>/reference/assemble_package_prompt.html</loc></url>
 <url><loc>/reference/assemble_runtime_prompt.html</loc></url>
+<url><loc>/reference/assemble_topic_prompt.html</loc></url>
 <url><loc>/reference/bridle_agent.html</loc></url>
 <url><loc>/reference/bridle_chat.html</loc></url>
 <url><loc>/reference/bridle_console.html</loc></url>
@@ -82,6 +83,7 @@
 <url><loc>/reference/extract_cross_constraints.html</loc></url>
 <url><loc>/reference/extract_dois.html</loc></url>
 <url><loc>/reference/extract_formals_constraints.html</loc></url>
+<url><loc>/reference/extract_graph_topics.html</loc></url>
 <url><loc>/reference/extract_hint_variables.html</loc></url>
 <url><loc>/reference/extract_quoted_values.html</loc></url>
 <url><loc>/reference/extract_rd_param_descriptions.html</loc></url>
@@ -103,6 +105,7 @@
 <url><loc>/reference/format_task_prompt.html</loc></url>
 <url><loc>/reference/generate_draft_context_schema.html</loc></url>
 <url><loc>/reference/generate_draft_manifest.html</loc></url>
+<url><loc>/reference/generate_multi_topic_knowledge.html</loc></url>
 <url><loc>/reference/get_hint_variables.html</loc></url>
 <url><loc>/reference/get_namespace_exports.html</loc></url>
 <url><loc>/reference/get_package_namespace.html</loc></url>
@@ -150,6 +153,7 @@
 <url><loc>/reference/s2_get.html</loc></url>
 <url><loc>/reference/safe_deparse.html</loc></url>
 <url><loc>/reference/safe_formals.html</loc></url>
+<url><loc>/reference/sanitize_topic_name.html</loc></url>
 <url><loc>/reference/scan_function.html</loc></url>
 <url><loc>/reference/scan_layer2.html</loc></url>
 <url><loc>/reference/scan_layer3a.html</loc></url>
