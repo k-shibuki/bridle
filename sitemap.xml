@@ -101,6 +101,8 @@
 <url><loc>/reference/find_stop_constraints.html</loc></url>
 <url><loc>/reference/format_references_prompt.html</loc></url>
 <url><loc>/reference/format_task_prompt.html</loc></url>
+<url><loc>/reference/generate_draft_context_schema.html</loc></url>
+<url><loc>/reference/generate_draft_manifest.html</loc></url>
 <url><loc>/reference/get_hint_variables.html</loc></url>
 <url><loc>/reference/get_namespace_exports.html</loc></url>
 <url><loc>/reference/get_package_namespace.html</loc></url>

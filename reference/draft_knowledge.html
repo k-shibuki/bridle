@@ -99,8 +99,14 @@ the specified output directory. Accepts either a <a href="ScanResult.html">ScanR
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>A list with <code>decision_graph</code>, <code>knowledge</code>, and <code>constraints</code>
-elements containing the parsed draft content.</p>
+    <p>A list with <code>decision_graph</code>, <code>knowledge</code>, <code>constraints</code>,
+<code>context_schema</code>, and <code>manifest</code> elements.</p>
+    </div>
+    <div id="details">
+    <h2>Details</h2>
+    <p>In addition to the three LLM-generated sections (decision graph,
+knowledge, constraints), this function generates <code>context_schema.yaml</code>
+and <code>manifest.yaml</code> heuristically from the decision graph structure.</p>
     </div>
 
   </div>
