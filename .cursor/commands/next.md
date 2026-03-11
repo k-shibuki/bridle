@@ -100,7 +100,7 @@ Use the evidence to classify the current state into one of these positions:
 | Stale local branches detected | **Cleanup needed** | Delete stale branches (see `pr-merge.md` "Post-merge cleanup"). Can be done during housekeeping. |
 | Background subagent running | **Background task in progress** | Check transcript for completion; continue independent work |
 | Open PR, CI all green, wait subagent done | **Ready for review** | `pr-review` (retrieves bot review findings if available) |
-| Open PR, CI failed | **CI failure** | `debug` or fix + re-push |
+| Open PR, CI failed | **CI failure** | Fix inline, re-push, then **re-enter `next`** (state will be "CI pending" → delegate to subagent per `subagent-policy.mdc`). Do NOT poll CI inline after re-push. |
 | PR reviewed, changes required | **Changes required** | `review-fix` (address findings from `pr-review`, then re-push and re-review) |
 | PR reviewed, mergeable | **Review done** | `pr-merge` |
 | Open PR, `CONFLICTING` mergeable status, parent PR recently merged | **Dependent chain needs rebase** | Rebase child branch with `git rebase --onto` (see `git--squash-merge-dependent-branch.md`), then force-push and wait for CI. Detect via: `gh pr view <N> --json mergeable -q '.mergeable'` returns `CONFLICTING` AND a related PR was recently squash-merged. |

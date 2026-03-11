@@ -148,8 +148,17 @@ Key principle: detect completion by TIMESTAMP, not by count.
 3. A reviewer is done when:
    - COMPLETED: review count > 0 (timestamp-filtered, non-empty body)
    - COMPLETED_CLEAN: Codex thumbs-up > 0 on trigger comment
-   - RATE_LIMITED: review body contains "usage limits"
+   - RATE_LIMITED: PR comment from reviewer contains "Rate limit exceeded"
    - TIMED_OUT: 7 min elapsed with no completion signal
+3a. IF reviewer reports RATE_LIMITED (per `subagent-policy.mdc` § Rate-Limit Recovery Policy):
+   - Parse wait time from the rate-limit comment (see `review--bot-lifecycle.md` § Rate-Limit Detection and Recovery Pattern; 30s buffer is already included in the parsed value)
+   - Sleep for parsed_seconds
+   - Re-trigger the same reviewer that was rate-limited:
+     - CodeRabbit: `gh pr comment <N> --body "@coderabbitai review"`
+     - Codex: `gh pr comment <N> --body "@codex review"`
+   - Reset trigger_time to the new comment's created_at
+   - Resume polling from Step 1
+   - IF second RATE_LIMITED: treat as TIMED_OUT (max 1 retry)
 4. Report final status when CI and all triggered reviewers are done.
 
 ## Prohibitions
@@ -161,12 +170,12 @@ Key principle: detect completion by TIMESTAMP, not by count.
 ## Error handling
 - If a CI check fails: report which check failed and the details URL
 - If a reviewer times out: report TIMEOUT (not an error — pr-review proceeds without that reviewer)
-- If a reviewer is rate-limited: report RATE_LIMITED and proceed
+- If a reviewer is rate-limited: attempt recovery per Step 3a. If recovery also fails, report TIMED_OUT.
 
 ## Return format
 CI: PASSED / FAILED (<check-name> — <details-url>)
-CODERABBIT: REVIEWED (<N> inline comments) / TIMEOUT / RATE_LIMITED / NOT_TRIGGERED
-CODEX: REVIEWED (<N> inline comments) / CLEAN (👍) / TIMEOUT / RATE_LIMITED / NOT_TRIGGERED
+CODERABBIT: REVIEWED (<N> inline comments) / RATE_LIMIT_RECOVERED (waited Xm Ys, then reviewed — <N> comments) / TIMEOUT / NOT_TRIGGERED
+CODEX: REVIEWED (<N> inline comments) / CLEAN (👍) / RATE_LIMIT_RECOVERED (waited Xm Ys, then reviewed — <N> comments) / TIMEOUT / NOT_TRIGGERED
 ```
 
 ## Template 5: Bot Review Wait Only
@@ -207,8 +216,17 @@ Key principle: detect completion by TIMESTAMP, not by count.
 2. A reviewer is done when:
    - COMPLETED: review count > 0 (timestamp-filtered, non-empty body)
    - COMPLETED_CLEAN: Codex thumbs-up > 0 on trigger comment
-   - RATE_LIMITED: review body contains "usage limits"
+   - RATE_LIMITED: PR comment from reviewer contains "Rate limit exceeded"
    - TIMED_OUT: 7 min elapsed with no completion signal
+2a. IF reviewer reports RATE_LIMITED (per `subagent-policy.mdc` § Rate-Limit Recovery Policy):
+   - Parse wait time from the rate-limit comment (see `review--bot-lifecycle.md` § Rate-Limit Detection and Recovery Pattern; 30s buffer is already included in the parsed value)
+   - Sleep for parsed_seconds
+   - Re-trigger the same reviewer that was rate-limited:
+     - CodeRabbit: `gh pr comment <N> --body "@coderabbitai review"`
+     - Codex: `gh pr comment <N> --body "@codex review"`
+   - Reset trigger_time to the new comment's created_at
+   - Resume polling from Step 1
+   - IF second RATE_LIMITED: treat as TIMED_OUT (max 1 retry)
 3. Report final status when all triggered reviewers are done.
 
 ## Prohibitions
@@ -217,8 +235,8 @@ Key principle: detect completion by TIMESTAMP, not by count.
 - Do NOT modify any files
 
 ## Return format
-CODERABBIT: REVIEWED (<N> inline comments) / TIMEOUT / RATE_LIMITED / NOT_TRIGGERED
-CODEX: REVIEWED (<N> inline comments) / CLEAN (👍) / TIMEOUT / RATE_LIMITED / NOT_TRIGGERED
+CODERABBIT: REVIEWED (<N> inline comments) / RATE_LIMIT_RECOVERED (waited Xm Ys, then reviewed — <N> comments) / TIMEOUT / NOT_TRIGGERED
+CODEX: REVIEWED (<N> inline comments) / CLEAN (👍) / RATE_LIMIT_RECOVERED (waited Xm Ys, then reviewed — <N> comments) / TIMEOUT / NOT_TRIGGERED
 ```
 
 ## Template 3: Dependent PR Merge Chain (rebase-enabled)
