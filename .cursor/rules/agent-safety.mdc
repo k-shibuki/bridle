@@ -42,9 +42,10 @@ Each Hard Stop is classified by its enforcement mechanism. See `controls--ai-dev
 
 ## Bot Review Enforcement
 
-Bot review uses a two-tier trigger model and a consensus-based resolution model:
+Bot review uses a consensus-based resolution model:
 
-- **Trigger**: CodeRabbit on every PR (Procedural); Codex on complex changes only (Steering). See `review--bot-operations.md` § Two-Tier Trigger Table.
+- **CodeRabbit**: Agent-triggered on every PR (Procedural). Max 2 reviews per PR. See `review--bot-operations.md` § CR Review Budget.
+- **Codex**: User-instructed only. Agent never triggers Codex autonomously.
 - **Consensus**: Every review thread requires bidirectional agreement before resolve. Unilateral resolve is prohibited. See `review--consensus-protocol.md`.
 - **Auto-merge guard**: MUST NOT set auto-merge while bot review is pending — no review means no threads means `required_conversation_resolution` does not block. See `agent--delegation-decision.md`.
 
