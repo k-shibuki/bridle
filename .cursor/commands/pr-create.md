@@ -59,9 +59,9 @@ All matching change types trigger independently (no `elif` single-match). If any
 git push -u origin HEAD
 ```
 
-### 3c. Verify base branch (REQUIRED)
+### 3c. Verify base branch (REQUIRED — `HS-PR-BASE`)
 
-**Always use `main` as the PR base branch.** Do not use `--base feat/<branch>`.
+Per `@.cursor/rules/agent-safety.mdc` `HS-PR-BASE`: always use `main` as the PR base branch. Do not use `--base feat/<branch>`.
 
 | Situation | Base | Rationale |
 |---|---|---|

@@ -38,7 +38,7 @@ See `@.cursor/knowledge/agent--task-prefix-convention.md` for the naming convent
 
 ## Make Commands
 
-All R commands run inside the development container. Ensure it is running (`make container-up`).
+All R commands run inside the development container (see `@.cursor/rules/workflow-policy.mdc` § Container Prerequisite).
 
 ```bash
 make help    # Show available commands

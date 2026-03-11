@@ -34,7 +34,7 @@ Scope is optional: `<type>(<scope>): <summary>`. See [Conventional Commits](http
 
 ### fix vs hotfix
 
-Differ in **urgency**, not kind. See `@.cursor/rules/workflow-policy.mdc` § fix vs hotfix Decision Criteria. Both go through PR — direct push to main is never permitted for code changes.
+See `@.cursor/rules/workflow-policy.mdc` § fix vs hotfix Decision Criteria for the full decision table. Key point: they differ in **urgency**, not kind — both go through PR.
 
 **PR title handling**: `hotfix` is a valid commit type but NOT a PR title prefix — the PR title regex does not include it. For hotfix PRs, use `fix:` as the title prefix and add the `hotfix` exception label. This is because `hotfix` is an exception label (urgency), not a type label (kind of change).
 

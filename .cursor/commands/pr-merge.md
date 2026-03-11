@@ -13,7 +13,7 @@ Execute a merge — either via GitHub (for PR flow) or locally (for exception fl
 
 These checks are the first step of `pr-merge` and cannot be skipped:
 
-1. **CI must be green**:
+1. **CI must be green** (per `@.cursor/rules/agent-safety.mdc` `HS-CI-MERGE`):
    ```bash
    gh pr checks <PR-number>
    ```
