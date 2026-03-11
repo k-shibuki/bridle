@@ -68,6 +68,21 @@ draft_knowledge <- function(scan_result, references = NULL,
   drafts
 }
 
+#' Sanitize a topic name for safe use as a filename
+#'
+#' Strips path separators and leading dots, collapses to a safe basename.
+#' Falls back to `"default"` for empty or invalid inputs.
+#' @keywords internal
+sanitize_topic_name <- function(topic) {
+  if (is.null(topic) || !nzchar(trimws(topic))) {
+    return("default")
+  }
+  safe <- basename(topic)
+  safe <- gsub("[^A-Za-z0-9._-]", "_", safe)
+  safe <- sub("^\\.+", "", safe)
+  if (!nzchar(safe)) "default" else safe
+}
+
 #' Generate knowledge for all graph topics
 #'
 #' Uses the first-call knowledge section plus supplementary LLM calls
@@ -76,12 +91,11 @@ draft_knowledge <- function(scan_result, references = NULL,
 generate_multi_topic_knowledge <- function(drafts, package, func,
                                            provider, model) {
   first_knowledge <- drafts$knowledge
-  first_topic <- first_knowledge[["topic"]]
+  first_topic <- sanitize_topic_name(first_knowledge[["topic"]])
 
   all_topics <- extract_graph_topics(drafts$decision_graph)
   if (length(all_topics) <= 1L) {
-    topic_name <- first_topic %||% "default"
-    return(stats::setNames(list(first_knowledge), topic_name))
+    return(stats::setNames(list(first_knowledge), first_topic))
   }
 
   knowledge_list <- stats::setNames(list(first_knowledge), first_topic)
@@ -509,7 +523,8 @@ write_draft_files <- function(drafts, output_dir, package, func) {
   kl <- drafts$knowledge_list
   if (!is.null(kl) && length(kl) > 0L) {
     for (topic_name in names(kl)) {
-      fname <- paste0(topic_name, ".yaml")
+      safe_name <- sanitize_topic_name(topic_name)
+      fname <- paste0(safe_name, ".yaml")
       knowledge_path <- file.path(knowledge_dir, fname)
       yaml::write_yaml(kl[[topic_name]], knowledge_path)
       cli::cli_inform("Draft knowledge ({topic_name}): {.path {knowledge_path}}")

@@ -285,6 +285,40 @@ test_that("draft_knowledge: includes references in prompt", {
   expect_true(grepl("Author A", captured_prompt))
 })
 
+# -- sanitize_topic_name() ----------------------------------------------------
+
+test_that("sanitize_topic_name: normal topic passes through", {
+  expect_equal(bridle:::sanitize_topic_name("effect_measures"), "effect_measures")
+})
+
+test_that("sanitize_topic_name: path traversal is stripped", {
+  expect_equal(
+    bridle:::sanitize_topic_name("../constraints/technical"),
+    "technical"
+  )
+})
+
+test_that("sanitize_topic_name: NULL falls back to default", {
+  expect_equal(bridle:::sanitize_topic_name(NULL), "default")
+})
+
+test_that("sanitize_topic_name: empty string falls back to default", {
+  expect_equal(bridle:::sanitize_topic_name(""), "default")
+  expect_equal(bridle:::sanitize_topic_name("  "), "default")
+})
+
+test_that("sanitize_topic_name: leading dots removed", {
+  expect_equal(bridle:::sanitize_topic_name(".hidden"), "hidden")
+  expect_equal(bridle:::sanitize_topic_name("..foo"), "foo")
+})
+
+test_that("sanitize_topic_name: special chars replaced with underscore", {
+  expect_equal(
+    bridle:::sanitize_topic_name("effect/measures"),
+    "measures"
+  )
+})
+
 # -- extract_graph_topics() ---------------------------------------------------
 
 test_that("extract_graph_topics: extracts topics with parameters", {
@@ -383,6 +417,24 @@ test_that("generate_multi_topic_knowledge: single topic returns one entry", {
   expect_equal(length(result), 1L)
   expect_equal(names(result), "t1")
   expect_equal(result$t1$topic, "t1")
+})
+
+test_that("generate_multi_topic_knowledge: blank topic falls back to default", {
+  # Given: graph with one topic, knowledge has empty topic string
+  # When:  generating multi-topic knowledge
+  # Then:  uses "default" as the topic key
+  drafts <- list(
+    decision_graph = list(graph = list(nodes = list(
+      n1 = list(type = "decision", topic = "t1", parameter = "p1")
+    ))),
+    knowledge = list(topic = "", entries = list(list(id = "e1")))
+  )
+
+  result <- bridle:::generate_multi_topic_knowledge(
+    drafts, "pkg", "fn", NULL, NULL
+  )
+
+  expect_true("default" %in% names(result))
 })
 
 test_that("generate_multi_topic_knowledge: multi-topic triggers extra calls", {
