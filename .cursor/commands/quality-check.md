@@ -79,6 +79,24 @@ Note: All `make` targets that invoke R run inside the development container (see
 
 - `make pr-ready` passes (or at minimum `make check` passes with **0 errors, 0 warnings, 0 notes**)
 
+## Verification Order
+
+Which gate to run depends on what changed. All verifications are mandatory unless noted.
+
+| Verification | Minimum gate | Executed during | Skippable? |
+|---|---|---|---|
+| `make validate-schemas` | Always | `quality-check` | No |
+| `make ci-fast` | Always | `quality-check` | No |
+| `make test` | When tests exist | `test-regression` | Only if no tests exist |
+| `make check` | Before commit | `quality-check` | No |
+| `make coverage-check` | When tests exist | `test-regression` | Only if no tests exist |
+| `make document` | When roxygen2 changed | `quality-check` | Only if no roxygen2 changes |
+| `gh pr checks` | Before merge | `pr-create` (Step 5) | No |
+| `make doctor` | Always (includes renv sync) | `quality-check` | No |
+| `roxygen2::roxygenise()` | After `git rebase` adding new R files | `quality-check` | No |
+
+When no R code changed (Makefile, docs, CI only) but schema-related files were modified, run `make validate-schemas`. When neither R code nor schemas changed, local verification may be skipped.
+
 ## Troubleshooting
 
 ### format-lint loop (styler formats, lintr rejects, repeat)
