@@ -258,10 +258,16 @@ squash-merging #<A>, use `git rebase --onto` to rebase #<B> cleanly.
 - If CI fails on either PR: stop, report which check failed and the details URL
 - If rebase --onto has conflicts: abort rebase (`git rebase --abort`), report the conflicting files
 - If merge fails: report the error, do NOT retry
+- If `git push --force-with-lease` is rejected:
+  1. `git fetch origin` to sync tracking refs
+  2. `git ls-remote origin <branch-B>` to identify who updated the remote
+  3. If the remote was updated by this subagent's own prior push (race condition): retry `git push --force-with-lease`
+  4. If updated by another agent: abort, report the conflict (see `git--quick-recovery.md`)
 
 ## Return format
 Report:
 - PR #<A>: merged (yes/no), merge SHA
 - PR #<B>: merged (yes/no), merge SHA
+- Push verification: `git ls-remote` SHA matches local HEAD (yes/no)
 - Any errors encountered
 ```

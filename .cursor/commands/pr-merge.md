@@ -219,6 +219,17 @@ are handled by auto-merge — see § Auto-merge and § Batch Auto-Merge in
 
 The main agent checks the subagent transcript at the next `next` re-assessment cycle. See `subagent-policy.mdc` "Completion guarantee" for the protocol.
 
+### Post-delegation push verification
+
+When a subagent performed a force-push (Template 3 `--onto` rebase), verify the push reached the remote before proceeding with further branch operations:
+
+```bash
+git fetch origin
+git ls-remote origin <branch> | head -1
+```
+
+Compare the remote SHA with the expected value from the subagent's return. If they differ, see `@.cursor/knowledge/git--quick-recovery.md` § Force-with-Lease Rejected. See also `@.cursor/knowledge/git--safety-checklist.md` for the full post-subagent verification checklist.
+
 ## Constraints
 
 - Use non-interactive git flags (`--no-edit`, `--no-pager`) to avoid hangs

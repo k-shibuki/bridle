@@ -100,6 +100,7 @@ Use the evidence to classify the current state into one of these positions:
 | Open PR, CI failed | **CI failure** | `debug` or fix + re-push |
 | PR reviewed, changes required | **Changes required** | `review-fix` (address findings from `pr-review`, then re-push and re-review) |
 | PR reviewed, mergeable | **Review done** | `pr-merge` |
+| Open PR, `CONFLICTING` mergeable status, parent PR recently merged | **Dependent chain needs rebase** | Rebase child branch with `git rebase --onto` (see `git--squash-merge-dependent-branch.md`), then force-push and wait for CI. Detect via: `gh pr view <N> --json mergeable -q '.mergeable'` returns `CONFLICTING` AND a related PR was recently squash-merged. |
 | PR merged, back on `main` | **Cycle complete** | Post-cycle signal scan (see Step 3), then `implement` (next Issue) or `issue-create` |
 | Environment not ready | **Environment issue** | `doctor` |
 | On `main`, hotfix needed | **Exception flow** | `implement` → `pr-create` (exception path) |
