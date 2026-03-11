@@ -145,6 +145,22 @@ Read `@.cursor/knowledge/review--bot-trigger.md` § Two-Tier Trigger Model. Code
 | R code, schemas, security, ADRs | **Yes** — `gh pr comment <PR> --body "@codex review"` |
 | CI config, shell scripts, workflow, docs | No |
 
+#### 5b′. Capture trigger metadata (REQUIRED before delegation)
+
+After triggering each reviewer, capture the comment ID and timestamp for the monitoring subagent. The delegation templates require `trigger_time` and `trigger_id` values — without them, the subagent cannot distinguish pre-existing comments from the review response.
+
+```bash
+# Capture CodeRabbit trigger metadata (always — triggered in 5a)
+gh api repos/{owner}/{repo}/issues/<PR>/comments \
+  --jq '[.[] | select(.user.login == "{agent_login}") | select(.body | test("@coderabbitai review"))] | last | {id: .id, created_at: .created_at}'
+
+# Capture Codex trigger metadata (only if triggered in 5b)
+gh api repos/{owner}/{repo}/issues/<PR>/comments \
+  --jq '[.[] | select(.user.login == "{agent_login}") | select(.body | test("@codex review"))] | last | {id: .id, created_at: .created_at}'
+```
+
+Pass both `trigger_id` and `trigger_time` (= `created_at`) to the delegation template in Step 5c.
+
 #### 5c. Delegate CI + review wait
 
 ```bash
@@ -159,7 +175,7 @@ gh pr checks <PR_NUMBER>
 | Yes | CI + Bot Review Wait (`.cursor/templates/delegation--ci-bot-review-wait.md`) — CodeRabbit: YES (agent-triggered), Codex: YES |
 | No | CI + Bot Review Wait (`.cursor/templates/delegation--ci-bot-review-wait.md`) — CodeRabbit: YES (agent-triggered), Codex: NO |
 
-Tell the subagent that CodeRabbit is always YES (agent-triggered in Step 5a). Each reviewer is polled independently.
+Tell the subagent that CodeRabbit is always YES (agent-triggered in Step 5a). Each reviewer is polled independently. Pass the `trigger_id` and `trigger_time` captured in Step 5b′ for each triggered reviewer.
 
 #### 5d. Auto-merge precondition (REQUIRED before setting auto-merge)
 

@@ -70,7 +70,7 @@ AGENTS.md (AI reviewer entry point — read by Codex and CodeRabbit)
 - **Cursor** reads `.cursor/` directly via rules, commands, knowledge
 - **Codex** reads `AGENTS.md` first, then follows references into `.cursor/` files
 - **CodeRabbit** reads `AGENTS.md` via code_guidelines auto-detection + `.coderabbit.yaml` for config
-- **Two-tier trigger**: Agent triggers CodeRabbit on every PR (`@coderabbitai review`) and Codex on complex changes only (`@codex review`) in `pr-create` Step 5 or `review-fix` Step 5b. Wait is delegated to background subagents (`templates/delegation--ci-bot-review-wait.md` / `delegation--bot-review-wait.md`) polling all triggered reviewers in parallel
+- **Two-tier trigger**: Agent triggers CodeRabbit on every PR (`@coderabbitai review`) and Codex on complex changes only (`@codex review`) in `pr-create` Step 5 or `review-fix` Step 5b. Wait is delegated to background subagents (`templates/delegation--ci-bot-review-wait.md` / `templates/delegation--bot-review-wait.md`) polling all triggered reviewers in parallel
 - **Feedback loop**: recurring false positives become knowledge atoms (`review--*.md`), benefiting all reviewers
 - **Drift detection**: `make review-sync-check` verifies that `AGENTS.md` and `pr-review.md` cover the same review categories (enforced in CI)
 
