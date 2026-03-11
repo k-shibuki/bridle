@@ -54,7 +54,24 @@ These checks are the first step of `pr-merge` and cannot be skipped:
    If the project moves to parallel multi-agent development, reconsider enabling
    `strict: true` or GitHub Merge Queue.
 
-If any precondition (1-4) is not met, do not proceed to merge. Report the blocking condition and the required action.
+5. **Last bot review must post-date the last push** (review freshness):
+
+   ```bash
+   # Last push to PR
+   last_push=$(gh pr view <PR-number> --json commits \
+     --jq '.commits[-1].committedDate')
+
+   # Last CodeRabbit review completion
+   last_review=$(gh api repos/{owner}/{repo}/pulls/<PR-number>/reviews \
+     --jq '[.[] | select(.user.login | test("coderabbit";"i"))
+            | select(.body != "") | .submitted_at] | sort | last')
+   ```
+
+   If `last_review < last_push` (or no review exists after last push), a re-review is pending. **STOP** — wait for the re-review to complete and confirm no new findings before merging.
+
+   This prevents the agent from merging on stale review evidence when a re-review has been triggered but not yet completed.
+
+If any precondition (1-5) is not met, do not proceed to merge. Report the blocking condition and the required action.
 
 ## Inputs
 
@@ -169,11 +186,9 @@ Use auto-merge to let GitHub merge automatically when all required checks pass.
 
 **Preconditions** (all must be true):
 
+- Mandatory Preconditions 1-5 pass (CI green, review fresh, etc.)
 - `pr-review` has concluded "Mergeable" on the **current** HEAD commit
 - Consensus reached on all review threads per `review--consensus-protocol.md` (unresolved == 0)
-- No re-review pending (no push since last completed review)
-
-If a re-review is in progress, wait for completion before setting auto-merge.
 
 ```bash
 gh pr merge <PR-number> --auto --squash
