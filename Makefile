@@ -188,16 +188,17 @@ changed-lint: _require_container ## Lint only changed R files
 		echo "No changed R files to lint"; \
 	fi
 
-changed-test: _require_container ## Run tests related to changed files (falls back to full suite)
-	@filter=$$(bash tools/changed-files.sh "R/*.R" "tests/testthat/*.R" \
-		| sed -n 's|.*/test-\(.*\)\.R$$|\1|p' \
-		| paste -sd'|'); \
+changed-test: _require_container ## Run tests scoped to changed R/ and test files (skips when no mapping)
+	@filter=$$(bash tools/changed-files.sh "R/*.R" "tests/testthat/test-*.R" \
+		| sed -n \
+			-e 's|^R/\(.*\)\.R$$|\1|p' \
+			-e 's|.*/test-\(.*\)\.R$$|\1|p' \
+		| sort -u | paste -sd'|'); \
 	if [ -n "$$filter" ]; then \
 		echo "Running scoped tests: $$filter"; \
 		$(RSCRIPT) -e "devtools::test(filter = '$$filter')"; \
 	else \
-		echo "No changed test files detected -- running full test suite"; \
-		$(RSCRIPT) -e "devtools::test()"; \
+		echo "No testable R changes detected — skipping (CI runs full suite)"; \
 	fi
 
 test-json: _require_container ## Run tests with JUnit XML output
