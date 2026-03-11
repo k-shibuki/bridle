@@ -15,6 +15,8 @@ Hard Stops use stable mnemonic IDs (not sequential numbers) so that additions, r
 The following actions are NEVER permitted, regardless of user instructions:
 
 - **`HS-CI-MERGE` — NEVER merge a PR without CI green**: Run `gh pr checks <N>` and confirm all checks pass before executing `gh pr merge`. When using auto-merge (`gh pr merge --auto --squash`), GitHub enforces this check automatically. No exceptions.
+  - **(a) NEVER use the `--admin` flag** on `gh pr merge` — it bypasses branch protection; `enforce_admins` does not reliably block repo-owner bypass on personal repositories. If merge is blocked, diagnose the cause instead of overriding.
+  - **(b) NEVER use `git commit --amend` + force-push** in the normal PR flow — always create new commits for fixes. Amend+force-push leaves stale failed checks visible in the GitHub PR GUI, causing confusion between CLI and GUI state.
 - **`HS-LOCAL-VERIFY` — NEVER skip local verification**: The `pre-push` hook runs differential fail-fast checks: `format-check` + `changed-lint` + `changed-test` for R changes, plus `validate-schemas`, `renv-check`, and `kb-validate` for their respective file types. All matching change types trigger independently. Pushing without local verification is prohibited — "CI will catch it" is not acceptable.
 - **`HS-NO-SKIP` — NEVER skip steps or proceed without evidence**: Execute every step of every command in full. Gate passage must be proven by command output or tool results. "Probably fine" is not evidence. Achieve speed through parallel work on independent Issues, not by skipping verification.
 - **`HS-PR-TEMPLATE` — NEVER create a PR without the full template**: Every PR body must include ALL required sections defined in `.github/PULL_REQUEST_TEMPLATE.md` (the SSOT for PR structure). Read `pr-create.md` before every PR creation — do not compose the body from memory.
@@ -28,7 +30,7 @@ Each Hard Stop is classified by its enforcement mechanism. See `controls--ai-dev
 
 | Hard Stop | Tier | Enforcement mechanism |
 |---|---|---|
-| `HS-CI-MERGE` | **Deterministic** | GitHub Branch Protection: required status checks (`ci-pass`, `check-policy`). Auto-merge (`--auto`) further strengthens this by delegating merge execution to GitHub. Note: `enforce_admins` does not reliably block repo-owner bypass on personal repositories; `--admin` flag is prohibited by `pr-merge.md` Constraints. Rulesets migration can close this gap. |
+| `HS-CI-MERGE` | **Deterministic** | GitHub Branch Protection: required status checks (`ci-pass`, `check-policy`). Auto-merge (`--auto`) further strengthens this by delegating merge execution to GitHub. `--admin` flag and amend+force-push prohibitions are part of this Hard Stop (see above). Rulesets migration can close the `enforce_admins` gap. |
 | `HS-LOCAL-VERIFY` | **Cond. Deterministic** | `pre-push` Git hook — requires `make install-hooks`. Note: `SKIP_PRE_PUSH=1` emergency bypass exists in `tools/pre-push.sh` |
 | `HS-NO-SKIP` | Steering | Agent self-policing (procedural discipline + evidence requirement) |
 | `HS-PR-TEMPLATE` | **Deterministic** | `pr-policy.yaml` CI check |

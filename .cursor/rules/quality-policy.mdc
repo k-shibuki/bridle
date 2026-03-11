@@ -15,6 +15,20 @@ Procedures (which commands to run and how) are documented in `@.cursor/commands/
 
 Per `agent-safety.mdc` `HS-NO-DISMISS`: every diagnostic reported by quality gates must be fixed regardless of when it was introduced. "Pre-existing" is never a valid reason to skip a diagnostic.
 
+## Execution Order: Format Before Lint
+
+Always format before linting. Running lint on unformatted code produces false positives from styler/lintr indentation conflicts (see `@.cursor/knowledge/lint--styler-lintr-conflict.md`).
+
+## Post-Rebase Collate Drift
+
+After every `git rebase` that incorporates new R source files, the agent MUST:
+
+1. Run `roxygen2::roxygenise()` (updates Collate and NAMESPACE)
+2. Commit the updated DESCRIPTION and NAMESPACE
+3. Then proceed with `make format` and `make ci-fast`
+
+See `@.cursor/knowledge/r--post-rebase-collate-drift.md` for detection heuristics.
+
 ## Prohibited Practices (Workarounds)
 
 The following are prohibited in principle (exception only with stated justification):

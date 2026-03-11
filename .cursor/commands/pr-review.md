@@ -16,8 +16,7 @@ Review a pull request: inspect the diff, verify CI status, check Issue DoD fulfi
 
 1. Read all user-attached `@...` context first (PR description, diff, requirements).
 2. If required context is missing, ask for the exact `@...` files/info and stop.
-3. Do NOT execute merge. Always delegate merge to `pr-merge`.
-4. Do NOT execute fixes. Always delegate fixes to `review-fix`.
+3. Per `@.cursor/rules/workflow-policy.mdc` § Command Separation of Concerns: this command produces judgment only — merge and fix execution are delegated to `pr-merge` and `review-fix` respectively.
 
 ## Inputs (ask if missing)
 
