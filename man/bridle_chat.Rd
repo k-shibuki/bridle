@@ -7,6 +7,7 @@
 bridle_chat(prompt, provider = NULL, model = NULL)
 }
 \description{
-Send a prompt to an LLM via ellmer (mockable wrapper)
+Uses \code{resolve_chat_provider()} from \code{llm_utils.R} to select the
+correct provider-specific constructor and inject credentials.
 }
 \keyword{internal}

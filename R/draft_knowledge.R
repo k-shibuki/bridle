@@ -152,20 +152,25 @@ generate_multi_topic_knowledge <- function(drafts, package, func,
 }
 
 #' Send a prompt to an LLM via ellmer (mockable wrapper)
+#'
+#' Uses `resolve_chat_provider()` from `llm_utils.R` to select the
+#' correct provider-specific constructor and inject credentials.
 #' @keywords internal
 bridle_chat <- function(prompt, provider = NULL, model = NULL) {
   rlang::check_installed("ellmer", reason = "for AI drafting")
-  args <- list()
-  if (!is.null(provider)) args[["name"]] <- provider
-  if (!is.null(model)) args[["model"]] <- model
-  args[["system_prompt"]] <- paste(
+
+  sys_prompt <- paste(
     "You are an expert R statistical methodology consultant.",
     "Generate YAML content for a bridle knowledge plugin.",
     "Output ONLY valid YAML, no markdown fences or commentary."
   )
-  args[["echo"]] <- "none"
-  chat_fn <- utils::getFromNamespace("chat", "ellmer")
-  chat_obj <- do.call(chat_fn, args)
+
+  resolved <- resolve_chat_provider( # nolint: object_usage_linter. function defined in R/llm_utils.R
+    provider, model,
+    extra_args = list(system_prompt = sys_prompt, echo = "none")
+  )
+
+  chat_obj <- do.call(resolved$constructor_fn, resolved$args)
   chat_obj$chat(prompt)
 }
 
