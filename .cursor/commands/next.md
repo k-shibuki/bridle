@@ -62,7 +62,10 @@ git log --oneline -5
 
 # GitHub state
 gh issue list --state open --json number,title,labels,body --limit 30
-gh pr list --state open --json number,title,headRefName,statusCheckRollup --limit 10
+gh pr list --state open --json number,title,headRefName,statusCheckRollup,mergeable --limit 10
+
+# Recently merged PRs (for dependent chain detection)
+gh pr list --state merged --json number,title,mergedAt --limit 5
 
 # Environment state
 make doctor 2>&1 | tail -5

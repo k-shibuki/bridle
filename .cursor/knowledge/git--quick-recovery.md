@@ -25,14 +25,15 @@ git cherry-pick <found-sha>
 # 1. Sync local tracking refs with remote
 git fetch origin
 
-# 2. Verify the remote HEAD matches expectations
-git ls-remote origin <branch> | head -1
+# 2. Compare remote SHA with local HEAD
+remote_sha=$(git ls-remote origin <branch> | awk '{print $1}')
+local_sha=$(git rev-parse HEAD)
 
-# 3a. If the remote change is your own (e.g., background push completed):
-#     Re-attempt — fetch updated the lease baseline
+# 3a. If SHAs match: a prior push already succeeded, no action needed
+# 3b. If SHAs differ: fetch updated the lease baseline, retry
 git push --force-with-lease origin <branch>
 
-# 3b. If the remote was changed by another agent/person:
+# 3c. If retry also fails: another agent changed the branch
 #     Re-identify boundary and re-rebase if needed (see git--squash-merge-dependent-branch.md)
 git rebase --onto origin/main <new-boundary> <branch>
 git push --force-with-lease origin <branch>
