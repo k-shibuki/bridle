@@ -189,11 +189,16 @@ changed-lint: _require_container ## Lint only changed R files
 	fi
 
 changed-test: _require_container ## Run tests scoped to changed R/ and test files (skips when no mapping)
-	@filter=$$(bash tools/changed-files.sh "R/*.R" "tests/testthat/test-*.R" \
-		| sed -n \
-			-e 's|^R/\(.*\)\.R$$|\1|p' \
-			-e 's|.*/test-\(.*\)\.R$$|\1|p' \
-		| sort -u | paste -sd'|'); \
+	@filter=$$( \
+		{ \
+			bash tools/changed-files.sh "tests/testthat/test-*.R" \
+				| sed -n -e 's|.*/test-\(.*\)\.R$$|\1|p'; \
+			for base in $$(bash tools/changed-files.sh "R/*.R" \
+				| sed -n -e 's|^R/\(.*\)\.R$$|\1|p'); do \
+				[ -f "tests/testthat/test-$$base.R" ] && printf '%s\n' "$$base"; \
+			done; \
+		} | sort -u | paste -sd'|' - \
+	); \
 	if [ -n "$$filter" ]; then \
 		echo "Running scoped tests: $$filter"; \
 		$(RSCRIPT) -e "devtools::test(filter = '$$filter')"; \
