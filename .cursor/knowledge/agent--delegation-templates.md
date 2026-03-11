@@ -125,6 +125,12 @@ triggered bot reviews complete (or timeout).
 - Codex trigger_time: <ISO timestamp> (if triggered)
 - Codex trigger_id: <comment ID> (if triggered)
 
+**Critical**: `trigger_time` must be the exact `created_at` of the
+trigger comment, not an approximation. The main agent must capture
+this at trigger time and pass it to the subagent. Approximate
+timestamps cause false-negative state detection (ack from previous
+trigger mistaken for current trigger, or current trigger's ack missed).
+
 ## Steps
 
 Use the polling algorithm from review--bot-lifecycle.md § Polling Algorithm.
@@ -198,6 +204,12 @@ Monitor bot reviews for PR #<N> and report when complete.
 - Codex triggered: YES / NO
 - Codex trigger_time: <ISO timestamp> (if triggered)
 - Codex trigger_id: <comment ID> (if triggered)
+
+**Critical**: `trigger_time` must be the exact `created_at` of the
+trigger comment, not an approximation. The main agent must capture
+this at trigger time and pass it to the subagent. Approximate
+timestamps cause false-negative state detection (ack from previous
+trigger mistaken for current trigger, or current trigger's ack missed).
 
 ## Steps
 

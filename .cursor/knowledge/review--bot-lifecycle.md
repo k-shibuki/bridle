@@ -126,6 +126,25 @@ gh api repos/{owner}/{repo}/issues/<N>/comments \
 **Rule**: Always use API checks to determine state. Do not infer state
 from timing, absence of activity, or activity on other PRs.
 
+**Trigger time tracking**: Each trigger creates a new `trigger_time`
+(the `created_at` of the trigger comment). All subsequent state
+detection (ack, review, rate-limit) MUST filter by this specific
+`trigger_time`. When a reviewer is re-triggered (e.g., after
+review-fix), the old `trigger_time` is invalidated — acks and reviews
+from the previous trigger are not evidence of the new trigger's state.
+
+Common mistake: polling with an approximate trigger time (e.g., "around
+05:15") instead of the exact `created_at` of the trigger comment. Always
+capture the trigger comment ID and timestamp at trigger time:
+
+```bash
+# At trigger time, capture exact timestamp
+COMMENT_URL=$(gh pr comment <N> --body "@coderabbitai review" 2>&1)
+# Extract comment ID from the URL, then query created_at
+trigger_time=$(gh api repos/{owner}/{repo}/issues/comments/<id> \
+  --jq '.created_at')
+```
+
 **Critical**: CodeRabbit's "Review triggered" ack is NOT completion —
 it is an intermediate signal (ACCEPTED). See § State Machine below.
 
