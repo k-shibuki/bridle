@@ -7,8 +7,10 @@ Reply format, resolve procedure, and completeness invariant for review
 threads. All commands that respond to review comments (`review-fix`,
 `pr-review`, `pr-merge`, `next`) reference this atom.
 
-For bot review lifecycle mechanics (trigger, detection, polling, state
-machine), see `review--bot-lifecycle.md`.
+For bot review lifecycle mechanics, see `review--bot-trigger.md` (trigger),
+`review--bot-detection.md` (detection, polling, state machine),
+`review--bot-timing.md` (timing, rate limits), and
+`review--bot-re-review.md` (re-review).
 
 ## Completeness Invariant
 
@@ -155,7 +157,10 @@ See `review-fix.md` Step 3b for the full procedure.
 
 ## Related
 
-- `review--bot-lifecycle.md` — bot review lifecycle mechanics (trigger, detection, polling)
+- `review--bot-trigger.md` — trigger rules and two-tier model
+- `review--bot-detection.md` — output detection, state machine, polling
+- `review--bot-timing.md` — timing, rate limits, recovery
+- `review--bot-re-review.md` — re-review after review-fix
 - `agent-safety.mdc` `HS-REVIEW-RESOLVE` — Hard Stop definition
 - `workflow-policy.mdc` § Review Comment Response — policy declaration
 - `review-fix.md` Step 3b — procedure for reply + resolve

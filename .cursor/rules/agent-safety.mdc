@@ -47,7 +47,7 @@ Bot review uses a two-tier enforcement model to minimize agent judgment:
 - **CodeRabbit**: **Procedural** — agent triggers `@coderabbitai review` in `pr-create` Step 5a and `review-fix` Step 5b. Auto-review is OFF (requires paid seat). Skipping is visible in `pr-create` output (`Bot review:` field).
 - **Codex**: **Steering** — agent must manually trigger for complex changes (R code, schemas, security, ADRs). The `pr-create` output format requires explicit `Bot review:` evidence to make skipping visible.
 
-See `review--bot-lifecycle.md` § Two-Tier Trigger Model for the full decision table.
+See `review--bot-trigger.md` § Two-Tier Trigger Model for the full decision table.
 
 ## Multi-Agent Safety Rules
 

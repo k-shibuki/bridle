@@ -39,7 +39,7 @@ gh pr view <PR> --json reviews --jq '.reviews[-1].body'
 
 **Source B: Bot inline comments** (if `pr-review` reported bot review status as "Reviewed")
 
-Use the detection commands from `@.cursor/knowledge/review--bot-lifecycle.md` § Output Detection to retrieve inline comments from whichever reviewer responded.
+Use the detection commands from `@.cursor/knowledge/review--bot-detection.md` § Output Detection to retrieve inline comments from whichever reviewer responded.
 
 Merge all sources, deduplicating where Cursor and bot review flagged the same issue.
 
@@ -134,7 +134,7 @@ git push
 
 ### 5b. Bot re-review decision
 
-**Prerequisite**: Read `@.cursor/knowledge/review--bot-lifecycle.md` § Re-review after review-fix.
+**Prerequisite**: Read `@.cursor/knowledge/review--bot-re-review.md` § Re-review after review-fix.
 
 Agent re-triggers CodeRabbit after every review-fix push. Agent decides whether to also re-trigger Codex.
 

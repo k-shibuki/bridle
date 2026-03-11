@@ -45,7 +45,7 @@ Two AI code reviewers operate as external PR reviewers via `AGENTS.md`
 
 **Orchestration model**: The agent triggers both reviewers explicitly —
 CodeRabbit on every PR, Codex conditionally based on change type
-(`review--bot-lifecycle.md` § Two-Tier Trigger Model). Wait is delegated
+(`review--bot-trigger.md` § Two-Tier Trigger Model). Wait is delegated
 to a background subagent. Findings are integrated into `pr-review`.
 Each reviewer is independent — no fallback chain.
 
@@ -54,7 +54,10 @@ AGENTS.md (AI reviewer entry point — read by Codex and CodeRabbit)
   ├── Review guidelines (P0/P1 severity — stable base criteria)
   └── References:
       ├── .cursor/rules/knowledge-index.mdc  ← shared lookup table
-      ├── .cursor/knowledge/review--bot-lifecycle.md  ← bot review behavior SSOT
+      ├── .cursor/knowledge/review--bot-trigger.md     ← trigger rules, two-tier model
+      ├── .cursor/knowledge/review--bot-detection.md   ← detection, state machine, polling
+      ├── .cursor/knowledge/review--bot-timing.md      ← timing, rate limits, recovery
+      ├── .cursor/knowledge/review--bot-re-review.md   ← re-review after review-fix
       ├── .cursor/knowledge/review--comment-response.md ← reply format, resolve, completeness
       ├── .cursor/knowledge/review--*.md     ← feedback loop accumulates here
       ├── .cursor/commands/pr-review.md      ← review procedure
