@@ -170,7 +170,7 @@ test_that("T07: draft_knowledge writes 3 YAML files", {
 
   expect_true(file.exists(file.path(tmp, "decision_graph.yaml")))
   expect_true(file.exists(
-    file.path(tmp, "knowledge", "metafor.yaml")
+    file.path(tmp, "knowledge", "estimation_method.yaml")
   ))
   expect_true(file.exists(
     file.path(tmp, "constraints", "technical.yaml")
@@ -196,7 +196,7 @@ test_that("T08: draft output loads with S7 readers", {
   expect_equal(graph@entry_node, "choose_method")
   expect_true("choose_method" %in% names(graph@nodes))
 
-  ks <- read_knowledge(file.path(tmp, "knowledge", "metafor.yaml"))
+  ks <- read_knowledge(file.path(tmp, "knowledge", "estimation_method.yaml"))
   expect_true(S7::S7_inherits(ks, KnowledgeStore))
   expect_equal(ks@topic, "estimation_method")
   expect_equal(ks@target_parameter, "method")
@@ -218,7 +218,7 @@ test_that("T09: validate_plugin passes on draft output", {
   draft_knowledge(pkg, output_dir = tmp)
 
   graph <- read_decision_graph(file.path(tmp, "decision_graph.yaml"))
-  ks <- read_knowledge(file.path(tmp, "knowledge", "metafor.yaml"))
+  ks <- read_knowledge(file.path(tmp, "knowledge", "estimation_method.yaml"))
   cs <- read_constraints(file.path(tmp, "constraints", "technical.yaml"))
 
   result <- validate_plugin(graph, list(ks), list(cs))
@@ -250,7 +250,7 @@ test_that("T10: full pipeline scan -> fetch -> draft -> validate", {
   drafts <- draft_knowledge(pkg, references = refs, output_dir = tmp)
 
   graph <- read_decision_graph(file.path(tmp, "decision_graph.yaml"))
-  ks <- read_knowledge(file.path(tmp, "knowledge", "metafor.yaml"))
+  ks <- read_knowledge(file.path(tmp, "knowledge", "estimation_method.yaml"))
   cs <- read_constraints(file.path(tmp, "constraints", "technical.yaml"))
 
   result <- validate_plugin(graph, list(ks), list(cs))

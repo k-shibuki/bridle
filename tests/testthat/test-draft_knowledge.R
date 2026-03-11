@@ -285,6 +285,374 @@ test_that("draft_knowledge: includes references in prompt", {
   expect_true(grepl("Author A", captured_prompt))
 })
 
+# -- sanitize_topic_name() ----------------------------------------------------
+
+test_that("sanitize_topic_name: normal topic passes through", {
+  expect_equal(bridle:::sanitize_topic_name("effect_measures"), "effect_measures")
+})
+
+test_that("sanitize_topic_name: path traversal is stripped", {
+  expect_equal(
+    bridle:::sanitize_topic_name("../constraints/technical"),
+    "technical"
+  )
+})
+
+test_that("sanitize_topic_name: NULL falls back to default", {
+  expect_equal(bridle:::sanitize_topic_name(NULL), "default")
+})
+
+test_that("sanitize_topic_name: empty string falls back to default", {
+  expect_equal(bridle:::sanitize_topic_name(""), "default")
+  expect_equal(bridle:::sanitize_topic_name("  "), "default")
+})
+
+test_that("sanitize_topic_name: leading dots removed", {
+  expect_equal(bridle:::sanitize_topic_name(".hidden"), "hidden")
+  expect_equal(bridle:::sanitize_topic_name("..foo"), "foo")
+})
+
+test_that("sanitize_topic_name: special chars replaced with underscore", {
+  expect_equal(
+    bridle:::sanitize_topic_name("effect/measures"),
+    "measures"
+  )
+})
+
+# -- extract_graph_topics() ---------------------------------------------------
+
+test_that("extract_graph_topics: extracts topics with parameters", {
+  # Given: graph with multiple topics and parameters
+  # When:  extracting topics
+  # Then:  returns named list mapping topics to parameter vectors
+  graph_raw <- list(graph = list(nodes = list(
+    n1 = list(type = "decision", topic = "effect_measures", parameter = "measure"),
+    n2 = list(type = "decision", topic = "estimation", parameter = "method"),
+    n3 = list(type = "diagnosis", topic = "estimation"),
+    n4 = list(type = "execution")
+  )))
+
+  result <- bridle:::extract_graph_topics(graph_raw)
+
+  expect_equal(length(result), 2L)
+  expect_true("effect_measures" %in% names(result))
+  expect_true("estimation" %in% names(result))
+  expect_equal(result$effect_measures, "measure")
+  expect_equal(result$estimation, "method")
+})
+
+test_that("extract_graph_topics: returns empty for unnamed node list", {
+  # Given: graph with unnamed node list
+  # When:  extracting topics
+  # Then:  returns empty list
+  graph_raw <- list(nodes = list(list(type = "decision", topic = "t1")))
+  expect_equal(bridle:::extract_graph_topics(graph_raw), list())
+})
+
+test_that("extract_graph_topics: returns empty for NULL nodes", {
+  # Given: empty graph
+  # When:  extracting topics
+  # Then:  returns empty list
+  expect_equal(bridle:::extract_graph_topics(list()), list())
+})
+
+test_that("extract_graph_topics: skips nodes without topic", {
+  # Given: graph where some nodes lack a topic
+  # When:  extracting topics
+  # Then:  only nodes with topic are included
+  graph_raw <- list(graph = list(nodes = list(
+    gather = list(type = "context_gathering"),
+    decide = list(type = "decision", topic = "t1", parameter = "p1")
+  )))
+
+  result <- bridle:::extract_graph_topics(graph_raw)
+  expect_equal(length(result), 1L)
+  expect_equal(names(result), "t1")
+})
+
+# -- assemble_topic_prompt() ----------------------------------------
+
+test_that("assemble_topic_prompt: includes topic and params", {
+  # Given: topic name, parameters, package, function
+  # When:  assembling topic prompt
+  # Then:  prompt contains all required fields
+  prompt <- bridle:::assemble_topic_prompt(
+    "heterogeneity", c("tau2_estimator"), "metafor", "rma.uni"
+  )
+
+  expect_true(grepl("heterogeneity", prompt))
+  expect_true(grepl("tau2_estimator", prompt))
+  expect_true(grepl("metafor", prompt))
+  expect_true(grepl("rma.uni", prompt))
+  expect_true(grepl("SINGLE YAML", prompt))
+})
+
+test_that("assemble_topic_prompt: handles empty params", {
+  # Given: topic with no parameters
+  # When:  assembling topic prompt
+  # Then:  uses 'general' as parameter description
+  prompt <- bridle:::assemble_topic_prompt(
+    "bias", character(0), "metafor", "rma.uni"
+  )
+  expect_true(grepl("general", prompt))
+})
+
+# -- generate_multi_topic_knowledge() -----------------------------------------
+
+test_that("generate_multi_topic_knowledge: single topic returns one entry", {
+  # Given: graph with one topic, knowledge matching that topic
+  # When:  generating multi-topic knowledge
+  # Then:  returns single-entry named list
+  drafts <- list(
+    decision_graph = list(graph = list(nodes = list(
+      n1 = list(type = "decision", topic = "t1", parameter = "p1")
+    ))),
+    knowledge = list(topic = "t1", entries = list(list(id = "e1")))
+  )
+
+  result <- bridle:::generate_multi_topic_knowledge(
+    drafts, "pkg", "fn", NULL, NULL
+  )
+
+  expect_equal(length(result), 1L)
+  expect_equal(names(result), "t1")
+  expect_equal(result$t1$topic, "t1")
+})
+
+test_that("generate_multi_topic_knowledge: blank topic falls back to graph topic", {
+  # Given: graph with one topic, knowledge has empty topic string
+  # When:  generating multi-topic knowledge
+  # Then:  uses the graph's topic name as the key
+  drafts <- list(
+    decision_graph = list(graph = list(nodes = list(
+      n1 = list(type = "decision", topic = "t1", parameter = "p1")
+    ))),
+    knowledge = list(topic = "", entries = list(list(id = "e1")))
+  )
+
+  result <- bridle:::generate_multi_topic_knowledge(
+    drafts, "pkg", "fn", NULL, NULL
+  )
+
+  expect_true("t1" %in% names(result))
+  expect_equal(result$t1$topic, "")
+})
+
+test_that("generate_multi_topic_knowledge: zero-topic graph preserves knowledge", {
+  # Given: decision graph without topic fields
+  # When:  generating multi-topic knowledge
+  # Then:  no supplementary LLM call; existing knowledge returned with default key
+  drafts <- list(
+    decision_graph = list(graph = list(nodes = list(
+      n1 = list(type = "decision", parameter = "p1")
+    ))),
+    knowledge = list(topic = "existing", entries = list(list(id = "e1")))
+  )
+
+  local_mocked_bindings(
+    bridle_chat = function(...) stop("should not be called")
+  )
+
+  result <- bridle:::generate_multi_topic_knowledge(
+    drafts, "pkg", "fn", NULL, NULL
+  )
+
+  expect_equal(length(result), 1L)
+  expect_equal(names(result), "existing")
+  expect_equal(result$existing$topic, "existing")
+})
+
+test_that("generate_multi_topic_knowledge: multi-topic triggers extra calls", {
+  # Given: graph with 2 topics, first knowledge covers one
+  # When:  generating multi-topic knowledge with mocked bridle_chat
+  # Then:  supplementary call made for second topic
+  drafts <- list(
+    decision_graph = list(graph = list(nodes = list(
+      n1 = list(type = "decision", topic = "t1", parameter = "p1"),
+      n2 = list(type = "decision", topic = "t2", parameter = "p2")
+    ))),
+    knowledge = list(topic = "t1", entries = list(list(id = "e1")))
+  )
+
+  local_mocked_bindings(
+    bridle_chat = function(prompt, provider, model) { # nolint: object_usage_linter. mock binding
+      paste(
+        "topic: t2",
+        "target_parameter: p2",
+        "package: pkg",
+        "function: fn",
+        "entries:",
+        "  - id: e2",
+        "    when: always",
+        "    properties:",
+        "      - some fact",
+        sep = "\n"
+      )
+    }
+  )
+
+  result <- bridle:::generate_multi_topic_knowledge(
+    drafts, "pkg", "fn", NULL, NULL
+  )
+
+  expect_equal(length(result), 2L)
+  expect_true("t1" %in% names(result))
+  expect_true("t2" %in% names(result))
+  expect_equal(result$t2$topic, "t2")
+})
+
+test_that("generate_multi_topic_knowledge: supplementary LLM error is warning", {
+  # Given: graph with 2 topics, supplementary LLM call fails
+  # When:  generating multi-topic knowledge
+  # Then:  first topic present, second skipped with warning
+  drafts <- list(
+    decision_graph = list(graph = list(nodes = list(
+      n1 = list(type = "decision", topic = "t1", parameter = "p1"),
+      n2 = list(type = "decision", topic = "t2", parameter = "p2")
+    ))),
+    knowledge = list(topic = "t1", entries = list(list(id = "e1")))
+  )
+
+  local_mocked_bindings(
+    bridle_chat = function(prompt, provider, model) { # nolint: object_usage_linter. mock binding
+      stop("API unavailable")
+    }
+  )
+
+  expect_warning(
+    result <- bridle:::generate_multi_topic_knowledge(
+      drafts, "pkg", "fn", NULL, NULL
+    ),
+    "Failed to generate knowledge"
+  )
+
+  expect_equal(length(result), 1L)
+  expect_equal(names(result), "t1")
+})
+
+test_that("generate_multi_topic_knowledge: malformed YAML is warning", {
+  # Given: graph with 2 topics, supplementary LLM returns invalid YAML
+  # When:  generating multi-topic knowledge
+  # Then:  first topic present, second skipped with warning
+  drafts <- list(
+    decision_graph = list(graph = list(nodes = list(
+      n1 = list(type = "decision", topic = "t1", parameter = "p1"),
+      n2 = list(type = "decision", topic = "t2", parameter = "p2")
+    ))),
+    knowledge = list(topic = "t1", entries = list(list(id = "e1")))
+  )
+
+  local_mocked_bindings(
+    bridle_chat = function(prompt, provider, model) { # nolint: object_usage_linter. mock binding
+      "key: [unclosed bracket"
+    }
+  )
+
+  expect_warning(
+    result <- bridle:::generate_multi_topic_knowledge(
+      drafts, "pkg", "fn", NULL, NULL
+    ),
+    "Failed to parse knowledge YAML"
+  )
+
+  expect_equal(length(result), 1L)
+})
+
+# -- write_draft_files with multi-topic knowledge_list ------------------------
+
+test_that("write_draft_files: writes multiple knowledge files from knowledge_list", {
+  # Given: drafts with knowledge_list containing 2 topics
+  # When:  writing files
+  # Then:  knowledge/<topic>.yaml exists for each topic
+  drafts <- list(
+    decision_graph = list(nodes = list(list(id = "n1"))),
+    knowledge = list(topic = "t1"),
+    constraints = list(constraints = list(list(id = "c1"))),
+    knowledge_list = list(
+      t1 = list(topic = "t1", entries = list(list(id = "e1"))),
+      t2 = list(topic = "t2", entries = list(list(id = "e2")))
+    )
+  )
+  tmp <- withr::local_tempdir()
+
+  bridle:::write_draft_files(drafts, tmp, "pkg", "fn")
+
+  expect_true(file.exists(file.path(tmp, "knowledge", "t1.yaml")))
+  expect_true(file.exists(file.path(tmp, "knowledge", "t2.yaml")))
+  expect_false(file.exists(file.path(tmp, "knowledge", "fn.yaml")))
+
+  k1 <- yaml::yaml.load_file(file.path(tmp, "knowledge", "t1.yaml"))
+  expect_equal(k1$topic, "t1")
+})
+
+test_that("write_draft_files: falls back to func name when no knowledge_list", {
+  # Given: drafts without knowledge_list
+  # When:  writing files
+  # Then:  single knowledge/<func>.yaml written
+  drafts <- list(
+    decision_graph = list(nodes = list(list(id = "n1"))),
+    knowledge = list(topic = "test"),
+    constraints = list(constraints = list(list(id = "c1")))
+  )
+  tmp <- withr::local_tempdir()
+
+  bridle:::write_draft_files(drafts, tmp, "pkg", "fn")
+
+  expect_true(file.exists(file.path(tmp, "knowledge", "fn.yaml")))
+})
+
+test_that("write_draft_files: sanitizes unsafe topic names", {
+  # Given: knowledge_list with path-traversal and dotfile topic names
+  # When:  writing files
+  # Then:  filenames are sanitized, no files escape knowledge/
+  drafts <- list(
+    decision_graph = list(nodes = list(list(id = "n1"))),
+    knowledge = list(topic = "ignored"),
+    constraints = list(constraints = list(list(id = "c1"))),
+    knowledge_list = list(
+      "..\\constraints\\technical" = list(
+        topic = "..\\constraints\\technical",
+        entries = list(list(id = "e1"))
+      ),
+      ".hidden" = list(
+        topic = ".hidden",
+        entries = list(list(id = "e2"))
+      )
+    )
+  )
+  tmp <- withr::local_tempdir()
+
+  bridle:::write_draft_files(drafts, tmp, "pkg", "fn")
+
+  expect_true(file.exists(file.path(tmp, "knowledge", "technical.yaml")))
+  expect_true(file.exists(file.path(tmp, "knowledge", "hidden.yaml")))
+  expect_false(file.exists(file.path(tmp, "..", "constraints", "technical.yaml")))
+})
+
+test_that("write_draft_files: detects filename collisions", {
+  # Given: two topics that sanitize to the same filename
+  # When:  writing files
+  # Then:  second file gets a suffix and a warning is raised
+  drafts <- list(
+    decision_graph = list(nodes = list(list(id = "n1"))),
+    knowledge = list(topic = "ignored"),
+    constraints = list(constraints = list(list(id = "c1"))),
+    knowledge_list = list(
+      "foo/bar" = list(topic = "bar", entries = list(list(id = "e1"))),
+      "baz/bar" = list(topic = "bar", entries = list(list(id = "e2")))
+    )
+  )
+  tmp <- withr::local_tempdir()
+
+  expect_warning(
+    bridle:::write_draft_files(drafts, tmp, "pkg", "fn"),
+    "collides with existing filename"
+  )
+
+  expect_true(file.exists(file.path(tmp, "knowledge", "bar.yaml")))
+  expect_true(file.exists(file.path(tmp, "knowledge", "bar_2.yaml")))
+})
+
 # -- generate_draft_context_schema() ------------------------------------------
 
 test_that("generate_draft_context_schema: decision + execution nodes", {
