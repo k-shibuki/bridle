@@ -78,7 +78,7 @@ mock_rd_for <- function(func_name, arguments = list(), references = NULL) {
 # -- Scanner composite helpers ------------------------------------------------
 # These depend on mock_resolve, mock_version, mock_rd_for above.
 # Co-located here so lintr's object_usage_linter resolves all references
-# within a single file (see test-strategy.mdc §8 Helper Colocation).
+# within a single file (see test--helper-conventions.md § Colocation rule).
 
 mock_empty_rd_db <- function(package) {
   rd <- list(structure(

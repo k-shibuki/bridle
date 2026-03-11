@@ -6,7 +6,7 @@ trigger: local_mocked_bindings, mock scope, mock scope limitation, mock helper, 
 `testthat::local_mocked_bindings()` uses the calling environment for scope. This means:
 
 - It **cannot be extracted into a reusable helper function** — the mock would be scoped to the helper's environment, not the `test_that` block.
-- Per `@.cursor/rules/test-strategy.mdc` §6: each `test_that` block must apply mocks at the use site with `local_mocked_bindings()` directly.
+- Per `@.cursor/rules/test-strategy.mdc` §5: each `test_that` block must apply mocks at the use site with `local_mocked_bindings()` directly.
 
 **Pattern**: Create a helper that returns mock values, then apply them inline:
 
@@ -28,4 +28,4 @@ test_that("my test", {
 })
 ```
 
-**Exception**: Mock-applying wrappers like `with_scan_mocks` work correctly from `helper-mocks.R` because the `code` argument is lazily evaluated within the wrapper's frame where mocks are active. See `test-strategy.mdc` §7 (Helper Colocation).
+**Exception**: Mock-applying wrappers like `with_scan_mocks` work correctly from `helper-mocks.R` because the `code` argument is lazily evaluated within the wrapper's frame where mocks are active. See `@.cursor/knowledge/test--helper-conventions.md` § Colocation rule.

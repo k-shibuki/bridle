@@ -23,14 +23,38 @@ Follow `@.cursor/rules/test-strategy.mdc` for test design policy (perspectives t
 
 ## Steps
 
-1. Produce a test matrix (equivalence partitions + boundary cases) in Markdown.
-2. Check `tests/testthat/helper-mocks.R` for existing mock factories. Reuse shared helpers where possible; add new shared patterns to the helper if they will be used across multiple test files.
-3. Implement tests based on that matrix.
-4. For any new parameter/field, add at least one **wiring/effect** test so the suite fails if the parameter is validated but not propagated/used:
+### Step 0: Import Issue Test Plan as baseline
+
+The Issue's Test Plan section serves as the **initial test matrix** — concrete, self-contained test cases created at planning time. This step builds on that foundation:
+
+1. **Start from the Issue**: Import the test cases from the Issue's Test Plan as the baseline rows of the test perspectives table.
+2. **Expand systematically**: Add equivalence partitions, boundary values, and implementation-specific cases that weren't apparent at Issue creation time.
+3. **Maintain traceability**: Each Issue Test Plan scenario should map to at least one implemented test. If an Issue scenario is dropped or merged, note the reason in the table.
+
+The Issue Test Plan is intentionally detailed (concrete inputs, expected outputs) so that:
+- The Issue is **self-contained** — anyone can understand what to test without consulting other documents
+- Implementation and review can proceed independently
+- Test coverage gaps are visible early, before code is written
+
+### Step 1: Produce a test perspectives table
+
+Before starting any test work, present a Markdown "test perspectives table."
+
+1. The table must include at least these columns: `Case ID`, `Input / Precondition`, `Perspective (Equivalence / Boundary)`, `Expected Result`, `Notes`.
+2. Rows should cover normal, abnormal, and boundary value cases. For boundary values, include at minimum `0 / min / max / ±1 / empty / NULL`.
+   Boundary value candidates (0 / min / max / ±1 / empty / NULL) that are meaningless per specification may be omitted with reason stated in `Notes`.
+3. If perspective gaps are discovered later, update the table after self-review and add necessary cases.
+4. For minor modifications to existing tests (message adjustments, minor expected value changes) that don't add new branches or constraints, creating/updating the test perspectives table is optional.
+
+### Step 2: Implement tests
+
+1. Check `tests/testthat/helper-mocks.R` for existing mock factories. Reuse shared helpers where possible; add new shared patterns to the helper if they will be used across multiple test files.
+2. Implement tests based on the matrix.
+3. For any new parameter/field, add at least one **wiring/effect** test so the suite fails if the parameter is validated but not propagated/used:
    - Wiring: assert downstream call args / generated request includes the new parameter.
    - Effect: change the parameter value and assert behavior/output changes per requirements.
-5. Add Given/When/Then comments.
-6. Ensure exceptions include both type and message assertions when meaningful.
+4. Add Given/When/Then comments (see `@.cursor/knowledge/test--given-when-then.md` for the template).
+5. Ensure exceptions include both type and message assertions when meaningful.
 
 ## Test matrix template
 
