@@ -165,8 +165,17 @@ After `--squash`, you must run `git commit` with a message following `commit-for
 
 ## Auto-merge (preferred for single PRs)
 
-After `pr-review` concludes "Mergeable" and CI is still running, use auto-merge
-to let GitHub merge automatically when all required checks pass:
+Use auto-merge to let GitHub merge automatically when all required checks pass.
+
+**Preconditions** (all must be true):
+
+- `pr-review` has concluded "Mergeable" on the **current** HEAD commit
+- No unresolved review findings from any reviewer (CodeRabbit, Codex)
+- No re-review is pending (i.e., no review-fix push since the last completed review)
+
+If a re-review is in progress (review-fix was pushed, reviewer has not yet
+responded), use the delegated merge pattern (§ below) or wait for the
+re-review to complete before setting auto-merge.
 
 ```bash
 gh pr merge <PR-number> --auto --squash

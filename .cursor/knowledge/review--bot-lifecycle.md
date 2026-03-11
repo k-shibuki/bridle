@@ -126,6 +126,25 @@ gh api repos/{owner}/{repo}/issues/<N>/comments \
 **Rule**: Always use API checks to determine state. Do not infer state
 from timing, absence of activity, or activity on other PRs.
 
+**Trigger time tracking**: Each trigger creates a new `trigger_time`
+(the `created_at` of the trigger comment). All subsequent state
+detection (ack, review, rate-limit) MUST filter by this specific
+`trigger_time`. When a reviewer is re-triggered (e.g., after
+review-fix), the old `trigger_time` is invalidated — acks and reviews
+from the previous trigger are not evidence of the new trigger's state.
+
+Common mistake: polling with an approximate trigger time (e.g., "around
+05:15") instead of the exact `created_at` of the trigger comment. Always
+capture the trigger comment ID and timestamp at trigger time:
+
+```bash
+# At trigger time, capture exact timestamp
+COMMENT_URL=$(gh pr comment <N> --body "@coderabbitai review" 2>&1)
+# Extract comment ID from the URL, then query created_at
+trigger_time=$(gh api repos/{owner}/{repo}/issues/comments/<id> \
+  --jq '.created_at')
+```
+
 **Critical**: CodeRabbit's "Review triggered" ack is NOT completion —
 it is an intermediate signal (ACCEPTED). See § State Machine below.
 
@@ -215,6 +234,7 @@ recovery. The **policy** (recover vs skip) is in `subagent-policy.mdc`
 ```bash
 gh api repos/{owner}/{repo}/issues/<N>/comments \
   --jq '[.[] | select(.user.login | test("coderabbit"; "i"))
+        | select(.created_at > "<trigger_time>")
         | select(.body | test("Rate limit exceeded"))
         | {id, created_at, body}]'
 ```
@@ -241,7 +261,7 @@ Convert to seconds: `minutes * 60 + seconds + 30` (30s safety buffer included).
 2. Parse wait time from comment body (includes 30s buffer per formula above)
 3. Sleep for `parsed_seconds`
 4. Re-trigger: `gh pr comment <N> --body "@coderabbitai review"`
-5. Reset state to TRIGGERED and resume normal polling
+5. Reset both `trigger_time` and `trigger_id` to the new comment's `created_at` and ID, reset state to TRIGGERED, and resume normal polling
 6. If a second RATE_LIMITED occurs: stop, report as TIMED_OUT
 
 Maximum 1 recovery attempt per reviewer per PR.
