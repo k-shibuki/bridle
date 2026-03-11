@@ -20,7 +20,7 @@ The only situation that MUST NOT be delegated: code review, implementation, and 
 
 When a bot reviewer returns RATE_LIMITED during subagent polling, the subagent **MUST** attempt recovery — not skip. Maximum 1 recovery attempt per reviewer per PR; a second RATE_LIMITED falls back to TIMED_OUT.
 
-For detection mechanics and wait-time parsing: `review--bot-lifecycle.md` § Rate-Limit Detection and Recovery Pattern.
+For detection mechanics and wait-time parsing: `review--bot-timing.md` § Rate-Limit Detection and Recovery Pattern.
 For execution steps within templates: `agent--delegation-templates.md` Template 4 Step 3a / Template 5 Step 2a.
 
 ### Anti-pattern: inline sleep polling

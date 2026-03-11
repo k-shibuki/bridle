@@ -138,7 +138,7 @@ Auto-review is OFF (requires paid seat). The agent MUST trigger explicitly.
 
 #### 5b. Codex (manual — agent decision required)
 
-Read `@.cursor/knowledge/review--bot-lifecycle.md` § Two-Tier Trigger Model. Codex is triggered only for complex changes:
+Read `@.cursor/knowledge/review--bot-trigger.md` § Two-Tier Trigger Model. Codex is triggered only for complex changes:
 
 | Change type | Codex |
 |-------------|-------|

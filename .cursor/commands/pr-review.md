@@ -63,7 +63,7 @@ All required checks must pass. If any check fails, the PR is not ready for merge
 
 ### 6. Retrieve bot review findings
 
-**Prerequisite**: Read `@.cursor/knowledge/review--bot-lifecycle.md` (SSOT for detection commands, login patterns, and state signals).
+**Prerequisite**: Read `@.cursor/knowledge/review--bot-detection.md` (SSOT for detection commands, login patterns, and state signals).
 
 Bot reviews are triggered in `pr-create` Step 5 (or `review-fix` Step 5b) and polled by a background subagent. By the time `pr-review` runs, the subagent has reported which reviewers responded.
 
@@ -71,19 +71,19 @@ Bot reviews are triggered in `pr-create` Step 5 (or `review-fix` Step 5b) and po
 
 - **Action**: Delegate now per `@.cursor/rules/subagent-policy.mdc` (`agent--delegation-templates.md` Template 5) before proceeding.
 - **Polling rule**: Inline polling by the main agent is prohibited — except in the sequential fallback case defined in `subagent-policy.mdc` § Fallback (non-subagent environments), where inline sequential polling is permitted.
-- **Timeout**: TIMED_OUT = 20 min elapsed per `review--bot-lifecycle.md` § Timing.
+- **Timeout**: TIMED_OUT = 20 min elapsed per `review--bot-timing.md` § Timing.
 - **Intermediate states**: ACKNOWLEDGED and ACCEPTED mean the bot is still processing.
 
-Use the detection commands from `review--bot-lifecycle.md` § Output Detection to scan **all known reviewers** (CodeRabbit and Codex), regardless of whether the agent triggered them. Reviews from external sources (user via GitHub GUI, GitHub App auto-trigger, other bots) are equally valid review sources.
+Use the detection commands from `review--bot-detection.md` § Output Detection to scan **all known reviewers** (CodeRabbit and Codex), regardless of whether the agent triggered them. Reviews from external sources (user via GitHub GUI, GitHub App auto-trigger, other bots) are equally valid review sources.
 
 | Reviewer | Status | Action |
 |----------|--------|--------|
 | CodeRabbit | **Reviewed (findings)** | Include findings in Step 7 |
 | CodeRabbit | **Reviewed (clean)** | Note "CodeRabbit: no findings" |
-| CodeRabbit | **RATE_LIMITED / TIMED_OUT** | Note in report; proceed without. "TIMED_OUT" = 20 min elapsed per `review--bot-lifecycle.md` § Timing |
+| CodeRabbit | **RATE_LIMITED / TIMED_OUT** | Note in report; proceed without. "TIMED_OUT" = 20 min elapsed per `review--bot-timing.md` § Timing |
 | Codex | **Reviewed (findings)** | Include findings in Step 7 |
 | Codex | **Reviewed (clean)** | Note "Codex: no findings" |
-| Codex | **RATE_LIMITED / TIMED_OUT** | Note in report; proceed without. "TIMED_OUT" = 20 min elapsed per `review--bot-lifecycle.md` § Timing |
+| Codex | **RATE_LIMITED / TIMED_OUT** | Note in report; proceed without. "TIMED_OUT" = 20 min elapsed per `review--bot-timing.md` § Timing |
 | Either | **Externally reviewed** | Include findings (not agent-triggered but valid) |
 | Either | **Not triggered** | Note "not triggered" with reason |
 

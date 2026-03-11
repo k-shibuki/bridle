@@ -110,7 +110,7 @@ pending. Polls all triggered reviewers in parallel — no fallback chain.
 
 The main agent tells the subagent which reviewers were triggered
 (CodeRabbit always, agent-triggered in pr-create/review-fix; Codex only for complex changes).
-See `review--bot-lifecycle.md` for the two-tier trigger model.
+See `review--bot-trigger.md` for the two-tier trigger model.
 
 ```text
 ## Goal
@@ -134,7 +134,7 @@ trigger mistaken for current trigger, or current trigger's ack missed).
 
 ## Steps
 
-Use the polling algorithm from review--bot-lifecycle.md § Polling Algorithm.
+Use the polling algorithm from review--bot-detection.md § Polling Algorithm.
 Key principle: detect completion by TIMESTAMP, not by count.
 
 1. Poll in parallel (30s intervals, max 20 min elapsed):
@@ -162,7 +162,7 @@ Key principle: detect completion by TIMESTAMP, not by count.
    - RATE_LIMITED: rate limit comment count > 0 (timestamp-filtered)
    - TIMED_OUT: 20 min elapsed with no completion signal
 3a. IF reviewer reports RATE_LIMITED (per `subagent-policy.mdc` § Rate-Limit Recovery Policy):
-   - Parse wait time from the rate-limit comment (see `review--bot-lifecycle.md` § Rate-Limit Detection and Recovery Pattern; 30s buffer is already included in the parsed value)
+   - Parse wait time from the rate-limit comment (see `review--bot-timing.md` § Rate-Limit Detection and Recovery Pattern; 30s buffer is already included in the parsed value)
    - Sleep for parsed_seconds
    - Re-trigger the same reviewer that was rate-limited:
      - CodeRabbit: `gh pr comment <N> --body "@coderabbitai review"`
@@ -195,7 +195,7 @@ Use after `review-fix` when the agent has re-triggered bot review but
 CI has already passed or is being monitored separately. Polls all
 triggered reviewers in parallel.
 
-See `review--bot-lifecycle.md` for re-review trigger conditions.
+See `review--bot-re-review.md` for re-review trigger conditions.
 
 ```text
 ## Goal
@@ -218,7 +218,7 @@ trigger mistaken for current trigger, or current trigger's ack missed).
 
 ## Steps
 
-Use the polling algorithm from review--bot-lifecycle.md § Polling Algorithm.
+Use the polling algorithm from review--bot-detection.md § Polling Algorithm.
 Key principle: detect completion by TIMESTAMP, not by count.
 
 1. Poll triggered reviewers in parallel (30s intervals, max 20 min elapsed):
@@ -240,7 +240,7 @@ Key principle: detect completion by TIMESTAMP, not by count.
    - RATE_LIMITED: rate limit comment count > 0 (timestamp-filtered)
    - TIMED_OUT: 20 min elapsed with no completion signal
 2a. IF reviewer reports RATE_LIMITED (per `subagent-policy.mdc` § Rate-Limit Recovery Policy):
-   - Parse wait time from the rate-limit comment (see `review--bot-lifecycle.md` § Rate-Limit Detection and Recovery Pattern; 30s buffer is already included in the parsed value)
+   - Parse wait time from the rate-limit comment (see `review--bot-timing.md` § Rate-Limit Detection and Recovery Pattern; 30s buffer is already included in the parsed value)
    - Sleep for parsed_seconds
    - Re-trigger the same reviewer that was rate-limited:
      - CodeRabbit: `gh pr comment <N> --body "@coderabbitai review"`
