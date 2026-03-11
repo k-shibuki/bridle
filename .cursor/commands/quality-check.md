@@ -67,8 +67,7 @@ make coverage-check     # Coverage gate (threshold per test-strategy.mdc § Cove
 make changed-lint       # Lint only changed R files
 ```
 
-Note: All `make` targets that invoke R run inside the Podman container.
-The container must be running (`make container-up`). See `make doctor` to verify.
+Note: All `make` targets that invoke R run inside the development container (see `@.cursor/rules/workflow-policy.mdc` § Container Prerequisite).
 
 ## Output (response format)
 

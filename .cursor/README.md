@@ -55,6 +55,7 @@ AGENTS.md (AI reviewer entry point — read by Codex and CodeRabbit)
   └── References:
       ├── .cursor/rules/knowledge-index.mdc  ← shared lookup table
       ├── .cursor/knowledge/review--bot-lifecycle.md  ← bot review behavior SSOT
+      ├── .cursor/knowledge/review--comment-response.md ← reply format, resolve, completeness
       ├── .cursor/knowledge/review--*.md     ← feedback loop accumulates here
       ├── .cursor/commands/pr-review.md      ← review procedure
       └── .cursor/commands/review-fix.md     ← fix procedure
@@ -139,6 +140,7 @@ Start here to find the right information quickly.
 | R testing gotchas (mocks, NULL trap) | `knowledge/test--*.md` atoms |
 | R debugging tools and templates | `knowledge/debug--*.md` atoms |
 | CI job dependencies and polling strategy | `knowledge/ci--*.md` atoms |
+| Review comment response (reply + resolve) | `knowledge/review--comment-response.md` |
 | Git recovery playbooks | `knowledge/git--*.md` atoms |
 | Development workflow + commands | This file (below) |
 | Command details (procedures) | `.cursor/commands/*.md` |

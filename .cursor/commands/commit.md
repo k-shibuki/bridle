@@ -20,13 +20,7 @@ This command intentionally avoids duplicating the policy (format/prefixes/langua
 
 ## Issue reference (required)
 
-Every commit must reference its tracking Issue in the footer:
-
-```
-Refs: #<issue-number>
-```
-
-**Exceptions**: `hotfix` or `docs` changes that bypass the Issue-driven flow may omit the Issue reference, but must state the justification in the commit body. See `@.cursor/rules/commit-format.mdc` § Footer for the exemption rules.
+Per `@.cursor/rules/commit-format.mdc` § Footer: every commit must include `Refs: #<issue-number>`. Exemptions for `hotfix`/`docs` are defined there.
 
 ## Atomic commits (recommended)
 

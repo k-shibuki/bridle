@@ -126,6 +126,13 @@ gh api repos/{owner}/{repo}/issues/<N>/comments \
 **Rule**: Always use API checks to determine state. Do not infer state
 from timing, absence of activity, or activity on other PRs.
 
+**Anti-pattern — premature timeout**: Classifying a bot as TIMED_OUT
+before the 20-min threshold has elapsed is prohibited. ACKNOWLEDGED and
+ACCEPTED are intermediate states meaning the bot is actively processing.
+The agent must continue polling (30s intervals) until a terminal state
+is reached: COMPLETED, COMPLETED_CLEAN, RATE_LIMITED, or TIMED_OUT
+(20 min elapsed). "Not responding after a brief wait" is not TIMED_OUT.
+
 **Trigger time tracking**: Each trigger creates a new `trigger_time`
 (the `created_at` of the trigger comment). All subsequent state
 detection (ack, review, rate-limit) MUST filter by this specific
@@ -197,7 +204,7 @@ INPUTS:
   trigger_time  — trigger comment created_at
   trigger_id    — trigger comment ID
   reviewer      — "coderabbit" | "codex"
-  timeout       — 7 min (default)
+  timeout       — 20 min (default)
 
 POLL (every 30s):
   1. GET pulls/<N>/reviews
@@ -287,7 +294,7 @@ Maximum 1 recovery attempt per reviewer per PR.
 | Typical completion | 2–7 min | 1–7 min |
 | Eyes/Ack delay | 0s–5min+ | N/A |
 | Polling interval | 30 s | 30 s |
-| Timeout | 7 min | 7 min |
+| Timeout | 20 min | 20 min |
 
 ## CodeRabbit Pro/OSS Rate Limits
 
@@ -329,8 +336,15 @@ not block). See `agent--delegation-templates.md`:
 
 Both templates poll all triggered reviewers in parallel.
 
+## Comment Response
+
+See `review--comment-response.md` for reply format, resolve procedure,
+and completeness invariant. This atom covers lifecycle mechanics only.
+
 ## Related
 
+- `review--comment-response.md` — reply format, resolve procedure,
+  completeness invariant
 - `agent--delegation-templates.md` — Template 4/5 implement the wait
   logic
 - `.coderabbit.yaml` — CodeRabbit configuration (auto_review OFF,

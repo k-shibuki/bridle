@@ -18,32 +18,9 @@ This is a **meta-command** that orchestrates all other commands. It does not imp
 This command is bound by `@.cursor/rules/agent-safety.mdc` `HS-NO-SKIP` (no skipping steps or proceeding without evidence). Specifically:
 
 - Follow the defined workflow order without skipping commands or steps within commands
-- Present proposed actions and wait for user confirmation before executing
+- Present the initial proposal and wait for user confirmation before starting
 - Delegate to command specifications (`.cursor/commands/<command>.md`) rather than reimplementing logic inline
 - Base all state assessments on evidence from tool output, not assumptions
-
-## Continuous Execution Mode
-
-When the user instructs continuous execution ("keep going", "do everything", "till close all issues", etc.):
-
-- All Hard Stops apply (see `@.cursor/rules/agent-safety.mdc`). Speed is achieved through delegation and batching, never by skipping verification.
-- Report progress at each gate with a one-line summary (e.g., "PR #13 created, CI pending — delegated. Starting #9.").
-
-**Typical parallel execution pattern**:
-
-```
-Issue A: implement → test → quality → commit → pr-create
-                                                    │
-                                          CI pending on PR #X
-                                                    │
-                    ┌───────────────────────────────┤
-                    │ Background subagent            │ Main agent
-                    │ poll CI → merge PR #X          │ Issue B: implement → test → ...
-                    │                                │
-                    └───────────────────────────────┤
-                                                    │
-                    next re-assessment: check subagent transcript
-```
 
 ## Steps
 
@@ -76,6 +53,24 @@ git branch --no-merged origin/main --format='%(refname:short) %(upstream:track)'
 
 # Note: Bot review is triggered and waited on by pr-create (Step 5) via
 # subagent delegation. next does not manage bot review state directly.
+
+# Unresolved review threads (for each open PR)
+# Uses GraphQL because REST API does not expose thread resolution state.
+gh api graphql -f query='
+  query($owner: String!, $repo: String!, $pr: Int!) {
+    repository(owner: $owner, name: $repo) {
+      pullRequest(number: $pr) {
+        reviewThreads(first: 100) {
+          totalCount
+          nodes { id isResolved isOutdated }
+        }
+      }
+    }
+  }
+' -f owner={owner} -f repo={repo} -F pr=<N> --jq '{
+  total: .data.repository.pullRequest.reviewThreads.totalCount,
+  unresolved: [.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)] | length
+}'
 ```
 
 **Background task check**: If a background subagent was previously launched (e.g., for CI-wait), check its transcript file for completion. See `subagent-policy.mdc` "Completion guarantee" for the protocol. Incorporate results into the state assessment.
@@ -99,6 +94,7 @@ Use the evidence to classify the current state into one of these positions:
 | Open PR, CI still running, no independent Issue | **CI pending (housekeeping)** | Delegate CI-wait to background subagent (see `subagent-policy.mdc`), then do housekeeping (see Step 6). |
 | Stale local branches detected | **Cleanup needed** | Delete stale branches (see `pr-merge.md` "Post-merge cleanup"). Can be done during housekeeping. |
 | Background subagent running | **Background task in progress** | Check transcript for completion; continue independent work |
+| Open PR, unresolved review threads > 0 | **Unresolved review threads** | `review-fix` (reply + resolve per `review--comment-response.md`) |
 | Open PR, CI all green, wait subagent done | **Ready for review** | `pr-review` (retrieves bot review findings if available) |
 | Open PR, CI failed | **CI failure** | Fix inline, re-push, then **re-enter `next`** (state will be "CI pending" → delegate to subagent per `subagent-policy.mdc`). Do NOT poll CI inline after re-push. |
 | PR reviewed, changes required | **Changes required** | `review-fix` (address findings from `pr-review`, then re-push and re-review) |
@@ -154,9 +150,37 @@ Once the user approves (or modifies the choice):
 
 1. **Read the command specification**: Load `.cursor/commands/<command>.md`
 2. **Follow the command's steps exactly**: Do not abbreviate or skip steps defined in the command.
-3. **On completion, loop back to Step 1**: After the command finishes, re-assess state and propose the next action. Continue until the user stops or the workflow cycle completes.
+3. **On completion, loop back to Step 1**: Re-assess state, propose and execute the next action without waiting for further user confirmation.
+
+Report progress at each gate with a one-line summary (e.g., "PR #13 created, CI pending — delegated. Starting #9.").
+
+**Approval scope**: User approval removes the confirmation pause between steps — nothing else. All policies remain invariant: subagent delegation (`subagent-policy.mdc`), verification gates, command specifications (`HS-NO-SKIP`), and Hard Stops. Approval is never a basis for skipping steps or changing execution methods.
+
+**Termination conditions**: After initial approval, return to Step 1 after every action. End the turn ONLY when:
+
+1. The user's stated scope is fulfilled — if no scope was stated, when no actionable work remains (no open Issues, no open PRs, no pending CI, no active subagents)
+2. A decision requires user judgment
+3. An error persists after fix attempt
+
+Intermediate milestones (completing todos, pushing, posting replies) are never termination conditions.
 
 If the user modifies the choice (e.g., "do #8 instead of #7"), adjust and proceed.
+
+**Parallel execution**: When CI is pending and independent Issues exist, delegate CI-wait to a background subagent (Template 2, no merge) and start the next Issue in parallel. When CI completes, the main agent runs `pr-review` → `pr-merge`:
+
+```text
+Issue A: implement → ... → pr-create
+                                │
+                      CI pending on PR #X
+                                │
+    ┌───────────────────────────┤
+    │ Background subagent       │ Main agent
+    │ poll CI → report          │ Issue B: implement → ...
+    │                           │
+    └───────────────────────────┤
+                                │
+    next re-assessment: CI green → pr-review → pr-merge
+```
 
 ### Step 6: Subagent delegation for blocking operations
 

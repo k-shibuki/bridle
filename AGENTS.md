@@ -140,7 +140,7 @@ listed there, read the referenced atom for detailed context.
 Each atom is a focused document on a specific pattern or decision. Naming
 convention: `<category>--<topic>.md`. Categories relevant to review:
 
-- `review--*`: patterns learned from past reviews (false positives, idioms)
+- `review--*`: review patterns — includes `review--bot-lifecycle.md` (bot review mechanics), `review--comment-response.md` (reply format, resolve procedure, completeness invariant), and accumulated false-positive patterns
 - `test--*`: mock strategies, snapshot guidelines, scope constraints
 - `lint--*`: linter quirks, nolint patterns, S7 false positives
 - `r--*`: R language traps (NULL assignment, S7 include directives)

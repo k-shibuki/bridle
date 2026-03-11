@@ -77,6 +77,7 @@ Monitor CI for PR #<N> until all checks pass, then merge it.
 - If a check fails: `gh run view <run-id> --log-failed`, report the failure details
 - If check-policy fails: report that the PR body needs updating
 - If merge fails due to conflicts: report the conflict, do NOT attempt resolution
+- If merge blocked by unresolved review threads: report "BLOCKED: unresolved review threads — run review-fix per review--comment-response.md"
 
 ## Return format
 Report: "MERGED: PR #<N> squash-merged at <sha>" or "FAILED: <reason>"
@@ -136,17 +137,21 @@ trigger mistaken for current trigger, or current trigger's ack missed).
 Use the polling algorithm from review--bot-lifecycle.md § Polling Algorithm.
 Key principle: detect completion by TIMESTAMP, not by count.
 
-1. Poll in parallel (30s intervals, max 10 min elapsed):
+1. Poll in parallel (30s intervals, max 20 min elapsed):
    - CI: `gh pr checks <N>`
    - CodeRabbit (if triggered):
      - Reviews (timestamp-filtered, empty body excluded):
        `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("coderabbit"; "i")) | select(.body != "") | select(.submitted_at > "<trigger_time>")] | length'`
+     - Rate limit comments:
+       `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i")) | select(.created_at > "<trigger_time>") | select(.body | test("Rate limit exceeded"))] | length'`
      - Early signals (informational, do not terminate polling):
        Eyes: `gh api repos/{owner}/{repo}/issues/comments/<trigger_id> --jq '.reactions.eyes'`
        Ack: `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i")) | select(.created_at > "<trigger_time>") | select(.body | test("Review triggered"))] | length'`
    - Codex (if triggered):
      - Reviews (timestamp-filtered):
        `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("chatgpt-codex-connector|codex|openai"; "i")) | select(.body != "") | select(.submitted_at > "<trigger_time>")] | length'`
+     - Rate limit comments:
+       `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.login | test("chatgpt-codex-connector|codex|openai"; "i")) | select(.created_at > "<trigger_time>") | select(.body | test("Rate limit exceeded"))] | length'`
      - Clean bill (thumbs-up on trigger):
        `gh api repos/{owner}/{repo}/issues/comments/<trigger_id> --jq '.reactions["+1"]'`
 
@@ -154,8 +159,8 @@ Key principle: detect completion by TIMESTAMP, not by count.
 3. A reviewer is done when:
    - COMPLETED: review count > 0 (timestamp-filtered, non-empty body)
    - COMPLETED_CLEAN: Codex thumbs-up > 0 on trigger comment
-   - RATE_LIMITED: PR comment from reviewer contains "Rate limit exceeded"
-   - TIMED_OUT: 7 min elapsed with no completion signal
+   - RATE_LIMITED: rate limit comment count > 0 (timestamp-filtered)
+   - TIMED_OUT: 20 min elapsed with no completion signal
 3a. IF reviewer reports RATE_LIMITED (per `subagent-policy.mdc` § Rate-Limit Recovery Policy):
    - Parse wait time from the rate-limit comment (see `review--bot-lifecycle.md` § Rate-Limit Detection and Recovery Pattern; 30s buffer is already included in the parsed value)
    - Sleep for parsed_seconds
@@ -216,20 +221,24 @@ trigger mistaken for current trigger, or current trigger's ack missed).
 Use the polling algorithm from review--bot-lifecycle.md § Polling Algorithm.
 Key principle: detect completion by TIMESTAMP, not by count.
 
-1. Poll triggered reviewers in parallel (30s intervals, max 7 min elapsed):
+1. Poll triggered reviewers in parallel (30s intervals, max 20 min elapsed):
    - CodeRabbit (if triggered):
      - Reviews (timestamp-filtered, empty body excluded):
        `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("coderabbit"; "i")) | select(.body != "") | select(.submitted_at > "<trigger_time>")] | length'`
+     - Rate limit comments:
+       `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.login | test("coderabbit"; "i")) | select(.created_at > "<trigger_time>") | select(.body | test("Rate limit exceeded"))] | length'`
    - Codex (if triggered):
      - Reviews (timestamp-filtered):
        `gh api repos/{owner}/{repo}/pulls/<N>/reviews --jq '[.[] | select(.user.login | test("chatgpt-codex-connector|codex|openai"; "i")) | select(.body != "") | select(.submitted_at > "<trigger_time>")] | length'`
+     - Rate limit comments:
+       `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.login | test("chatgpt-codex-connector|codex|openai"; "i")) | select(.created_at > "<trigger_time>") | select(.body | test("Rate limit exceeded"))] | length'`
      - Clean bill (thumbs-up on trigger):
        `gh api repos/{owner}/{repo}/issues/comments/<trigger_id> --jq '.reactions["+1"]'`
 2. A reviewer is done when:
    - COMPLETED: review count > 0 (timestamp-filtered, non-empty body)
    - COMPLETED_CLEAN: Codex thumbs-up > 0 on trigger comment
-   - RATE_LIMITED: PR comment from reviewer contains "Rate limit exceeded"
-   - TIMED_OUT: 7 min elapsed with no completion signal
+   - RATE_LIMITED: rate limit comment count > 0 (timestamp-filtered)
+   - TIMED_OUT: 20 min elapsed with no completion signal
 2a. IF reviewer reports RATE_LIMITED (per `subagent-policy.mdc` § Rate-Limit Recovery Policy):
    - Parse wait time from the rate-limit comment (see `review--bot-lifecycle.md` § Rate-Limit Detection and Recovery Pattern; 30s buffer is already included in the parsed value)
    - Sleep for parsed_seconds
@@ -291,6 +300,7 @@ squash-merging #<A>, use `git rebase --onto` to rebase #<B> cleanly.
 - If CI fails on either PR: stop, report which check failed and the details URL
 - If rebase --onto has conflicts: abort rebase (`git rebase --abort`), report the conflicting files
 - If merge fails: report the error, do NOT retry
+- If merge blocked by unresolved review threads: report "BLOCKED: unresolved review threads — run review-fix per review--comment-response.md"
 - If `git push --force-with-lease` is rejected:
   1. `git fetch origin` to sync tracking refs
   2. Compare remote SHA (`git ls-remote origin <branch-B>`) with local `HEAD` (`git rev-parse HEAD`)

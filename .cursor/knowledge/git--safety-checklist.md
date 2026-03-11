@@ -14,8 +14,8 @@ Run before starting any work when multiple agents may be active:
   - If subagent pushed: `gh pr view <N> --json headRefOid -q '.headRefOid'` to verify PR head matches
   - If mismatch: see `git--quick-recovery.md` § Force-with-Lease Rejected
 - [ ] Avoid force-push in the normal PR flow — use new commits, not `amend` + force-push. When force-push is unavoidable (recovery scenarios like `--onto` rebase), use `--force-with-lease` (never `--force`)
-- [ ] Never use `--admin` on `gh pr merge` — diagnose the block instead
-- [ ] PRs always target `main` (never `--base feat/<branch>`)
+- [ ] Never use `--admin` on `gh pr merge` — diagnose the block instead (see `@.cursor/rules/agent-safety.mdc` `HS-CI-MERGE`)
+- [ ] PRs always target `main` (never `--base feat/<branch>`) (see `@.cursor/rules/agent-safety.mdc` `HS-PR-BASE`)
 
 ## PR Auto-Close Prevention
 

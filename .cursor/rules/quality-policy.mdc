@@ -13,7 +13,7 @@ Procedures (which commands to run and how) are documented in `@.cursor/commands/
 
 ### Zero-Tolerance for Pre-existing Issues
 
-Per `agent-safety.mdc` `HS-NO-DISMISS`: every diagnostic reported by quality gates must be fixed regardless of when it was introduced. "Pre-existing" is never a valid reason to skip a diagnostic.
+Per `@.cursor/rules/agent-safety.mdc` `HS-NO-DISMISS`: every diagnostic reported by quality gates must be fixed — regardless of when it was introduced. See the Hard Stop definition for the full obligation.
 
 ## Execution Order: Format Before Lint
 
@@ -56,7 +56,7 @@ Before writing `# nolint`, the agent MUST satisfy the following conditions in pr
 
 ### Prerequisite: Consult Knowledge
 
-The agent MUST read `@.cursor/knowledge/lint--nolint-accepted-patterns.md` and `@.cursor/knowledge/lint--styler-lintr-conflict.md` before any suppression attempt. If in test code, also read `@.cursor/rules/test-strategy.mdc` §7 (Helper Colocation). Memory from previous sessions is not sufficient — always read the files.
+Per `@.cursor/rules/workflow-policy.mdc` § Knowledge Consultation Triggers, the agent MUST read `@.cursor/knowledge/lint--nolint-accepted-patterns.md` and `@.cursor/knowledge/lint--styler-lintr-conflict.md` before any suppression attempt. If in test code, also read `@.cursor/rules/test-strategy.mdc` §7 (Helper Colocation). Memory from previous sessions is not sufficient — always read the files.
 
 ### Priority 1: Code Restructuring
 
