@@ -18,7 +18,7 @@ This is a **meta-command** that orchestrates all other commands. It does not imp
 This command is bound by `@.cursor/rules/agent-safety.mdc` `HS-NO-SKIP` (no skipping steps or proceeding without evidence). Specifically:
 
 - Follow the defined workflow order without skipping commands or steps within commands
-- Present proposed actions and wait for user confirmation before executing
+- Present the initial proposal and wait for user confirmation before starting
 - Delegate to command specifications (`.cursor/commands/<command>.md`) rather than reimplementing logic inline
 - Base all state assessments on evidence from tool output, not assumptions
 
