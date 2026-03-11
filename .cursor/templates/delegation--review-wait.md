@@ -38,11 +38,16 @@ Poll using the algorithm from review--bot-operations.md § Polling Algorithm.
      Rate limit: `gh api repos/{owner}/{repo}/issues/<N>/comments --jq '[.[] | select(.user.login | test("chatgpt-codex-connector|codex|openai"; "i")) | select(.created_at > "<trigger_time>") | select(.body | test("Rate limit exceeded"))] | length'`
      Clean bill: `gh api repos/{owner}/{repo}/issues/comments/<trigger_id> --jq '.reactions["+1"]'`
 
-2. Terminal states:
+2. Terminal states (reviewers):
    - COMPLETED: review count > 0 (timestamp-filtered, non-empty body)
    - COMPLETED_CLEAN: Codex thumbs-up > 0 on trigger comment
    - RATE_LIMITED: rate limit comment detected
    - TIMED_OUT: 20 min elapsed
+
+   Terminal states (CI, if monitored):
+   - PASSED: all checks pass
+   - FAILED: any check fails
+   - TIMEOUT: 20 min elapsed, checks still pending
 
 3. IF RATE_LIMITED:
    - Parse wait time (regex: `wait \*\*(\d+) minutes? and (\d+) seconds?\*\*`)
@@ -65,7 +70,7 @@ Poll using the algorithm from review--bot-operations.md § Polling Algorithm.
 - Rate limit recovery fails: report TIMED_OUT
 
 ## Return format
-CI: PASSED / FAILED (<check-name> — <details-url>) / NOT_MONITORED
-CODERABBIT: REVIEWED (<N> inline comments) / RATE_LIMIT_RECOVERED / TIMEOUT / NOT_TRIGGERED
-CODEX: REVIEWED (<N> inline comments) / CLEAN (👍) / RATE_LIMIT_RECOVERED / TIMEOUT / NOT_TRIGGERED
+CI: PASSED / FAILED (<check-name> — <details-url>) / TIMEOUT / NOT_MONITORED
+CODERABBIT: REVIEWED / RATE_LIMIT_RECOVERED / TIMEOUT / NOT_TRIGGERED
+CODEX: REVIEWED / CLEAN (👍) / RATE_LIMIT_RECOVERED / TIMEOUT / NOT_TRIGGERED
 ```

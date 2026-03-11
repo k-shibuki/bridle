@@ -84,9 +84,9 @@ Always use API checks — never infer from timing alone.
    `trigger_time` and `trigger_id` to these fresh values before resuming
 5. Second rate limit → treat as TIMED_OUT (max 1 recovery)
 
-**Codex fallback**: When CodeRabbit TIMED_OUT on a Codex-eligible change
-type (R code, schemas, security, ADRs), trigger `@codex review` as
-fallback.
+**Codex fallback**: When CodeRabbit TIMED_OUT and Codex was NOT already
+triggered for this review cycle, trigger `@codex review` as fallback
+(only for Codex-eligible change types: R code, schemas, security, ADRs).
 
 ## Agreement Mechanics
 

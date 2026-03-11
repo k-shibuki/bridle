@@ -138,7 +138,9 @@ The outer `id` is `<THREAD_ID>` for the GraphQL resolve API.
 - **`isOutdated` threads**: Still valid; `required_conversation_resolution`
   does not distinguish outdated from current.
 - **Multiple comments in one thread**: Reply once to the root comment.
-- **Human-replied threads**: Agent resolves if still unresolved.
+- **Human-replied threads**: Agent does not auto-resolve. Leave for
+  the human reviewer to resolve, or resolve only after explicit
+  acceptance from the reviewer or user instruction.
 
 ## Related
 
