@@ -30,11 +30,14 @@ remote_sha=$(git ls-remote origin <branch> | awk '{print $1}')
 local_sha=$(git rev-parse HEAD)
 
 # 3a. If SHAs match: a prior push already succeeded, no action needed
-# 3b. If SHAs differ: fetch updated the lease baseline, retry
-git push --force-with-lease origin <branch>
 
-# 3c. If retry also fails: another agent changed the branch
-#     Re-identify boundary and re-rebase if needed (see git--squash-merge-dependent-branch.md)
+# 3b. If SHAs differ: the remote was updated by another process.
+#     Do NOT blindly retry — investigate first.
+#     Check git log to understand what the remote has:
+git log --oneline HEAD..origin/<branch>
+
+# 3c. If the remote commit is from your own workflow (e.g., an earlier
+#     non-rebased push), re-rebase onto current state:
 git rebase --onto origin/main <new-boundary> <branch>
 git push --force-with-lease origin <branch>
 ```

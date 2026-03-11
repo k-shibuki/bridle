@@ -243,6 +243,9 @@ squash-merging #<A>, use `git rebase --onto` to rebase #<B> cleanly.
       The commit just before #<B>'s first unique commit.
    e. `git rebase --onto origin/main <boundary-commit> <branch-B>`
    f. `git push --force-with-lease origin <branch-B>`
+   g. Verify push reached remote:
+      `git ls-remote origin <branch-B> | awk '{print $1}'` must equal `git rev-parse HEAD`
+      If mismatch, see Error handling § force-with-lease rejected.
 6. Poll CI for PR #<B> using Adaptive Polling Strategy from `ci--job-dependency-graph.md` § Adaptive Polling Strategy:
 7. Merge PR #<B>: `gh pr merge <B> --squash`
 8. Verify: `gh pr view <B> --json state -q '.state'` → "MERGED"
