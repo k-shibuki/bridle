@@ -63,32 +63,22 @@ All required checks must pass. If any check fails, the PR is not ready for merge
 
 ### 6. Retrieve bot review findings
 
-**Prerequisite**: Read `@.cursor/knowledge/review--bot-detection.md` (SSOT for detection commands, login patterns, and state signals).
+**Prerequisite**: Read `@.cursor/knowledge/review--bot-operations.md` (detection, timing, polling).
 
-Bot reviews are triggered in `pr-create` Step 5 (or `review-fix` Step 5b) and polled by a background subagent. By the time `pr-review` runs, the subagent has reported which reviewers responded.
+Bot reviews are triggered in `pr-create` Step 5 and polled by a background subagent. By the time `pr-review` runs, the subagent has reported completion.
 
-**Recovery checkpoint**: If bot review wait was not delegated to a subagent before `pr-review` started:
+**Recovery**: If review wait was not delegated, delegate now via `.cursor/templates/delegation--review-wait.md` before proceeding (see `subagent-policy.mdc`).
 
-- **Action**: Delegate now per `@.cursor/rules/subagent-policy.mdc` (`.cursor/templates/delegation--bot-review-wait.md`) before proceeding.
-- **Trigger metadata**: Before delegating, capture `trigger_id` and `trigger_time` for each reviewer that was triggered (see `pr-create.md` § 5b′). The delegation template requires these values to distinguish the review response from pre-existing comments.
-- **Polling rule**: Inline polling by the main agent is prohibited — except in the sequential fallback case defined in `subagent-policy.mdc` § Fallback (non-subagent environments), where inline sequential polling is permitted.
-- **Timeout**: TIMED_OUT = 20 min elapsed per `review--bot-timing.md` § Timing.
-- **Intermediate states**: ACKNOWLEDGED and ACCEPTED mean the bot is still processing.
+Use detection commands from `review--bot-operations.md` § Detection to scan all reviewers (CodeRabbit and Codex), including externally triggered ones.
 
-Use the detection commands from `review--bot-detection.md` § Output Detection to scan **all known reviewers** (CodeRabbit and Codex), regardless of whether the agent triggered them. Reviews from external sources (user via GitHub GUI, GitHub App auto-trigger, other bots) are equally valid review sources.
+| Status | Action |
+|--------|--------|
+| **Reviewed (findings)** | Include in Step 7 |
+| **Reviewed (clean)** | Note "no findings" |
+| **RATE_LIMITED / TIMED_OUT** | Note in report; proceed without |
+| **Not triggered** | Note with reason |
 
-| Reviewer | Status | Action |
-|----------|--------|--------|
-| CodeRabbit | **Reviewed (findings)** | Include findings in Step 7 |
-| CodeRabbit | **Reviewed (clean)** | Note "CodeRabbit: no findings" |
-| CodeRabbit | **RATE_LIMITED / TIMED_OUT** | Note in report; proceed without. "TIMED_OUT" = 20 min elapsed per `review--bot-timing.md` § Timing |
-| Codex | **Reviewed (findings)** | Include findings in Step 7 |
-| Codex | **Reviewed (clean)** | Note "Codex: no findings" |
-| Codex | **RATE_LIMITED / TIMED_OUT** | Note in report; proceed without. "TIMED_OUT" = 20 min elapsed per `review--bot-timing.md` § Timing |
-| Either | **Externally reviewed** | Include findings (not agent-triggered but valid) |
-| Either | **Not triggered** | Note "not triggered" with reason |
-
-When both reviewers produce findings, deduplicate (same file + same issue = one finding, note both sources). When re-reviewing after `review-fix`: check `submitted_at` timestamps against the latest commit date. Use only the most recent review from each reviewer.
+Deduplicate when both reviewers flag the same issue. On re-review, use only reviews with `submitted_at` after the latest commit.
 
 **Thread enumeration** (completeness baseline): After collecting findings, enumerate all review threads via GraphQL to establish a baseline for `review-fix`:
 
@@ -189,4 +179,4 @@ If the conclusion is "Changes required", recommend running `review-fix` to addre
 - `@.cursor/commands/pr-merge.md` (next step when mergeable)
 - `@.cursor/commands/pr-create.md` (PR creation)
 - `@.cursor/rules/test-strategy.mdc` (test quality criteria)
-- `@.cursor/knowledge/review--comment-response.md` (reply format, resolve procedure, completeness invariant)
+- `@.cursor/knowledge/review--consensus-protocol.md` (consensus model, reply format, resolve procedure)

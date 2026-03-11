@@ -23,7 +23,7 @@ The following actions are NEVER permitted, regardless of user instructions:
 - **`HS-NO-DISMISS` — NEVER dismiss diagnostics as "pre-existing"**: Every error, warning, and NOTE reported by quality gates (`devtools::check()`, `lintr`, `validate-schemas`, etc.) is a defect to fix — regardless of when it was introduced. The agent must not classify, skip, or deprioritize diagnostics based on whether the current change caused them. If the gate reports a problem, the agent resolves it before proceeding.
 - **`HS-NOLINT` — NEVER add `# nolint` without consulting knowledge first**: Before writing ANY `# nolint` annotation, the agent MUST read `@.cursor/knowledge/lint--nolint-accepted-patterns.md` and follow the nolint decision tree in `@.cursor/rules/quality-policy.mdc` § nolint Checkpoint. Blanket `# nolint`, `# nolint start/end`, and `# nolint` without linter name + reason are **always prohibited**. This Hard Stop defines the *prohibition* (what); `@.cursor/rules/quality-policy.mdc` § nolint Checkpoint defines the *decision process* (how).
 - **`HS-PR-BASE` — NEVER use `--base feat/<branch>` in `gh pr create`**: All PRs must target `main`. Using a feature branch as base causes the PR to be auto-closed when the base branch is deleted on merge. Document dependencies in the PR body, not through the base branch. See `pr-create.md` Step 3c.
-- **`HS-REVIEW-RESOLVE` — NEVER resolve a review thread without a disposition reply**: Every review thread must receive a disposition reply (Fixed / By design / False positive / Acknowledged) before being resolved. "Resolve All" without per-thread analysis is prohibited. The unresolved thread count serves as a completeness guarantee — GitHub Branch Protection (`required_conversation_resolution`) blocks merge until all threads are resolved. See `review--comment-response.md` for reply format and API commands.
+- **`HS-REVIEW-RESOLVE` — NEVER resolve a review thread without consensus**: Every review thread must receive a disposition reply (Fixed / By design / False positive / Acknowledged) before being resolved. "Resolve All" without per-thread analysis is prohibited. The unresolved thread count serves as a completeness guarantee — GitHub Branch Protection (`required_conversation_resolution`) blocks merge until all threads are resolved. See `review--consensus-protocol.md` for reply format, consensus requirements, and API commands.
 
 ## Enforcement Tiers
 
@@ -42,16 +42,11 @@ Each Hard Stop is classified by its enforcement mechanism. See `controls--ai-dev
 
 ## Bot Review Enforcement
 
-Bot review uses a two-tier enforcement model to minimize agent judgment:
+Bot review uses a two-tier trigger model and a consensus-based resolution model:
 
-- **CodeRabbit**: **Procedural** — agent triggers `@coderabbitai review` in `pr-create` Step 5a and `review-fix` Step 5b. Auto-review is OFF (requires paid seat). Skipping is visible in `pr-create` output (`Bot review:` field).
-- **Codex**: **Steering** — agent must manually trigger for complex changes (R code, schemas, security, ADRs). The `pr-create` output format requires explicit `Bot review:` evidence to make skipping visible.
-
-See `review--bot-trigger.md` § Two-Tier Trigger Model for the full decision table.
-
-**Auto-merge guard**: Auto-merge (`gh pr merge --auto --squash`) MUST NOT be set while bot review is pending. No review means no threads, which means `required_conversation_resolution` does not block — CI green alone triggers merge. See `pr-create.md` § 5d for the precondition check procedure, and `agent--delegation-decision.md` § Decision Flowchart for the routing guard.
-
-**Codex fallback**: When CodeRabbit is TIMED_OUT on a Codex-eligible change type, trigger Codex as fallback. See `review--bot-timing.md` § Codex Fallback.
+- **Trigger**: CodeRabbit on every PR (Procedural); Codex on complex changes only (Steering). See `review--bot-operations.md` § Two-Tier Trigger Table.
+- **Consensus**: Every review thread requires bidirectional agreement before resolve. Unilateral resolve is prohibited. See `review--consensus-protocol.md`.
+- **Auto-merge guard**: MUST NOT set auto-merge while bot review is pending — no review means no threads means `required_conversation_resolution` does not block. See `agent--delegation-decision.md`.
 
 ## Multi-Agent Safety Rules
 

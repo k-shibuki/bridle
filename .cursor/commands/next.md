@@ -90,11 +90,11 @@ Use the evidence to classify the current state into one of these positions:
 | On feature branch, tests pass, docs not reviewed | **Tests pass** | `docs-discover` (Mode 2) |
 | On feature branch, docs OK, uncommitted changes | **Docs OK** | `commit` |
 | On feature branch, committed, no PR | **Committed** | `pr-create` |
-| Open PR, CI still running, independent Issue exists | **CI pending (parallel)** | Delegate CI-wait (Template 2, no merge) to background subagent (see `subagent-policy.mdc`), then start `implement` on independent Issue. When CI completes, proceed to `pr-review`. |
+| Open PR, CI still running, independent Issue exists | **CI pending (parallel)** | Delegate via `delegation--review-wait.md` or `delegation--ci-wait-only.md` (see `agent--delegation-decision.md`), then start `implement` on independent Issue. When CI completes, proceed to `pr-review`. |
 | Open PR, CI still running, no independent Issue | **CI pending (housekeeping)** | Delegate CI-wait to background subagent (see `subagent-policy.mdc`), then do housekeeping (see Step 6). |
 | Stale local branches detected | **Cleanup needed** | Delete stale branches (see `pr-merge.md` "Post-merge cleanup"). Can be done during housekeeping. |
 | Background subagent running | **Background task in progress** | Check transcript for completion; continue independent work |
-| Open PR, unresolved review threads > 0 | **Unresolved review threads** | `review-fix` (reply + resolve per `review--comment-response.md`) |
+| Open PR, unresolved review threads > 0 | **Unresolved review threads** | `review-fix` (reply + resolve per `review--consensus-protocol.md`) |
 | Open PR, CI all green, wait subagent done | **Ready for review** | `pr-review` (retrieves bot review findings if available) |
 | Open PR, CI failed | **CI failure** | Fix inline, re-push, then **re-enter `next`** (state will be "CI pending" → delegate to subagent per `subagent-policy.mdc`). Do NOT poll CI inline after re-push. |
 | PR reviewed, changes required | **Changes required** | `review-fix` (address findings from `pr-review`, then re-push and re-review) |
@@ -166,7 +166,7 @@ Intermediate milestones (completing todos, pushing, posting replies) are never t
 
 If the user modifies the choice (e.g., "do #8 instead of #7"), adjust and proceed.
 
-**Parallel execution**: When CI is pending and independent Issues exist, delegate CI-wait to a background subagent (Template 2, no merge) and start the next Issue in parallel. When CI completes, the main agent runs `pr-review` → `pr-merge`:
+**Parallel execution**: When CI is pending and independent Issues exist, delegate CI+review wait to a background subagent (see `agent--delegation-decision.md`) and start the next Issue in parallel. When CI completes, the main agent runs `pr-review` → `pr-merge`:
 
 ```text
 Issue A: implement → ... → pr-create

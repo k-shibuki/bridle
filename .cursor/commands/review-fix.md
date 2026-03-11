@@ -39,7 +39,7 @@ gh pr view <PR> --json reviews --jq '.reviews[-1].body'
 
 **Source B: Bot inline comments** (if `pr-review` reported bot review status as "Reviewed")
 
-Use the detection commands from `@.cursor/knowledge/review--bot-detection.md` § Output Detection to retrieve inline comments from whichever reviewer responded.
+Use the detection commands from `@.cursor/knowledge/review--bot-operations.md` § Detection to retrieve inline comments from whichever reviewer responded.
 
 Merge all sources, deduplicating where Cursor and bot review flagged the same issue.
 
@@ -58,7 +58,7 @@ Present the classified list to the user before proceeding.
 
 ### 3. Address each finding
 
-**Prerequisite**: Read `@.cursor/knowledge/review--comment-response.md` (SSOT for reply format and resolve procedure).
+**Prerequisite**: Read `@.cursor/knowledge/review--consensus-protocol.md` (SSOT for consensus model, reply format, and resolve procedure).
 
 For each P0 and P1 finding (in priority order):
 
@@ -67,47 +67,17 @@ For each P0 and P1 finding (in priority order):
 3. If valid: propose a fix and apply it after user confirmation.
 4. If false positive: note the reason. If the same pattern has recurred, propose creating a knowledge atom (`.cursor/knowledge/review--<pattern>.md`) via `knowledge-create` so all reviewers learn from it.
 
-### 3b. Reply and resolve each thread
+### 3b. Reply, seek consensus, and resolve each thread
 
-Per `@.cursor/rules/agent-safety.mdc` `HS-REVIEW-RESOLVE`: every review thread must receive a disposition reply before being resolved.
+Per `@.cursor/rules/agent-safety.mdc` `HS-REVIEW-RESOLVE` and `@.cursor/knowledge/review--consensus-protocol.md`:
 
-For each unresolved review thread (use the thread list from `pr-review` Step 6, or enumerate via GraphQL):
-
-1. **Post a threaded reply** with one of the 4 disposition categories:
-
-   | Category | Template |
-   |---|---|
-   | Fixed | `Fixed in \`<sha7>\`. <what changed>.` |
-   | By design | `By design. <rationale> (ref: <source>).` |
-   | False positive | `False positive. <why detection was wrong>.` |
-   | Acknowledged | `Acknowledged. <brief assessment>. Tracked in #<issue>.` |
-
-   ```bash
-   gh api repos/{owner}/{repo}/pulls/<N>/comments/<comment_id>/replies \
-     -f body="Fixed in \`abc1234\`. Aligned timeout values to 20 min."
-   ```
-
-2. **Resolve the thread**:
-
-   ```bash
-   gh api graphql -f query='
-     mutation($id: ID!) {
-       resolveReviewThread(input: {threadId: $id}) {
-         thread { isResolved }
-       }
-     }
-   ' -f id="<THREAD_ID>"
-   ```
-
-3. **Verify completeness** after all threads are processed:
-
-   ```bash
-   gh api graphql -f query='...' --jq '
-     [.data.repository.pullRequest.reviewThreads.nodes[]
-      | select(.isResolved | not)] | length'
-   ```
-
-   Result must be 0. If > 0, missed threads exist — return to the thread list and process remaining.
+1. **Post a disposition reply** (Fixed / By design / False positive / Acknowledged) using the Reply API from `review--consensus-protocol.md` § Reply API.
+2. **Trigger re-review** (Step 5b below) — the bot must confirm the disposition.
+3. **After re-review completes**: check for bot agreement per `review--consensus-protocol.md` § Bot Agreement Signals.
+   - No new finding on thread → **consensus reached** → resolve via GraphQL Resolve API.
+   - New finding / objection → address and return to step 1.
+   - Timeout → resolve with timeout justification.
+4. **Verify completeness**: enumerate threads (GraphQL Thread Enumeration in `review--consensus-protocol.md`), confirm unresolved == 0.
 
 ### 4. Quality gate
 
@@ -132,31 +102,13 @@ Refs: #<issue>"
 git push
 ```
 
-### 5b. Bot re-review decision
+### 5b. Bot re-review (consensus verification)
 
-**Prerequisite**: Read `@.cursor/knowledge/review--bot-re-review.md` § Re-review after review-fix.
+Re-trigger reviewers per `@.cursor/knowledge/review--bot-operations.md` § Re-review:
+- CodeRabbit: always (`@coderabbitai review`)
+- Codex: only if the push addresses a Codex-sourced finding
 
-Agent re-triggers CodeRabbit after every review-fix push. Agent decides whether to also re-trigger Codex.
-
-```bash
-# Always — re-trigger CodeRabbit:
-gh pr comment <PR> --body "@coderabbitai review"
-```
-
-| Condition | CodeRabbit | Codex |
-|-----------|-----------|-------|
-| Any push to PR branch | Agent triggers `@coderabbitai review` | — |
-| Push addresses a Codex-sourced finding | Agent triggers `@coderabbitai review` | Yes — `gh pr comment <PR> --body "@codex review"` |
-| Push addresses only CodeRabbit/Cursor findings | Agent triggers `@coderabbitai review` | No |
-
-Delegate the wait to a background subagent. Choose template based on CI state:
-
-| CI state | Template |
-|----------|----------|
-| CI pending (push re-triggered CI) | CI + Bot Review Wait (`.cursor/templates/delegation--ci-bot-review-wait.md`) |
-| CI already passed | Bot Review Wait Only (`.cursor/templates/delegation--bot-review-wait.md`) |
-
-Tell the subagent: CodeRabbit: YES (agent-triggered), Codex: YES/NO. The main agent proceeds with other work (Two-Tier Gate).
+Delegate wait via `.cursor/templates/delegation--review-wait.md` (Monitor CI: YES if CI re-triggered, NO otherwise). The re-review result is needed by Step 3b to verify consensus — see `review--consensus-protocol.md` § Consensus Flow.
 
 ### 6. Report
 
@@ -184,4 +136,4 @@ Summarize what was done:
 - `@.cursor/commands/pr-merge.md` (next step after re-review confirms mergeable)
 - `@.cursor/rules/quality-policy.mdc` (quality gates)
 - `@.cursor/rules/commit-format.mdc` (commit message format)
-- `@.cursor/knowledge/review--comment-response.md` (reply format SSOT, resolve API, completeness invariant)
+- `@.cursor/knowledge/review--consensus-protocol.md` (consensus model, reply format, resolve API)

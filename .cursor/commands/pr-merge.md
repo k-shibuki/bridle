@@ -54,7 +54,33 @@ These checks are the first step of `pr-merge` and cannot be skipped:
    If the project moves to parallel multi-agent development, reconsider enabling
    `strict: true` or GitHub Merge Queue.
 
-If any precondition (1-4) is not met, do not proceed to merge. Report the blocking condition and the required action.
+5. **Bot review must cover the latest push** (review freshness):
+
+   The agent must have evidence that the latest push has been reviewed.
+   Acceptable evidence (any one is sufficient):
+
+   **(a) Review object exists after last push**:
+   ```bash
+   last_push=$(gh pr view <PR-number> --json commits \
+     --jq '.commits[-1].committedDate')
+   last_review=$(gh api repos/{owner}/{repo}/pulls/<PR-number>/reviews \
+     --jq '[.[] | select(.user.login | test("coderabbit";"i"))
+            | select(.body != "") | .submitted_at] | sort | last')
+   # last_review > last_push → fresh
+   ```
+
+   **(b) Silent clean bill** — incremental review found no new issues:
+   All of the following must be true:
+   - Re-review was triggered after the last push (trigger comment exists)
+   - Trigger was acknowledged by CR (ack comment exists)
+   - Sufficient time elapsed (> 7 min, beyond typical completion range)
+   - No new review object, no new inline comments, no rate limit
+   - No new unresolved threads
+
+   If neither (a) nor (b) is satisfied, a re-review is pending. **STOP** —
+   wait for the re-review to complete before merging.
+
+If any precondition (1-5) is not met, do not proceed to merge. Report the blocking condition and the required action.
 
 ## Inputs
 
@@ -169,14 +195,9 @@ Use auto-merge to let GitHub merge automatically when all required checks pass.
 
 **Preconditions** (all must be true):
 
+- Mandatory Preconditions 1-5 pass (CI green, review fresh, etc.)
 - `pr-review` has concluded "Mergeable" on the **current** HEAD commit
-- No unresolved review findings from any reviewer (CodeRabbit, Codex)
-- All review threads resolved (per `@.cursor/rules/agent-safety.mdc` `HS-REVIEW-RESOLVE`). GitHub Branch Protection (`required_conversation_resolution`) enforces this — merge is physically blocked if unresolved threads remain. If blocked, run `review-fix` first.
-- No re-review is pending (i.e., no review-fix push since the last completed review)
-
-If a re-review is in progress (review-fix was pushed, reviewer has not yet
-responded), use the delegated merge pattern (§ below) or wait for the
-re-review to complete before setting auto-merge.
+- Consensus reached on all review threads per `review--consensus-protocol.md` (unresolved == 0)
 
 ```bash
 gh pr merge <PR-number> --auto --squash
@@ -217,7 +238,7 @@ Choose the appropriate template from `.cursor/templates/`:
 
 | Scenario | Template |
 |----------|----------|
-| Single PR, auto-merge failed, pr-review done | `delegation--ci-wait-merge.md` |
+| Single PR, auto-merge failed, pr-review done | `delegation--ci-wait-only.md` (poll CI only; main agent runs `gh pr merge <N> --squash` after subagent reports CI green) |
 | CI monitoring only (no merge intent) | `delegation--ci-wait-only.md` |
 | PRs with shared commits (branched from each other) | `delegation--dependent-chain.md` (includes `--onto` rebase) |
 

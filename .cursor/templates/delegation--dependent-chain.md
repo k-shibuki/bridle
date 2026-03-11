@@ -46,7 +46,7 @@ squash-merging #<A>, use `git rebase --onto` to rebase #<B> cleanly.
 - If CI fails on either PR: stop, report which check failed and the details URL
 - If rebase --onto has conflicts: abort rebase (`git rebase --abort`), report the conflicting files
 - If merge fails: report the error, do NOT retry
-- If merge blocked by unresolved review threads: report "BLOCKED: unresolved review threads — run review-fix per review--comment-response.md"
+- If merge blocked by unresolved review threads: report "BLOCKED: unresolved review threads — run review-fix per review--consensus-protocol.md"
 - If `git push --force-with-lease` is rejected:
   1. `git fetch origin` to sync tracking refs
   2. Compare remote SHA (`git ls-remote origin <branch-B>`) with local `HEAD` (`git rev-parse HEAD`)

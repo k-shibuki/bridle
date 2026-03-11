@@ -35,8 +35,8 @@ Follow the **Decision Flowchart** in `agent--delegation-decision.md` § Decision
 
 When a bot reviewer returns RATE_LIMITED during subagent polling, the subagent **MUST** attempt recovery — not skip. Maximum 1 recovery attempt per reviewer per PR; a second RATE_LIMITED falls back to TIMED_OUT.
 
-For detection mechanics and wait-time parsing: `review--bot-timing.md` § Rate-Limit Detection and Recovery Pattern.
-For execution steps within templates: `.cursor/templates/delegation--ci-bot-review-wait.md` Step 3a / `delegation--bot-review-wait.md` Step 2a.
+For detection mechanics and wait-time parsing: `review--bot-operations.md` § Rate-Limit Recovery.
+For execution steps within templates: `.cursor/templates/delegation--review-wait.md` § Steps (Steps 1-4).
 
 ### Anti-pattern: inline sleep polling
 
