@@ -36,6 +36,21 @@ Every wait cycle over 10 seconds MUST be delegated to a background subagent. The
 
 After a CI fix + re-push, the main agent MUST re-enter `next` (which classifies state as "CI pending" and delegates to a subagent). See `next.md` CI failure row for the explicit return path.
 
+### Push-then-delegate checkpoint
+
+Every `git push` that triggers CI MUST be followed by a delegation action before the main agent switches context (branch change, new task, user interaction). Either:
+
+- Delegate CI+review monitoring to a background subagent, or
+- Set auto-merge (`gh pr merge --auto --squash`) if review is already done
+
+This applies to:
+
+- Initial push (via `pr-create` Step 5c)
+- Fix push (via `next` CI failure row → re-enter `next`)
+- Review-fix push (via `review-fix` Step 5b)
+
+Switching branches or starting new work before delegating is prohibited. The delegation is the "handoff" that closes the agent's responsibility for that push.
+
 ### Subagent configuration and prompts
 
 - **MUST** use `run_in_background: true` for all delegated operations
@@ -72,15 +87,25 @@ Run these checks in parallel (~2-3 s total). No reasoning required:
 
 Execute the chosen action(s), then proceed to § Completion guarantee.
 
+### Multiple concurrent subagents
+
+When N PRs are simultaneously in CI/review wait:
+
+- Launch N independent subagents (one per PR)
+- Each subagent monitors exactly one PR using the appropriate template
+- The main agent tracks all subagent output files
+
+Completion guarantee (§ below) applies to ALL active subagents, not just the most recently launched one.
+
 ### Completion guarantee
 
-After launching a background subagent, the main agent MUST ensure all of the following:
+After launching background subagent(s), the main agent MUST ensure all of the following:
 
 - The Two-Tier Gate (§ Productive work during delegation) has been run and any resulting work performed
-- The subagent output file is checked periodically between tasks
-- When no productive work remains, the agent enters a monitoring loop (read output → sleep 10-30s → repeat)
-- When the subagent completes, the result is processed (report merged PRs, surface errors)
-- The user receives a report before the turn ends — ending the turn while a subagent is still running is prohibited
+- Each active subagent's output file is checked periodically between tasks
+- When no productive work remains, the agent enters a monitoring loop (read each output → sleep 10-30s → repeat)
+- Each result is processed as its subagent completes (report merged PRs, surface errors)
+- The user receives a report covering ALL subagents before the turn ends — ending the turn while any subagent is still running is prohibited
 
 ### Git conflict prevention
 
