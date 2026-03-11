@@ -91,6 +91,7 @@ The following repository settings act as Deterministic Guards:
 | `allow_auto_merge` | Enables `gh pr merge --auto` — delegates merge execution to GitHub, strengthening HS-CI-MERGE |
 | `delete_branch_on_merge` | Automatically deletes feature branches after merge — no agent action needed |
 | `enforce_admins` | Forces admins to follow protection rules (limited reliability on personal repos) |
+| `required_conversation_resolution` | Blocks merge until all review threads are resolved — enforces `HS-REVIEW-RESOLVE` |
 
 ## Component Boundary Rules
 

@@ -336,8 +336,15 @@ not block). See `agent--delegation-templates.md`:
 
 Both templates poll all triggered reviewers in parallel.
 
+## Comment Response
+
+See `review--comment-response.md` for reply format, resolve procedure,
+and completeness invariant. This atom covers lifecycle mechanics only.
+
 ## Related
 
+- `review--comment-response.md` — reply format, resolve procedure,
+  completeness invariant
 - `agent--delegation-templates.md` — Template 4/5 implement the wait
   logic
 - `.coderabbit.yaml` — CodeRabbit configuration (auto_review OFF,

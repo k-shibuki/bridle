@@ -171,6 +171,7 @@ Use auto-merge to let GitHub merge automatically when all required checks pass.
 
 - `pr-review` has concluded "Mergeable" on the **current** HEAD commit
 - No unresolved review findings from any reviewer (CodeRabbit, Codex)
+- All review threads resolved (per `@.cursor/rules/agent-safety.mdc` `HS-REVIEW-RESOLVE`). GitHub Branch Protection (`required_conversation_resolution`) enforces this — merge is physically blocked if unresolved threads remain. If blocked, run `review-fix` first.
 - No re-review is pending (i.e., no review-fix push since the last completed review)
 
 If a re-review is in progress (review-fix was pushed, reviewer has not yet

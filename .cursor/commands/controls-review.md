@@ -98,7 +98,7 @@ For each information item below, enumerate all locations where it appears and cl
 | 1 | Workflow flow diagram | `.cursor/README.md` |
 | 2 | Exception types (hotfix / no-issue) | `workflow-policy.mdc` |
 | 3 | fix vs hotfix criteria | `workflow-policy.mdc` |
-| 4 | Hard Stop list (7 items, mnemonic IDs) | `agent-safety.mdc` |
+| 4 | Hard Stop list (8 items, mnemonic IDs) | `agent-safety.mdc` |
 | 5 | Branch naming convention | `commit-format.mdc` |
 | 6 | PR template / required sections | `pr-create.md` |
 | 7 | CI polling strategy | `ci--job-dependency-graph.md` |

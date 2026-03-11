@@ -58,12 +58,56 @@ Present the classified list to the user before proceeding.
 
 ### 3. Address each finding
 
+**Prerequisite**: Read `@.cursor/knowledge/review--comment-response.md` (SSOT for reply format and resolve procedure).
+
 For each P0 and P1 finding (in priority order):
 
 1. Read the referenced file and surrounding context (at least ±10 lines around the flagged line).
 2. Determine whether the finding is valid.
 3. If valid: propose a fix and apply it after user confirmation.
 4. If false positive: note the reason. If the same pattern has recurred, propose creating a knowledge atom (`.cursor/knowledge/review--<pattern>.md`) via `knowledge-create` so all reviewers learn from it.
+
+### 3b. Reply and resolve each thread
+
+Per `@.cursor/rules/agent-safety.mdc` `HS-REVIEW-RESOLVE`: every review thread must receive a disposition reply before being resolved.
+
+For each unresolved review thread (use the thread list from `pr-review` Step 6, or enumerate via GraphQL):
+
+1. **Post a threaded reply** with one of the 4 disposition categories:
+
+   | Category | Template |
+   |---|---|
+   | Fixed | `Fixed in \`<sha7>\`. <what changed>.` |
+   | By design | `By design. <rationale> (ref: <source>).` |
+   | False positive | `False positive. <why detection was wrong>.` |
+   | Acknowledged | `Acknowledged. <brief assessment>. Tracked in #<issue>.` |
+
+   ```bash
+   gh api repos/{owner}/{repo}/pulls/<N>/comments/<comment_id>/replies \
+     -f body="Fixed in \`abc1234\`. Aligned timeout values to 20 min."
+   ```
+
+2. **Resolve the thread**:
+
+   ```bash
+   gh api graphql -f query='
+     mutation($id: ID!) {
+       resolveReviewThread(input: {threadId: $id}) {
+         thread { isResolved }
+       }
+     }
+   ' -f id="<THREAD_ID>"
+   ```
+
+3. **Verify completeness** after all threads are processed:
+
+   ```bash
+   gh api graphql -f query='...' --jq '
+     [.data.repository.pullRequest.reviewThreads.nodes[]
+      | select(.isResolved | not)] | length'
+   ```
+
+   Result must be 0. If > 0, missed threads exist — return to the thread list and process remaining.
 
 ### 4. Quality gate
 
@@ -140,3 +184,4 @@ Summarize what was done:
 - `@.cursor/commands/pr-merge.md` (next step after re-review confirms mergeable)
 - `@.cursor/rules/quality-policy.mdc` (quality gates)
 - `@.cursor/rules/commit-format.mdc` (commit message format)
+- `@.cursor/knowledge/review--comment-response.md` (reply format SSOT, resolve API, completeness invariant)

@@ -67,7 +67,12 @@ All required checks must pass. If any check fails, the PR is not ready for merge
 
 Bot reviews are triggered in `pr-create` Step 5 (or `review-fix` Step 5b) and polled by a background subagent. By the time `pr-review` runs, the subagent has reported which reviewers responded.
 
-**Recovery checkpoint**: If bot review wait was not delegated to a subagent before `pr-review` started, delegate now per `@.cursor/rules/subagent-policy.mdc` (`agent--delegation-templates.md` Template 5) before proceeding. Inline polling by the main agent is prohibited — except in the sequential fallback case defined in `subagent-policy.mdc` § Fallback (non-subagent environments), where inline sequential polling is permitted. TIMED_OUT = 20 min elapsed per `review--bot-lifecycle.md` § Timing; ACKNOWLEDGED and ACCEPTED are intermediate states (bot is still processing).
+**Recovery checkpoint**: If bot review wait was not delegated to a subagent before `pr-review` started:
+
+- **Action**: Delegate now per `@.cursor/rules/subagent-policy.mdc` (`agent--delegation-templates.md` Template 5) before proceeding.
+- **Polling rule**: Inline polling by the main agent is prohibited — except in the sequential fallback case defined in `subagent-policy.mdc` § Fallback (non-subagent environments), where inline sequential polling is permitted.
+- **Timeout**: TIMED_OUT = 20 min elapsed per `review--bot-lifecycle.md` § Timing.
+- **Intermediate states**: ACKNOWLEDGED and ACCEPTED mean the bot is still processing.
 
 Use the detection commands from `review--bot-lifecycle.md` § Output Detection to scan **all known reviewers** (CodeRabbit and Codex), regardless of whether the agent triggered them. Reviews from external sources (user via GitHub GUI, GitHub App auto-trigger, other bots) are equally valid review sources.
 
@@ -83,6 +88,34 @@ Use the detection commands from `review--bot-lifecycle.md` § Output Detection t
 | Either | **Not triggered** | Note "not triggered" with reason |
 
 When both reviewers produce findings, deduplicate (same file + same issue = one finding, note both sources). When re-reviewing after `review-fix`: check `submitted_at` timestamps against the latest commit date. Use only the most recent review from each reviewer.
+
+**Thread enumeration** (completeness baseline): After collecting findings, enumerate all review threads via GraphQL to establish a baseline for `review-fix`:
+
+```bash
+gh api graphql -f query='
+  query($owner: String!, $repo: String!, $pr: Int!) {
+    repository(owner: $owner, name: $repo) {
+      pullRequest(number: $pr) {
+        reviewThreads(first: 100) {
+          totalCount
+          nodes { id isResolved isOutdated
+            comments(first: 1) { nodes { author { login } body } }
+          }
+        }
+      }
+    }
+  }
+' -f owner={owner} -f repo={repo} -F pr=<N> --jq '{
+  total: .data.repository.pullRequest.reviewThreads.totalCount,
+  unresolved: [.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)] | length,
+  resolved: [.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved)] | length
+}'
+```
+
+Report in the review output:
+- **Thread baseline**: X total, Y unresolved, Z resolved
+- **Classified findings**: N (must equal Y for completeness)
+- **Delta** (Y - N): if > 0, findings were missed — re-examine unresolved threads
 
 ### 7. Code review
 
@@ -155,3 +188,4 @@ If the conclusion is "Changes required", recommend running `review-fix` to addre
 - `@.cursor/commands/pr-merge.md` (next step when mergeable)
 - `@.cursor/commands/pr-create.md` (PR creation)
 - `@.cursor/rules/test-strategy.mdc` (test quality criteria)
+- `@.cursor/knowledge/review--comment-response.md` (reply format, resolve procedure, completeness invariant)

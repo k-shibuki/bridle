@@ -77,6 +77,7 @@ Monitor CI for PR #<N> until all checks pass, then merge it.
 - If a check fails: `gh run view <run-id> --log-failed`, report the failure details
 - If check-policy fails: report that the PR body needs updating
 - If merge fails due to conflicts: report the conflict, do NOT attempt resolution
+- If merge blocked by unresolved review threads: report "BLOCKED: unresolved review threads — run review-fix per review--comment-response.md"
 
 ## Return format
 Report: "MERGED: PR #<N> squash-merged at <sha>" or "FAILED: <reason>"
@@ -299,6 +300,7 @@ squash-merging #<A>, use `git rebase --onto` to rebase #<B> cleanly.
 - If CI fails on either PR: stop, report which check failed and the details URL
 - If rebase --onto has conflicts: abort rebase (`git rebase --abort`), report the conflicting files
 - If merge fails: report the error, do NOT retry
+- If merge blocked by unresolved review threads: report "BLOCKED: unresolved review threads — run review-fix per review--comment-response.md"
 - If `git push --force-with-lease` is rejected:
   1. `git fetch origin` to sync tracking refs
   2. Compare remote SHA (`git ls-remote origin <branch-B>`) with local `HEAD` (`git rev-parse HEAD`)

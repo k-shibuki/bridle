@@ -28,7 +28,7 @@ All matching change types trigger independently (no elif single-match).
 
 ## Layer 2: PR CI (merge gate)
 
-**Purpose**: Enforce merge-readiness. Authoritative gate for branch protection.
+**Purpose**: Enforce merge-readiness. Authoritative gate for branch protection. In addition to CI status checks (`ci-pass`, `check-policy`), GitHub Branch Protection also requires all review conversations to be resolved (`required_conversation_resolution`) before merge.
 
 **Execution context**: `ci.yaml` on `pull_request` events.
 
