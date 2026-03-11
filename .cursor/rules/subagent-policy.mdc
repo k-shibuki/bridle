@@ -10,32 +10,39 @@ The main agent **MUST** delegate all blocking operations (CI polling, sequential
 
 ### When to delegate (vs auto-merge)
 
-For single-PR merges, prefer auto-merge (Deterministic) over subagent delegation (Steering). See `agent--delegation-templates.md` § Decision Flowchart for the full decision tree.
+For single-PR merges, prefer auto-merge (Deterministic) over subagent delegation (Steering).
 
-| Situation | Action |
-|---|---|
-| PR created, Codex triggered, CI pending | Delegate using **Template 4: CI + Bot Review Wait** (CodeRabbit: YES, Codex: YES) |
-| review-fix pushed, Codex re-review triggered, CI pending | Delegate using **Template 4: CI + Bot Review Wait** (CodeRabbit: YES, Codex: YES) |
-| review-fix pushed, Codex re-review triggered, CI passed | Delegate using **Template 5: Bot Review Wait Only** (CodeRabbit: YES, Codex: YES) |
-| PR created, Codex not triggered, CI pending | Delegate using **Template 4: CI + Bot Review Wait** (CodeRabbit: YES, Codex: NO) |
-| Single PR, pr-review done, CI pending | **Auto-merge**: `gh pr merge --auto --squash`. No subagent needed. |
-| Single PR, auto-merge failed | Delegate using Template 1: CI-Wait + Merge (Fallback) |
-| Multiple independent PRs, pr-review done | **Batch Auto-Merge**: `gh pr merge --auto --squash` on each. No subagent needed. |
-| Dependent PR chain (shared commits) | Delegate using Template 3: Dependent PR Merge Chain with `--onto` rebase |
-| CI monitoring only (no merge intent) | Delegate using Template 2: CI-Wait Only |
-| Code review, implementation, user interaction | Never delegate — requires main agent judgment |
+Follow the **Decision Flowchart** in `agent--delegation-templates.md` § Decision Flowchart to select the correct template. The flowchart is the SSOT for template selection — do not duplicate it here.
 
-### Subagent configuration
+The only situation that MUST NOT be delegated: code review, implementation, and user interaction (requires main agent judgment).
 
-- **Type**: `subagent_type: "shell"` for CI polling, merge, rebase, and other git/CLI operations
-- **Model**: `model: "fast"` for routine operations (CI poll, merge, rebase). Omit `model` (inherit parent) for tasks requiring judgment. Never hardcode specific model names — they are environment-dependent.
-- **Background**: `run_in_background: true` to avoid blocking the main agent
+### Rate-Limit Recovery Policy
 
-### Prompt structure and completion detection
+When a bot reviewer returns RATE_LIMITED during subagent polling, the subagent **MUST** attempt recovery — not skip. Maximum 1 recovery attempt per reviewer per PR; a second RATE_LIMITED falls back to TIMED_OUT.
 
-For prompt templates (CI-wait, merge chain, CI-only), see `@.cursor/knowledge/agent--delegation-templates.md`.
+For detection mechanics and wait-time parsing: `review--bot-lifecycle.md` § Rate-Limit Detection and Recovery Pattern.
+For execution steps within templates: `agent--delegation-templates.md` Template 4 Step 3a / Template 5 Step 2a.
 
-Delegated subagent prompts MUST include: Goal, Steps, Prohibitions (especially git operation bans), Error handling, and Return format.
+### Anti-pattern: inline sleep polling
+
+The following pattern is **prohibited** in the main agent, regardless of context (initial push, fix + re-push, review re-trigger, etc.):
+
+```bash
+# PROHIBITED — blocks main agent, interrupted by user messages
+sleep 300 && gh pr checks <N>
+```
+
+Every wait cycle over 10 seconds MUST be delegated to a background subagent. The main agent's only permitted inline wait is a brief API-propagation pause (`sleep 5` or less, e.g., waiting for a comment to appear after posting).
+
+After a CI fix + re-push, the main agent MUST re-enter `next` (which classifies state as "CI pending" and delegates to a subagent). See `next.md` CI failure row for the explicit return path.
+
+### Subagent configuration and prompts
+
+- **MUST** use `run_in_background: true` for all delegated operations
+- **MUST** use `model: "fast"` for routine operations (CI poll, merge, rebase). Omit `model` (inherit parent) for tasks requiring judgment. Never hardcode specific model names.
+- **MUST** include in every prompt: Goal, Steps, Prohibitions, Error handling, and Return format
+
+For `subagent_type` selection, configuration defaults, and reusable prompt templates: see `agent--delegation-templates.md`.
 
 ### Productive work during delegation (Two-Tier Gate)
 

@@ -1,5 +1,5 @@
 ---
-trigger: bot review, Codex review, Codex trigger, @codex review, CodeRabbit, @coderabbitai review, eyes reaction, Codex lifecycle, Codex re-review, Codex rate limit, CodeRabbit rate limit, Codex wait, Codex Cloud Review, review fallback, coderabbit fallback, supplementary review, coderabbit detection, CodeRabbit completion, Review triggered, coderabbit in progress, coderabbit done, coderabbit polling, review ack vs completion, bot state machine, eyes reaction delay, empty body review
+trigger: bot review, Codex review, Codex trigger, @codex review, CodeRabbit, @coderabbitai review, eyes reaction, Codex lifecycle, Codex re-review, Codex rate limit, CodeRabbit rate limit, Codex wait, Codex Cloud Review, review fallback, coderabbit fallback, supplementary review, coderabbit detection, CodeRabbit completion, Review triggered, coderabbit in progress, coderabbit done, coderabbit polling, review ack vs completion, bot state machine, eyes reaction delay, empty body review, rate limit recovery, rate limit wait time, rate limit re-trigger, rate limit parse
 ---
 # Bot Review Lifecycle
 
@@ -61,8 +61,7 @@ Agent decides whether to also trigger Codex (Steering — conditional).
 | Workflow files (`.cursor/`) | Yes (agent) | No | Cross-reference consistency |
 | Docs only (`.md`, non-ADR) | Yes (agent) | No | Low risk but still reviewed |
 
-**Rate limit handling**: If either reviewer is rate-limited, proceed
-without it. No fallback chain — each reviewer is independent.
+**Rate limit handling**: See `subagent-policy.mdc` § Rate-Limit Recovery Policy for the decision (recover vs skip). This section documents the detection pattern and recovery mechanics below (§ Rate-Limit Detection and Recovery Pattern).
 
 ## Output Detection
 
@@ -121,7 +120,7 @@ gh api repos/{owner}/{repo}/issues/<N>/comments \
 | **ACCEPTED** | "Review triggered" ack comment after trigger time | CodeRabbit only |
 | **COMPLETED** | Review entry with `submitted_at > trigger_time` AND `body != ""` | Both |
 | **COMPLETED_CLEAN** | Thumbs-up on trigger comment (no findings) | Codex only |
-| **RATE_LIMITED** | Review body contains "usage limits" | Both |
+| **RATE_LIMITED** | PR comment body contains "Rate limit exceeded" with embedded wait time (see § Rate-Limit Detection) | Both |
 | **TIMED_OUT** | Timeout elapsed, no completion signal | Both |
 
 **Rule**: Always use API checks to determine state. Do not infer state
@@ -141,6 +140,9 @@ ACKNOWLEDGED ──[ack "Review triggered"]──→ ACCEPTED
 ACKNOWLEDGED ──[review, body!="", submitted_at > t]──→ COMPLETED
 ACCEPTED ──[review, body!="", submitted_at > t]──→ COMPLETED
 any state ──[timeout elapsed]──→ TIMED_OUT
+any state ──[rate limit comment detected]──→ RATE_LIMITED
+RATE_LIMITED ──[sleep wait_time + 30s, re-trigger]──→ TRIGGERED (retry)
+RATE_LIMITED ──[second rate limit]──→ TIMED_OUT
 ```
 
 - **TRIGGERED**: agent posted `@coderabbitai review`
@@ -198,7 +200,49 @@ POLL (every 30s):
 ```
 
 ACKNOWLEDGED/ACCEPTED are reported as progress but do NOT terminate
-polling. Completion = COMPLETED | COMPLETED_CLEAN | TIMED_OUT.
+polling. Completion = COMPLETED | COMPLETED_CLEAN | RATE_LIMITED | TIMED_OUT.
+
+## Rate-Limit Detection and Recovery Pattern
+
+This section documents the **mechanics** of rate-limit detection and
+recovery. The **policy** (recover vs skip) is in `subagent-policy.mdc`
+§ Rate-Limit Recovery Policy.
+
+### Detection
+
+CodeRabbit posts a PR comment (not a review) when rate-limited. Detect via:
+
+```bash
+gh api repos/{owner}/{repo}/issues/<N>/comments \
+  --jq '[.[] | select(.user.login | test("coderabbit"; "i"))
+        | select(.body | test("Rate limit exceeded"))
+        | {id, created_at, body}]'
+```
+
+### Wait Time Parsing
+
+The rate-limit comment contains an embedded wait time in bold:
+
+> Please wait **4 minutes and 43 seconds** before requesting another review.
+
+Extract with regex (applied to the comment body):
+
+```
+wait \*\*(\d+) minutes? and (\d+) seconds?\*\*
+```
+
+Convert to seconds: `minutes * 60 + seconds + 30` (30s safety buffer).
+
+### Recovery Flow
+
+1. Detect RATE_LIMITED via PR comment (see Detection above)
+2. Parse wait time from comment body
+3. Sleep for `parsed_seconds + 30s` buffer
+4. Re-trigger: `gh pr comment <N> --body "@coderabbitai review"`
+5. Reset state to TRIGGERED and resume normal polling
+6. If a second RATE_LIMITED occurs: stop, report as TIMED_OUT
+
+Maximum 1 recovery attempt per reviewer per PR.
 
 ## Edge Cases
 

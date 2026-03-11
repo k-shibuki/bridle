@@ -68,7 +68,7 @@ All required checks must pass. If any check fails, the PR is not ready for merge
 
 Bot reviews are triggered in `pr-create` Step 5 (or `review-fix` Step 5b) and polled by a background subagent. By the time `pr-review` runs, the subagent has reported which reviewers responded.
 
-Use the detection commands from `review--bot-lifecycle.md` § Output Detection to retrieve findings from **each triggered reviewer** (CodeRabbit and/or Codex).
+Use the detection commands from `review--bot-lifecycle.md` § Output Detection to scan **all known reviewers** (CodeRabbit and Codex), regardless of whether the agent triggered them. Reviews from external sources (user via GitHub GUI, GitHub App auto-trigger, other bots) are equally valid review sources.
 
 | Reviewer | Status | Action |
 |----------|--------|--------|
@@ -78,6 +78,7 @@ Use the detection commands from `review--bot-lifecycle.md` § Output Detection t
 | Codex | **Reviewed (findings)** | Include findings in Step 7 |
 | Codex | **Reviewed (clean)** | Note "Codex: no findings" |
 | Codex | **Rate-limited / Timeout** | Note in report; proceed without |
+| Either | **Externally reviewed** | Include findings (not agent-triggered but valid) |
 | Either | **Not triggered** | Note "not triggered" with reason |
 
 When both reviewers produce findings, deduplicate (same file + same issue = one finding, note both sources). When re-reviewing after `review-fix`: check `submitted_at` timestamps against the latest commit date. Use only the most recent review from each reviewer.
