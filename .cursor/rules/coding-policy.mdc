@@ -17,9 +17,12 @@ Foundational rule set for AI-assisted coding in this project.
 - **Documentation References in Comments**: Only references to maintained ADRs (`docs/adr/`) or self-contained descriptions are allowed in code comments. References to easily-outdated documentation are prohibited.
 - **Rule Priority**: System > Workspace rules > This file.
 - **Completion Policy**: Persist until the user's request is fulfilled. If constraints prevent completion, explicitly state current progress and remaining tasks.
-- **CI Failure Autonomy**: When CI fails, the agent must autonomously diagnose and fix the failure. Do not merely report failures — investigate the root cause, fix, and re-push. Escalate only after a genuine fix attempt has failed.
 - **Instruction Conflicts**: If instructions conflict or are ambiguous, clarify briefly before proceeding rather than interpreting conveniently.
 - **User Specification Priority**: If the user explicitly specifies output format or length, prioritize that over defaults.
+
+### CI Failure Autonomy
+
+When CI fails, the agent must autonomously diagnose and fix the failure. Do not merely report failures — investigate the root cause, fix, and re-push. Escalate only after a genuine fix attempt has failed.
 
 ## Task Classification
 

@@ -13,22 +13,7 @@ alwaysApply: false
 
 ## Prefix (Type)
 
-Canonical type list: `tools/commit-types.txt` (shared with `check-commit-msg.sh`).
-
-| Prefix | Description |
-|--------|-------------|
-| `feat` | New feature addition |
-| `fix` | Bug fix (normal urgency — via standard PR) |
-| `hotfix` | Critical production fix (via exception PR) |
-| `refactor` | Refactoring (no behavior change) |
-| `perf` | Performance improvement |
-| `test` | Test addition/modification |
-| `docs` | Documentation update |
-| `build` | Build/dependency changes |
-| `ci` | CI-related changes |
-| `chore` | Miscellaneous (tool settings, scripts) |
-| `style` | Style-only changes |
-| `revert` | Revert |
+Canonical type list: `tools/commit-types.txt` (shared with `check-commit-msg.sh`). For descriptions, see `workflow-policy.mdc` § Label Taxonomy or `workflow--label-taxonomy.md`.
 
 Scope is optional: `<type>(<scope>): <summary>`. See [Conventional Commits](https://www.conventionalcommits.org/).
 

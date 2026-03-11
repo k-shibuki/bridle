@@ -4,16 +4,9 @@ alwaysApply: false
 ---
 # Test Conventions
 
-## Prerequisite: Read Knowledge Before Starting
+## Prerequisite
 
-Per `@.cursor/rules/workflow-policy.mdc` § Knowledge Consultation Triggers, the agent MUST read these knowledge atoms before writing, reviewing, or modifying any test code:
-
-- `@.cursor/knowledge/test--mock-scope-constraint.md` — `local_mocked_bindings()` cannot be extracted into helpers
-- `@.cursor/knowledge/test--mock-external-function.md` — wrapper pattern for mocking system/external functions
-- `@.cursor/knowledge/test--layered-mock-strategy.md` — mock all layer boundaries in integration tests
-- `@.cursor/knowledge/r--null-assignment-trap.md` — `x$field <- NULL` silently removes the field
-
-Do not rely on memory — read the atoms every time.
+Per `workflow-policy.mdc` § Knowledge Consultation Triggers, read the listed atoms before starting work.
 
 ---
 

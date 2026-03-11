@@ -4,14 +4,9 @@ alwaysApply: false
 ---
 # Debugging Conventions
 
-## Prerequisite: Read Knowledge Before Starting
+## Prerequisite
 
-Per `@.cursor/rules/workflow-policy.mdc` § Knowledge Consultation Triggers, the agent MUST read these knowledge atoms before starting any debug or investigation work:
-
-- `@.cursor/knowledge/debug--method-priority.md` — debug method priority, R tools reference, phase-specific checks
-- `@.cursor/templates/debug--instrumentation.md` — R instrumentation template and boundary placement
-
-Do not rely on memory — read the atoms every time.
+Per `workflow-policy.mdc` § Knowledge Consultation Triggers, read the listed atoms before starting work.
 
 ## Positioning (Separation of Policy and Procedure)
 

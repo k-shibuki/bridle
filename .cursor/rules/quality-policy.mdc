@@ -56,7 +56,7 @@ Before writing `# nolint`, the agent MUST satisfy the following conditions in pr
 
 ### Prerequisite: Consult Knowledge
 
-Per `@.cursor/rules/workflow-policy.mdc` § Knowledge Consultation Triggers, the agent MUST read `@.cursor/knowledge/lint--nolint-accepted-patterns.md` and `@.cursor/knowledge/lint--styler-lintr-conflict.md` before any suppression attempt. If in test code, also read `@.cursor/rules/test-strategy.mdc` §7 (Helper Colocation). Memory from previous sessions is not sufficient — always read the files.
+Per `workflow-policy.mdc` § Knowledge Consultation Triggers, read the listed atoms before starting work. If in test code, also read `test-strategy.mdc` §7 (Helper Colocation).
 
 ### Priority 1: Code Restructuring
 
@@ -87,12 +87,7 @@ result <- ScanResult(...) # nolint: object_usage_linter. S7 class defined in R/s
 
 ### Prohibited forms (always rejected)
 
-| Form | Why prohibited |
-|---|---|
-| `# nolint` (bare) | No linter name, no reason |
-| `# nolint start` / `# nolint end` | Blanket suppression hides multiple issues |
-| `# nolint: object_usage_linter` (no reason) | Reason is required to justify the exception |
-| `# nolint` to avoid fixing code quality issues | Suppression is for tool limitations, not code defects |
+See `agent-safety.mdc` `HS-NOLINT` for the definitive list of prohibited annotation forms.
 
 ### Accepted Justifications
 
