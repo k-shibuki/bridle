@@ -47,30 +47,28 @@ Two AI code reviewers operate as external PR reviewers via `AGENTS.md`
 
 **Orchestration model**: The agent triggers both reviewers explicitly —
 CodeRabbit on every PR, Codex conditionally based on change type
-(`review--bot-trigger.md` § Two-Tier Trigger Model). Wait is delegated
-to a background subagent. Findings are integrated into `pr-review`.
-Each reviewer is independent — no fallback chain.
+(`review--bot-operations.md` § Two-Tier Trigger Table). Wait is delegated
+to a background subagent. Findings require consensus before resolve
+(`review--consensus-protocol.md`).
 
 ```text
 AGENTS.md (AI reviewer entry point — read by Codex and CodeRabbit)
   ├── Review guidelines (P0/P1 severity — stable base criteria)
   └── References:
-      ├── .cursor/rules/knowledge-index.mdc  ← shared lookup table
-      ├── .cursor/knowledge/review--bot-trigger.md     ← trigger rules, two-tier model
-      ├── .cursor/knowledge/review--bot-detection.md   ← detection, state machine, polling
-      ├── .cursor/knowledge/review--bot-timing.md      ← timing, rate limits, recovery
-      ├── .cursor/knowledge/review--bot-re-review.md   ← re-review after review-fix
-      ├── .cursor/knowledge/review--comment-response.md ← reply format, resolve, completeness
-      ├── .cursor/knowledge/review--*.md     ← feedback loop accumulates here
-      ├── .cursor/commands/pr-review.md      ← review procedure
-      └── .cursor/commands/review-fix.md     ← fix procedure
+      ├── .cursor/rules/knowledge-index.mdc           ← shared lookup table
+      ├── .cursor/knowledge/review--bot-operations.md  ← trigger, detection, timing, polling
+      ├── .cursor/knowledge/review--consensus-protocol.md ← disposition, consensus, resolve
+      ├── .cursor/knowledge/review--*.md               ← feedback loop accumulates here
+      ├── .cursor/commands/pr-review.md                ← review procedure
+      └── .cursor/commands/review-fix.md               ← fix procedure
 .coderabbit.yaml (CodeRabbit config — auto_review OFF, agent-triggered, assertive profile)
 ```
 
 - **Cursor** reads `.cursor/` directly via rules, commands, knowledge
 - **Codex** reads `AGENTS.md` first, then follows references into `.cursor/` files
 - **CodeRabbit** reads `AGENTS.md` via code_guidelines auto-detection + `.coderabbit.yaml` for config
-- **Two-tier trigger**: Agent triggers CodeRabbit on every PR (`@coderabbitai review`) and Codex on complex changes only (`@codex review`) in `pr-create` Step 5 or `review-fix` Step 5b. Wait is delegated to background subagents (`templates/delegation--ci-bot-review-wait.md` / `templates/delegation--bot-review-wait.md`) polling all triggered reviewers in parallel
+- **Two-tier trigger**: Agent triggers CodeRabbit on every PR (`@coderabbitai review`) and Codex on complex changes only (`@codex review`). Wait is delegated to background subagents (`templates/delegation--review-wait.md`)
+- **Consensus model**: Every review thread requires bidirectional agreement before resolve (`review--consensus-protocol.md`)
 - **Feedback loop**: recurring false positives become knowledge atoms (`review--*.md`), benefiting all reviewers
 - **Drift detection**: `make review-sync-check` verifies that `AGENTS.md` and `pr-review.md` cover the same review categories (enforced in CI)
 
@@ -147,7 +145,7 @@ Start here to find the right information quickly.
 | Instrumentation template | `templates/debug--instrumentation.md` |
 | Review disposition reply template | `templates/review--disposition-reply.md` |
 | CI job dependencies and polling strategy | `knowledge/ci--*.md` atoms |
-| Review comment response (reply + resolve) | `knowledge/review--comment-response.md` |
+| Review consensus + disposition replies | `knowledge/review--consensus-protocol.md` |
 | Git recovery playbooks | `knowledge/git--*.md` atoms |
 | Development workflow + commands | This file (below) |
 | Command details (procedures) | `.cursor/commands/*.md` |
@@ -186,7 +184,7 @@ doctor → issue-create → implement ─────────→ test-create
                                                   commit → pr-create → [bot review trigger + CI] → pr-review → review-fix (if needed) → pr-merge
 ```
 
-When CI is pending, `next` always delegates CI+review monitoring to a background subagent (see `subagent-policy.mdc`). The main agent proceeds with independent Issues (Tier 2 delegation allowed) or housekeeping. Auto-merge MUST NOT be set until bot review completes (see `pr-create.md` § 5d). After CI+review completes, `pr-review` runs before merge:
+When CI is pending, `next` delegates CI+review monitoring to a background subagent via `delegation--review-wait.md` (see `agent--delegation-decision.md`). The main agent proceeds with independent Issues or housekeeping. Auto-merge MUST NOT be set until bot review completes and consensus is reached (see `review--consensus-protocol.md`). After CI+review completes, `pr-review` runs before merge:
 
 ```
                          ┌──────────────────────────────────────────────┐

@@ -138,60 +138,25 @@ Auto-review is OFF (requires paid seat). The agent MUST trigger explicitly.
 
 #### 5b. Codex (manual — agent decision required)
 
-Read `@.cursor/knowledge/review--bot-trigger.md` § Two-Tier Trigger Model. Codex is triggered only for complex changes:
+Read `@.cursor/knowledge/review--bot-operations.md` § Two-Tier Trigger Table. Codex is triggered only for complex changes:
 
 | Change type | Codex |
 |-------------|-------|
 | R code, schemas, security, ADRs | **Yes** — `gh pr comment <PR> --body "@codex review"` |
 | CI config, shell scripts, workflow, docs | No |
 
-#### 5b′. Capture trigger metadata (REQUIRED before delegation)
+#### 5b′. Capture trigger metadata and delegate
 
-After triggering each reviewer, capture the comment ID and timestamp for the monitoring subagent. The delegation templates require `trigger_time` and `trigger_id` values — without them, the subagent cannot distinguish pre-existing comments from the review response.
+After triggering, capture each reviewer's comment ID and `created_at` timestamp:
 
 ```bash
-# Capture CodeRabbit trigger metadata (always — triggered in 5a)
 gh api repos/{owner}/{repo}/issues/<PR>/comments \
   --jq '[.[] | select(.user.login == "{agent_login}") | select(.body | test("@coderabbitai review"))] | last | {id: .id, created_at: .created_at}'
-
-# Capture Codex trigger metadata (only if triggered in 5b)
-gh api repos/{owner}/{repo}/issues/<PR>/comments \
-  --jq '[.[] | select(.user.login == "{agent_login}") | select(.body | test("@codex review"))] | last | {id: .id, created_at: .created_at}'
 ```
 
-Pass both `trigger_id` and `trigger_time` (= `created_at`) to the delegation template in Step 5c.
+Then delegate CI + review monitoring to a background subagent using `.cursor/templates/delegation--review-wait.md` (Monitor CI: YES). Pass `trigger_id` and `trigger_time` for each triggered reviewer. See `@.cursor/knowledge/agent--delegation-decision.md` for the decision flowchart.
 
-#### 5c. Delegate CI + review wait
-
-```bash
-# Quick initial CI check
-gh pr checks <PR_NUMBER>
-```
-
-**Delegation**:
-
-| Codex triggered? | Template |
-|------------------|----------|
-| Yes | CI + Bot Review Wait (`.cursor/templates/delegation--ci-bot-review-wait.md`) — CodeRabbit: YES (agent-triggered), Codex: YES |
-| No | CI + Bot Review Wait (`.cursor/templates/delegation--ci-bot-review-wait.md`) — CodeRabbit: YES (agent-triggered), Codex: NO |
-
-Tell the subagent that CodeRabbit is always YES (agent-triggered in Step 5a). Each reviewer is polled independently. Pass the `trigger_id` and `trigger_time` captured in Step 5b′ for each triggered reviewer.
-
-#### 5d. Auto-merge precondition (REQUIRED before setting auto-merge)
-
-Auto-merge MUST NOT be set until bot review has completed. Setting auto-merge while review is pending allows CI-green merges without review (no review → no threads → `required_conversation_resolution` does not block).
-
-| Bot review state | Auto-merge permitted? |
-|---|---|
-| Not triggered (no bot review for this PR) | Yes — set immediately after CI green |
-| REVIEWED / CLEAN / TIMED_OUT (monitoring subagent reported completion) | Yes — proceed to `pr-review` first, then set auto-merge |
-| Pending / RATE_LIMITED with recovery in progress | **No** — wait for monitoring subagent to complete |
-
-**Correct flow**: `pr-create` → trigger bot review (5a/5b) → delegate CI+review monitoring (5c) → subagent reports completion → `pr-review` → auto-merge or `pr-merge`.
-
-**Anti-pattern**: Setting `gh pr merge --auto --squash` immediately after `pr-create` before bot review completes. This bypasses review entirely.
-
-See `@.cursor/commands/pr-merge.md` § Auto-merge for the full precondition list.
+**Auto-merge guard**: MUST NOT set auto-merge until bot review completes — see `@.cursor/commands/pr-merge.md` § Auto-merge for preconditions.
 
 ### 6. If CI fails: diagnose, fix, re-push
 

@@ -170,13 +170,10 @@ Use auto-merge to let GitHub merge automatically when all required checks pass.
 **Preconditions** (all must be true):
 
 - `pr-review` has concluded "Mergeable" on the **current** HEAD commit
-- No unresolved review findings from any reviewer (CodeRabbit, Codex)
-- All review threads resolved (per `@.cursor/rules/agent-safety.mdc` `HS-REVIEW-RESOLVE`). GitHub Branch Protection (`required_conversation_resolution`) enforces this — merge is physically blocked if unresolved threads remain. If blocked, run `review-fix` first.
-- No re-review is pending (i.e., no review-fix push since the last completed review)
+- Consensus reached on all review threads per `review--consensus-protocol.md` (unresolved == 0)
+- No re-review pending (no push since last completed review)
 
-If a re-review is in progress (review-fix was pushed, reviewer has not yet
-responded), use the delegated merge pattern (§ below) or wait for the
-re-review to complete before setting auto-merge.
+If a re-review is in progress, wait for completion before setting auto-merge.
 
 ```bash
 gh pr merge <PR-number> --auto --squash
@@ -217,7 +214,7 @@ Choose the appropriate template from `.cursor/templates/`:
 
 | Scenario | Template |
 |----------|----------|
-| Single PR, auto-merge failed, pr-review done | `delegation--ci-wait-merge.md` |
+| Single PR, auto-merge failed, pr-review done | `delegation--ci-wait-only.md` (poll CI, then `gh pr merge`) |
 | CI monitoring only (no merge intent) | `delegation--ci-wait-only.md` |
 | PRs with shared commits (branched from each other) | `delegation--dependent-chain.md` (includes `--onto` rebase) |
 
