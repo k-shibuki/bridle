@@ -151,9 +151,11 @@ Key principle: detect completion by TIMESTAMP, not by count.
    - RATE_LIMITED: PR comment from reviewer contains "Rate limit exceeded"
    - TIMED_OUT: 7 min elapsed with no completion signal
 3a. IF reviewer reports RATE_LIMITED (per `subagent-policy.mdc` § Rate-Limit Recovery Policy):
-   - Parse wait time from the rate-limit comment (see `review--bot-lifecycle.md` § Rate-Limit Detection and Recovery Pattern)
-   - Sleep for (parsed_seconds + 30s buffer)
-   - Re-trigger: `gh pr comment <N> --body "@coderabbitai review"`
+   - Parse wait time from the rate-limit comment (see `review--bot-lifecycle.md` § Rate-Limit Detection and Recovery Pattern; 30s buffer is already included in the parsed value)
+   - Sleep for parsed_seconds
+   - Re-trigger the same reviewer that was rate-limited:
+     - CodeRabbit: `gh pr comment <N> --body "@coderabbitai review"`
+     - Codex: `gh pr comment <N> --body "@codex review"`
    - Reset trigger_time to the new comment's created_at
    - Resume polling from Step 1
    - IF second RATE_LIMITED: treat as TIMED_OUT (max 1 retry)
@@ -217,9 +219,11 @@ Key principle: detect completion by TIMESTAMP, not by count.
    - RATE_LIMITED: PR comment from reviewer contains "Rate limit exceeded"
    - TIMED_OUT: 7 min elapsed with no completion signal
 2a. IF reviewer reports RATE_LIMITED (per `subagent-policy.mdc` § Rate-Limit Recovery Policy):
-   - Parse wait time from the rate-limit comment (see `review--bot-lifecycle.md` § Rate-Limit Detection and Recovery Pattern)
-   - Sleep for (parsed_seconds + 30s buffer)
-   - Re-trigger: `gh pr comment <N> --body "@coderabbitai review"`
+   - Parse wait time from the rate-limit comment (see `review--bot-lifecycle.md` § Rate-Limit Detection and Recovery Pattern; 30s buffer is already included in the parsed value)
+   - Sleep for parsed_seconds
+   - Re-trigger the same reviewer that was rate-limited:
+     - CodeRabbit: `gh pr comment <N> --body "@coderabbitai review"`
+     - Codex: `gh pr comment <N> --body "@codex review"`
    - Reset trigger_time to the new comment's created_at
    - Resume polling from Step 1
    - IF second RATE_LIMITED: treat as TIMED_OUT (max 1 retry)

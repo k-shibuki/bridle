@@ -210,7 +210,7 @@ recovery. The **policy** (recover vs skip) is in `subagent-policy.mdc`
 
 ### Detection
 
-CodeRabbit posts a PR comment (not a review) when rate-limited. Detect via:
+**CodeRabbit**: Posts a PR comment (not a review) when rate-limited. Detect via:
 
 ```bash
 gh api repos/{owner}/{repo}/issues/<N>/comments \
@@ -218,6 +218,8 @@ gh api repos/{owner}/{repo}/issues/<N>/comments \
         | select(.body | test("Rate limit exceeded"))
         | {id, created_at, body}]'
 ```
+
+**Codex**: Rate-limit behavior has not been observed. If Codex implements rate limiting in the future, detection should follow the same pattern (PR comment with identifiable message). Until observed, Codex rate-limit recovery is not actionable.
 
 ### Wait Time Parsing
 
@@ -227,17 +229,17 @@ The rate-limit comment contains an embedded wait time in bold:
 
 Extract with regex (applied to the comment body):
 
-```
+```regex
 wait \*\*(\d+) minutes? and (\d+) seconds?\*\*
 ```
 
-Convert to seconds: `minutes * 60 + seconds + 30` (30s safety buffer).
+Convert to seconds: `minutes * 60 + seconds + 30` (30s safety buffer included).
 
 ### Recovery Flow
 
 1. Detect RATE_LIMITED via PR comment (see Detection above)
-2. Parse wait time from comment body
-3. Sleep for `parsed_seconds + 30s` buffer
+2. Parse wait time from comment body (includes 30s buffer per formula above)
+3. Sleep for `parsed_seconds`
 4. Re-trigger: `gh pr comment <N> --body "@coderabbitai review"`
 5. Reset state to TRIGGERED and resume normal polling
 6. If a second RATE_LIMITED occurs: stop, report as TIMED_OUT
