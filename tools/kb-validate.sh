@@ -69,7 +69,7 @@ if [ ! -f "$INDEX_FILE" ]; then
   errors=$((errors + 1))
 else
   # 3. Check for orphans in index (files listed but not existing)
-  grep -oP '`[a-z].*?--.*?\.md`' "$INDEX_FILE" 2>/dev/null | tr -d '`' | while read -r indexed_file; do
+  grep -oP "\`[a-z].*?--.*?\.md\`" "$INDEX_FILE" 2>/dev/null | tr -d '`' | while read -r indexed_file; do
     if [ ! -f "$KB_DIR/$indexed_file" ]; then
       echo "ERROR: $indexed_file listed in index but not found in $KB_DIR" >&2
       # Can't increment errors in subshell; use a flag file

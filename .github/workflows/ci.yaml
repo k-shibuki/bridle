@@ -89,7 +89,7 @@ jobs:
             for f in tools/*.sh; do
               [ -f "$f" ] || continue
               echo "Checking $f..."
-              shellcheck "$f" || true
+              shellcheck "$f"
             done
           else
             echo "shellcheck not available, skipping"
@@ -197,10 +197,11 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::lintr
+          extra-packages: any::lintr, any::pkgload, any::jsonlite
 
       - name: Lint package
         run: |
+          pkgload::load_all()
           lints <- lintr::lint_package()
           print(lints)
           if (length(lints) > 0L) {
@@ -211,6 +212,7 @@ jobs:
       - name: Save lint results
         if: always()
         run: |
+          pkgload::load_all()
           lints <- lintr::lint_package()
           df <- if (length(lints) > 0L) as.data.frame(lints) else data.frame()
           writeLines(jsonlite::toJSON(df, auto_unbox = TRUE), "lint-results.json")

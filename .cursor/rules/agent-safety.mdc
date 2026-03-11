@@ -33,7 +33,7 @@ Each Hard Stop is classified by its enforcement mechanism. See `controls--ai-dev
 |---|---|---|
 | `HS-CI-MERGE` | **Deterministic** | GitHub Branch Protection: required status checks (`ci-pass`, `check-policy`). Auto-merge (`--auto`) further strengthens this by delegating merge execution to GitHub. `--admin` flag and amend+force-push prohibitions are part of this Hard Stop (see above). Rulesets migration can close the `enforce_admins` gap. |
 | `HS-LOCAL-VERIFY` | **Cond. Deterministic** | `pre-push` Git hook — requires `make install-hooks`. Note: `SKIP_PRE_PUSH=1` emergency bypass exists in `tools/pre-push.sh` |
-| `HS-NO-SKIP` | Steering | Agent self-policing (procedural discipline + evidence requirement) |
+| `HS-NO-SKIP` | **Cond. Deterministic** (partial) / Steering | `pr-policy.yaml` enforces `## Definition of Done` section presence (partial deterministic guard). Full no-skip procedural discipline remains agent self-policing. |
 | `HS-PR-TEMPLATE` | **Deterministic** | `pr-policy.yaml` CI check |
 | `HS-NO-DISMISS` | Steering | Agent self-policing (zero-tolerance policy) |
 | `HS-NOLINT` | **Cond. Deterministic** (annotation format) / **Steering** (knowledge consultation) | `pre-commit` hook validates annotation format — requires `make install-hooks`. Knowledge file consultation obligation is Steering (agent self-policing) |

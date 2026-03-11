@@ -89,7 +89,6 @@ fi
 
 # Git hooks (pre-commit, pre-push, commit-msg)
 # Accepts both bridle guard hooks (direct) and pre-commit framework hooks.
-hooks_ok=true
 hooks_missing=()
 for hook_type in pre-commit pre-push commit-msg; do
   hook_file=".git/hooks/$hook_type"
@@ -97,7 +96,6 @@ for hook_type in pre-commit pre-push commit-msg; do
     record "git hook: $hook_type" "ok"
   else
     hooks_missing+=("$hook_type")
-    hooks_ok=false
   fi
 done
 
@@ -221,4 +219,8 @@ else
   fi
 fi
 
-exit $( [[ $errors -gt 0 ]] && echo 1 || echo 0 )
+if [[ $errors -gt 0 ]]; then
+  exit 1
+fi
+
+exit 0

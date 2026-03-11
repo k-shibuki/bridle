@@ -51,6 +51,10 @@ changes ──┬── validate-schemas  (r_source OR schemas)
 
 **Design principle**: Completeness for the PR scope. Parallel execution for speed. No coverage (moved to Layer 3).
 
+**Guard notes**:
+- `ci-config` shellcheck is blocking (no `|| true` bypass), so shell script diagnostics now fail PR CI.
+- `lint` runs `pkgload::load_all()` before `lintr::lint_package()` to align CI behavior with local lint execution and reduce cross-file false positives.
+
 ## Layer 3: Main Push (full verification)
 
 **Purpose**: Ensure codebase-wide quality after merge. Catch cross-PR regressions.

@@ -134,6 +134,14 @@ jobs:
               errors.push('**Summary**: Section is missing from the PR body.');
             }
 
+            // --- 9. Definition of Done section ---
+            if (!/## (Acceptance Criteria|Definition of Done)/i.test(body)) {
+              errors.push(
+                '**Definition of Done**: Section is missing. ' +
+                'Add "## Acceptance Criteria (Definition of Done)" with verifiable criteria.'
+              );
+            }
+
             // --- Report ---
             if (errors.length > 0) {
               const report = [
