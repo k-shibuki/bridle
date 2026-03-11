@@ -67,7 +67,7 @@ All required checks must pass. If any check fails, the PR is not ready for merge
 
 Bot reviews are triggered in `pr-create` Step 5 (or `review-fix` Step 5b) and polled by a background subagent. By the time `pr-review` runs, the subagent has reported which reviewers responded.
 
-**Inline fallback**: If no subagent was launched (e.g., continuous execution mode), the agent MUST poll directly using the algorithm in `review--bot-lifecycle.md` § Polling Algorithm (30s intervals, 20-min timeout). Do NOT classify a bot as timed out before the 20-min threshold — intermediate states like ACKNOWLEDGED and ACCEPTED mean the bot is still processing.
+**Recovery checkpoint**: If bot review wait was not delegated to a subagent before `pr-review` started, delegate now per `@.cursor/rules/subagent-policy.mdc` (`agent--delegation-templates.md` Template 5) before proceeding. Inline polling by the main agent is prohibited. TIMED_OUT = 20 min elapsed per `review--bot-lifecycle.md` § Timing; ACKNOWLEDGED and ACCEPTED are intermediate states (bot is still processing).
 
 Use the detection commands from `review--bot-lifecycle.md` § Output Detection to scan **all known reviewers** (CodeRabbit and Codex), regardless of whether the agent triggered them. Reviews from external sources (user via GitHub GUI, GitHub App auto-trigger, other bots) are equally valid review sources.
 

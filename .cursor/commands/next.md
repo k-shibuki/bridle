@@ -22,29 +22,6 @@ This command is bound by `@.cursor/rules/agent-safety.mdc` `HS-NO-SKIP` (no skip
 - Delegate to command specifications (`.cursor/commands/<command>.md`) rather than reimplementing logic inline
 - Base all state assessments on evidence from tool output, not assumptions
 
-## Continuous Execution Mode
-
-When the user instructs continuous execution ("keep going", "do everything", "till close all issues", etc.):
-
-- All Hard Stops apply (see `@.cursor/rules/agent-safety.mdc`). Speed is achieved through delegation and batching, never by skipping verification.
-- Report progress at each gate with a one-line summary (e.g., "PR #13 created, CI pending — delegated. Starting #9.").
-
-**Typical parallel execution pattern**:
-
-```
-Issue A: implement → test → quality → commit → pr-create
-                                                    │
-                                          CI pending on PR #X
-                                                    │
-                    ┌───────────────────────────────┤
-                    │ Background subagent            │ Main agent
-                    │ poll CI → merge PR #X          │ Issue B: implement → test → ...
-                    │                                │
-                    └───────────────────────────────┤
-                                                    │
-                    next re-assessment: check subagent transcript
-```
-
 ## Steps
 
 ### Step 1: Assess current state
@@ -154,9 +131,29 @@ Once the user approves (or modifies the choice):
 
 1. **Read the command specification**: Load `.cursor/commands/<command>.md`
 2. **Follow the command's steps exactly**: Do not abbreviate or skip steps defined in the command.
-3. **On completion, loop back to Step 1**: After the command finishes, re-assess state and propose the next action. Continue until the user stops or the workflow cycle completes.
+3. **On completion, loop back to Step 1**: Re-assess state, propose and execute the next action without waiting for further user confirmation. Continue until the user stops or the workflow cycle completes.
+
+Report progress at each gate with a one-line summary (e.g., "PR #13 created, CI pending — delegated. Starting #9.").
+
+**Approval scope**: User approval removes the confirmation pause between steps — nothing else. All policies remain invariant: subagent delegation (`subagent-policy.mdc`), verification gates, command specifications (`HS-NO-SKIP`), and Hard Stops. Approval is never a basis for skipping steps or changing execution methods.
 
 If the user modifies the choice (e.g., "do #8 instead of #7"), adjust and proceed.
+
+**Parallel execution**: When CI is pending and independent Issues exist, delegate CI-wait to a background subagent and start the next Issue in parallel:
+
+```
+Issue A: implement → ... → pr-create
+                                │
+                      CI pending on PR #X
+                                │
+    ┌───────────────────────────┤
+    │ Background subagent       │ Main agent
+    │ poll CI → merge PR #X     │ Issue B: implement → ...
+    │                           │
+    └───────────────────────────┤
+                                │
+    next re-assessment: check subagent transcript
+```
 
 ### Step 6: Subagent delegation for blocking operations
 
