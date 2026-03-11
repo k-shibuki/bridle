@@ -36,37 +36,9 @@ resolved (per `agent-safety.mdc` `HS-REVIEW-RESOLVE`).
 | **False positive** | Bot misidentified an issue | `False positive. <why detection was wrong>.` |
 | **Acknowledged** | Valid but out of PR scope | `Acknowledged. <brief assessment>. Tracked in #<issue>.` |
 
-### Examples
+### Examples and Templates
 
-**Fixed** — evidence: commit SHA, explanation: what was changed
-```
-Fixed in `f561c8d`. Aligned timeout values to 20 min across all sections.
-```
-
-**By design** — evidence: reference (ADR/rule/command), explanation: design rationale
-```
-By design. Step 5 auto-loops after initial consent; HS-NO-SKIP ensures
-intra-command steps are still followed (ref: next.md § Approval scope).
-```
-
-**False positive** — no evidence (the detection itself was wrong), explanation: why
-```
-False positive. The cross-reference formats differ intentionally —
-parenthetical vs dash style matches surrounding sentence structure.
-```
-
-**Acknowledged** — evidence: tracking issue, explanation: assessment result
-```
-Acknowledged. Valid observation; container bootstrap step would improve
-usability. Out of scope for SSOT cleanup. Tracked in #201.
-```
-
-### Template Design Principles
-
-- **Category keyword first**: grep `^Fixed`, `^By design`, `^False positive`, `^Acknowledged` for machine classification
-- **Evidence is minimal and verifiable**: SHA via git, Issue # via GitHub, ref via codebase
-- **Explanation is 1-2 sentences**: auditor can understand disposition without opening the thread
-- **English**: consistent with code and commit language
+For copy-paste reply templates with examples, see `.cursor/templates/review--disposition-reply.md`.
 
 ## Reply API (REST)
 

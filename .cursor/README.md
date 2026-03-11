@@ -14,6 +14,7 @@ AI Development System
     ├── Rules          .cursor/rules/        ← policy
     ├── Commands       .cursor/commands/     ← procedure
     ├── Knowledge      .cursor/knowledge/    ← reference
+    ├── Templates      .cursor/templates/    ← copy-paste artifacts
     ├── Guards         hooks, CI, BP         ← enforcement
     └── Surface        Makefile, README, …   ← entry point
 ```
@@ -27,6 +28,7 @@ AI Development System
 | **Rules** | `.cursor/rules/*.mdc` | MUST / MUST NOT policies | Hard stop on violation |
 | **Commands** | `.cursor/commands/*.md` | Step-by-step procedures | No step skipping |
 | **Knowledge** | `.cursor/knowledge/*.md` | Patterns, playbooks, reference | Advisory (referenced by rules/commands) |
+| **Templates** | `.cursor/templates/*.md` | Copy-paste prompt/reply artifacts | Advisory (referenced by knowledge/commands) |
 | **Guards** | `.pre-commit-config.yaml`, `.github/workflows/*.yaml`, `tools/` | Hooks, CI, Branch Protection | Deterministic (tool-enforced) |
 | **Surface** | `Makefile`, `README.md`, `.github/CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/` | Entry points, development API | Discovery / onboarding |
 
@@ -68,7 +70,7 @@ AGENTS.md (AI reviewer entry point — read by Codex and CodeRabbit)
 - **Cursor** reads `.cursor/` directly via rules, commands, knowledge
 - **Codex** reads `AGENTS.md` first, then follows references into `.cursor/` files
 - **CodeRabbit** reads `AGENTS.md` via code_guidelines auto-detection + `.coderabbit.yaml` for config
-- **Two-tier trigger**: Agent triggers CodeRabbit on every PR (`@coderabbitai review`) and Codex on complex changes only (`@codex review`) in `pr-create` Step 5 or `review-fix` Step 5b. Wait is delegated to background subagents (Template 4/5 in `agent--delegation-templates.md`) polling all triggered reviewers in parallel
+- **Two-tier trigger**: Agent triggers CodeRabbit on every PR (`@coderabbitai review`) and Codex on complex changes only (`@codex review`) in `pr-create` Step 5 or `review-fix` Step 5b. Wait is delegated to background subagents (`templates/delegation--ci-bot-review-wait.md` / `delegation--bot-review-wait.md`) polling all triggered reviewers in parallel
 - **Feedback loop**: recurring false positives become knowledge atoms (`review--*.md`), benefiting all reviewers
 - **Drift detection**: `make review-sync-check` verifies that `AGENTS.md` and `pr-review.md` cover the same review categories (enforced in CI)
 
@@ -138,10 +140,12 @@ Start here to find the right information quickly.
 | S7 class implementations | `R/` |
 | Subagent delegation policy | `subagent-policy.mdc` |
 | **Any specific pattern/gotcha** | **`knowledge-index.mdc`** — trigger-keyword lookup for all atoms and ADRs |
-| Subagent prompt templates | `knowledge/agent--delegation-templates.md` |
+| Delegation decision + templates | `knowledge/agent--delegation-decision.md`, `templates/delegation--*.md` |
 | Lint/format patterns (S7, styler/lintr) | `knowledge/lint--*.md` atoms |
 | R testing gotchas (mocks, NULL trap) | `knowledge/test--*.md` atoms |
-| R debugging tools and templates | `knowledge/debug--*.md` atoms |
+| R debugging tools and method priority | `knowledge/debug--method-priority.md` |
+| Instrumentation template | `templates/debug--instrumentation.md` |
+| Review disposition reply template | `templates/review--disposition-reply.md` |
 | CI job dependencies and polling strategy | `knowledge/ci--*.md` atoms |
 | Review comment response (reply + resolve) | `knowledge/review--comment-response.md` |
 | Git recovery playbooks | `knowledge/git--*.md` atoms |

@@ -1,9 +1,6 @@
----
-trigger: instrumentation, debug log, agent log, propagation tracking, R message logging, cli_inform, boundary logging
----
-# R Instrumentation Template and Boundary Placement
+# Template: R Instrumentation and Boundary Placement
 
-## Template
+## Instrumentation Template
 
 ```r
 # #region agent log

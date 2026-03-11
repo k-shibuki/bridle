@@ -10,13 +10,12 @@ Lookup table for `.cursor/knowledge/` atoms and `docs/adr/` ADRs. Use triggers t
 
 | File | Triggers |
 |------|----------|
-| `agent--delegation-templates.md` | CI-wait template, CI-wait only, merge template, batch auto-merge, dependent PR merge, delegation template, subagent prompt template, background subagent, Codex wait, CI Codex wait |
+| `agent--delegation-decision.md` | CI-wait template, CI-wait only, merge template, batch auto-merge, dependent PR merge, delegation template, subagent prompt template, background subagent, Codex wait, CI Codex wait |
 | `agent--task-prefix-convention.md` | task prefix, multi-agent artifact, hypothesis ID, concurrent agent naming |
 | `ci--failure-triage.md` | CI failure, CI check failed, gh run view --log-failed, failure classification, flaky test, CI rerun |
 | `ci--job-dependency-graph.md` | CI job, job dependency, filter category, coverage gate, coverage threshold, ci-pass, CI polling, poll interval, adaptive polling, time budget, CI wait, make coverage-check |
 | `ci--three-layer-gate.md` | three-layer gate, local gate, PR gate, main gate, fail-fast, merge gate, full verification, pre-push scope, CI scope, local verification scope, gate architecture, HS-LOCAL-VERIFY scope |
 | `controls--ai-development-system.md` | AI development system, two-domain tree, Design domain, Controls domain, control system architecture, Rules component, Commands component, Knowledge component, Guards component, Surface component, enforcement tier, Deterministic tier, Conditionally Deterministic, Steering tier, Hard Stop classification, component boundary |
-| `debug--instrumentation-template.md` | instrumentation, debug log, agent log, propagation tracking, R message logging, cli_inform, boundary logging |
 | `debug--method-priority.md` | debug method, reprex, R browser(), rlang last_error, last_trace, rlang entrace, R debugging, debug priority |
 | `git--pr-consolidation-split.md` | PR consolidation, multiple issues one PR, split PR, 1:1 principle |
 | `git--quick-recovery.md` | lost commit, reflog, commit disappeared, rebase lost, push rejected, diverged branch, non-fast-forward, force-with-lease, force-with-lease failure, force-with-lease rejected, remote ref updated |
