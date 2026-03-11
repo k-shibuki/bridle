@@ -80,33 +80,7 @@ Use detection commands from `review--bot-operations.md` § Detection to scan all
 
 Deduplicate when both reviewers flag the same issue. On re-review, use only reviews with `submitted_at` after the latest commit.
 
-**Thread enumeration** (completeness baseline): After collecting findings, enumerate all review threads via GraphQL to establish a baseline for `review-fix`:
-
-```bash
-gh api graphql -f query='
-  query($owner: String!, $repo: String!, $pr: Int!) {
-    repository(owner: $owner, name: $repo) {
-      pullRequest(number: $pr) {
-        reviewThreads(first: 100) {
-          totalCount
-          nodes { id isResolved isOutdated
-            comments(first: 1) { nodes { author { login } body } }
-          }
-        }
-      }
-    }
-  }
-' -f owner={owner} -f repo={repo} -F pr=<N> --jq '{
-  total: .data.repository.pullRequest.reviewThreads.totalCount,
-  unresolved: [.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)] | length,
-  resolved: [.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved)] | length
-}'
-```
-
-Report in the review output:
-- **Thread baseline**: X total, Y unresolved, Z resolved
-- **Classified findings**: N (must equal Y for completeness)
-- **Delta** (Y - N): if > 0, findings were missed — re-examine unresolved threads
+**Thread enumeration** (completeness baseline): After collecting findings, enumerate all review threads using the GraphQL query from `@.cursor/knowledge/review--thread-graphql.md`. Report thread baseline, classified findings count, and delta in the review output.
 
 ### 7. Code review
 
