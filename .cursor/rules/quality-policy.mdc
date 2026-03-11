@@ -11,9 +11,7 @@ Procedures (which commands to run and how) are documented in `@.cursor/commands/
 
 **Always resolve warnings and errors from the root cause. Don't "silence" them with workarounds.**
 
-### Zero-Tolerance for Pre-existing Issues
-
-Per `@.cursor/rules/agent-safety.mdc` `HS-NO-DISMISS`: every diagnostic reported by quality gates must be fixed — regardless of when it was introduced. See the Hard Stop definition for the full obligation.
+Per `agent-safety.mdc` `HS-NO-DISMISS`, every diagnostic reported by quality gates must be fixed regardless of when introduced.
 
 ## Execution Order: Format Before Lint
 
@@ -21,13 +19,7 @@ Always format before linting. Running lint on unformatted code produces false po
 
 ## Post-Rebase Collate Drift
 
-After every `git rebase` that incorporates new R source files, the agent MUST:
-
-1. Run `roxygen2::roxygenise()` (updates Collate and NAMESPACE)
-2. Commit the updated DESCRIPTION and NAMESPACE
-3. Then proceed with `make format` and `make ci-fast`
-
-See `@.cursor/knowledge/r--post-rebase-collate-drift.md` for detection heuristics.
+After every `git rebase` that incorporates new R source files, the agent MUST run `roxygen2::roxygenise()` before proceeding. For recovery steps and detection heuristics, see `@.cursor/knowledge/r--post-rebase-collate-drift.md`.
 
 ## Prohibited Practices (Workarounds)
 
@@ -112,23 +104,11 @@ Per ADR-0001, S7 classes are the source of truth once implemented.
 
 ## Mandatory Verification After Changes
 
-| Verification | Minimum gate | Executed during | Skippable? |
-|---|---|---|---|
-| `make validate-schemas` | Always | `quality-check` | No |
-| `make ci-fast` | Always | `quality-check` | No |
-| `make test` | When tests exist | `test-regression` | Only if no tests exist |
-| `make check` | Before commit | `quality-check` | No |
-| `make coverage-check` | When tests exist | `test-regression` | Only if no tests exist |
-| `make document` | When roxygen2 changed | `quality-check` | Only if no roxygen2 changes |
-| `gh pr checks` | Before merge | `pr-create` (Step 5) | No |
-| `make doctor` | Always (includes renv sync) | `quality-check` | No |
-| `roxygen2::roxygenise()` | After `git rebase` adding new R files | `quality-check` | No |
-
-When no R code changed (Makefile, docs, CI only) but schema-related files were modified, run `make validate-schemas`. When neither R code nor schemas changed, local verification may be skipped.
+See `@.cursor/commands/quality-check.md` § Verification Order for the full verification table (what to run, when, and skip conditions).
 
 ## Definition of Done
 
-All of the following must be satisfied — no exception for pre-existing issues:
+All of the following must be satisfied (per `HS-NO-DISMISS`, no exception for pre-existing issues):
 
 - `lintr::lint_package()` has **zero errors/warnings**
 - `styler::style_pkg(dry = "on")` has **zero diffs**
@@ -137,5 +117,3 @@ All of the following must be satisfied — no exception for pre-existing issues:
 - Exceptions (intentional lint) have **documented reasons**
 - No new unjustified `# nolint` added
 - Not hiding problems with `suppressWarnings()` / `suppressMessages()`
-
-If any diagnostic is present, it must be resolved before the gate is considered passed. "It was already there" is not a valid reason to proceed.
