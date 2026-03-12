@@ -197,7 +197,7 @@ If an error or unexpected state occurs during execution:
 
 ## Workflow State Diagram
 
-See `.cursor/README.md` § Standard Flow for the canonical pipeline diagram. This command adds decision points (Step 2 table), post-cycle retro scan (Step 3), and loop-back (Step 5).
+See `docs/agent-control/state-model.md` for the FSM state model. This command adds decision points (Step 2 table), post-cycle retro scan (Step 3), and loop-back (Step 5).
 
 ## Output (response format)
 
@@ -214,7 +214,7 @@ After execution:
 ## Related
 
 - All commands in `.cursor/commands/` — this meta-command delegates to them
-- `.cursor/README.md` — workflow overview and knowledge map
+- `docs/agent-control/` — control system architecture, FSM state model, evidence schema
 - `.cursor/rules/workflow-policy.mdc` — Issue-driven workflow requirements
 - `.cursor/rules/agent-safety.mdc` — Hard Stops (absolute prohibitions)
 - `.cursor/rules/subagent-policy.mdc` — Subagent delegation policy

@@ -34,7 +34,7 @@ Gather a complete manifest of all controls across both domains (Design + Control
 | Controls | Commands | `.cursor/commands/*.md` | Step-by-step procedures |
 | Controls | Knowledge | `.cursor/knowledge/*.md` | Patterns, playbooks, reference |
 | Controls | Guards | `.pre-commit-config.yaml`, `.github/workflows/*.yaml`, `tools/` | Hooks, CI checks, enforcement scripts |
-| Controls | Surface | `Makefile`, `README.md`, `.github/CONTRIBUTING.md`, `.cursor/README.md`, `.github/ISSUE_TEMPLATE/` | Entry points, development API, navigation maps |
+| Controls | Surface | `Makefile`, `README.md`, `.github/CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/` | Entry points, development API, navigation maps |
 
 ```bash
 # Design — ADRs
@@ -60,7 +60,7 @@ wc -c .cursor/knowledge/*.md
 ls -la .pre-commit-config.yaml .github/workflows/*.yaml tools/*.sh 2>/dev/null
 
 # Surface
-ls -la Makefile README.md .github/CONTRIBUTING.md .cursor/README.md .github/ISSUE_TEMPLATE/*.md 2>/dev/null
+ls -la Makefile README.md .github/CONTRIBUTING.md .github/ISSUE_TEMPLATE/*.md 2>/dev/null
 make help 2>/dev/null | wc -l
 ```
 
@@ -95,7 +95,7 @@ For each information item below, enumerate all locations where it appears and cl
 
 | # | Information item | Expected SSOT location |
 |---|-----------------|----------------------|
-| 1 | Workflow flow diagram | `.cursor/README.md` |
+| 1 | Workflow flow diagram | `docs/agent-control/state-model.md` |
 | 2 | Exception types (hotfix / no-issue) | `workflow-policy.mdc` |
 | 3 | fix vs hotfix criteria | `workflow-policy.mdc` |
 | 4 | Hard Stop list (8 items, mnemonic IDs) | `agent-safety.mdc` |
@@ -114,7 +114,7 @@ For each information item below, enumerate all locations where it appears and cl
 | 17 | Commit hook exemptions | `commit-format.mdc` |
 | 18 | Enforcement tier accuracy (claimed vs actual) | `controls--ai-development-system.md` |
 | 19 | ADR-to-schema consistency | `docs/adr/` ↔ `docs/schemas/` |
-| 20 | AI development system structure (Design + Controls) | `.cursor/README.md` |
+| 20 | Agent control system structure (Design + Controls) | `docs/agent-control/architecture.md` |
 
 For each item:
 - **SSOT_OK**: defined in one place, referenced elsewhere with pointers
@@ -195,9 +195,9 @@ Assess the token cost of the control system:
 - For each rule, calculate the ratio of actionable content (MUST/MUST NOT statements, tables, code blocks) to prose
 - Flag rules with low density as `LOW_DENSITY` (candidate for compression)
 
-**README information duplication**:
-- Compare `.cursor/README.md` content with `README.md`
-- Flag significant overlaps as `README_OVERLAP`
+**Design document duplication**:
+- Compare `docs/agent-control/` content with `README.md`
+- Flag significant overlaps as `DESIGN_DOC_OVERLAP`
 
 ### Step 8: Classify findings and apply
 
@@ -264,4 +264,5 @@ For each control file with findings:
 - `@.cursor/commands/issue-review.md` — analogous command for GitHub Issues
 - `@.cursor/commands/session-retro.md` — lightweight session retrospective (escalates structural problems here)
 - `@.cursor/rules/knowledge-index.mdc` — auto-generated knowledge index
-- `@.cursor/README.md` — AI development system overview and navigation map
+- `@docs/agent-control/architecture.md` — agent control system architecture
+- `@docs/agent-control/state-model.md` — FSM state model

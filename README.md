@@ -268,12 +268,12 @@ Exposes bridle as an MCP server via mcptools, allowing LLM clients (Cursor, Clau
 
 This project uses an **Issue-driven AI workflow**. AI agents autonomously select, implement, test, and submit changes through a structured command chain.
 
-- **Workflow entry point**: [`.cursor/README.md`](.cursor/README.md) — commands, rules, and knowledge map
+- **Control system design**: [`docs/agent-control/`](docs/agent-control/) — architecture, FSM state model, evidence schema
 - **Available commands**: `make help` for build targets; `.cursor/commands/` for AI workflow commands
-- **Design documents**: [`docs/`](docs/) — ADRs and YAML schemas
+- **Design documents**: [`docs/`](docs/) — ADRs, YAML schemas, and control system design
 - **Open tasks**: `gh issue list --state open`
 
-See [`.cursor/README.md`](.cursor/README.md) for the full development workflow.
+See [`docs/agent-control/architecture.md`](docs/agent-control/architecture.md) for the control system architecture.
 
 ## Development Environment
 
