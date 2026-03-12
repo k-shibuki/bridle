@@ -26,7 +26,7 @@ evidence_init() {
 
 evidence_error() {
   local source="$1" message="$2" fatal="${3:-false}"
-  message=$(echo "$message" | sed 's/"/\\"/g' | tr '\n' ' ')
+  message=$(printf '%s' "$message" | tr '\n' ' ')
   _EVIDENCE_ERRORS=$(echo "$_EVIDENCE_ERRORS" | jq -c \
     --arg src "$source" --arg msg "$message" --argjson fatal "$fatal" \
     '. + [{"source": $src, "message": $msg, "fatal": $fatal}]')

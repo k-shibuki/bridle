@@ -28,7 +28,10 @@ if $RUNTIME inspect "$CONTAINER_NAME" --format '{{.State.Running}}' 2>/dev/null 
         )
       })
       cat(jsonlite::toJSON(findings, auto_unbox = TRUE))
-    " 2>/dev/null || echo "[]")
+    " 2>/dev/null) || {
+    evidence_error "Rscript" "lintr execution failed" false
+    lint_json="[]"
+  }
 else
   evidence_error "container" "Container $CONTAINER_NAME is not running" true
   evidence_emit '{}'

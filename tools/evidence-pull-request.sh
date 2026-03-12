@@ -87,7 +87,7 @@ if [ -n "$cr_review" ]; then
   coderabbit_submitted=$(echo "$cr_review" | jq -r '.submitted_at // ""')
 fi
 
-codex_review=$(echo "$reviews" | jq -c '[.[] | select(.user.login | test("codex|chatgpt"))] | sort_by(.submitted_at) | last // empty' 2>/dev/null || echo "")
+codex_review=$(echo "$reviews" | jq -c '[.[] | select(.user.login | test("codex|chatgpt"; "i"))] | sort_by(.submitted_at) | last // empty' 2>/dev/null || echo "")
 if [ -n "$codex_review" ]; then
   codex_status="COMPLETED"
   codex_submitted=$(echo "$codex_review" | jq -r '.submitted_at // ""')
@@ -143,12 +143,12 @@ last_review_at=$(echo "$reviews" | jq -r '[.[].submitted_at] | sort | last // ""
 
 # --- Traceability ---
 pr_body=$(echo "$pr_data" | jq -r '.body // ""')
-closes_issues=$(echo "$pr_body" | grep -oiP '(?:closes|fixes|resolves)\s+#\K\d+' | jq -Rsc 'split("\n") | map(select(length > 0) | tonumber)')
+closes_issues=$(echo "$pr_body" | jq -Rsc '
+  [scan("(?i)(?:closes|fixes|resolves)\\s+#(\\d+)") | .[0] | tonumber] | unique')
 has_exception=$(echo "$pr_data" | jq '[.labels[].name] | any(. == "no-issue" or . == "hotfix")')
 exception_type="null"
 if [ "$has_exception" = "true" ]; then
-  exception_type=$(echo "$pr_data" | jq -r '[.labels[].name] | map(select(. == "no-issue" or . == "hotfix")) | first // "null"')
-  exception_type="\"$exception_type\""
+  exception_type=$(echo "$pr_data" | jq '[.labels[].name] | map(select(. == "no-issue" or . == "hotfix")) | first // null')
 fi
 
 # --- Compose output ---
