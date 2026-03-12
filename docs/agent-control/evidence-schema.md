@@ -253,7 +253,7 @@ into a single JSON document for state classification.
 
 **Composability**: `evidence-workflow-position` extracts `doctor_healthy` and `container_running` from the same underlying doctor check, but does NOT depend on this target.
 
-**Downstream**: S21 (EnvironmentIssue) detection, `doctor` command.
+**Downstream**: ST_ENV_ISSUE (EnvironmentIssue) detection, `doctor` command.
 
 ### Target 3: `evidence-lint`
 
@@ -283,7 +283,7 @@ into a single JSON document for state classification.
 
 **Nullability**: all fields required. `findings` may be empty array.
 
-**Downstream**: quality-check, S06→S07 transition verification.
+**Downstream**: quality-check, ST_TESTS_DONE→ST_QUALITY_OK transition verification.
 
 ### Target 4: `evidence-pull-request`
 
@@ -351,7 +351,7 @@ review freshness, and bot review status.
 
 **Nullability**: all top-level fields required. Nullable fields marked with `| null`.
 
-**Downstream**: S11–S18 states, `pr-review`, `pr-merge`, `review-fix`.
+**Downstream**: ST_CI_PENDING–ST_REBASE states, `pr-review`, `pr-merge`, `review-fix`.
 
 ### Target 5: `evidence-issue`
 
@@ -396,4 +396,4 @@ review freshness, and bot review status.
 
 **Nullability**: all fields required. `assignee` nullable. Arrays may be empty.
 
-**Downstream**: S02 (PreFlightReview), S03 (ReadyToStart) Issue selection, `implement` auto-select.
+**Downstream**: ST_PREFLIGHT (PreFlightReview), ST_READY (ReadyToStart) Issue selection, `implement` auto-select.

@@ -150,7 +150,8 @@ patching agent behavior:
 3. Agent proposes a new evidence target (not an ad-hoc workaround)
 4. The gap is filled, improving the system for all future runs
 
-Raw `gh`/`git` execution for state observation outside evidence targets is
-treated as a Principle violation — a signal that the Evidence layer is
-incomplete. Direct content reads and configuration reads remain allowed
+When an agent resorts to raw `gh`/`git` execution for state observation
+outside evidence targets, this is a signal that the Evidence layer may
+need enhancement — not a rule violation, but an input to control system
+improvement. Direct content reads and configuration reads remain allowed
 exceptions (see `docs/agent-control/migration-mapping.md` Coverage rules).

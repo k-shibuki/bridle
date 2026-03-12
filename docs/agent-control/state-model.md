@@ -7,36 +7,36 @@ of available transitions.
 
 | ID | State | Description | Entry condition |
 |----|-------|-------------|-----------------|
-| S01 | `NoWorkPlanned` | No open Issues exist | `open_issues_count == 0` |
-| S02 | `PreFlightReview` | Issues exist but have not been reviewed for quality | `open_issues_count > 0 AND on_main AND no_uncommitted AND issues_require_preflight_review` |
-| S03 | `ReadyToStart` | Actionable Issues exist, ready to implement | `open_issues_count > 0 AND on_main AND no_uncommitted AND issues_require_preflight_review == false` |
-| S04 | `Implementing` | On feature branch, implementation in progress | `on_feature_branch AND workflow_phase == "implementing"` |
-| S05 | `ImplementationDone` | Code written, tests not yet created | `on_feature_branch AND workflow_phase == "implementation_done"` |
-| S06 | `TestsDone` | Tests created, quality not yet checked | `on_feature_branch AND workflow_phase == "tests_done"` |
-| S07 | `QualityOK` | Quality gates passed, tests not run as full suite | `on_feature_branch AND workflow_phase == "quality_ok"` |
-| S08 | `TestsPass` | Full test suite passed, docs not reviewed | `on_feature_branch AND workflow_phase == "tests_pass"` |
-| S09 | `DocsOK` | Documentation reviewed/updated, uncommitted changes remain | `on_feature_branch AND workflow_phase == "docs_ok"` |
-| S10 | `Committed` | All changes committed, no PR exists | `on_feature_branch AND no_uncommitted AND pr_exists_for_branch == false` |
-| S11 | `CIPending` | PR exists, CI still running | `pr_exists_for_branch AND ci_status == "pending"` |
-| S12 | `CIFailed` | PR exists, CI failed | `pr_exists_for_branch AND ci_status == "failure"` |
-| S13 | `BotReviewPending` | CI green, bot review not yet complete | `pr_exists_for_branch AND ci_status == "success" AND bot_review_pending` |
-| S14 | `UnresolvedThreads` | Review threads exist that lack consensus | `pr_exists_for_branch AND review_threads_unresolved > 0` |
-| S15 | `ReadyForReview` | CI green, bot review complete, agent review needed | `pr_exists_for_branch AND ci_status == "success" AND bot_review_terminal AND review_threads_unresolved == 0 AND review_disposition == "pending"` |
-| S16 | `ChangesRequired` | Review complete, changes requested | `pr_exists_for_branch AND review_disposition == "changes_requested"` |
-| S17 | `ReviewDone` | Review complete, mergeable | `pr_exists_for_branch AND review_disposition == "approved" AND mergeable_status == "MERGEABLE"` |
-| S18 | `DependentChainRebase` | Merge conflict from squash-merged parent PR | `pr_exists_for_branch AND mergeable_status == "CONFLICTING" AND parent_pr_recently_merged` |
-| S19 | `StaleBranches` | Local branches track deleted remotes | `stale_branches_count > 0` |
-| S20 | `CycleComplete` | PR merged, back on main | `on_main AND pr_just_merged` |
-| S21 | `EnvironmentIssue` | Development environment unhealthy | `doctor_healthy == false` |
-| S22 | `ExceptionFlow` | Hotfix or no-issue exception needed | `on_main AND exception_issue_exists` |
+| ST_NO_WORK | `NoWorkPlanned` | No open Issues exist | `open_issues_count == 0` |
+| ST_PREFLIGHT | `PreFlightReview` | Issues exist but have not been reviewed for quality | `open_issues_count > 0 AND on_main AND no_uncommitted AND issues_require_preflight_review` |
+| ST_READY | `ReadyToStart` | Actionable Issues exist, ready to implement | `open_issues_count > 0 AND on_main AND no_uncommitted AND issues_require_preflight_review == false` |
+| ST_IMPL | `Implementing` | On feature branch, implementation in progress | `on_feature_branch AND workflow_phase == "implementing"` |
+| ST_IMPL_DONE | `ImplementationDone` | Code written, tests not yet created | `on_feature_branch AND workflow_phase == "implementation_done"` |
+| ST_TESTS_DONE | `TestsDone` | Tests created, quality not yet checked | `on_feature_branch AND workflow_phase == "tests_done"` |
+| ST_QUALITY_OK | `QualityOK` | Quality gates passed, tests not run as full suite | `on_feature_branch AND workflow_phase == "quality_ok"` |
+| ST_TESTS_PASS | `TestsPass` | Full test suite passed, docs not reviewed | `on_feature_branch AND workflow_phase == "tests_pass"` |
+| ST_DOCS_OK | `DocsOK` | Documentation reviewed/updated, uncommitted changes remain | `on_feature_branch AND workflow_phase == "docs_ok"` |
+| ST_COMMITTED | `Committed` | All changes committed, no PR exists | `on_feature_branch AND no_uncommitted AND pr_exists_for_branch == false` |
+| ST_CI_PENDING | `CIPending` | PR exists, CI still running | `pr_exists_for_branch AND ci_status == "pending"` |
+| ST_CI_FAILED | `CIFailed` | PR exists, CI failed | `pr_exists_for_branch AND ci_status == "failure"` |
+| ST_BOT_PENDING | `BotReviewPending` | CI green, bot review not yet complete | `pr_exists_for_branch AND ci_status == "success" AND bot_review_pending` |
+| ST_UNRESOLVED | `UnresolvedThreads` | Review threads exist that lack consensus | `pr_exists_for_branch AND review_threads_unresolved > 0` |
+| ST_REVIEW_READY | `ReadyForReview` | CI green, bot review complete, agent review needed | `pr_exists_for_branch AND ci_status == "success" AND bot_review_terminal AND review_threads_unresolved == 0 AND review_disposition == "pending"` |
+| ST_CHANGES_REQ | `ChangesRequired` | Review complete, changes requested | `pr_exists_for_branch AND review_disposition == "changes_requested"` |
+| ST_REVIEW_DONE | `ReviewDone` | Review complete, mergeable | `pr_exists_for_branch AND review_disposition == "approved" AND mergeable_status == "MERGEABLE"` |
+| ST_REBASE | `DependentChainRebase` | Merge conflict from squash-merged parent PR | `pr_exists_for_branch AND mergeable_status == "CONFLICTING" AND parent_pr_recently_merged` |
+| ST_STALE | `StaleBranches` | Local branches track deleted remotes | `stale_branches_count > 0` |
+| ST_CYCLE_DONE | `CycleComplete` | PR merged, back on main | `on_main AND pr_just_merged` |
+| ST_ENV_ISSUE | `EnvironmentIssue` | Development environment unhealthy | `doctor_healthy == false` |
+| ST_EXCEPTION | `ExceptionFlow` | Hotfix or no-issue exception needed | `on_main AND exception_issue_exists` |
 
 **State classification**:
 
-- **Progress states** (S03–S10, S20): normal forward movement through the workflow
-- **Waiting states** (S11, S13): blocked on external process
-- **Intervention states** (S12, S14, S16, S18): require agent action to resolve
-- **Maintenance states** (S01, S02, S19, S21): housekeeping or setup
-- **Terminal states** (S17): ready for final action (merge)
+- **Progress states** (ST_READY–ST_COMMITTED, ST_CYCLE_DONE): normal forward movement through the workflow
+- **Waiting states** (ST_CI_PENDING, ST_BOT_PENDING): blocked on external process
+- **Intervention states** (ST_CI_FAILED, ST_UNRESOLVED, ST_CHANGES_REQ, ST_REBASE): require agent action to resolve
+- **Maintenance states** (ST_NO_WORK, ST_PREFLIGHT, ST_STALE, ST_ENV_ISSUE): housekeeping or setup
+- **Terminal states** (ST_REVIEW_DONE): ready for final action (merge)
 
 ## Signal catalog
 
@@ -149,34 +149,34 @@ captures explicit user/agent actions.
 
 | From | Signal condition | Trigger event | To | Action |
 |------|------------------|---------------|----|--------|
-| S01 | `open_issues_count == 0` | none | S01 | `issue-create` |
-| S02 | `issues_require_preflight_review == false` | `issue-review` completed | S03 | Continue workflow |
-| S03 | `selected_issue_number != null` | Issue selected | S04 | `implement` (branch created) |
-| S04 | `workflow_phase == "implementation_done"` | Implement step complete | S05 | Continue workflow |
-| S05 | `workflow_phase == "tests_done"` | `test-create` completed | S06 | Continue workflow |
-| S06 | `workflow_phase == "quality_ok"` | `quality-check` completed | S07 | Continue workflow |
-| S07 | `workflow_phase == "tests_pass"` | `test-regression` completed | S08 | Continue workflow |
-| S08 | `workflow_phase == "docs_ok"` | `docs-discover` (Mode 2) completed | S09 | Continue workflow |
-| S09 | `no_uncommitted AND pr_exists_for_branch == false` | `commit` completed | S10 | Continue workflow |
-| S10 | `pr_exists_for_branch` | `pr-create` completed | S11 | CI + bot review start |
-| S11 | `ci_status == "success"` | none | S13 | Wait for bot terminal state |
-| S11 | `ci_status == "failure"` | none | S12 | Diagnose and fix |
-| S12 | `ci_status == "pending"` | fix pushed | S11 | Re-enter CI pending |
-| S13 | `bot_review_terminal` | none | S15 | Ready for human/agent review |
-| S13 | `bot_coderabbit_status == "RATE_LIMITED" OR bot_codex_status == "RATE_LIMITED"` | none | S13 | Recovery: sleep + re-trigger |
-| S14 | `review_threads_unresolved == 0 AND review_disposition == "pending"` | `review-fix` completed | S15 | Ready for review |
-| S14 | `review_threads_unresolved == 0 AND review_disposition == "approved"` | `review-fix` completed | S17 | Mergeable review state |
-| S15 | `review_disposition == "approved"` | `pr-review` completed | S17 | Ready to merge |
-| S15 | `review_disposition == "changes_requested"` | `pr-review` completed | S16 | Fix required |
-| S16 | `ci_status == "pending"` | fix pushed | S11 | Re-enter CI pending |
-| S17 | `mergeable_status == "MERGEABLE"` | `pr-merge` completed | S20 | Cycle complete |
-| S18 | `ci_status == "pending"` | rebase complete and pushed | S11 | Re-enter CI pending |
-| S19 | `stale_branches_count == 0 AND open_issues_count > 0` | cleanup completed | S03 | Resume implementation |
-| S19 | `stale_branches_count == 0 AND open_issues_count == 0` | cleanup completed | S01 | No work planned |
-| S20 | `open_issues_count > 0` | none | S03 | Start next Issue |
-| S20 | `open_issues_count == 0` | none | S01 | All work complete |
-| S21 | `doctor_healthy` | environment fixed | S03 or S01 | `doctor` then reassess |
-| S22 | `exception_issue_exists` | exception flow approved | S10 | `implement` → `pr-create` |
+| ST_NO_WORK | `open_issues_count == 0` | none | ST_NO_WORK | `issue-create` |
+| ST_PREFLIGHT | `issues_require_preflight_review == false` | `issue-review` completed | ST_READY | Continue workflow |
+| ST_READY | `selected_issue_number != null` | Issue selected | ST_IMPL | `implement` (branch created) |
+| ST_IMPL | `workflow_phase == "implementation_done"` | Implement step complete | ST_IMPL_DONE | Continue workflow |
+| ST_IMPL_DONE | `workflow_phase == "tests_done"` | `test-create` completed | ST_TESTS_DONE | Continue workflow |
+| ST_TESTS_DONE | `workflow_phase == "quality_ok"` | `quality-check` completed | ST_QUALITY_OK | Continue workflow |
+| ST_QUALITY_OK | `workflow_phase == "tests_pass"` | `test-regression` completed | ST_TESTS_PASS | Continue workflow |
+| ST_TESTS_PASS | `workflow_phase == "docs_ok"` | `docs-discover` (Mode 2) completed | ST_DOCS_OK | Continue workflow |
+| ST_DOCS_OK | `no_uncommitted AND pr_exists_for_branch == false` | `commit` completed | ST_COMMITTED | Continue workflow |
+| ST_COMMITTED | `pr_exists_for_branch` | `pr-create` completed | ST_CI_PENDING | CI + bot review start |
+| ST_CI_PENDING | `ci_status == "success"` | none | ST_BOT_PENDING | Wait for bot terminal state |
+| ST_CI_PENDING | `ci_status == "failure"` | none | ST_CI_FAILED | Diagnose and fix |
+| ST_CI_FAILED | `ci_status == "pending"` | fix pushed | ST_CI_PENDING | Re-enter CI pending |
+| ST_BOT_PENDING | `bot_review_terminal` | none | ST_REVIEW_READY | Ready for human/agent review |
+| ST_BOT_PENDING | `bot_coderabbit_status == "RATE_LIMITED" OR bot_codex_status == "RATE_LIMITED"` | none | ST_BOT_PENDING | Recovery: sleep + re-trigger |
+| ST_UNRESOLVED | `review_threads_unresolved == 0 AND review_disposition == "pending"` | `review-fix` completed | ST_REVIEW_READY | Ready for review |
+| ST_UNRESOLVED | `review_threads_unresolved == 0 AND review_disposition == "approved"` | `review-fix` completed | ST_REVIEW_DONE | Mergeable review state |
+| ST_REVIEW_READY | `review_disposition == "approved"` | `pr-review` completed | ST_REVIEW_DONE | Ready to merge |
+| ST_REVIEW_READY | `review_disposition == "changes_requested"` | `pr-review` completed | ST_CHANGES_REQ | Fix required |
+| ST_CHANGES_REQ | `ci_status == "pending"` | fix pushed | ST_CI_PENDING | Re-enter CI pending |
+| ST_REVIEW_DONE | `mergeable_status == "MERGEABLE"` | `pr-merge` completed | ST_CYCLE_DONE | Cycle complete |
+| ST_REBASE | `ci_status == "pending"` | rebase complete and pushed | ST_CI_PENDING | Re-enter CI pending |
+| ST_STALE | `stale_branches_count == 0 AND open_issues_count > 0` | cleanup completed | ST_READY | Resume implementation |
+| ST_STALE | `stale_branches_count == 0 AND open_issues_count == 0` | cleanup completed | ST_NO_WORK | No work planned |
+| ST_CYCLE_DONE | `open_issues_count > 0` | none | ST_READY | Start next Issue |
+| ST_CYCLE_DONE | `open_issues_count == 0` | none | ST_NO_WORK | All work complete |
+| ST_ENV_ISSUE | `doctor_healthy` | environment fixed | ST_READY or ST_NO_WORK | `doctor` then reassess |
+| ST_EXCEPTION | `exception_issue_exists` | exception flow approved | ST_COMMITTED | `implement` → `pr-create` |
 
 ## Guard conditions
 
@@ -185,26 +185,26 @@ conditions. They correspond to Hard Stops in `agent-safety.mdc`.
 
 | Guard ID | Prohibited transition | Enforcement |
 |----------|-----------------------|-------------|
-| `HS-CI-MERGE` | S17 → S20 when `ci_status != "success"` | GitHub Branch Protection |
+| `HS-CI-MERGE` | ST_REVIEW_DONE → ST_CYCLE_DONE when `ci_status != "success"` | GitHub Branch Protection |
 | `HS-CI-MERGE(a)` | Any merge using `--admin` flag | Agent self-policing |
 | `HS-CI-MERGE(b)` | Amend + force-push in PR flow | Agent self-policing |
-| `HS-LOCAL-VERIFY` | S10 → S11 without pre-push verification | `pre-push` Git hook |
-| `HS-NO-SKIP` | Any state skip (e.g., S05 → S10) | Partial: `pr-policy.yaml` DoD check |
-| `HS-PR-TEMPLATE` | S10 → S11 without full PR template | `pr-policy.yaml` CI check |
+| `HS-LOCAL-VERIFY` | ST_COMMITTED → ST_CI_PENDING without pre-push verification | `pre-push` Git hook |
+| `HS-NO-SKIP` | Any state skip (e.g., ST_IMPL_DONE → ST_COMMITTED) | Partial: `pr-policy.yaml` DoD check |
+| `HS-PR-TEMPLATE` | ST_COMMITTED → ST_CI_PENDING without full PR template | `pr-policy.yaml` CI check |
 | `HS-NO-DISMISS` | Ignoring quality gate errors | Agent self-policing |
 | `HS-NOLINT` | Adding `# nolint` without knowledge consultation | `pre-commit` hook (format) + agent self-policing (consultation) |
-| `HS-PR-BASE` | S10 → S11 with `--base feat/<branch>` | `pr-policy.yaml` CI check |
-| `HS-REVIEW-RESOLVE` | S14 → S17 without per-thread consensus | GitHub Branch Protection `required_conversation_resolution` |
+| `HS-PR-BASE` | ST_COMMITTED → ST_CI_PENDING with `--base feat/<branch>` | `pr-policy.yaml` CI check |
+| `HS-REVIEW-RESOLVE` | ST_UNRESOLVED → ST_REVIEW_DONE without per-thread consensus | GitHub Branch Protection `required_conversation_resolution` |
 
 ## Error states and recovery
 
 | Error state | Detection | Recovery path |
 |-------------|-----------|---------------|
-| CI failure (S12) | `ci_status == "failure"` | Diagnose (`ci--failure-triage.md`), fix, re-push → S11 |
-| Merge conflict (S18) | `mergeable_status == "CONFLICTING"` + parent PR merged | `git rebase --onto` (`git--squash-merge-dependent-branch.md`), force-push → S11 |
-| Bot rate limited | `bot_*_status == "RATE_LIMITED"` | Parse wait time, sleep, re-trigger → S13 |
-| Bot timed out | `bot_*_status == "TIMED_OUT"` | Report, proceed with available evidence → S15 |
-| Environment broken (S21) | `doctor_healthy == false` | `make container-build` / `make container-start` / `make package-restore` |
+| CI failure (ST_CI_FAILED) | `ci_status == "failure"` | Diagnose (`ci--failure-triage.md`), fix, re-push → ST_CI_PENDING |
+| Merge conflict (ST_REBASE) | `mergeable_status == "CONFLICTING"` + parent PR merged | `git rebase --onto` (`git--squash-merge-dependent-branch.md`), force-push → ST_CI_PENDING |
+| Bot rate limited | `bot_*_status == "RATE_LIMITED"` | Parse wait time, sleep, re-trigger → ST_BOT_PENDING |
+| Bot timed out | `bot_*_status == "TIMED_OUT"` | Report, proceed with available evidence → ST_REVIEW_READY |
+| Environment broken (ST_ENV_ISSUE) | `doctor_healthy == false` | `make container-build` / `make container-start` / `make package-restore` |
 | Format-lint loop | styler and lintr disagree | `lint--styler-lintr-conflict.md` |
 | Pre-push rejection | Hook fails | Fix locally, re-attempt push |
 | `check-policy` failure | PR body missing sections | Edit PR body directly (no commit needed) |
@@ -214,22 +214,23 @@ conditions. They correspond to Hard Stops in `agent-safety.mdc`.
 When multiple states could apply simultaneously, use this precedence
 (highest first):
 
-1. **S21 (EnvironmentIssue)** — nothing works without a healthy environment
-2. **S12 (CIFailed)** — failing CI blocks all PR progress
-3. **S18 (DependentChainRebase)** — merge conflicts block merge
-4. **S14 (UnresolvedThreads)** — unresolved threads block merge
-5. **S16 (ChangesRequired)** — review findings need addressing
-6. **S19 (StaleBranches)** — cleanup, can be done during housekeeping
+1. **ST_ENV_ISSUE** (EnvironmentIssue) — nothing works without a healthy environment
+2. **ST_CI_FAILED** (CIFailed) — failing CI blocks all PR progress
+3. **ST_REBASE** (DependentChainRebase) — merge conflicts block merge
+4. **ST_UNRESOLVED** (UnresolvedThreads) — unresolved threads block merge
+5. **ST_CHANGES_REQ** (ChangesRequired) — review findings need addressing
+6. **ST_STALE** (StaleBranches) — cleanup, can be done during housekeeping
 7. **All other states** — follow normal transition order
 
 ## Intermediate states vs constraint-violation states
 
-- **Intermediate states** (S04, S11, S13): the workflow is progressing
-  normally but an external process has not completed. No agent action
-  needed beyond monitoring.
-- **Constraint-violation states** (S12, S14, S16, S18, S21): a
-  constraint is violated and the agent must take corrective action
-  before the workflow can proceed.
+- **Intermediate states** (ST_IMPL, ST_CI_PENDING, ST_BOT_PENDING): the
+  workflow is progressing normally but an external process has not
+  completed. No agent action needed beyond monitoring.
+- **Constraint-violation states** (ST_CI_FAILED, ST_UNRESOLVED,
+  ST_CHANGES_REQ, ST_REBASE, ST_ENV_ISSUE): a constraint is violated
+  and the agent must take corrective action before the workflow can
+  proceed.
 
 The distinction matters for delegation: intermediate states can be
 monitored by background subagents; constraint-violation states require
