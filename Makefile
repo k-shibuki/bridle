@@ -183,7 +183,6 @@ new-branch: ## Create feature branch (usage: make new-branch PREFIX=feat ISSUE=4
 git-post-merge-cleanup: ## Post-merge: switch to main, pull, prune, delete branch (usage: make git-post-merge-cleanup BRANCH=feat/42-foo)
 	@if [ -z "$(BRANCH)" ]; then echo "BRANCH= is required"; exit 1; fi
 	@if [ "$(BRANCH)" = "main" ]; then echo "Refusing to delete main"; exit 1; fi
-	@if [ "$$(git branch --show-current)" = "$(BRANCH)" ]; then echo "Refusing to delete checked-out branch $(BRANCH)"; exit 1; fi
 	git checkout main
 	git pull origin main
 	git fetch --prune origin
