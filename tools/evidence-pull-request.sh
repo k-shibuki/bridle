@@ -3,6 +3,7 @@
 # Requires PR= argument: make evidence-pull-request PR=229
 # Network access: GitHub REST + GraphQL API
 set -euo pipefail
+# shellcheck disable=SC1091 source=evidence-lib.sh
 . "$(dirname "$0")/evidence-lib.sh"
 
 evidence_init "evidence-pull-request"
@@ -105,6 +106,7 @@ coderabbit_findings=$(echo "$cr_inline" | jq '[.[] | select(.user.login == "code
 codex_findings=$(echo "$cr_inline" | jq '[.[] | select(.user.login | test("codex|chatgpt"; "i"))] | length')
 
 # --- Thread state ---
+# shellcheck disable=SC2016
 threads=$(gh api graphql -f query='
   query($owner: String!, $repo: String!, $pr: Int!) {
     repository(owner: $owner, name: $repo) {

@@ -2,6 +2,7 @@
 # tools/evidence-lint.sh -- Structured lint results
 # Requires container for R execution.
 set -euo pipefail
+# shellcheck disable=SC1091 source=evidence-lib.sh
 . "$(dirname "$0")/evidence-lib.sh"
 
 evidence_init "evidence-lint"

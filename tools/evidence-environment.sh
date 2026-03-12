@@ -2,6 +2,7 @@
 # tools/evidence-environment.sh -- Detailed environment health check
 # Wraps tools/doctor.sh --json output in evidence envelope.
 set -euo pipefail
+# shellcheck disable=SC1091 source=evidence-lib.sh
 . "$(dirname "$0")/evidence-lib.sh"
 
 evidence_init "evidence-environment"

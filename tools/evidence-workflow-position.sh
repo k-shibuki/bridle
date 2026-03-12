@@ -3,6 +3,7 @@
 # Aggregates git, GitHub, and environment state into a single JSON document.
 # Network access: GitHub API (gh)
 set -euo pipefail
+# shellcheck disable=SC1091 source=evidence-lib.sh
 . "$(dirname "$0")/evidence-lib.sh"
 
 evidence_init "evidence-workflow-position"
@@ -22,7 +23,7 @@ if [ -n "$stale" ]; then
 fi
 
 git_ahead=0
-ahead_behind=$(git rev-list --left-right --count HEAD...@{upstream} 2>/dev/null || echo "0 0")
+ahead_behind=$(git rev-list --left-right --count "HEAD...@{upstream}" 2>/dev/null || echo "0 0")
 git_ahead=$(echo "$ahead_behind" | awk '{print $1}')
 
 git_json=$(jq -nc \
@@ -83,6 +84,7 @@ if command -v gh >/dev/null 2>&1; then
   repo=$(gh repo view --json name --jq '.name' 2>/dev/null || echo "")
   if [ -n "$owner" ] && [ -n "$repo" ]; then
     for pr_num in $(echo "$prs_open" | jq -r '.[].number'); do
+      # shellcheck disable=SC2016
       threads=$(gh api graphql -f query='
         query($owner: String!, $repo: String!, $pr: Int!) {
           repository(owner: $owner, name: $repo) {
