@@ -80,14 +80,14 @@ After delegating, decide what to do using a two-tier gate — not unconditional 
 
 **Tier 1 — Signal scan** (always, low cost):
 
-Run these checks in parallel (~2-3 s total). No reasoning required:
+Re-use the `make evidence-workflow-position` output from the delegation trigger (already executed). No additional evidence call needed. No reasoning required:
 
-| Signal | Check | Fires when |
+| Signal | Check | Source |
 |---|---|---|
-| uncommitted | `git status` | Working tree has uncommitted changes |
-| open-issues | `gh issue list --state open` | Actionable Issues exist |
-| stash | `git stash list` | Stashed work exists |
-| session-findings | Agent working memory (no tool call) | Unresolved discoveries from this session |
+| uncommitted | `git.uncommitted_files > 0` | `evidence-workflow-position` |
+| open-issues | `issues.open_count > 0` | `evidence-workflow-position` |
+| stash | `git.stash_count > 0` | `evidence-workflow-position` |
+| session-findings | Agent working memory | (no tool call) |
 
 **Gate decision**:
 

@@ -35,7 +35,8 @@ Full state catalog with entry conditions is in `state-model.md`
 - **Review loop**: ReadyForReview → ChangesRequired → (fix, push) →
   CIPending → ...
 - **Thread resolution**: UnresolvedThreads → (review-fix) →
-  ReadyForReview or ReviewDone
+  ReadyForReview (if `review_concluded == false`) or ReviewDone
+  (if `review_concluded`, i.e. bot-only review with all threads resolved)
 
 ## Priority Rules (Tie-Break)
 

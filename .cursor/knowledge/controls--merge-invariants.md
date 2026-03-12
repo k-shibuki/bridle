@@ -14,7 +14,7 @@ All 5 must be TRUE for merge to proceed:
 | # | Invariant | Signal | Guard |
 |---|-----------|--------|-------|
 | 1 | CI is green | `ci_status == "success"` | HS-CI-MERGE |
-| 2 | Review concluded mergeable | `review_disposition == "approved"` OR user explicit merge instruction | — |
+| 2 | Review concluded mergeable | `review_concluded == true` OR user explicit merge instruction | — |
 | 3 | CI evidence recorded | `## Test Evidence` section is non-empty | Audit trail |
 | 4 | Branch is mergeable | `merge_state_status ∈ {"CLEAN", "HAS_HOOKS"}` | — |
 | 5 | Bot review covers latest push | Bot review `submitted_at > last_push_at` OR silent clean bill | Review freshness |

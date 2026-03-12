@@ -188,7 +188,8 @@ into a single JSON document for state classification.
     "on_main": "boolean",
     "uncommitted_files": "integer",
     "stale_branches": ["string"],
-    "commits_ahead_of_remote": "integer"
+    "commits_ahead_of_remote": "integer",
+    "stash_count": "integer"
   },
   "issues": {
     "open_count": "integer",
@@ -349,7 +350,8 @@ review freshness, and bot review status.
     "bot_coderabbit": {
       "status": "COMPLETED | COMPLETED_CLEAN | COMPLETED_SILENT | RATE_LIMITED | TIMED_OUT | NOT_TRIGGERED | PENDING",
       "review_submitted_at": "ISO8601 | null",
-      "findings_count": "integer"
+      "findings_count": "integer",
+      "review_count": "integer"
     },
     "bot_codex": {
       "status": "COMPLETED | COMPLETED_CLEAN | RATE_LIMITED | TIMED_OUT | NOT_TRIGGERED | PENDING",
@@ -378,6 +380,7 @@ review freshness, and bot review status.
 - `reviews.last_review_at`: timestamp of most recent review submission (null if none)
 - `reviews.disposition`: merged disposition from review timeline used by FSM transitions
 - `reviews.bot_*.findings_count`: number of findings from that reviewer (0 for clean/silent)
+- `reviews.bot_coderabbit.review_count`: total number of CR review submissions for this PR (budget: max 2)
 - `traceability.closes_issues`: Issue numbers from `Closes #N` / `Fixes #N` in PR body
 
 **Nullability**: all top-level fields required. Nullable fields marked with `| null`.

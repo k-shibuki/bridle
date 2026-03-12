@@ -26,18 +26,22 @@ git_ahead=0
 ahead_behind=$(git rev-list --left-right --count "HEAD...@{upstream}" 2>/dev/null || echo "0 0")
 git_ahead=$(echo "$ahead_behind" | awk '{print $1}')
 
+git_stash=$(git stash list 2>/dev/null | wc -l | tr -d ' ')
+
 git_json=$(jq -nc \
   --arg branch "$git_branch" \
   --argjson on_main "$git_on_main" \
   --argjson uncommitted "$git_uncommitted" \
   --argjson stale "$git_stale_branches" \
   --argjson ahead "$git_ahead" \
+  --argjson stash "$git_stash" \
   '{
     "branch": $branch,
     "on_main": $on_main,
     "uncommitted_files": $uncommitted,
     "stale_branches": $stale,
-    "commits_ahead_of_remote": $ahead
+    "commits_ahead_of_remote": $ahead,
+    "stash_count": $stash
   }')
 
 # --- Issues state ---

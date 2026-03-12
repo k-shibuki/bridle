@@ -54,11 +54,17 @@ Prohibited in the main agent per `HS-NO-INLINE-POLL`; permitted inside
 ```
 Is the command reading state or changing state?
 ├── Reading → Use `make evidence-*` target (HS-EVIDENCE-FIRST)
-│   ├── No target exists? → Report missing evidence target
-│   └── Repeated read / poll loop? → Delegate to subagent (HS-NO-INLINE-POLL)
+│   ├── Repeated read / poll loop? → Delegate to subagent (HS-NO-INLINE-POLL)
+│   ├── One-shot observation? → Permitted inline (not polling)
+│   └── No target exists? → Report missing evidence target
 └── Changing → Use raw CLI directly
     └── Involves waiting > 10s? → Delegate to subagent (HS-NO-INLINE-POLL)
 ```
+
+**One-shot observation** = a single `make evidence-*` execution without
+intervening `sleep`. The agent reads the result and branches immediately:
+proceed if the condition is met, or escalate to subagent delegation if
+not. This is NOT polling — it is a single state check.
 
 ## Related
 
