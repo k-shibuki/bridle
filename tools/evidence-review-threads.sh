@@ -61,6 +61,12 @@ if [ -z "$threads_json" ]; then
   exit 0
 fi
 
+if ! echo "$threads_json" | jq -e '.data.repository.pullRequest.reviewThreads != null' >/dev/null; then
+  evidence_error "graphql" "PR #$PR not found or inaccessible" true
+  evidence_emit '{}'
+  exit 0
+fi
+
 # --- Truncation detection ---
 threads_truncated=$(echo "$threads_json" | jq '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage // false')
 comments_truncated=$(echo "$threads_json" | jq '[.data.repository.pullRequest.reviewThreads.nodes[].comments.pageInfo.hasNextPage] | any')
@@ -96,7 +102,12 @@ threads=$(echo "$threads_json" | jq -c '{
 }')
 
 # --- Changed files ---
-files_changed=$(gh pr diff "$PR" --name-only 2>/dev/null | jq -Rsc 'split("\n") | map(select(. != ""))') || files_changed="[]"
+if files_changed=$(gh pr diff "$PR" --name-only 2>/dev/null | jq -Rsc 'split("\n") | map(select(. != ""))'); then
+  :
+else
+  evidence_error "gh" "Failed to fetch changed files" false
+  files_changed="[]"
+fi
 
 # --- Compose output ---
 body=$(echo "$threads" | jq -c --argjson files "$files_changed" --argjson trunc "$truncated" \

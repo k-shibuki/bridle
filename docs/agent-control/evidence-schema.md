@@ -138,7 +138,7 @@ Evidence targets never modify state — they are pure observations.
 ### Design constraints
 
 - All output is JSON (parseable by `jq`)
-- Error output uses a unified schema: `{"error": "<message>", "source": "<target>"}`
+- Errors are surfaced through the shared `_errors` envelope documented below
 - Targets are idempotent and side-effect free
 - Targets that require network access (GitHub API) declare this in their description
 - Freshness: evidence is valid for the duration of a single agent turn (no caching across turns)
