@@ -112,7 +112,7 @@ For each information item below, enumerate all locations where it appears and cl
 | 15 | S7 type strictness rules | `quality-policy.mdc` |
 | 16 | Guard-Policy alignment (CI checks vs Rule claims) | `agent-safety.mdc` Enforcement Tier table |
 | 17 | Commit hook exemptions | `commit-format.mdc` |
-| 18 | Enforcement tier accuracy (claimed vs actual) | `controls--ai-development-system.md` |
+| 18 | Enforcement tier accuracy (claimed vs actual) | `controls--agent-control-system.md` |
 | 19 | ADR-to-schema consistency | `docs/adr/` ↔ `docs/schemas/` |
 | 20 | Agent control system structure (Design + Controls) | `docs/agent-control/architecture.md` |
 

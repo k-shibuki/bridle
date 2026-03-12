@@ -20,17 +20,12 @@ Both read `AGENTS.md` and apply its review guidelines.
 
 ## Trigger
 
-```bash
-# CodeRabbit (always — every PR):
-gh pr comment <PR> --body "@coderabbitai review"
+- **CodeRabbit**: Agent-triggered on every PR (`pr-create` Step 5a,
+  `review-fix` Step 5b). Auto-review is OFF.
+- **Codex**: User instruction only — the agent never triggers
+  Codex autonomously.
 
-# Codex (user instruction only):
-gh pr comment <PR> --body "@codex review"
-```
-
-Agent triggers CodeRabbit in `pr-create` Step 5a and `review-fix` Step 5b.
-Auto-review is OFF. Codex is triggered **only when the user explicitly
-instructs** — the agent never triggers Codex autonomously.
+Trigger commands are in `pr-create.md` Step 5a/5b (not duplicated here).
 
 ### CR Review Budget
 
