@@ -32,6 +32,7 @@ issues=$(echo "$raw" | jq -c '[.[] | {
   number: .number,
   title: .title,
   labels: [(.labels // [])[] | .name],
+  body: (.body // ""),
   has_test_plan: ((.body // "") | test("## Test Plan"; "i")),
   has_acceptance_criteria: ((.body // "") | test("## (Acceptance Criteria|Definition of Done)"; "i")),
   blocked_by: [(.body // "") | capture("(?:Depends on|Blocked by|After)[^\\n]*#(?<n>\\d+)"; "g") | .n | tonumber] | unique,

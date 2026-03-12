@@ -11,9 +11,9 @@ Create a pull request on GitHub that closes the tracking Issue.
 
 ## Sense
 
-Run `make evidence-workflow-position` or quick-check:
-- `git branch --show-current` — must be on feature branch (not `main`)
-- `git status --short` — must have no uncommitted changes (or commit first)
+Run `make evidence-workflow-position` and verify:
+- `git.on_main` is `false` (must be on feature branch)
+- `git.uncommitted_files` is `0` (or commit first)
 
 ## Orient
 

@@ -12,7 +12,7 @@ Review a pull request and produce a merge recommendation. This command produces 
 
 1. Run `make evidence-pull-request PR=<N>` for structured PR state (CI, merge, reviews, threads, traceability).
 2. Retrieve the diff: `gh pr diff <N>`
-3. Retrieve the linked Issue's DoD: `make evidence-issue ISSUE=<issue-number>`
+3. Retrieve the linked Issue's DoD: `make evidence-issue ISSUE=<issue-number>` (use the `body` field for acceptance criteria and test plan text)
 
 ## Orient
 

@@ -12,7 +12,7 @@ Address review findings from `pr-review`. Evaluate each finding, apply fixes, po
 ## Sense
 
 1. Run `make evidence-pull-request PR=<N>` for thread state.
-2. Retrieve inline comments: use detection commands from `review--bot-operations.md` § Detection (API channels table).
+2. Run `make evidence-review-threads PR=<N>` for per-thread details (bodies, replies, GraphQL IDs for resolution).
 3. If `pr-review` was just run, use its "Required changes" list directly.
 
 ## Orient

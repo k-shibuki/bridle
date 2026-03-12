@@ -58,6 +58,6 @@ Bot review uses a consensus-based resolution model:
 When multiple AI agents (or a main agent + subagents) work concurrently:
 
 - Use task prefixes (see `@.cursor/knowledge/agent--task-prefix-convention.md`) for all artifacts
-- Check `git status` before starting work to detect concurrent changes
+- Run `make evidence-workflow-position` before starting work to detect concurrent changes (check `git.uncommitted_files` and `git.branch`)
 - Keep changes scoped to minimize merge conflicts
 - Do not modify the same file from multiple agents simultaneously

@@ -54,7 +54,8 @@ Prohibited in the main agent per `HS-NO-INLINE-POLL`; permitted inside
 ```
 Is the command reading state or changing state?
 ├── Reading → Use `make evidence-*` target (HS-EVIDENCE-FIRST)
-│   └── No target exists? → Report missing evidence target
+│   ├── No target exists? → Report missing evidence target
+│   └── Repeated read / poll loop? → Delegate to subagent (HS-NO-INLINE-POLL)
 └── Changing → Use raw CLI directly
     └── Involves waiting > 10s? → Delegate to subagent (HS-NO-INLINE-POLL)
 ```

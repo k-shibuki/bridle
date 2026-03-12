@@ -32,6 +32,7 @@ threads_json=$(gh api graphql -f query='
       pullRequest(number: $pr) {
         reviewThreads(first: 100) {
           totalCount
+          pageInfo { hasNextPage }
           nodes {
             id
             isResolved
@@ -39,6 +40,7 @@ threads_json=$(gh api graphql -f query='
             path
             line
             comments(first: 20) {
+              pageInfo { hasNextPage }
               nodes {
                 databaseId
                 author { login }
@@ -57,6 +59,19 @@ if [ -z "$threads_json" ]; then
   evidence_error "graphql" "Failed to fetch review threads" true
   evidence_emit '{}'
   exit 0
+fi
+
+# --- Truncation detection ---
+threads_truncated=$(echo "$threads_json" | jq '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage // false')
+comments_truncated=$(echo "$threads_json" | jq '[.data.repository.pullRequest.reviewThreads.nodes[].comments.pageInfo.hasNextPage] | any')
+truncated=false
+if [ "$threads_truncated" = "true" ]; then
+  truncated=true
+  evidence_error "pagination" "reviewThreads has more pages (>100 threads)" false
+fi
+if [ "$comments_truncated" = "true" ]; then
+  truncated=true
+  evidence_error "pagination" "One or more threads have >20 comments" false
 fi
 
 threads=$(echo "$threads_json" | jq -c '{
@@ -84,7 +99,7 @@ threads=$(echo "$threads_json" | jq -c '{
 files_changed=$(gh pr diff "$PR" --name-only 2>/dev/null | jq -Rsc 'split("\n") | map(select(. != ""))') || files_changed="[]"
 
 # --- Compose output ---
-body=$(echo "$threads" | jq -c --argjson files "$files_changed" \
-  '. + {"files_changed": $files}')
+body=$(echo "$threads" | jq -c --argjson files "$files_changed" --argjson trunc "$truncated" \
+  '. + {"files_changed": $files, "truncated": $trunc}')
 
 evidence_emit "$body"
