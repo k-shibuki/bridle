@@ -1,5 +1,5 @@
 ---
-trigger: AI development system, two-domain tree, Design domain, Controls domain, control system architecture, Rules component, Commands component, Knowledge component, Guards component, Surface component, enforcement tier, Deterministic tier, Conditionally Deterministic, Steering tier, Hard Stop classification, component boundary
+trigger: agent control system, control system architecture, Principle component, Procedure component, Knowledge component, Evidence component, Guard component, Interface component, enforcement tier, Deterministic tier, Conditionally Deterministic, Steering tier, Hard Stop classification, component boundary, pointer to docs/agent-control
 ---
 # Agent Control System
 

@@ -104,17 +104,21 @@ For old-to-new migration mapping and transition rationale, see
 
 ### Gate hierarchy
 
-Gates are composite targets that run multiple checks. They form a
-strict containment hierarchy:
+Gates are composite targets that run multiple checks. `gate-quality`
+through `gate-full` form a strict containment chain. `gate-fast` is a
+separate fast-feedback path that overlaps with but is not a subset of
+`gate-quality`.
 
 ```
 gate-fast         schema-validate + package-sync-verify + knowledge-validate + lint
-    ⊂
+                  (fast-feedback path — overlaps gate-quality but includes
+                   package-sync-verify and knowledge-validate which gate-quality omits)
+
 gate-quality      schema-validate + lint + test + check
     ⊂
 gate-pull-request gate-quality + document
     ⊂
-gate-full         format-verify + gate-quality + document
+gate-full         format-verify + gate-pull-request
 ```
 
 | Gate | Purpose | When to use |
