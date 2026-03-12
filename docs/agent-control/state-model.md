@@ -165,7 +165,9 @@ captures explicit user/agent actions.
 | ST_CI_PENDING | `ci_status == "success"` | none | ST_BOT_PENDING | Wait for bot terminal state |
 | ST_CI_PENDING | `ci_status == "failure"` | none | ST_CI_FAILED | Diagnose and fix |
 | ST_CI_FAILED | `ci_status == "pending"` | fix pushed | ST_CI_PENDING | Re-enter CI pending |
-| ST_BOT_PENDING | `bot_review_terminal` | none | ST_REVIEW_READY | Ready for human/agent review |
+| ST_BOT_PENDING | `bot_review_terminal AND review_concluded` | none | ST_REVIEW_DONE | Bot-only review concluded with no findings |
+| ST_BOT_PENDING | `bot_review_terminal AND NOT review_concluded AND review_threads_unresolved > 0` | none | ST_UNRESOLVED | Bot findings need addressing |
+| ST_BOT_PENDING | `bot_review_terminal AND NOT review_concluded AND review_threads_unresolved == 0` | none | ST_REVIEW_READY | Ready for human/agent review |
 | ST_BOT_PENDING | `bot_coderabbit_status == "RATE_LIMITED" OR bot_codex_status == "RATE_LIMITED"` | none | ST_BOT_PENDING | Recovery: sleep + re-trigger |
 | ST_UNRESOLVED | `review_threads_unresolved == 0 AND review_concluded == false` | `review-fix` completed | ST_REVIEW_READY | Ready for review |
 | ST_UNRESOLVED | `review_threads_unresolved == 0 AND review_concluded` | `review-fix` completed | ST_REVIEW_DONE | Mergeable review state |

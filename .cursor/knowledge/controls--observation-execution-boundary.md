@@ -62,9 +62,10 @@ Is the command reading state or changing state?
 ```
 
 **One-shot observation** = a single `make evidence-*` execution without
-intervening `sleep`. The agent reads the result and branches immediately:
-proceed if the condition is met, or escalate to subagent delegation if
-not. This is NOT polling — it is a single state check.
+intervening `sleep`. The agent reads the result and branches immediately
+to the appropriate next step: proceed, stop, take corrective action, or
+delegate only if the outcome implies waiting. This is NOT polling — it
+is a single state check.
 
 ## Related
 

@@ -17,7 +17,7 @@ Key fields to extract:
 - `ci.status` — must be `"success"`
 - `merge.merge_state_status` — must be `CLEAN` or `HAS_HOOKS` (per `controls--merge-invariants.md` § Merge State Resolution)
 - `reviews.threads_unresolved` — must be 0
-- `reviews.disposition` — check for `review_concluded` (see state-model.md § derived signals) or user explicit merge
+- `reviews.*` fields required for derived signal `review_concluded` — compute per `state-model.md` § derived signals, or accept user explicit merge
 - `reviews.bot_coderabbit.review_submitted_at` vs `reviews.last_push_at` — freshness
 
 ## Orient

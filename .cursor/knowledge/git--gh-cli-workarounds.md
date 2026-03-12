@@ -11,7 +11,7 @@ Knowledge component.
 
 **Symptom**: `gh pr edit <N> --body "..."` fails with:
 
-```
+```text
 GraphQL: Projects (classic) is being deprecated (...)
 ```
 
@@ -30,7 +30,9 @@ gh api "repos/{owner}/{repo}/pulls/<N>" \
   --jq '.html_url'
 ```
 
-To update a section within an existing body:
+To update a section within an existing body, supply the current body
+from agent context or evidence (preferred), or fetch inline as part of
+the execution sequence:
 
 ```bash
 CURRENT_BODY=$(gh pr view <N> --json body --jq '.body')
@@ -41,8 +43,12 @@ gh api "repos/{owner}/{repo}/pulls/<N>" \
   --jq '.html_url'
 ```
 
-**Note**: `gh pr view --json body` (read) still works — only the edit
-mutation is affected.
+**HS-EVIDENCE-FIRST caveat**: The `gh pr view` read above is a raw CLI
+observation. In agent Procedures, prefer sourcing the current body from
+existing evidence (`make evidence-pull-request` does not yet include
+the full PR body). When no evidence field exists, the inline read is
+tolerated as a necessary input to the PATCH mutation — not standalone
+observation.
 
 ## Related
 
