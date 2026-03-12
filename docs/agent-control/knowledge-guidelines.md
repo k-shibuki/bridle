@@ -49,6 +49,45 @@ following these conventions:
 - **Indivisibility test**: can the content be expressed as a single
   question with a single answer? If yes, it is properly atomic.
 
+## Design principles
+
+### Curated filter, not document dump
+
+A Knowledge atom is **not** a copy of its source document. It is a
+curated summary designed for the agent's context window — it provides
+just enough information for the agent to make a judgment, then points
+to the SSOT for full detail.
+
+Consequence: when a design doc (ADR, `docs/agent-control/`) changes,
+the atom may not need updating if the judgment-relevant facts are
+unchanged. The atom filters signal from noise.
+
+### Pointer pattern
+
+When a cohesive set of 3+ documents forms a system (e.g.,
+`docs/agent-control/`), a **pointer atom** provides the entry point:
+trigger keywords for discoverability, a one-line description, and
+links to the constituent documents. The pointer itself carries no
+substantive knowledge — its value is purely navigational.
+
+When to use a pointer:
+
+- The document set has 3+ files with cross-references
+- Trigger keywords cannot be reliably inferred from filenames alone
+
+When a pointer is unnecessary:
+
+- ADRs: the index entry (filename + auto-generated triggers) is
+  sufficient. ADRs are small, self-contained, and titled descriptively.
+- Single documents already referenced from Principle or Procedure.
+
+### One atom, one judgment theme
+
+Each atom should address a single judgment theme. If an atom answers
+two unrelated questions, split it. If two atoms overlap on the same
+theme, consolidate. The indivisibility test: *can the content be
+expressed as a single question with a single answer?*
+
 ## Anti-pattern: execution in Knowledge
 
 When a knowledge atom contains executable commands (`gh`, `git`, `make`),

@@ -72,61 +72,17 @@ When a reviewer cannot respond (usage limit, service outage, timeout):
 For copy-paste reply templates with examples, see
 `templates/review--disposition-reply.md`.
 
-## Reply API (REST)
+## API Reference
 
-Post a threaded reply to an inline review comment:
+Execution commands for reply, resolve, and thread enumeration are in
+`templates/review--disposition-reply.md` and `review--thread-graphql.md`.
 
-```bash
-gh api -X POST repos/{owner}/{repo}/pulls/<N>/comments/<comment_id>/replies \
-  -f body="Fixed in \`abc1234\`. Aligned timeout values to 20 min."
-```
+Key identifiers:
+- `databaseId` (inner) → REST reply API comment ID
+- `id` (outer) → GraphQL resolve API thread ID
 
-`<comment_id>` is the `databaseId` of the root comment in the thread.
-
-## Resolve API (GraphQL)
-
-Resolve a thread after consensus is confirmed:
-
-```bash
-gh api graphql -f query='
-  mutation($id: ID!) {
-    resolveReviewThread(input: {threadId: $id}) {
-      thread { isResolved }
-    }
-  }
-' -f id="<THREAD_ID>"
-```
-
-## Thread Enumeration (GraphQL)
-
-```bash
-gh api graphql -f query='
-  query($owner: String!, $repo: String!, $pr: Int!) {
-    repository(owner: $owner, name: $repo) {
-      pullRequest(number: $pr) {
-        reviewThreads(first: 100) {
-          totalCount
-          nodes {
-            id
-            isResolved
-            isOutdated
-            comments(first: 1) {
-              nodes {
-                id: databaseId
-                author { login }
-                body
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-' -f owner={owner} -f repo={repo} -F pr=<N>
-```
-
-The inner `databaseId` is `<comment_id>` for the REST reply API.
-The outer `id` is `<THREAD_ID>` for the GraphQL resolve API.
+Thread counts are available from `make evidence-pull-request` as
+`reviews.threads_total` and `reviews.threads_unresolved`.
 
 ## Edge Cases
 

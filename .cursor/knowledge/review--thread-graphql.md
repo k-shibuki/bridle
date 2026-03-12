@@ -3,32 +3,18 @@ trigger: GraphQL thread enumeration, review thread query, unresolved thread coun
 ---
 # Review Thread GraphQL Enumeration
 
-Query to enumerate PR review threads for completeness verification.
-Used by `pr-review` (Step 6) and `review-fix` (Step 3b) to establish
-a thread baseline and verify all findings have consensus.
+Thread counts for completeness verification. Used by `pr-review`
+(Step 6) and `review-fix` (Step 3b).
 
-## Thread enumeration query
+## Evidence-first approach
 
-```bash
-gh api graphql -f query='
-  query($owner: String!, $repo: String!, $pr: Int!) {
-    repository(owner: $owner, name: $repo) {
-      pullRequest(number: $pr) {
-        reviewThreads(first: 100) {
-          totalCount
-          nodes { id isResolved isOutdated
-            comments(first: 1) { nodes { author { login } body } }
-          }
-        }
-      }
-    }
-  }
-' -f owner={owner} -f repo={repo} -F pr=<N> --jq '{
-  total: .data.repository.pullRequest.reviewThreads.totalCount,
-  unresolved: [.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)] | length,
-  resolved: [.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved)] | length
-}'
-```
+`make evidence-pull-request PR=<N>` provides:
+- `reviews.threads_total` — total thread count
+- `reviews.threads_unresolved` — unresolved count
+
+Use this as the primary source. For per-thread detail (author, body,
+isOutdated) needed during disposition reply composition, see
+`review--consensus-protocol.md` § API Reference.
 
 ## Completeness check
 
