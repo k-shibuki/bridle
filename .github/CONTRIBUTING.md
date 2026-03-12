@@ -18,7 +18,7 @@ All changes follow an **Issue-driven workflow**. Every task starts as a GitHub I
 
 ### For AI Agents
 
-The full AI workflow (commands, rules, knowledge map) is documented in [`.cursor/README.md`](.cursor/README.md). The standard flow is:
+The full AI workflow is documented in [`docs/agent-control/`](../docs/agent-control/). The standard flow is:
 
 ```
 doctor → issue-create → implement → test-create → quality-check

@@ -60,7 +60,7 @@ Use multiple signals (don't rely on one):
    - Check `README.md` for accuracy.
    - Update related Cursor commands (e.g., `test-create.md`, `quality-check.md`) if command usage changed.
 6. **Cursor workflow docs**: if you changed `.cursor/commands/` or `.cursor/rules/`:
-   - Check `.cursor/README.md` for accuracy (workflow diagram, command table, rules table).
+   - Check `docs/agent-control/` for consistency (architecture, FSM, evidence schema).
 
 ## Steps
 
