@@ -1,0 +1,28 @@
+{
+  "file_count": 1,
+  "finding_count": 2,
+  "findings": [
+    {
+      "file": "R/scanner.R",
+      "line": 42,
+      "column": 1,
+      "linter": "line_length_linter",
+      "message": "Lines should not be more than 120 characters.",
+      "severity": "style"
+    },
+    {
+      "file": "R/scanner.R",
+      "line": 55,
+      "column": 3,
+      "linter": "object_name_linter",
+      "message": "Variable and function name style should match snake_case or CamelCase.",
+      "severity": "style"
+    }
+  ],
+  "_meta": {
+    "target": "evidence-lint",
+    "timestamp": "2026-03-12T10:30:10Z",
+    "version": "1.0.0",
+    "duration_ms": 8500
+  }
+}

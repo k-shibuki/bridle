@@ -1,0 +1,39 @@
+{
+  "issues": [
+    {
+      "number": 10,
+      "title": "feat: implement decision graph engine",
+      "labels": ["feat"],
+      "has_test_plan": true,
+      "has_acceptance_criteria": true,
+      "blocked_by": [],
+      "blocks": [11],
+      "is_parent": false,
+      "assignee": null,
+      "created_at": "2026-03-01T10:00:00Z"
+    },
+    {
+      "number": 11,
+      "title": "feat: add scanner layer 3",
+      "labels": ["feat"],
+      "has_test_plan": true,
+      "has_acceptance_criteria": true,
+      "blocked_by": [10],
+      "blocks": [],
+      "is_parent": false,
+      "assignee": null,
+      "created_at": "2026-03-02T10:00:00Z"
+    }
+  ],
+  "dependency_graph": {
+    "roots": [10],
+    "leaves": [11],
+    "depth": 1
+  },
+  "_meta": {
+    "target": "evidence-issue",
+    "timestamp": "2026-03-12T10:30:20Z",
+    "version": "1.0.0",
+    "duration_ms": 1500
+  }
+}
