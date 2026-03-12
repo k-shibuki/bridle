@@ -6,6 +6,10 @@ All `make` targets follow a systematic naming convention. The names are
 self-documenting: no abbreviations, no jargon that requires project
 context to decode.
 
+Scope note: the naming rules below apply to `make` target names only.
+They do not constrain CLI flags, environment variable names, or JSON
+field names.
+
 ### Naming rules
 
 1. **Category prefix**: every target starts with a category that groups
@@ -22,6 +26,9 @@ context to decode.
 6. **Output format as suffix**: `lint-json`, `test-junit`, `doctor-json`
 7. **Gate targets use `gate-` prefix**: composite quality targets that
    aggregate multiple checks
+8. **Core bare targets are explicit exceptions**: `help`, `clean`,
+   `status`, `lint`, `format`, `test`, `check`, `coverage`, and `doctor`
+   remain bare because they are established top-level developer entry points
 
 ### Category catalog
 
@@ -35,10 +42,15 @@ context to decode.
 | Knowledge base | `knowledge-` | KB management (manifest, validate, new) |
 | Scaffold | `scaffold-` | Code generation from templates |
 | Git operations | `git-` | Branch creation, hook installation |
+| Environment | `environment-` or reserved doctor targets | Environment health checks and diagnostics |
 | Documentation | `document`, `site-build` | Roxygen, pkgdown |
 | Meta | bare | `help`, `clean`, `status` |
 
 ### Target catalog
+
+This catalog defines the canonical post-migration naming set.
+For old-to-new migration mapping and transition rationale, see
+`docs/agent-control/migration-mapping.md`.
 
 | Target | Category |
 |--------|----------|
@@ -315,6 +327,7 @@ review freshness, and bot review status.
     },
     "threads_total": "integer",
     "threads_unresolved": "integer",
+    "disposition": "approved | changes_requested | pending",
     "last_review_at": "ISO8601 | null",
     "last_push_at": "ISO8601"
   },
@@ -332,6 +345,7 @@ review freshness, and bot review status.
 - `ci.checks[].elapsed_seconds`: null if check has not completed
 - `reviews.last_push_at`: timestamp of most recent push to PR branch (for review freshness)
 - `reviews.last_review_at`: timestamp of most recent review submission (null if none)
+- `reviews.disposition`: merged disposition from review timeline used by FSM transitions
 - `reviews.bot_*.findings_count`: number of findings from that reviewer (0 for clean/silent)
 - `traceability.closes_issues`: Issue numbers from `Closes #N` / `Fixes #N` in PR body
 

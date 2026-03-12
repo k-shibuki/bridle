@@ -47,7 +47,7 @@ Controls
 ├── Knowledge      .cursor/knowledge/    ← project-specific semantics
 ├── Evidence       Makefile + tools/     ← structured observation → JSON
 ├── Guard          hooks, CI, BP         ← deterministic enforcement
-└── Interface      AGENTS.md, templates  ← external entry points
+└── Interface      AGENTS.md, .cursor/templates/, .github/*TEMPLATE*  ← external entry points
 ```
 
 The architecture design document lives in `docs/agent-control/`
@@ -60,7 +60,7 @@ The architecture design document lives in `docs/agent-control/`
 | **Knowledge** | Project-specific semantics: patterns, gotchas, domain heuristics | CLI commands, API calls, executable procedures |
 | **Evidence** | Structured observation via `make` targets → JSON | Policy decisions, workflow logic |
 | **Guard** | Deterministic enforcement of Principle | Policy content (reference Principle for justification) |
-| **Interface** | External entry points for humans and AI agent reviewers | Implementation details, procedures |
+| **Interface** | External entry points for humans and AI agent reviewers (`AGENTS.md`, `.cursor/templates/`, `.github/PULL_REQUEST_TEMPLATE.md`, `.github/ISSUE_TEMPLATE/`) | Implementation details, procedures |
 
 ## Data flow
 
@@ -150,5 +150,7 @@ patching agent behavior:
 3. Agent proposes a new evidence target (not an ad-hoc workaround)
 4. The gap is filled, improving the system for all future runs
 
-Raw `gh`/`git` execution outside evidence targets is treated as a
-Principle violation — a signal that the Evidence layer is incomplete.
+Raw `gh`/`git` execution for state observation outside evidence targets is
+treated as a Principle violation — a signal that the Evidence layer is
+incomplete. Direct content reads and configuration reads remain allowed
+exceptions (see `docs/agent-control/migration-mapping.md` Coverage rules).
