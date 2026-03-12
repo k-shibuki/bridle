@@ -2,97 +2,80 @@
 
 ## Purpose
 
-Address review findings from `pr-review`. This includes findings from both the Cursor review and bot review (if available). Evaluate each finding for validity, apply fixes, and re-push.
-
-## When to use
-
-- After `pr-review` concludes "Changes required"
-- The required changes list from `pr-review` is the primary input
-
-## Contract
-
-1. Read all user-attached `@...` context first.
-2. If the PR number is missing, ask for it and stop.
-3. Do NOT dismiss findings without analysis. Evaluate each on its merits.
-4. After fixes, run quality gates before committing.
-5. For recurring false positives, create or update a knowledge atom (`.cursor/knowledge/review--*.md`) to capture the pattern. All reviewers can read these files.
+Address review findings from `pr-review`. Evaluate each finding, apply fixes, post disposition replies, and seek consensus per `review--consensus-protocol.md`.
 
 ## Inputs (ask if missing)
 
 - **PR number** (required)
 - **Scope** (optional): `all` (default), `p0-only`, or specific file path
 
-## Steps
+## Sense
 
-### 1. Gather findings
+1. Run `make evidence-pull-request PR=<N>` for thread state.
+2. Retrieve inline comments: use detection commands from `review--bot-operations.md` § Detection (API channels table).
+3. If `pr-review` was just run, use its "Required changes" list directly.
 
-Collect review findings from two sources:
+## Orient
 
-**Source A: `pr-review` output** (primary — always available)
+### Finding classification
 
-If `pr-review` was just run in this session, use its "Required changes" list directly. Otherwise, retrieve the latest state:
-
-```bash
-# Check for pr-review's structured output in PR comments or conversation history
-gh pr view <PR> --json reviews --jq '.reviews[-1].body'
-```
-
-**Source B: Bot inline comments** (if `pr-review` reported bot review status as "Reviewed")
-
-Use the detection commands from `@.cursor/knowledge/review--bot-operations.md` § Detection to retrieve inline comments from whichever reviewer responded.
-
-Merge all sources, deduplicating where Cursor and bot review flagged the same issue.
-
-### 2. Classify and validate findings
-
-Evaluate every finding on technical merit regardless of source. Cursor and bot reviewers have equal weight.
+Evaluate every finding on technical merit regardless of source (Cursor and bot reviewers have equal weight):
 
 | Classification | Action |
 |---|---|
 | **P0 (blocking)** | Must fix before merge |
 | **P1 (significant)** | Should fix; document reason if deferring |
-| **False positive** | Note reason; if a pattern recurs, create/update a knowledge atom (`.cursor/knowledge/review--<pattern>.md`) |
-| **Already addressed** | Note the commit that addressed it |
+| **False positive** | Note reason; if recurring, create knowledge atom |
+| **Already addressed** | Note the commit |
 
-Present the classified list to the user before proceeding.
+### Consensus protocol
 
-### 3. Address each finding
+Consult `review--consensus-protocol.md` (SSOT) for:
+- Disposition categories: Fixed / By design / False positive / Acknowledged
+- Reply templates
+- Consensus flow (post reply → observe → decide)
+- Bot agreement mechanics (per `review--bot-operations.md` § Agreement)
+- Reviewer unavailable handling
 
-**Prerequisite**: Read `@.cursor/knowledge/review--consensus-protocol.md` (SSOT for consensus model, reply format, and resolve procedure).
+### FSM context
 
-For each P0 and P1 finding (in priority order):
+This command runs in states **ChangesRequired** or **UnresolvedThreads**. Valid transitions: → CIPending (after push) → ReadyForReview or ReviewDone.
 
-1. Read the referenced file and surrounding context (at least ±10 lines around the flagged line).
-2. Determine whether the finding is valid.
-3. If valid: propose a fix and apply it after user confirmation.
-4. If false positive: note the reason. If the same pattern has recurred, propose creating a knowledge atom (`.cursor/knowledge/review--<pattern>.md`) via `knowledge-create` so all reviewers learn from it.
+## Act
 
-### 3b. Reply, seek consensus, and resolve each thread
+### 1. Classify and present findings
 
-Per `@.cursor/rules/agent-safety.mdc` `HS-REVIEW-RESOLVE` and `@.cursor/knowledge/review--consensus-protocol.md`:
+Present the classified list before proceeding with fixes.
 
-1. **Post a disposition reply** (Fixed / By design / False positive / Acknowledged) using the Reply API from `review--consensus-protocol.md` § Reply API.
-2. **Trigger re-review** (Step 5b below) — the bot must confirm the disposition.
-3. **After re-review completes**: check for bot agreement per `review--consensus-protocol.md` § Bot Agreement Signals.
-   - No new finding on thread → **consensus reached** → resolve via GraphQL Resolve API.
-   - New finding / objection → address and return to step 1.
-   - Timeout → resolve with timeout justification.
-4. **Verify completeness**: enumerate threads (GraphQL Thread Enumeration in `review--consensus-protocol.md`), confirm unresolved == 0.
+### 2. Fix each P0/P1 finding
+
+For each finding (priority order):
+1. Read the file and surrounding context (±10 lines)
+2. Determine validity
+3. Apply fix or note false positive rationale
+
+### 3. Post disposition replies and seek consensus
+
+Per `HS-REVIEW-RESOLVE` and `review--consensus-protocol.md`:
+
+1. Post disposition reply on each thread (Fixed / By design / False positive / Acknowledged)
+2. Trigger re-review (Step 5 below)
+3. After re-review: check bot agreement
+   - Bot auto-resolved → consensus confirmed
+   - Bot confirmed → resolve thread
+   - Bot objected → address and retry
+   - Timeout → resolve with justification
+4. Verify: `reviews.threads_unresolved == 0`
 
 ### 4. Quality gate
 
-After all fixes are applied:
-
 ```bash
-make ci-fast        # validate-schemas + renv-check + kb-validate + lint
-make format-check   # styler dry-run
+make format-check
 ```
 
-If either fails, fix before proceeding.
+Fix any failures before committing.
 
-### 5. Commit and push
-
-Commit the fixes following `@.cursor/rules/commit-format.mdc`. Use type `fix` and include `Refs: #<issue>` in the footer.
+### 5. Commit, push, and re-review
 
 ```bash
 git add -A
@@ -102,42 +85,35 @@ Refs: #<issue>"
 git push
 ```
 
-### 5b. Bot re-review (consensus verification)
+Trigger CodeRabbit re-review (if budget remaining per `review--bot-operations.md` § CR Review Budget):
 
-Re-trigger per `@.cursor/knowledge/review--bot-operations.md` § Re-review:
-- CodeRabbit: `@coderabbitai review` (if CR review budget remaining)
-- Codex: only if the user instructs
+```bash
+gh pr comment <PR> --body "@coderabbitai review"
+```
 
-If the CR review budget (2 per PR) is exhausted, skip re-review and
-verify consensus using existing evidence (CR's disposition replies,
-auto-resolves, and agent verification).
-
-Delegate wait via `.cursor/templates/delegation--review-wait.md` (Monitor CI: YES if CI re-triggered, NO otherwise). The re-review result is needed by Step 3b to verify consensus — see `review--consensus-protocol.md` § Consensus Flow.
+Delegate wait via `.cursor/templates/delegation--review-wait.md`.
 
 ### 6. Report
 
-Summarize what was done:
+- Findings addressed: count by source and severity
+- False positives: count with reasons
+- Quality gate: pass/fail
+- Next step: `pr-review` (re-assessment)
 
-- **Findings addressed**: count by source (Cursor / bot review) and severity (P0 / P1)
-- **False positives**: count (with brief reasons, replies posted)
-- **Deferred**: count (with justification)
-- **Quality gate**: pass / fail
-- **Next step**: `pr-review` (re-review to confirm all findings resolved)
+## Guard / Validation
 
-## Output (response format)
+- `HS-REVIEW-RESOLVE`: every thread gets disposition reply before resolve
+- `required_conversation_resolution`: blocks merge until all threads resolved
+- `pre-push` hook: differential checks before push
+- CR review budget: max 2 reviews per PR
 
-- **PR**: `#<number>`, title
-- **Findings processed**: total count, by source (Cursor / bot review)
-- **Classification summary**: P0 / P1 / false positive / already addressed
-- **Fixes applied**: list of changes with file and line
-- **Quality gate result**: pass / fail
-- **Remaining items**: deferred findings with justification
-- **Next step**: `pr-review` for re-assessment
+> **Observation gap**: All external state is acquired via `make` evidence targets. If information is not available from any target, report it as a missing evidence target.
+
+> **Anti-pattern — judgment creep**: Disposition categories and consensus flow are defined in `review--consensus-protocol.md`. This procedure follows them — it does not reinvent them.
 
 ## Related
 
-- `@.cursor/commands/pr-review.md` (produces the findings this command addresses)
-- `@.cursor/commands/pr-merge.md` (next step after re-review confirms mergeable)
-- `@.cursor/rules/quality-policy.mdc` (quality gates)
-- `@.cursor/rules/commit-format.mdc` (commit message format)
-- `@.cursor/knowledge/review--consensus-protocol.md` (consensus model, reply format, resolve API)
+- `review--consensus-protocol.md` — disposition, consensus, resolve (SSOT)
+- `review--bot-operations.md` — detection, timing, agreement mechanics
+- `pr-review.md` — produces findings this command addresses
+- `pr-merge.md` — next step after re-review confirms mergeable
