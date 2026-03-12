@@ -14,7 +14,7 @@ Hard Stops use stable mnemonic IDs (not sequential numbers) so that additions, r
 
 The following actions are NEVER permitted, regardless of user instructions:
 
-- **`HS-CI-MERGE` — NEVER merge a PR without CI green**: Run `gh pr checks <N>` and confirm all checks pass before executing `gh pr merge`. When using auto-merge (`gh pr merge --auto --squash`), GitHub enforces this check automatically. No exceptions.
+- **`HS-CI-MERGE` — NEVER merge a PR without CI green**: Run `make evidence-pull-request PR=<N>` and confirm `ci.status == "success"` before executing `gh pr merge`. When using auto-merge (`gh pr merge --auto --squash`), GitHub enforces this check automatically. No exceptions.
   - **(a) NEVER use the `--admin` flag** on `gh pr merge` — it bypasses branch protection; `enforce_admins` does not reliably block repo-owner bypass on personal repositories. If merge is blocked, diagnose the cause instead of overriding.
   - **(b) NEVER use `git commit --amend` + force-push** in the normal PR flow — always create new commits for fixes. Amend+force-push leaves stale failed checks visible in the GitHub PR GUI, causing confusion between CLI and GUI state.
 - **`HS-LOCAL-VERIFY` — NEVER skip local verification**: The `pre-push` hook runs differential fail-fast checks: `format-check` + `changed-lint` + `changed-test` for R changes, plus `validate-schemas`, `renv-check`, and `kb-validate` for their respective file types. All matching change types trigger independently. Pushing without local verification is prohibited — "CI will catch it" is not acceptable.
@@ -24,6 +24,8 @@ The following actions are NEVER permitted, regardless of user instructions:
 - **`HS-NOLINT` — NEVER add `# nolint` without consulting knowledge first**: Before writing ANY `# nolint` annotation, the agent MUST read `@.cursor/knowledge/lint--nolint-accepted-patterns.md` and follow the nolint decision tree in `@.cursor/rules/quality-policy.mdc` § nolint Checkpoint. Blanket `# nolint`, `# nolint start/end`, and `# nolint` without linter name + reason are **always prohibited**. This Hard Stop defines the *prohibition* (what); `@.cursor/rules/quality-policy.mdc` § nolint Checkpoint defines the *decision process* (how).
 - **`HS-PR-BASE` — NEVER use `--base feat/<branch>` in `gh pr create`**: All PRs must target `main`. Using a feature branch as base causes the PR to be auto-closed when the base branch is deleted on merge. Document dependencies in the PR body, not through the base branch. See `pr-create.md` Step 3c.
 - **`HS-REVIEW-RESOLVE` — NEVER resolve a review thread without consensus**: Every review thread must receive a disposition reply (Fixed / By design / False positive / Acknowledged) before being resolved. "Resolve All" without per-thread analysis is prohibited. The unresolved thread count serves as a completeness guarantee — GitHub Branch Protection (`required_conversation_resolution`) blocks merge until all threads are resolved. See `review--consensus-protocol.md` for reply format, consensus requirements, and API commands.
+- **`HS-EVIDENCE-FIRST` — NEVER use raw CLI for observation**: All observation of external state (git, GitHub Issues/PRs, CI, environment) MUST use `make evidence-*` targets. Raw `gh`/`git` read commands are prohibited in the main agent. Execution commands (mutations: create, merge, comment, commit, push) use raw CLI. See `controls--observation-execution-boundary.md` for the full classification. This Hard Stop defines the *prohibition* (what); `controls--observation-execution-boundary.md` defines the *boundary* (which commands are observation vs execution).
+- **`HS-NO-INLINE-POLL` — NEVER poll inline in the main agent**: Every wait cycle over 10 seconds MUST be delegated to a background subagent. Inline `sleep` + poll loops are prohibited. Read `subagent-policy.mdc` before any delegation. See `agent--delegation-decision.md` for the decision flowchart. This Hard Stop defines the *prohibition* (what); `subagent-policy.mdc` defines the *delegation process* (how).
 
 ## Enforcement Tiers
 
@@ -39,6 +41,8 @@ Each Hard Stop is classified by its enforcement mechanism. See `controls--agent-
 | `HS-NOLINT` | **Cond. Deterministic** (annotation format) / **Steering** (knowledge consultation) | `pre-commit` hook validates annotation format — requires `make install-hooks`. Knowledge file consultation obligation is Steering (agent self-policing) |
 | `HS-PR-BASE` | **Deterministic** | `pr-policy.yaml` CI check |
 | `HS-REVIEW-RESOLVE` | **Cond. Deterministic** | GitHub Branch Protection `required_conversation_resolution` blocks merge until all threads are resolved (Deterministic). Reply-before-resolve obligation is Steering (agent self-policing). |
+| `HS-EVIDENCE-FIRST` | Steering | Agent self-policing. Indirect enforcement: evidence targets produce structured JSON with `_meta` markers; Procedures require evidence output as gate input. |
+| `HS-NO-INLINE-POLL` | Steering | Agent self-policing. `subagent-policy.mdc` § Anti-pattern defines the prohibition; delegation templates provide the compliant alternative. |
 
 ## Bot Review Enforcement
 
@@ -54,6 +58,6 @@ Bot review uses a consensus-based resolution model:
 When multiple AI agents (or a main agent + subagents) work concurrently:
 
 - Use task prefixes (see `@.cursor/knowledge/agent--task-prefix-convention.md`) for all artifacts
-- Check `git status` before starting work to detect concurrent changes
+- Run `make evidence-workflow-position` before starting work to detect concurrent changes (check `git.uncommitted_files` and `git.branch`)
 - Keep changes scoped to minimize merge conflicts
 - Do not modify the same file from multiple agents simultaneously

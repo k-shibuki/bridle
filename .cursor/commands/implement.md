@@ -81,7 +81,7 @@ make new-branch PREFIX=<type> ISSUE=<number> DESC=<short-description>
 - All work traceable to Issue — if scope drifts, update Issue or create new one
 - `pre-push` hook validates before push (`HS-LOCAL-VERIFY`)
 
-> **Observation gap**: All external state is acquired via `make` evidence targets. If information is not available from any target, report it as a missing evidence target.
+> **Observation boundary**: Observation commands MUST use `make evidence-*` targets (`HS-EVIDENCE-FIRST`). Execution commands use raw CLI. Polling MUST be delegated (`HS-NO-INLINE-POLL`). See `controls--observation-execution-boundary.md`.
 
 > **Anti-pattern — judgment creep**: Issue selection rules are in `workflow--issue-selection.md`. Integration patterns are in `integration-strategy.mdc`. This procedure routes to them.
 

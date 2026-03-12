@@ -36,6 +36,7 @@ Scale reasoning depth to task complexity:
 
 - **Always read related files before making changes.** Be conscious of reading only necessary ranges for large files.
 - **Terminal commands**: Use only when build/test is clearly necessary. For R package operations, use `make <target>`.
+- **Observation commands** (git state, Issue/PR state, CI status): Use `make evidence-*` targets (`HS-EVIDENCE-FIRST`). Raw `gh`/`git` observation commands are prohibited. Execution commands (mutations: create, merge, comment, commit, push) use raw CLI directly.
 - **Web search**: Proactively search (even without user instruction) when latest specifications of external services, version-dependent behavior, or specific error messages are involved.
 
 ## Security, Production, and Cost

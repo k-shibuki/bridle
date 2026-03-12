@@ -26,7 +26,7 @@ fi
 
 # --- PR basic info ---
 pr_data=$(gh pr view "$PR" \
-  --json number,title,headRefName,baseRefName,mergeable,mergeStateStatus,statusCheckRollup,reviews,labels,body,commits \
+  --json number,title,state,headRefName,baseRefName,mergeable,mergeStateStatus,statusCheckRollup,reviews,labels,body,commits \
   2>/dev/null || echo "")
 
 if [ -z "$pr_data" ]; then
@@ -37,6 +37,7 @@ fi
 
 number=$(echo "$pr_data" | jq '.number')
 title=$(echo "$pr_data" | jq -r '.title')
+pr_state=$(echo "$pr_data" | jq -r '.state // "UNKNOWN"')
 head_branch=$(echo "$pr_data" | jq -r '.headRefName')
 base_branch=$(echo "$pr_data" | jq -r '.baseRefName')
 
@@ -155,6 +156,7 @@ fi
 body=$(jq -nc \
   --argjson number "$number" \
   --arg title "$title" \
+  --arg state "$pr_state" \
   --arg head "$head_branch" \
   --arg base "$base_branch" \
   --arg ci_status "$ci_status" \
@@ -178,6 +180,7 @@ body=$(jq -nc \
   '{
     "number": $number,
     "title": $title,
+    "state": $state,
     "head_branch": $head,
     "base_branch": $base,
     "ci": {

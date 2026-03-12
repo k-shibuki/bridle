@@ -100,6 +100,7 @@ For old-to-new migration mapping and transition rationale, see
 | `evidence-environment` | evidence |
 | `evidence-lint` | evidence |
 | `evidence-pull-request` | evidence |
+| `evidence-review-threads` | evidence |
 | `evidence-issue` | evidence |
 
 ### Gate hierarchy
@@ -137,10 +138,39 @@ Evidence targets never modify state — they are pure observations.
 ### Design constraints
 
 - All output is JSON (parseable by `jq`)
-- Error output uses a unified schema: `{"error": "<message>", "source": "<target>"}`
+- Errors are surfaced through the shared `_errors` envelope documented below
 - Targets are idempotent and side-effect free
 - Targets that require network access (GitHub API) declare this in their description
 - Freshness: evidence is valid for the duration of a single agent turn (no caching across turns)
+
+### `_meta` envelope
+
+Every evidence target wraps its output via `evidence_emit()` in
+`tools/evidence-lib.sh`. The function appends a `_meta` object to the
+body JSON. Target schemas below document only the body fields; `_meta`
+is always present.
+
+```json
+{
+  "_meta": {
+    "target": "string (e.g. evidence-pull-request)",
+    "timestamp": "ISO8601 (collection time)",
+    "version": "string (evidence-lib version)",
+    "duration_ms": "integer (script execution time)"
+  },
+  "_errors": [
+    {
+      "source": "string",
+      "message": "string",
+      "fatal": "boolean"
+    }
+  ]
+}
+```
+
+- `_meta` is always present.
+- `_errors` is present only when errors were recorded via `evidence_error()`.
+- On fatal error, only `_meta` and `_errors` are emitted (no body fields).
 
 ### Target 1: `evidence-workflow-position`
 
@@ -196,8 +226,7 @@ into a single JSON document for state classification.
   "environment": {
     "doctor_healthy": "boolean",
     "container_running": "boolean"
-  },
-  "timestamp": "ISO8601"
+  }
 }
 ```
 
@@ -212,7 +241,6 @@ into a single JSON document for state classification.
 - `pull_requests.open[].ci_status`: aggregated from `statusCheckRollup` — `success` only if ALL checks pass
 - `pull_requests.open[].review_threads_*`: from GraphQL `reviewThreads` query
 - `environment.doctor_healthy`: `errors == 0` from doctor output
-- `timestamp`: when this evidence was collected
 
 **Nullability**: all fields are required. Empty arrays for absent collections. `blocked_by` may be empty.
 
@@ -239,8 +267,7 @@ into a single JSON document for state classification.
       "status": "ok | error | warning | skip",
       "detail": "string"
     }
-  ],
-  "timestamp": "ISO8601"
+  ]
 }
 ```
 
@@ -280,8 +307,7 @@ into a single JSON document for state classification.
       "message": "string",
       "severity": "error | warning | style"
     }
-  ],
-  "timestamp": "ISO8601"
+  ]
 }
 ```
 
@@ -302,6 +328,7 @@ review freshness, and bot review status.
 {
   "number": "integer",
   "title": "string",
+  "state": "OPEN | MERGED | CLOSED",
   "head_branch": "string",
   "base_branch": "string",
   "ci": {
@@ -339,13 +366,13 @@ review freshness, and bot review status.
     "closes_issues": ["integer"],
     "has_exception_label": "boolean",
     "exception_type": "hotfix | no-issue | null"
-  },
-  "timestamp": "ISO8601"
+  }
 }
 ```
 
 **Field semantics**:
 
+- `state`: PR lifecycle state from GitHub (`OPEN`, `MERGED`, `CLOSED`)
 - `ci.checks[].elapsed_seconds`: null if check has not completed
 - `reviews.last_push_at`: timestamp of most recent push to PR branch (for review freshness)
 - `reviews.last_review_at`: timestamp of most recent review submission (null if none)
@@ -357,7 +384,57 @@ review freshness, and bot review status.
 
 **Downstream**: ST_CI_PENDING–ST_REBASE states, `pr-review`, `pr-merge`, `review-fix`.
 
-### Target 5: `evidence-issue`
+### Target 5: `evidence-review-threads`
+
+**Purpose**: Per-thread review details for `review-fix` (disposition replies, thread resolution) and `pr-review` (finding classification).
+
+**Input**: GitHub GraphQL API + `gh pr diff`. Requires `PR=<number>` argument.
+
+**Output schema**:
+
+```json
+{
+  "total": "integer",
+  "unresolved": "integer",
+  "threads": [
+    {
+      "graphql_id": "string (GraphQL node ID for resolveReviewThread)",
+      "is_resolved": "boolean",
+      "is_outdated": "boolean",
+      "path": "string | null",
+      "line": "integer | null",
+      "author": "string",
+      "body": "string (first comment body)",
+      "database_id": "integer (REST API comment ID for replies)",
+      "replies": [
+        {
+          "database_id": "integer",
+          "author": "string",
+          "body": "string",
+          "created_at": "ISO8601"
+        }
+      ]
+    }
+  ],
+  "files_changed": ["string"],
+  "truncated": "boolean"
+}
+```
+
+**Field semantics**:
+
+- `truncated`: true if GraphQL pagination limits were hit (>100 threads or >20 comments per thread). When true, `_errors` contains details about which connection was truncated.
+- `graphql_id`: required for `resolveReviewThread` GraphQL mutation
+- `database_id`: required for `POST /pulls/{N}/comments/{id}/replies` REST API
+- `body`: first comment in thread (the reviewer's finding)
+- `replies`: subsequent comments (disposition replies, bot confirmations)
+- `files_changed`: paths from `gh pr diff --name-only`
+
+**Nullability**: all top-level fields required. `path` and `line` nullable (for PR-level comments outside diff).
+
+**Downstream**: `review-fix` Steps 1 (classify findings) and 3 (post disposition + check consensus), `pr-review` Step 2 (thread baseline).
+
+### Target 6: `evidence-issue`
 
 **Purpose**: Issue metadata for prioritization and dependency analysis.
 
@@ -372,6 +449,7 @@ review freshness, and bot review status.
       "number": "integer",
       "title": "string",
       "labels": ["string"],
+      "body": "string (full Issue body text)",
       "has_test_plan": "boolean",
       "has_acceptance_criteria": "boolean",
       "blocked_by": ["integer"],
@@ -385,13 +463,13 @@ review freshness, and bot review status.
     "roots": ["integer"],
     "leaves": ["integer"],
     "depth": "integer"
-  },
-  "timestamp": "ISO8601"
+  }
 }
 ```
 
 **Field semantics**:
 
+- `body`: full Issue body text including DoD, test plan, and acceptance criteria sections
 - `is_parent`: true if Issue has sub-issues (detected via checkbox list or "Sub-issues" section)
 - `blocked_by` / `blocks`: extracted from Issue body dependency references
 - `dependency_graph.roots`: Issues with no blockers (can start immediately)

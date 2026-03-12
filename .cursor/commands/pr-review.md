@@ -12,7 +12,7 @@ Review a pull request and produce a merge recommendation. This command produces 
 
 1. Run `make evidence-pull-request PR=<N>` for structured PR state (CI, merge, reviews, threads, traceability).
 2. Retrieve the diff: `gh pr diff <N>`
-3. Retrieve the linked Issue's DoD: `gh issue view <issue-number>`
+3. Retrieve the linked Issue's DoD: `make evidence-issue ISSUE=<issue-number>` (use the `body` field for acceptance criteria and test plan text)
 
 ## Orient
 
@@ -84,7 +84,7 @@ If "Mergeable" → recommend `pr-merge`. If "Changes required" → recommend `re
 - Bot review freshness: bot reached a terminal state covering the latest push. For COMPLETED: `review_submitted_at > last_push_at`. For COMPLETED_SILENT: terminal-state evaluation per `review--bot-operations.md` § Terminal States (no timestamp required).
 - Thread completeness: classified findings == unresolved threads
 
-> **Observation gap**: All external state is acquired via `make` evidence targets. If information is not available from any target, report it as a missing evidence target.
+> **Observation boundary**: Observation commands MUST use `make evidence-*` targets (`HS-EVIDENCE-FIRST`). Execution commands use raw CLI. Polling MUST be delegated (`HS-NO-INLINE-POLL`). See `controls--observation-execution-boundary.md`.
 
 > **Anti-pattern — judgment creep**: Review criteria belong in `AGENTS.md` and Knowledge atoms. This procedure routes to them — it does not duplicate them.
 

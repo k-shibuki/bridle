@@ -84,13 +84,7 @@ Preconditions for auto-merge per `controls--merge-invariants.md` § Auto-Merge D
 
 ### 4. Post-merge cleanup
 
-**Gate on observed merged state** — `gh pr merge --auto` returns before the merge completes. Verify merge state before cleanup:
-
-```bash
-gh pr view <N> --json state --jq '.state' | grep -q 'MERGED'
-```
-
-If not yet merged (auto-merge set), delegate wait via `.cursor/templates/delegation--ci-wait-only.md` and run cleanup after confirmed merge.
+**Gate on observed merged state** — `gh pr merge --auto` returns before the merge completes. Run `make evidence-pull-request PR=<N>` and verify `state == "MERGED"` before cleanup. If not yet merged (auto-merge set), delegate wait via `.cursor/templates/delegation--ci-wait-only.md` and run cleanup after confirmed merge.
 
 ```bash
 git checkout main
@@ -122,7 +116,7 @@ git checkout main && git merge --no-edit <branch>
 - `required_conversation_resolution`: all threads resolved before merge
 - Post-merge: `R-CMD-check.yaml` runs on main push (safety net)
 
-> **Observation gap**: All external state is acquired via `make` evidence targets. If information is not available from any target, report it as a missing evidence target.
+> **Observation boundary**: Observation commands MUST use `make evidence-*` targets (`HS-EVIDENCE-FIRST`). Execution commands use raw CLI. Polling MUST be delegated (`HS-NO-INLINE-POLL`). See `controls--observation-execution-boundary.md`.
 
 > **Anti-pattern — judgment creep**: Merge preconditions are declared in `controls--merge-invariants.md`. This procedure checks them — it does not redefine them.
 

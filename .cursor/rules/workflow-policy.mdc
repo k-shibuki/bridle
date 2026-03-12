@@ -82,5 +82,6 @@ Certain task types require reading a specific knowledge file **before** starting
 | Writing / reviewing tests | `test--mock-scope-constraint.md`, `test--mock-external-function.md`, `test--layered-mock-strategy.md`, `r--null-assignment-trap.md` | `test-strategy.mdc` |
 | Fixing lint / format issues | `lint--nolint-accepted-patterns.md`, `lint--styler-lintr-conflict.md` | `quality-policy.mdc` |
 | Responding to review comments | `review--consensus-protocol.md` | `workflow-policy.mdc` § Review Comment Response |
+| CI/review polling or delegation | `subagent-policy.mdc`, `agent--delegation-decision.md`, `review--bot-operations.md` | `agent-safety.mdc` `HS-NO-INLINE-POLL` |
 
 **Rule**: When the agent enters one of these task types, it MUST read the listed atoms as its first action. For unexpected situations (errors not covered above), use `knowledge-index.mdc` as a reactive lookup table. Do not rely on memory from previous sessions — knowledge files may have been updated.

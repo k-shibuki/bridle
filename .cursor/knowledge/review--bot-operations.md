@@ -53,7 +53,7 @@ the budget (the original request was not fulfilled).
 |---|---|
 | **COMPLETED** | Review with `submitted_at > trigger_time` and `body != ""` |
 | **COMPLETED_CLEAN** | Codex only: thumbs-up on trigger comment |
-| **COMPLETED_SILENT** | CR incremental review only: trigger acked, > 7 min elapsed, no review object, no inline comments, no rate limit, no new threads |
+| **COMPLETED_SILENT** | CR incremental review only: trigger acked, > 10 min elapsed, no review object, no inline comments, no rate limit, no new threads |
 | **RATE_LIMITED** | PR comment contains "Rate limit exceeded" (after `trigger_time`) |
 | **TIMED_OUT** | 20 min elapsed, no completion signal |
 

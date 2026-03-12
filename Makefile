@@ -34,7 +34,8 @@ endif
 	changed-lint changed-test test-json lint-json scaffold-test scaffold-class \
 	status new-branch install-hooks \
 	kb-manifest kb-validate kb-new review-sync-check \
-	evidence-workflow-position evidence-environment evidence-lint evidence-pull-request evidence-issue
+	evidence-workflow-position evidence-environment evidence-lint evidence-pull-request evidence-issue \
+	evidence-review-threads
 
 # === Help ===
 
@@ -240,6 +241,9 @@ evidence-lint: _require_container ## Evidence: structured lint results (JSON)
 
 evidence-pull-request: ## Evidence: detailed PR state (usage: make evidence-pull-request PR=42)
 	@bash tools/evidence-pull-request.sh
+
+evidence-review-threads: ## Evidence: per-thread review details for review-fix (usage: make evidence-review-threads PR=42)
+	@bash tools/evidence-review-threads.sh
 
 evidence-issue: ## Evidence: Issue metadata and dependency graph (usage: make evidence-issue [ISSUE=42])
 	@bash tools/evidence-issue.sh

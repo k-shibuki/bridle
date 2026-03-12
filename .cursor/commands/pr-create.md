@@ -11,9 +11,9 @@ Create a pull request on GitHub that closes the tracking Issue.
 
 ## Sense
 
-Run `make evidence-workflow-position` or quick-check:
-- `git branch --show-current` — must be on feature branch (not `main`)
-- `git status --short` — must have no uncommitted changes (or commit first)
+Run `make evidence-workflow-position` and verify:
+- `git.on_main` is `false` (must be on feature branch)
+- `git.uncommitted_files` is `0` (or commit first)
 
 ## Orient
 
@@ -105,7 +105,7 @@ gh pr edit <N> --body "<corrected body>"
 - `HS-LOCAL-VERIFY`: pre-push hook runs before every push
 - `check-policy` CI job: validates PR body structure
 
-> **Observation gap**: All external state is acquired via `make` evidence targets. If information is not available from any target, report it as a missing evidence target.
+> **Observation boundary**: Observation commands MUST use `make evidence-*` targets (`HS-EVIDENCE-FIRST`). Execution commands use raw CLI. Polling MUST be delegated (`HS-NO-INLINE-POLL`). See `controls--observation-execution-boundary.md`.
 
 > **Anti-pattern — judgment creep**: PR body structure is defined in the template. Branch policy is in `commit-format.mdc`. This procedure assembles them — it does not redefine them.
 
