@@ -30,10 +30,11 @@ endif
 	container-build container-up container-down container-shell rstudio \
 	renv-init renv-restore renv-snapshot \
 	check check-fast test lint format format-check document coverage coverage-check site install clean \
-	ci ci-fast ci-pr pr-ready doctor doctor-json validate-schemas \
+	ci ci-fast ci-pr pr-ready doctor doctor-json validate-schemas validate-evidence \
 	changed-lint changed-test test-json lint-json scaffold-test scaffold-class \
 	status new-branch install-hooks \
-	kb-manifest kb-validate kb-new review-sync-check
+	kb-manifest kb-validate kb-new review-sync-check \
+	evidence-workflow-position evidence-environment evidence-lint evidence-pull-request evidence-issue
 
 # === Help ===
 
@@ -225,6 +226,26 @@ review-sync-check: ## Check AGENTS.md and pr-review.md review categories are in 
 
 kb-new: ## Scaffold new knowledge atom (usage: make kb-new NAME=test--new-topic)
 	@sh tools/kb-new.sh NAME=$(NAME)
+
+# === Evidence Targets (structured observation → JSON) ===
+
+evidence-workflow-position: ## Evidence: git + GitHub + environment state (primary FSM input)
+	@bash tools/evidence-workflow-position.sh
+
+evidence-environment: ## Evidence: detailed environment health check
+	@bash tools/evidence-environment.sh
+
+evidence-lint: _require_container ## Evidence: structured lint results (JSON)
+	@bash tools/evidence-lint.sh
+
+evidence-pull-request: ## Evidence: detailed PR state (usage: make evidence-pull-request PR=42)
+	@bash tools/evidence-pull-request.sh
+
+evidence-issue: ## Evidence: Issue metadata and dependency graph (usage: make evidence-issue [ISSUE=42])
+	@bash tools/evidence-issue.sh
+
+validate-evidence: ## Validate evidence golden outputs against schema
+	@bash tools/validate-evidence.sh
 
 # === Cleanup ===
 
