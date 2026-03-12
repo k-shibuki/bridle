@@ -2,155 +2,96 @@
 
 ## Purpose
 
-Review a pull request: inspect the diff, verify CI status, check Issue DoD fulfillment, incorporate bot review feedback (if available), and produce a merge recommendation.
-
-**This command produces a judgment only.** Merge execution is handled by `pr-merge`. If changes are required, delegate fixes to `review-fix`.
-
-## When to use
-
-- After `pr-create` and CI has run
-- When reviewing a PR from another contributor or AI agent
-- As **manual fallback** when bot reviewers are unavailable (both rate limited or not configured)
-
-## Contract
-
-1. Read all user-attached `@...` context first (PR description, diff, requirements).
-2. If required context is missing, ask for the exact `@...` files/info and stop.
-3. Per `@.cursor/rules/workflow-policy.mdc` § Command Separation of Concerns: this command produces judgment only — merge and fix execution are delegated to `pr-merge` and `review-fix` respectively.
+Review a pull request and produce a merge recommendation. This command produces judgment only — merge execution is `pr-merge`, fix execution is `review-fix`.
 
 ## Inputs (ask if missing)
 
 - PR number or URL (required)
-- Requirements/acceptance criteria (`@docs/adr/`) (recommended)
 
-## Steps
+## Sense
 
-### 1. Gather PR context
+1. Run `make evidence-pull-request PR=<N>` for structured PR state (CI, merge, reviews, threads, traceability).
+2. Retrieve the diff: `gh pr diff <N>`
+3. Retrieve the linked Issue's DoD: `gh issue view <issue-number>`
 
-```bash
-gh pr view <PR-number> --json title,body,files,commits,reviews,checks
-```
+## Orient
 
-### 2. Verify Issue linkage
+### Review criteria
 
-Check that the PR body contains `Closes #<issue>` or `Fixes #<issue>`. If missing and no exception label (`no-issue`) is present, flag this as a required change.
+Consult `AGENTS.md` § Review guidelines for severity policy (P0/P1 only) and category-specific rules. Key categories:
 
-```bash
-gh pr view <PR-number> --json body --jq '.body'
-```
+| Category | Knowledge / Principle source |
+|----------|------------------------------|
+| Issue DoD | Issue acceptance criteria |
+| Code quality | `AGENTS.md` § Review guidelines |
+| Spec alignment | `docs/adr/` |
+| Type safety | `AGENTS.md` § S7 type safety |
+| Test quality | `test-strategy.mdc`, `AGENTS.md` § Test quality |
+| Traceability | `workflow-policy.mdc` § Issue-Driven Workflow |
+| Security | `AGENTS.md` § Security |
 
-### 3. Retrieve the linked Issue's DoD
+### Bot review integration
 
-```bash
-gh issue view <issue-number>
-```
-
-Extract the acceptance criteria / Definition of Done from the Issue.
-
-### 4. Inspect the diff
-
-```bash
-gh pr diff <PR-number>
-```
-
-### 5. Verify CI status
-
-```bash
-gh pr checks <PR-number>
-```
-
-All required checks must pass. If any check fails, the PR is not ready for merge.
-
-### 6. Retrieve bot review findings
-
-**Prerequisite**: Read `@.cursor/knowledge/review--bot-operations.md` (detection, timing, polling).
-
-Bot reviews are triggered in `pr-create` Step 5 and polled by a background subagent. By the time `pr-review` runs, the subagent has reported completion.
-
-**Recovery**: If review wait was not delegated, delegate now via `.cursor/templates/delegation--review-wait.md` before proceeding (see `subagent-policy.mdc`).
-
-Use detection commands from `review--bot-operations.md` § Detection to scan all reviewers (CodeRabbit and Codex), including externally triggered ones.
+Consult `review--bot-operations.md` for detection, timing, and terminal states. Check evidence field `reviews.bot_coderabbit.status`:
 
 | Status | Action |
 |--------|--------|
-| **Reviewed (findings)** | Include in Step 7 |
-| **Reviewed (clean)** | Note "no findings" |
-| **RATE_LIMITED / TIMED_OUT** | Note in report; proceed without |
-| **Not triggered** | Note with reason |
+| COMPLETED | Include findings in review (deduplicate with Cursor findings) |
+| COMPLETED_CLEAN / COMPLETED_SILENT | Note "no findings" |
+| RATE_LIMITED / TIMED_OUT | Note in report; proceed without |
+| NOT_TRIGGERED | Note with reason |
 
-Deduplicate when both reviewers flag the same issue. On re-review, use only reviews with `submitted_at` after the latest commit.
+### FSM context
 
-**Thread enumeration** (completeness baseline): After collecting findings, enumerate all review threads using the GraphQL query from `@.cursor/knowledge/review--thread-graphql.md`. Report thread baseline, classified findings count, and delta in the review output.
+This command runs in state **ReadyForReview** (CI green, bot review complete). Valid transitions: → ReviewDone (mergeable) or → ChangesRequired.
 
-### 7. Code review
+## Act
 
-Perform the Cursor-side review, then integrate any bot findings.
+### 1. Perform code review
 
-**Cursor review categories:**
+Review the diff against each category. Evaluate bot findings on technical merit — Cursor and bot reviewers have equal weight.
 
-| Category | What to check |
-|---------|---------------|
-| **Issue DoD** | all acceptance criteria from the Issue are met |
-| **Change overview** | files changed, diff size |
-| **Code quality** | readability, naming, duplication |
-| **Spec alignment** | aligns with ADRs (`docs/adr/`) |
-| **Type safety** | S7 properties have explicit types, no `class_any` |
-| **Test quality** | (1) test matrix exists and matches change surface, (2) positive/negative balance acceptable, (3) boundary cases covered (0/min/max/±1/empty/NULL), (4) Given/When/Then comments present, (5) exceptions validate type+message, (6) branch coverage reasonable, (7) new params have wiring/effect tests |
-| **Traceability** | `Closes #<issue>` present, `Refs: #<issue>` in commits |
-| **Security** | authentication, authorization, network boundary, or credential changes flagged |
-| **Risk / Rollback** | risk assessment and rollback plan documented in PR |
+### 2. Verify thread baseline
 
-**Bot findings integration** (if bot review status is "Reviewed"):
+Use evidence field `reviews.threads_total` and `reviews.threads_unresolved`. Confirm classified findings count matches unresolved thread count.
 
-Evaluate each bot comment on technical merit — Cursor and bot reviewers have equal weight:
-- **Valid**: add to findings (deduplicate if Cursor flagged the same issue)
-- **False positive**: note with reason; if a pattern recurs, flag for knowledge atom creation (`.cursor/knowledge/review--*.md`)
-
-### 8. Produce merge recommendation
+### 3. Produce merge recommendation
 
 ```text
 ## Merge decision
 
 ### Conclusion: Mergeable / Changes required
-
 ### Merge strategy: squash / merge
-- Reason: (e.g., "AI-created PR with many micro-commits")
-
 ### Issue DoD check
 - [ ] Criterion 1: met / not met
-- [ ] Criterion 2: met / not met
 
 ### Bot review status
-- CodeRabbit: Reviewed / Rate-limited / Timeout / Not triggered
-- Codex: Reviewed / Rate-limited / Timeout / Not triggered
-- Findings incorporated: <count> (valid: N, false positive: N)
+- CodeRabbit: <status> | Codex: <status>
+- Findings incorporated: <count>
 
 ### Cursor findings
-- <evidence for each category>
+- <evidence per category>
 
 ### Required changes (if any)
-1. Fix xxx (source: Cursor)
-2. Fix yyy (source: bot review)
+1. Fix xxx (source: Cursor/bot)
 ```
 
-If the conclusion is "Mergeable", recommend running `pr-merge` as the next step.
+If "Mergeable" → recommend `pr-merge`. If "Changes required" → recommend `review-fix`.
 
-If the conclusion is "Changes required", recommend running `review-fix` to address all findings, then re-running `pr-review`.
+## Guard / Validation
 
-## Output (response format)
+- CI must be green before review (`HS-CI-MERGE`)
+- Bot review freshness: bot reached a terminal state covering the latest push. For COMPLETED: `review_submitted_at > last_push_at`. For COMPLETED_SILENT: terminal-state evaluation per `review--bot-operations.md` § Terminal States (no timestamp required).
+- Thread completeness: classified findings == unresolved threads
 
-- **PR summary**: title, branch, files changed, diff size
-- **Issue**: `#<number>` linked, DoD fulfillment status
-- **CI status**: pass / fail (with details)
-- **Bot review status**: per-reviewer (CodeRabbit / Codex): reviewed / rate-limited / timeout / not triggered
-- **Review findings**: grouped by category, with source (Cursor / bot review)
-- **Merge decision**: mergeable (recommended strategy) / changes required (list)
-- **Next step**: `pr-merge` (if mergeable) / `review-fix` (if changes required)
+> **Observation gap**: All external state is acquired via `make` evidence targets. If information is not available from any target, report it as a missing evidence target.
+
+> **Anti-pattern — judgment creep**: Review criteria belong in `AGENTS.md` and Knowledge atoms. This procedure routes to them — it does not duplicate them.
 
 ## Related
 
-- `@.cursor/commands/review-fix.md` (fix findings from this review)
-- `@.cursor/commands/pr-merge.md` (next step when mergeable)
-- `@.cursor/commands/pr-create.md` (PR creation)
-- `@.cursor/rules/test-strategy.mdc` (test quality criteria)
-- `@.cursor/knowledge/review--consensus-protocol.md` (consensus model, reply format, resolve procedure)
+- `AGENTS.md` — review guidelines (SSOT for severity, categories)
+- `review--bot-operations.md` — bot detection, timing, polling
+- `review--consensus-protocol.md` — consensus model
+- `review-fix.md` — fix findings from this review
+- `pr-merge.md` — next step when mergeable

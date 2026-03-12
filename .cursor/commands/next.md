@@ -2,219 +2,119 @@
 
 ## Purpose
 
-Determine the next action for the AI agent by analyzing the current project state, propose it with rationale, and after user approval, autonomously drive the workflow forward by invoking the appropriate command(s).
+Determine the next action by observing the current workflow state and routing to the appropriate procedure. This is the meta-command that orchestrates all others.
 
-This is a **meta-command** that orchestrates all other commands. It does not implement logic itself — it delegates to the existing command chain.
+## Sense
 
-## When to use
+Run `make evidence-workflow-position` to get the structured workflow state.
 
-- At the start of a session ("what should I work on?")
-- After completing a command ("what's next?")
-- When the user says "continue" or "proceed" without specifying a command
-- When the agent is unsure which command applies
+If a background subagent was previously launched, check its transcript file per `subagent-policy.mdc` "Completion guarantee."
 
-## Constraints
+## Orient
 
-This command is bound by `@.cursor/rules/agent-safety.mdc` `HS-NO-SKIP` (no skipping steps or proceeding without evidence). Specifically:
+### State classification
 
-- Follow the defined workflow order without skipping commands or steps within commands
-- Present the initial proposal and wait for user confirmation before starting
-- Delegate to command specifications (`.cursor/commands/<command>.md`) rather than reimplementing logic inline
-- Base all state assessments on evidence from tool output, not assumptions
+Consult `controls--workflow-state-machine.md` for formal state definitions. The evidence output maps to FSM states through the categories:
 
-## Steps
+- **Progress**: normal forward movement → route to next procedure
+- **Waiting**: blocked on external process → delegate to background subagent
+- **Intervention**: agent action required → fix the constraint violation
+- **Maintenance**: housekeeping → cleanup or create work
+- **Terminal**: ready for final action → execute and complete cycle
 
-### Step 1: Assess current state
+### Routing table
 
-Sync remote tracking information first, then gather evidence from multiple sources in parallel:
+| FSM state | Next command | Key evidence fields |
+|-----------|-------------|-------------------|
+| NoWorkPlanned | `issue-create` | `issues.open_count == 0` |
+| PreFlightReview | `issue-review` | Open Issues not yet reviewed |
+| ReadyToStart | `implement` | `git.on_main`, no uncommitted, actionable Issues |
+| Implementing / ImplementationDone | `test-create` | On feature branch, R/ changes, no tests |
+| TestsDone | `quality-check` | Tests exist, not quality-checked |
+| QualityOK | `test-regression` | Quality OK, suite not run |
+| TestsPass | `docs-discover` (Mode 2) | Tests pass, docs not reviewed |
+| DocsOK | `commit` | Docs OK, uncommitted changes |
+| Committed | `pr-create` | Committed, no PR |
+| CIPending | Delegate CI-wait | `pull_requests.open[].ci_status == "pending"` |
+| BotReviewPending | Delegate review-wait | Bot review not yet completed |
+| ReadyForReview | `pr-review` | CI green, bot review terminal |
+| ExceptionFlow | `pr-create` (exception path) | Hotfix or no-issue work |
+| CIFailed | Fix inline, re-push | `ci_status == "failure"` |
+| UnresolvedThreads | `review-fix` | `review_threads_unresolved > 0` |
+| ReviewDone | `pr-merge` | Review concluded mergeable |
+| ChangesRequired | `review-fix` | Review concluded changes_required |
+| DependentChainRebase | `git rebase --onto` | `mergeable == "CONFLICTING"`, parent recently merged |
+| StaleBranches | Delete stale branches | `git.stale_branches` non-empty |
+| CycleComplete | Post-cycle scan → `implement` | PR merged, on main |
+| EnvironmentIssue | `doctor` | `environment.doctor_healthy == false` |
 
-```bash
-# Sync local tracking refs with remote (prune deleted branches)
-git fetch --prune origin
+### Priority rules (tie-break)
 
-# Git state
-git branch --show-current
-git status --short
-git log --oneline -5
+When multiple states apply, follow `controls--workflow-state-machine.md` § Priority Rules. Constraint-violation states always take precedence over progress states.
 
-# GitHub state
-gh issue list --state open --json number,title,labels,body --limit 30
-gh pr list --state open --json number,title,headRefName,statusCheckRollup,mergeable --limit 10
+### Post-cycle signal scan
 
-# Recently merged PRs (for dependent chain detection)
-gh pr list --state merged --json number,title,mergedAt --limit 5
+At CycleComplete, run a lightweight scan per `session-retro.md` § Quick Scan Mode. "No signals" is the normal result — proceed silently.
 
-# Environment state
-make doctor 2>&1 | tail -5
+## Act
 
-# Stale branch check (squash-merged branches linger after PR merge)
-git branch --merged origin/main | grep -v '^\*\|main$' || true
-git branch --no-merged origin/main --format='%(refname:short) %(upstream:track)' | grep '\[gone\]' || true
+### 1. Present proposal
 
-# Note: Bot review is triggered and waited on by pr-create (Step 5) via
-# subagent delegation. next does not manage bot review state directly.
-
-# Unresolved review threads (for each open PR)
-# Uses GraphQL because REST API does not expose thread resolution state.
-gh api graphql -f query='
-  query($owner: String!, $repo: String!, $pr: Int!) {
-    repository(owner: $owner, name: $repo) {
-      pullRequest(number: $pr) {
-        reviewThreads(first: 100) {
-          totalCount
-          nodes { id isResolved isOutdated }
-        }
-      }
-    }
-  }
-' -f owner={owner} -f repo={repo} -F pr=<N> --jq '{
-  total: .data.repository.pullRequest.reviewThreads.totalCount,
-  unresolved: [.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)] | length
-}'
-```
-
-**Background task check**: If a background subagent was previously launched (e.g., for CI-wait), check its transcript file for completion. See `subagent-policy.mdc` "Completion guarantee" for the protocol. Incorporate results into the state assessment.
-
-### Step 2: Determine workflow position
-
-Use the evidence to classify the current state into one of these positions:
-
-| State signals | Workflow position | Next command |
-|---------------|-------------------|--------------|
-| No open Issues | **No work planned** | `issue-create` |
-| Open Issues exist, on `main`, no uncommitted changes, Issues not yet reviewed | **Pre-flight review needed** | `issue-review` |
-| Open Issues exist, on `main`, no uncommitted changes | **Ready to start** | `implement` (auto-select) |
-| On feature branch, uncommitted R/ changes, no tests | **Implementation done** | `test-create` |
-| On feature branch, tests exist, not yet checked | **Tests done** | `quality-check` |
-| On feature branch, quality OK, tests not run as suite | **Quality OK** | `test-regression` |
-| On feature branch, tests pass, docs not reviewed | **Tests pass** | `docs-discover` (Mode 2) |
-| On feature branch, docs OK, uncommitted changes | **Docs OK** | `commit` |
-| On feature branch, committed, no PR | **Committed** | `pr-create` |
-| Open PR, CI still running, independent Issue exists | **CI pending (parallel)** | Delegate via `delegation--review-wait.md` or `delegation--ci-wait-only.md` (see `agent--delegation-decision.md`), then start `implement` on independent Issue. When CI completes, proceed to `pr-review`. |
-| Open PR, CI still running, no independent Issue | **CI pending (housekeeping)** | Delegate CI-wait to background subagent (see `subagent-policy.mdc`), then do housekeeping (see Step 6). |
-| Stale local branches detected | **Cleanup needed** | Delete stale branches (see `pr-merge.md` "Post-merge cleanup"). Can be done during housekeeping. |
-| Background subagent running | **Background task in progress** | Check transcript for completion; continue independent work |
-| Open PR, unresolved review threads > 0 | **Unresolved review threads** | `review-fix` (reply + resolve per `review--consensus-protocol.md`) |
-| Open PR, CI all green, wait subagent done | **Ready for review** | `pr-review` (retrieves bot review findings if available) |
-| Open PR, CI failed | **CI failure** | Fix inline, re-push, then **re-enter `next`** (state will be "CI pending" → delegate to subagent per `subagent-policy.mdc`). Do NOT poll CI inline after re-push. |
-| PR reviewed, changes required | **Changes required** | `review-fix` (address findings from `pr-review`, then re-push and re-review) |
-| PR reviewed, mergeable | **Review done** | `pr-merge` |
-| Open PR, `CONFLICTING` mergeable status, parent PR recently merged | **Dependent chain needs rebase** | Rebase child branch with `git rebase --onto` (see `git--squash-merge-dependent-branch.md`), then force-push and wait for CI. Detect via: `gh pr view <N> --json mergeable -q '.mergeable'` returns `CONFLICTING` AND a related PR was recently squash-merged. |
-| PR merged, back on `main` | **Cycle complete** | Post-cycle signal scan (see Step 3), then `implement` (next Issue) or `issue-create` |
-| Environment not ready | **Environment issue** | `doctor` |
-| On `main`, hotfix needed | **Exception flow** | `implement` → `pr-create` (exception path) |
-
-### Step 3: Refine with context
-
-Beyond the basic position, consider:
-
-- **Blocked Issues**: If the auto-selected Issue depends on unfinished work, flag it.
-- **In-progress work**: If uncommitted changes exist on a branch, resuming that work takes priority over starting new Issues.
-- **Failed CI**: If an open PR has failing checks, fixing it takes priority.
-- **Stale PRs**: If a PR is open but not reviewed, suggest `pr-review`.
-- **Post-cycle signal scan**: When the state is **Cycle complete** (PR merged, back on `main`), run a lightweight scan for learning signals before proposing the next action. Follow the Quick Scan procedure in `@.cursor/commands/session-retro.md` § Quick Scan Mode:
-  - Scan `git log` and recent closed Issues/PRs for the 5 signal categories (Friction, Discovery, Gap, Drift, Efficiency)
-  - Do NOT read agent transcripts — that is the full `session-retro`'s job
-  - **"No signals" is the normal result.** Do not manufacture findings. Proceed silently to the next action.
-  - If a high-confidence signal is detected, report it in 1-2 lines within the Step 4 proposal and offer `session-retro` as an alternative to `implement`
-
-### Step 4: Present proposal
-
-Format the proposal clearly:
-
-```
+```text
 ## Next Action
 
 ### Current state
 - Branch: `<branch>`
-- Uncommitted changes: <yes/no> (<file count> files)
-- Open Issues: <count> (<unblocked count> actionable)
-- Open PRs: <count> (CI status: <pass/fail/pending>)
-- Environment: <healthy/issues>
+- Uncommitted changes: <yes/no>
+- Open Issues: <count> (<actionable> actionable)
+- Open PRs: <count> (CI: <status>)
 
 ### Proposed action: `<command-name>`
-- Reason: <why this is the right next step>
-- Target: <Issue #N / PR #N / specific scope>
-- Expected outcome: <what will be done>
+- Reason: <why>
+- Target: <Issue/PR>
 
-### Workflow context
-- Previous step: <what was last completed>
-- After this step: <what comes next in the workflow>
-
-Proceed? [Y/n/other]
+Proceed? [Y/n]
 ```
 
-### Step 5: Execute on approval
+### 2. Execute on approval
 
-Once the user approves (or modifies the choice):
+1. Read `.cursor/commands/<command>.md`
+2. Follow its steps exactly (`HS-NO-SKIP`)
+3. On completion, re-run Sense to re-assess state
+4. Continue until: user scope fulfilled, decision requires user judgment, or error persists after fix
 
-1. **Read the command specification**: Load `.cursor/commands/<command>.md`
-2. **Follow the command's steps exactly**: Do not abbreviate or skip steps defined in the command.
-3. **On completion, loop back to Step 1**: Re-assess state, propose and execute the next action without waiting for further user confirmation.
+### 3. Delegation for blocking operations
 
-Report progress at each gate with a one-line summary (e.g., "PR #13 created, CI pending — delegated. Starting #9.").
+When state is CIPending or BotReviewPending, delegate per `subagent-policy.mdc` using templates from `.cursor/templates/delegation--*.md`. See `agent--delegation-decision.md` for the decision flowchart.
 
-**Approval scope**: User approval removes the confirmation pause between steps — nothing else. All policies remain invariant: subagent delegation (`subagent-policy.mdc`), verification gates, command specifications (`HS-NO-SKIP`), and Hard Stops. Approval is never a basis for skipping steps or changing execution methods.
+### 4. Parallel execution
 
-**Termination conditions**: After initial approval, return to Step 1 after every action. End the turn ONLY when:
-
-1. The user's stated scope is fulfilled — if no scope was stated, when no actionable work remains (no open Issues, no open PRs, no pending CI, no active subagents)
-2. A decision requires user judgment
-3. An error persists after fix attempt
-
-Intermediate milestones (completing todos, pushing, posting replies) are never termination conditions.
-
-If the user modifies the choice (e.g., "do #8 instead of #7"), adjust and proceed.
-
-**Parallel execution**: When CI is pending and independent Issues exist, delegate CI+review wait to a background subagent (see `agent--delegation-decision.md`) and start the next Issue in parallel. When CI completes, the main agent runs `pr-review` → `pr-merge`:
+When CI is pending and independent Issues exist, start the next Issue while CI completes:
 
 ```text
-Issue A: implement → ... → pr-create
-                                │
-                      CI pending on PR #X
-                                │
-    ┌───────────────────────────┤
-    │ Background subagent       │ Main agent
-    │ poll CI → report          │ Issue B: implement → ...
-    │                           │
-    └───────────────────────────┤
-                                │
+Issue A: ... → pr-create → CI pending
+                              │
+    ┌─────────────────────────┤
+    │ Background subagent     │ Main agent
+    │ poll CI → report        │ Issue B: implement → ...
+    └─────────────────────────┤
+                              │
     next re-assessment: CI green → pr-review → pr-merge
 ```
 
-### Step 6: Subagent delegation for blocking operations
+## Guard / Validation
 
-When Step 2 identifies any **CI pending** state, delegate to a background subagent per `@.cursor/rules/subagent-policy.mdc` (delegation pattern, Two-Tier Gate, completion guarantee). Use the decision flowchart from `@.cursor/knowledge/agent--delegation-decision.md` and prompt templates from `.cursor/templates/delegation--*.md`.
+- `pre-push` hook runs differential checks before every push (`HS-LOCAL-VERIFY`)
+- All policies remain invariant after user approval (`HS-NO-SKIP`)
+- Subagent delegation per `subagent-policy.mdc` for all blocking operations
 
-### Step 7: Handle interruptions
+> **Observation gap**: All external state is acquired via `make` evidence targets. If information is not available from any target, report it as a missing evidence target — do not work around it with ad-hoc commands.
 
-If an error or unexpected state occurs during execution:
-
-- **Fixable locally** (lint error, test failure): Fix it as part of the current command's scope.
-- **Needs investigation**: Suggest `debug` command.
-- **Scope drift**: Suggest creating a new Issue via `issue-create`.
-- **User needs to decide**: Present options and wait.
-
-## Workflow State Diagram
-
-See `docs/agent-control/state-model.md` for the FSM state model. This command adds decision points (Step 2 table), post-cycle retro scan (Step 3), and loop-back (Step 5).
-
-## Output (response format)
-
-- **State assessment**: branch, changes, Issues, PRs, environment (concise)
-- **Proposed action**: command name + rationale
-- **Workflow position**: where we are in the flow, what comes after
-- **User prompt**: confirmation request
-
-After execution:
-
-- **Action result**: output from the delegated command
-- **Next proposal**: automatic re-assessment for the following step
+> **Anti-pattern — judgment creep**: If this procedure starts accumulating complex conditional logic, the logic belongs in Knowledge atoms or the FSM specification, not here.
 
 ## Related
 
-- All commands in `.cursor/commands/` — this meta-command delegates to them
-- `docs/agent-control/` — control system architecture, FSM state model, evidence schema
-- `.cursor/rules/workflow-policy.mdc` — Issue-driven workflow requirements
-- `.cursor/rules/agent-safety.mdc` — Hard Stops (absolute prohibitions)
-- `.cursor/rules/subagent-policy.mdc` — Subagent delegation policy
+- `controls--workflow-state-machine.md` — FSM state catalog, transitions, tie-break
+- `agent--delegation-decision.md` — delegation flowchart
+- `subagent-policy.mdc` — subagent delegation policy
+- `session-retro.md` — post-cycle signal scan

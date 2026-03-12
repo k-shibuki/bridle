@@ -2,141 +2,95 @@
 
 ## Purpose
 
-Execute a merge — either via GitHub (for PR flow) or locally (for exception flow).
-
-## When to use
-
-- After `pr-review` concludes "Mergeable" (standard PR flow, including hotfix exception PRs)
-- After `commit` and successful quality/tests (documentation-only exception flow on local branch)
-
-## Mandatory Preconditions (verify before ANY merge)
-
-These checks are the first step of `pr-merge` and cannot be skipped:
-
-1. **CI must be green** (per `@.cursor/rules/agent-safety.mdc` `HS-CI-MERGE`):
-   ```bash
-   gh pr checks <PR-number>
-   ```
-   If any check is not `pass`, **STOP**. Do not merge. Fix the failure or wait for completion.
-
-2. **One of the following must be true**:
-   - `pr-review` concluded "Mergeable"
-   - User explicitly instructed to merge
-
-3. **Record CI evidence** (audit trail):
-   If `## Test Evidence` is empty, paste a CI summary (e.g., `gh pr checks` output or "CI all pass — R jobs skipped, no R changes"). This is a record, not a gate — CI green is already enforced by precondition 1.
-
-   ```bash
-   gh api repos/{owner}/{repo}/pulls/<PR-number> -X PATCH -f body="<updated body>"
-   ```
-
-4. **Branch must be mergeable** (merge state check):
-
-   ```bash
-   gh pr view <PR-number> --json mergeStateStatus -q '.mergeStateStatus'
-   ```
-
-   | Value | Meaning | Action |
-   |-------|---------|--------|
-   | `CLEAN` | All checks pass, no conflicts | Merge |
-   | `HAS_HOOKS` | Mergeable, pre-receive hooks will run | Merge |
-   | `BEHIND` | Branch is behind main (no conflict) | Merge (allowed by `strict: false`) |
-   | `UNSTABLE` | Some non-required checks failed | Merge if required checks pass |
-   | `DIRTY` | Merge conflict exists | Resolve conflict, push, wait for CI |
-   | `BLOCKED` | Required checks failed or reviews missing | Investigate; do not force-merge |
-   | `UNKNOWN` | GitHub is computing merge status | Wait and re-query |
-
-   With `strict: false`, `BEHIND` does not block the merge. GitHub allows merging
-   as long as required checks have passed and there are no conflicts.
-
-   **Design note**: Solo + sequential agent model has near-zero risk of conflicting
-   PRs. Post-merge CI (`R-CMD-check.yaml` on push to main) acts as safety net.
-   If the project moves to parallel multi-agent development, reconsider enabling
-   `strict: true` or GitHub Merge Queue.
-
-5. **Bot review must cover the latest push** (review freshness):
-
-   The agent must have evidence that the latest push has been reviewed.
-   Acceptable evidence (any one is sufficient):
-
-   **(a) Review object exists after last push**:
-   ```bash
-   last_push=$(gh pr view <PR-number> --json commits \
-     --jq '.commits[-1].committedDate')
-   last_review=$(gh api repos/{owner}/{repo}/pulls/<PR-number>/reviews \
-     --jq '[.[] | select(.user.login | test("coderabbit";"i"))
-            | select(.body != "") | .submitted_at] | sort | last')
-   # last_review > last_push → fresh
-   ```
-
-   **(b) Silent clean bill** — incremental review found no new issues:
-   All of the following must be true:
-   - Re-review was triggered after the last push (trigger comment exists)
-   - Trigger was acknowledged by CR (ack comment exists)
-   - Sufficient time elapsed (> 7 min, beyond typical completion range)
-   - No new review object, no new inline comments, no rate limit
-   - No new unresolved threads
-
-   If neither (a) nor (b) is satisfied, a re-review is pending. **STOP** —
-   wait for the re-review to complete before merging.
-
-If any precondition (1-5) is not met, do not proceed to merge. Report the blocking condition and the required action.
+Execute a merge after `pr-review` concludes "Mergeable" or the user explicitly instructs.
 
 ## Inputs
 
-- PR number (for GitHub merge) or branch name (for local merge) (required)
-- Merge strategy: squash or merge (required)
+- PR number (required)
+- Merge strategy: squash / merge (required)
 
-## High-risk change policy
+## Sense
 
-Changes to the following areas require extra caution before merge:
+Run `make evidence-pull-request PR=<N>` for structured PR state.
 
-| Area | Examples | Policy |
-|------|----------|--------|
-| Schema / S7 contracts | `docs/schemas/**`, `R/*` (S7 classes) | Verify schema-code consistency |
-| CI / build pipeline | `.github/workflows/**`, `Makefile`, `tools/**` | Verify `make ci` passes locally |
-| AI agent rules | `.cursor/rules/**`, `.cursor/commands/**` | Review all downstream impact |
-| Security-related | Auth, data retention, network boundaries | Require explicit user approval |
+Key fields to extract:
+- `ci.status` — must be `"success"`
+- `merge.merge_state_status` — must be `CLEAN` or `HAS_HOOKS` (per `controls--merge-invariants.md` § Merge State Resolution)
+- `reviews.threads_unresolved` — must be 0
+- `reviews.disposition` — must be `"approved"` or user explicit merge
+- `reviews.bot_coderabbit.review_submitted_at` vs `reviews.last_push_at` — freshness
 
-For solo development, the AI agent should flag these areas and confirm with the user before merging. In team settings, consider requiring 2 reviewers for high-risk areas via branch protection rules.
+## Orient
 
-## Merge strategy selection
+### Merge preconditions
+
+Consult `controls--merge-invariants.md` for the 5 mandatory preconditions. All must be TRUE:
+
+1. CI is green (`HS-CI-MERGE`)
+2. Review concluded mergeable
+3. CI evidence recorded (`## Test Evidence` non-empty)
+4. Branch is mergeable (merge state resolution table in Knowledge atom)
+5. Bot review covers latest push (freshness check)
+
+### Merge strategy selection
 
 | Source | Pattern | Strategy |
 |--------|---------|----------|
-| Local human work | 2-5 meaningful commits | merge (preserves history) |
-| AI agent (Claude Code, Cursor) | Many micro-commits | **squash** (consolidates) |
-| Mixed/uncertain | Review with `git log` | Case-by-case |
+| AI agent | Many micro-commits | **squash** |
+| Human | 2-5 meaningful commits | merge |
 
-**Decision heuristic**:
+### High-risk change policy
+
+Changes to schemas, CI pipeline, AI rules, or security areas require extra caution. Confirm with user before merging.
+
+### FSM context
+
+This command runs in state **ReviewDone**. Valid transitions: → CycleComplete (merge success) or → CIFailed (post-merge CI failure on main).
+
+## Act
+
+### 1. Verify preconditions
+
+Check each precondition from `controls--merge-invariants.md` against evidence fields. If any fails, **STOP** and report the blocking condition.
+
+### 2. Record CI evidence
+
+If `## Test Evidence` is empty, update PR body with CI summary:
 
 ```bash
-# For PRs
-gh pr view <PR-number> --json commits --jq '.commits | length'
-
-# For local branches
-git log main..<branch> --oneline | wc -l
+gh pr edit <N> --body "<updated body with CI evidence>"
 ```
 
-- 2-5 well-organized commits -> merge
-- 10+ commits, or "wip"/"fix typo" chains -> squash
+### 3. Merge
 
-## GitHub PR merge (standard PR flow)
-
-Merge only after CI passes and review is complete.
+**Preferred: auto-merge** (Deterministic enforcement):
 
 ```bash
-# Squash merge (consolidates commits)
-gh pr merge <PR-number> --squash
-
-# Normal merge (preserves history)
-gh pr merge <PR-number> --merge
+gh pr merge <N> --auto <--squash|--merge>
 ```
 
-Remote branches are automatically deleted after merge (`delete_branch_on_merge` is
-enabled in repository settings). No `--delete-branch` flag needed.
+Use the merge strategy from Inputs (squash or merge), not a hardcoded default.
 
-After merge, sync local tracking information:
+Preconditions for auto-merge per `controls--merge-invariants.md` § Auto-Merge Decision:
+- All mandatory preconditions pass
+- Consensus on all threads (unresolved == 0)
+- Bot review NOT pending
+
+**Fallback: delegated merge** when auto-merge fails:
+- Use `.cursor/templates/delegation--ci-wait-only.md`
+- Main agent executes `gh pr merge <N> <--squash|--merge>` after subagent reports CI green
+
+**NEVER use `--admin` flag** (`HS-CI-MERGE(a)`).
+
+### 4. Post-merge cleanup
+
+**Gate on observed merged state** — `gh pr merge --auto` returns before the merge completes. Verify merge state before cleanup:
+
+```bash
+gh pr view <N> --json state --jq '.state' | grep -q 'MERGED'
+```
+
+If not yet merged (auto-merge set), delegate wait via `.cursor/templates/delegation--ci-wait-only.md` and run cleanup after confirmed merge.
 
 ```bash
 git checkout main
@@ -144,141 +98,37 @@ git pull origin main
 git fetch --prune origin
 ```
 
-`--prune` removes local remote-tracking references (e.g. `origin/feat/...`) for
-branches deleted by the automatic branch cleanup.
-
-### Clean up local feature branch
-
-If the local feature branch still exists after the GitHub merge, delete it:
+Delete local feature branch (force-delete after squash merge):
 
 ```bash
-git branch -d <branch-name> 2>/dev/null || true
+pr_state=$(gh pr list --head <branch> --state merged --json number -q '.[0].number')
+[ -n "$pr_state" ] && git branch -D <branch> 2>/dev/null || true
 ```
 
-**Squash merge caveat**: After a squash merge, `git branch -d` may fail with "not fully merged" because git does not recognize the squashed commit as an ancestor. Use force-delete only after confirming the PR is merged:
+### 5. Local merge (documentation-only exception)
+
+For docs-only changes (type: `docs` + exception: `no-issue`) that bypass PR flow:
 
 ```bash
-pr_state=$(gh pr list --head <branch-name> --state merged --json number -q '.[0].number')
-if [ -n "$pr_state" ]; then
-  git branch -D <branch-name> 2>/dev/null || true
-fi
+git checkout main && git merge --no-edit <branch>
 ```
 
-See `@.cursor/knowledge/git--squash-merge-dependent-branch.md` for related patterns.
+**Code changes (including hotfix) MUST use the GitHub PR merge flow above.**
 
-## Local merge (documentation-only exception flow)
+## Guard / Validation
 
-For documentation-only changes (type: `docs` + exception: `no-issue`) that bypassed the PR flow. **`hotfix` changes must use the GitHub PR merge flow above** — direct push / local merge is not permitted for code changes.
+- `HS-CI-MERGE`: CI must be green; `--admin` prohibited; amend+force-push prohibited
+- `HS-CI-MERGE` auto-merge guard: MUST NOT set auto-merge while bot review is pending
+- `required_conversation_resolution`: all threads resolved before merge
+- Post-merge: `R-CMD-check.yaml` runs on main push (safety net)
 
-### Normal merge
+> **Observation gap**: All external state is acquired via `make` evidence targets. If information is not available from any target, report it as a missing evidence target.
 
-```bash
-git checkout main
-git merge --no-edit <branch-name>
-```
-
-### Squash merge
-
-```bash
-git checkout main
-git merge --squash <branch-name>
-git commit -m "<type>: <description>
-
-Refs: #<issue-number>"
-```
-
-After `--squash`, you must run `git commit` with a message following `commit-format.mdc`.
-
-## Auto-merge (preferred for single PRs)
-
-Use auto-merge to let GitHub merge automatically when all required checks pass.
-
-**Preconditions** (all must be true):
-
-- Mandatory Preconditions 1-5 pass (CI green, review fresh, etc.)
-- `pr-review` has concluded "Mergeable" on the **current** HEAD commit
-- Consensus reached on all review threads per `review--consensus-protocol.md` (unresolved == 0)
-
-```bash
-gh pr merge <PR-number> --auto --squash
-```
-
-This moves the "merge after CI" operation from Steering (agent polls and merges)
-to Deterministic (GitHub enforces required checks and merges automatically).
-
-After setting auto-merge, the agent can immediately proceed to the next task.
-If CI fails, GitHub cancels auto-merge automatically.
-
-**Verify auto-merge was set** (optional):
-
-```bash
-gh pr view <PR-number> --json autoMergeRequest -q '.autoMergeRequest'
-```
-
-**Fallback**: If `gh pr merge --auto` fails (e.g., token scope issue), fall back
-to the delegated merge pattern below.
-
-## Delegated merge (background subagent)
-
-Delegation is the **fallback** when auto-merge is not available. See
-`@.cursor/knowledge/agent--delegation-decision.md` § Decision Flowchart for the
-full decision tree (auto-merge → fallback → delegation).
-
-### When to use
-
-- `gh pr merge --auto` failed (e.g., token scope issue, API error)
-- Dependent PRs with shared commit history need `--onto` rebase after squash merge
-- CI monitoring without merge intent (pre-review)
-
-### How to delegate
-
-Launch a `shell` subagent with `model: "fast"` and `run_in_background: true`.
-
-Choose the appropriate template from `.cursor/templates/`:
-
-| Scenario | Template |
-|----------|----------|
-| Single PR, auto-merge failed, pr-review done | `delegation--ci-wait-only.md` (poll CI only; main agent runs `gh pr merge <N> --squash` after subagent reports CI green) |
-| CI monitoring only (no merge intent) | `delegation--ci-wait-only.md` |
-| PRs with shared commits (branched from each other) | `delegation--dependent-chain.md` (includes `--onto` rebase) |
-
-Scenarios **not listed** (single PR with pr-review done, multiple independent PRs)
-are handled by auto-merge — see § Auto-merge and § Batch Auto-Merge in
-`agent--delegation-decision.md`.
-
-### Completion detection
-
-The main agent checks the subagent transcript at the next `next` re-assessment cycle. See `subagent-policy.mdc` "Completion guarantee" for the protocol.
-
-### Post-delegation push verification
-
-When a subagent performed a force-push (Template 3 `--onto` rebase), verify the push reached the remote before proceeding with further branch operations:
-
-```bash
-git fetch origin
-git ls-remote origin <branch> | head -1
-```
-
-Compare the remote SHA with the expected value from the subagent's return. If they differ, see `@.cursor/knowledge/git--quick-recovery.md` § Force-with-Lease Rejected. See also `@.cursor/knowledge/git--safety-checklist.md` for the full post-subagent verification checklist.
-
-## Constraints
-
-- Use non-interactive git flags (`--no-edit`, `--no-pager`) to avoid hangs
-- Per `@.cursor/rules/agent-safety.mdc` `HS-CI-MERGE`: CI must be green before merge
-- Merge is permitted when `pr-review` concluded "Mergeable" or the user explicitly instructs to merge
-- Per `@.cursor/rules/agent-safety.mdc` `HS-CI-MERGE`: NEVER use `--admin` flag on `gh pr merge`, NEVER use amend+force-push in normal PR flow. See the Hard Stop definition for rationale and enforcement details.
-
-## Output (response format)
-
-- **Method**: GitHub PR merge / local merge
-- **Strategy**: squash / merge
-- **Result**: success / conflicts
-- **Commit(s)**: resulting commit hash(es)
-- **Issue**: `#<number>` closed by this merge (if applicable)
-- **Notes**: any conflicts and how they were resolved
+> **Anti-pattern — judgment creep**: Merge preconditions are declared in `controls--merge-invariants.md`. This procedure checks them — it does not redefine them.
 
 ## Related
 
-- `@.cursor/commands/pr-review.md` (previous step in PR flow)
-- `@.cursor/commands/commit.md` (exception: documentation-only direct push)
-- `@.cursor/rules/commit-format.mdc` (for squash commit messages)
+- `controls--merge-invariants.md` — preconditions, merge state resolution, auto-merge decision
+- `pr-review.md` — produces the merge recommendation
+- `agent-safety.mdc` § HS-CI-MERGE — Hard Stop definition
+- `git--squash-merge-dependent-branch.md` — dependent chain rebase
