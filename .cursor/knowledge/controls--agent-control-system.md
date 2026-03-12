@@ -14,4 +14,3 @@ responsibility boundaries, and design principles. Related documents:
 - [State Model](../../docs/agent-control/state-model.md) — FSM states, signals, transitions
 - [Evidence Schema](../../docs/agent-control/evidence-schema.md) — Makefile naming, evidence targets
 - [Knowledge Guidelines](../../docs/agent-control/knowledge-guidelines.md) — knowledge atom conventions
-make
