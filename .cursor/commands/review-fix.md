@@ -64,7 +64,8 @@ Per `HS-REVIEW-RESOLVE` and `review--consensus-protocol.md`:
    - Bot auto-resolved → consensus confirmed
    - Bot confirmed → resolve thread
    - Bot objected → address and retry
-   - Timeout → resolve with justification
+   - Timeout with evidence → resolve with justification per `review--consensus-protocol.md` § Reviewer Unavailable (requires proof of unavailability + independent verification)
+   - Timeout without evidence → escalate to user; do not resolve unilaterally
 4. Verify: `reviews.threads_unresolved == 0`
 
 ### 4. Quality gate

@@ -51,7 +51,7 @@ If on `main`, create branch per `commit-format.mdc` § Branch Naming.
 
 ### 2. Commit if needed
 
-Follow `commit-format.mdc`. Include `Refs: #<issue>` in footer.
+Follow `commit-format.mdc`. Include `Refs: #<issue>` in footer (standard path). For exception types (`hotfix`/`no-issue`), see `commit-format.mdc` § Footer for allowed alternatives.
 
 ### 3. Local verification and push
 
@@ -65,6 +65,7 @@ git push -u origin HEAD
 
 ```bash
 gh pr create --title "<type>(<scope>): <description>" \
+  --base "main" \
   --label "<type>" \
   --body "<body from PULL_REQUEST_TEMPLATE.md>"
 ```

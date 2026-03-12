@@ -15,7 +15,7 @@ Run `make evidence-pull-request PR=<N>` for structured PR state.
 
 Key fields to extract:
 - `ci.status` — must be `"success"`
-- `merge.merge_state_status` — must be `CLEAN`, `HAS_HOOKS`, `BEHIND`, or `UNSTABLE`
+- `merge.merge_state_status` — must be `CLEAN` or `HAS_HOOKS` (per `controls--merge-invariants.md` § Merge State Resolution)
 - `reviews.threads_unresolved` — must be 0
 - `reviews.disposition` — must be `"approved"` or user explicit merge
 - `reviews.bot_coderabbit.review_submitted_at` vs `reviews.last_push_at` — freshness
@@ -66,8 +66,10 @@ gh pr edit <N> --body "<updated body with CI evidence>"
 **Preferred: auto-merge** (Deterministic enforcement):
 
 ```bash
-gh pr merge <N> --auto --squash
+gh pr merge <N> --auto <--squash|--merge>
 ```
+
+Use the merge strategy from Inputs (squash or merge), not a hardcoded default.
 
 Preconditions for auto-merge per `controls--merge-invariants.md` § Auto-Merge Decision:
 - All mandatory preconditions pass
@@ -76,11 +78,19 @@ Preconditions for auto-merge per `controls--merge-invariants.md` § Auto-Merge D
 
 **Fallback: delegated merge** when auto-merge fails:
 - Use `.cursor/templates/delegation--ci-wait-only.md`
-- Main agent executes `gh pr merge <N> --squash` after subagent reports CI green
+- Main agent executes `gh pr merge <N> <--squash|--merge>` after subagent reports CI green
 
 **NEVER use `--admin` flag** (`HS-CI-MERGE(a)`).
 
 ### 4. Post-merge cleanup
+
+**Gate on observed merged state** — `gh pr merge --auto` returns before the merge completes. Verify merge state before cleanup:
+
+```bash
+gh pr view <N> --json state --jq '.state' | grep -q 'MERGED'
+```
+
+If not yet merged (auto-merge set), delegate wait via `.cursor/templates/delegation--ci-wait-only.md` and run cleanup after confirmed merge.
 
 ```bash
 git checkout main

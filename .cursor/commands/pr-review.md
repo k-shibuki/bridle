@@ -81,7 +81,7 @@ If "Mergeable" → recommend `pr-merge`. If "Changes required" → recommend `re
 ## Guard / Validation
 
 - CI must be green before review (`HS-CI-MERGE`)
-- Bot review freshness: `reviews.bot_coderabbit.review_submitted_at > reviews.last_push_at`
+- Bot review freshness: bot reached a terminal state covering the latest push. For COMPLETED: `review_submitted_at > last_push_at`. For COMPLETED_SILENT: terminal-state evaluation per `review--bot-operations.md` § Terminal States (no timestamp required).
 - Thread completeness: classified findings == unresolved threads
 
 > **Observation gap**: All external state is acquired via `make` evidence targets. If information is not available from any target, report it as a missing evidence target.

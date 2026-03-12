@@ -37,6 +37,8 @@ Consult `controls--workflow-state-machine.md` for formal state definitions. The 
 | Committed | `pr-create` | Committed, no PR |
 | CIPending | Delegate CI-wait | `pull_requests.open[].ci_status == "pending"` |
 | BotReviewPending | Delegate review-wait | Bot review not yet completed |
+| ReadyForReview | `pr-review` | CI green, bot review terminal |
+| ExceptionFlow | `pr-create` (exception path) | Hotfix or no-issue work |
 | CIFailed | Fix inline, re-push | `ci_status == "failure"` |
 | UnresolvedThreads | `review-fix` | `review_threads_unresolved > 0` |
 | ReviewDone | `pr-merge` | Review concluded mergeable |

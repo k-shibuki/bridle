@@ -23,11 +23,10 @@ Present selection with rationale and wait for user approval.
 
 ### Issue specification
 
-```bash
-gh issue view <issue-number>
-```
+Run `make evidence-issue ISSUE=<issue-number>` for structured Issue metadata.
 
 Extract: summary, acceptance criteria (DoD), test plan, schema impact, related ADRs.
+If any required field is unavailable, report a missing evidence target.
 
 ### Environment
 
