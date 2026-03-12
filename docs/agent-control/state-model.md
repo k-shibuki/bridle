@@ -21,9 +21,9 @@ of available transitions.
 | ST_CI_FAILED | `CIFailed` | PR exists, CI failed | `pr_exists_for_branch AND ci_status == "failure"` |
 | ST_BOT_PENDING | `BotReviewPending` | CI green, bot review not yet complete | `pr_exists_for_branch AND ci_status == "success" AND bot_review_pending` |
 | ST_UNRESOLVED | `UnresolvedThreads` | Review threads exist that lack consensus | `pr_exists_for_branch AND review_threads_unresolved > 0` |
-| ST_REVIEW_READY | `ReadyForReview` | CI green, bot review complete, agent review needed | `pr_exists_for_branch AND ci_status == "success" AND bot_review_terminal AND review_threads_unresolved == 0 AND review_disposition == "pending"` |
+| ST_REVIEW_READY | `ReadyForReview` | CI green, bot review complete, agent review needed | `pr_exists_for_branch AND ci_status == "success" AND bot_review_terminal AND review_threads_unresolved == 0 AND review_concluded == false` |
 | ST_CHANGES_REQ | `ChangesRequired` | Review complete, changes requested | `pr_exists_for_branch AND review_disposition == "changes_requested"` |
-| ST_REVIEW_DONE | `ReviewDone` | Review complete, mergeable | `pr_exists_for_branch AND review_disposition == "approved" AND mergeable_status == "MERGEABLE"` |
+| ST_REVIEW_DONE | `ReviewDone` | Review complete, mergeable | `pr_exists_for_branch AND review_concluded AND mergeable_status == "MERGEABLE"` |
 | ST_REBASE | `DependentChainRebase` | Merge conflict from squash-merged parent PR | `pr_exists_for_branch AND mergeable_status == "CONFLICTING" AND parent_pr_recently_merged` |
 | ST_STALE | `StaleBranches` | Local branches track deleted remotes | `stale_branches_count > 0` |
 | ST_CYCLE_DONE | `CycleComplete` | PR merged, back on main | `on_main AND pr_just_merged` |
@@ -55,6 +55,7 @@ procedure context for in-progress local work.
 | `stale_branches` | string[] | `evidence-workflow-position.git.stale_branches` | Branches whose remote tracking ref is gone |
 | `stale_branches_count` | integer | derived | Length of `stale_branches` |
 | `commits_ahead` | integer | `evidence-workflow-position.git.commits_ahead_of_remote` | Commits ahead of remote |
+| `stash_count` | integer | `evidence-workflow-position.git.stash_count` | Number of stash entries |
 
 ### GitHub signals
 
@@ -91,6 +92,7 @@ procedure context for in-progress local work.
 | `bot_review_pending` | boolean | derived | Either bot status is `PENDING` or `NOT_TRIGGERED` |
 | `bot_review_terminal` | boolean | derived | Both bot statuses are terminal (`COMPLETED*`, `TIMED_OUT`, `RATE_LIMITED`) |
 | `review_disposition` | enum | `evidence-pull-request.reviews.disposition` | `"approved"` \| `"changes_requested"` \| `"pending"` |
+| `review_concluded` | boolean | derived | `(review_disposition == "approved") OR (review_disposition == "pending" AND bot_review_terminal AND review_threads_unresolved == 0)` |
 
 ### Environment signals
 
@@ -120,6 +122,7 @@ signals used in state conditions and transitions.
 | `uncommitted_files` | `evidence-workflow-position` | `git.uncommitted_files` |
 | `stale_branches` | `evidence-workflow-position` | `git.stale_branches` |
 | `commits_ahead` | `evidence-workflow-position` | `git.commits_ahead_of_remote` |
+| `stash_count` | `evidence-workflow-position` | `git.stash_count` |
 | `open_issues` | `evidence-workflow-position` | `issues.open` |
 | `open_issues_count` | `evidence-workflow-position` | `issues.open_count` |
 | `open_prs` | `evidence-workflow-position` | `pull_requests.open` |
@@ -162,11 +165,13 @@ captures explicit user/agent actions.
 | ST_CI_PENDING | `ci_status == "success"` | none | ST_BOT_PENDING | Wait for bot terminal state |
 | ST_CI_PENDING | `ci_status == "failure"` | none | ST_CI_FAILED | Diagnose and fix |
 | ST_CI_FAILED | `ci_status == "pending"` | fix pushed | ST_CI_PENDING | Re-enter CI pending |
-| ST_BOT_PENDING | `bot_review_terminal` | none | ST_REVIEW_READY | Ready for human/agent review |
+| ST_BOT_PENDING | `bot_review_terminal AND review_concluded` | none | ST_REVIEW_DONE | Bot-only review concluded with no findings |
+| ST_BOT_PENDING | `bot_review_terminal AND NOT review_concluded AND review_threads_unresolved > 0` | none | ST_UNRESOLVED | Bot findings need addressing |
+| ST_BOT_PENDING | `bot_review_terminal AND NOT review_concluded AND review_threads_unresolved == 0` | none | ST_REVIEW_READY | Ready for human/agent review |
 | ST_BOT_PENDING | `bot_coderabbit_status == "RATE_LIMITED" OR bot_codex_status == "RATE_LIMITED"` | none | ST_BOT_PENDING | Recovery: sleep + re-trigger |
-| ST_UNRESOLVED | `review_threads_unresolved == 0 AND review_disposition == "pending"` | `review-fix` completed | ST_REVIEW_READY | Ready for review |
-| ST_UNRESOLVED | `review_threads_unresolved == 0 AND review_disposition == "approved"` | `review-fix` completed | ST_REVIEW_DONE | Mergeable review state |
-| ST_REVIEW_READY | `review_disposition == "approved"` | `pr-review` completed | ST_REVIEW_DONE | Ready to merge |
+| ST_UNRESOLVED | `review_threads_unresolved == 0 AND review_concluded == false` | `review-fix` completed | ST_REVIEW_READY | Ready for review |
+| ST_UNRESOLVED | `review_threads_unresolved == 0 AND review_concluded` | `review-fix` completed | ST_REVIEW_DONE | Mergeable review state |
+| ST_REVIEW_READY | `review_concluded` | `pr-review` completed | ST_REVIEW_DONE | Ready to merge |
 | ST_REVIEW_READY | `review_disposition == "changes_requested"` | `pr-review` completed | ST_CHANGES_REQ | Fix required |
 | ST_CHANGES_REQ | `ci_status == "pending"` | fix pushed | ST_CI_PENDING | Re-enter CI pending |
 | ST_REVIEW_DONE | `mergeable_status == "MERGEABLE"` | `pr-merge` completed | ST_CYCLE_DONE | Cycle complete |

@@ -17,7 +17,7 @@ Key fields to extract:
 - `ci.status` — must be `"success"`
 - `merge.merge_state_status` — must be `CLEAN` or `HAS_HOOKS` (per `controls--merge-invariants.md` § Merge State Resolution)
 - `reviews.threads_unresolved` — must be 0
-- `reviews.disposition` — must be `"approved"` or user explicit merge
+- `reviews.*` fields required for derived signal `review_concluded` — compute per `state-model.md` § derived signals, or accept user explicit merge
 - `reviews.bot_coderabbit.review_submitted_at` vs `reviews.last_push_at` — freshness
 
 ## Orient
@@ -87,16 +87,7 @@ Preconditions for auto-merge per `controls--merge-invariants.md` § Auto-Merge D
 **Gate on observed merged state** — `gh pr merge --auto` returns before the merge completes. Run `make evidence-pull-request PR=<N>` and verify `state == "MERGED"` before cleanup. If not yet merged (auto-merge set), delegate wait via `.cursor/templates/delegation--ci-wait-only.md` and run cleanup after confirmed merge.
 
 ```bash
-git checkout main
-git pull origin main
-git fetch --prune origin
-```
-
-Delete local feature branch (force-delete after squash merge):
-
-```bash
-pr_state=$(gh pr list --head <branch> --state merged --json number -q '.[0].number')
-[ -n "$pr_state" ] && git branch -D <branch> 2>/dev/null || true
+make git-post-merge-cleanup BRANCH=<branch>
 ```
 
 ### 5. Local merge (documentation-only exception)

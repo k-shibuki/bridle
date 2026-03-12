@@ -63,6 +63,7 @@ current CLI surface.
 | `kb-new` | `knowledge-new` | knowledge | No abbreviation |
 | `install-hooks` | `git-install-hooks` | git | Group with git targets |
 | `new-branch` | `git-new-branch` | git | Group with git targets |
+| `git-post-merge-cleanup` | `git-post-merge-cleanup` | git | New target (already uses planned name) |
 | `scaffold-class` | `scaffold-class` | scaffold | — |
 | `scaffold-test` | `scaffold-test` | scaffold | — |
 
@@ -78,6 +79,7 @@ evidence target, proving no observation is lost in the transition.
 | `git log --oneline` | next, commit, session-retro | Not evidence (historical) | Use `git` directly |
 | `git diff --stat` / `git diff` | commit, docs-discover | Not evidence (content) | Use `git` directly |
 | Stale branch detection | next | `evidence-workflow-position` | `git.stale_branches` |
+| `git stash list` | subagent signal scan | `evidence-workflow-position` | `git.stash_count` |
 | `gh issue list` | next, implement, issue-review | `evidence-issue` | `issues[]` |
 | `gh issue view <N>` | implement, pr-review, issue-review | `evidence-issue` | `issues[]` (filtered) |
 | `gh pr list --state open` | next | `evidence-workflow-position` | `pull_requests.open[]` |

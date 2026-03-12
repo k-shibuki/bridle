@@ -92,9 +92,18 @@ Trigger CodeRabbit re-review (if budget remaining per `review--bot-operations.md
 gh pr comment <PR> --body "@coderabbitai review"
 ```
 
-Delegate wait via `.cursor/templates/delegation--review-wait.md` (`run_in_background: true`, `model: "fast"`).
+**Fast path** (one-shot observation per `controls--observation-execution-boundary.md`):
 
-After delegating, **STOP** and re-enter `next` for state re-assessment. Do NOT poll inline — this is the Push-then-delegate checkpoint (`HS-NO-INLINE-POLL`, `subagent-policy.mdc`).
+```text
+make evidence-pull-request PR=<N>   (one-shot, no sleep)
+├── threads_unresolved == 0 AND review_concluded
+│   → Skip delegation, proceed to pr-merge
+└── threads_unresolved > 0 OR review_concluded == false
+    → Delegate via delegation--review-wait.md (run_in_background: true, model: "fast")
+    → STOP and re-enter next for state re-assessment
+```
+
+The one-shot check is not polling — it is a single evidence read with immediate branching. If CodeRabbit has already auto-resolved all threads (common for "Fixed" dispositions), delegation overhead is avoided.
 
 ### 6. Report
 

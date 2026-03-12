@@ -82,7 +82,9 @@ codex_findings=0
 
 reviews=$(gh api "repos/$owner/$repo/pulls/$PR/reviews" 2>/dev/null || echo "[]")
 
-cr_review=$(echo "$reviews" | jq -c '[.[] | select(.user.login == "coderabbitai[bot]")] | sort_by(.submitted_at) | last // empty' 2>/dev/null || echo "")
+cr_reviews_all=$(echo "$reviews" | jq -c '[.[] | select(.user.login == "coderabbitai[bot]")]')
+cr_review_count=$(echo "$cr_reviews_all" | jq 'length')
+cr_review=$(echo "$cr_reviews_all" | jq -c 'sort_by(.submitted_at) | last // empty' 2>/dev/null || echo "")
 if [ -n "$cr_review" ]; then
   coderabbit_status="COMPLETED"
   coderabbit_submitted=$(echo "$cr_review" | jq -r '.submitted_at // ""')
@@ -166,6 +168,7 @@ body=$(jq -nc \
   --arg cr_status "$coderabbit_status" \
   --arg cr_sub "$coderabbit_submitted" \
   --argjson cr_findings "$coderabbit_findings" \
+  --argjson cr_count "$cr_review_count" \
   --arg cx_status "$codex_status" \
   --arg cx_sub "$codex_submitted" \
   --argjson cx_findings "$codex_findings" \
@@ -195,7 +198,8 @@ body=$(jq -nc \
       "bot_coderabbit": {
         "status": $cr_status,
         "review_submitted_at": (if $cr_sub == "" then null else $cr_sub end),
-        "findings_count": $cr_findings
+        "findings_count": $cr_findings,
+        "review_count": $cr_count
       },
       "bot_codex": {
         "status": $cx_status,
