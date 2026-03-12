@@ -42,7 +42,8 @@ following these conventions:
 - **Naming**: `{category}--{topic}.md` (lowercase, double-hyphen separator)
 - **Categories**: `test`, `r`, `lint`, `debug`, `ci`, `git`, `agent`,
   `review`, `workflow`, `controls`
-- **Frontmatter**: YAML with `trigger:` field containing 3–6 keywords
+- **Frontmatter**: YAML with a `trigger:` field containing a concise set of keywords
+  (prefer 3–6 when possible; exceed that only when needed for accurate lookup)
 - **Self-contained**: the atom must be independently useful without
   reading other files (Related links are supplementary, not required)
 - **Indivisibility test**: can the content be expressed as a single

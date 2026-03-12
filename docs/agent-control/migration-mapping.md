@@ -15,11 +15,13 @@ presented to the agent (evidence, invariants, knowledge) so that the LLM's
 own reasoning operates within a well-constrained space. The agent sees
 state, not instructions for how to determine state.
 
-## Makefile target renaming
+## Makefile target renaming (planned; not yet implemented)
 
-Complete mapping from old target names to new names.
+Complete mapping from current target names to planned names for the
+migration. These names are **design targets for Issue #228**, not the
+current CLI surface.
 
-| Old name | New name | Category | Change rationale |
+| Current name | Planned name | Category | Change rationale |
 |----------|----------|----------|-----------------|
 | `help` | `help` | meta | — |
 | `clean` | `clean` | meta | — |

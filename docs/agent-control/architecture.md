@@ -40,14 +40,14 @@ The system IS:
 
 The control system has 6 components:
 
-```
+```text
 Controls
 ├── Principle      .cursor/rules/        ← invariants + policies
 ├── Procedure      .cursor/commands/     ← thin entry points (Sense → Orient → Act)
 ├── Knowledge      .cursor/knowledge/    ← project-specific semantics
 ├── Evidence       Makefile + tools/     ← structured observation → JSON
 ├── Guard          hooks, CI, BP         ← deterministic enforcement
-└── Interface      AGENTS.md, .cursor/templates/, .github/*TEMPLATE*  ← external entry points
+└── Interface      AGENTS.md, .cursor/templates/, .github/PULL_REQUEST_TEMPLATE.md, .github/ISSUE_TEMPLATE/  ← external entry points
 ```
 
 The architecture design document lives in `docs/agent-control/`
@@ -64,7 +64,7 @@ The architecture design document lives in `docs/agent-control/`
 
 ## Data flow
 
-```
+```text
 Evidence ──→ Agent reasoning ←── Principle / Knowledge
                   │
              Procedure = entry point (Sense → Orient → Act)
@@ -78,7 +78,7 @@ Principle (invariants) and Knowledge (semantics), enters through Procedure
 
 ## Authority hierarchy
 
-```
+```text
 Design (ADRs, schemas)     ← architectural authority (immutable once accepted)
   │ constrains
 Principle (rules)          ← policy authority (declarative)
