@@ -41,7 +41,7 @@ Poll using the algorithm from review--bot-operations.md § Polling Algorithm.
 2. Terminal states (reviewers):
    - COMPLETED: review count > 0 (timestamp-filtered, non-empty body)
    - COMPLETED_CLEAN: Codex thumbs-up > 0 on trigger comment
-   - COMPLETED_SILENT: CR only — trigger acked, > 7 min, no review/inline/rate-limit/new-threads
+   - COMPLETED_SILENT: CR only — trigger acked, > 10 min, no review/inline/rate-limit/new-threads
    - RATE_LIMITED: rate limit comment detected
    - TIMED_OUT: 20 min elapsed
 

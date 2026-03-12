@@ -92,7 +92,9 @@ Trigger CodeRabbit re-review (if budget remaining per `review--bot-operations.md
 gh pr comment <PR> --body "@coderabbitai review"
 ```
 
-Delegate wait via `.cursor/templates/delegation--review-wait.md`.
+Delegate wait via `.cursor/templates/delegation--review-wait.md` (`run_in_background: true`, `model: "fast"`).
+
+After delegating, **STOP** and re-enter `next` for state re-assessment. Do NOT poll inline — this is the Push-then-delegate checkpoint (`HS-NO-INLINE-POLL`, `subagent-policy.mdc`).
 
 ### 6. Report
 
@@ -108,7 +110,7 @@ Delegate wait via `.cursor/templates/delegation--review-wait.md`.
 - `pre-push` hook: differential checks before push
 - CR review budget: max 2 reviews per PR
 
-> **Observation gap**: All external state is acquired via `make` evidence targets. If information is not available from any target, report it as a missing evidence target.
+> **Observation boundary**: Observation commands MUST use `make evidence-*` targets (`HS-EVIDENCE-FIRST`). Execution commands use raw CLI. Polling MUST be delegated (`HS-NO-INLINE-POLL`). See `controls--observation-execution-boundary.md`.
 
 > **Anti-pattern — judgment creep**: Disposition categories and consensus flow are defined in `review--consensus-protocol.md`. This procedure follows them — it does not reinvent them.
 

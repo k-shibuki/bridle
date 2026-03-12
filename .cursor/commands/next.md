@@ -35,8 +35,8 @@ Consult `controls--workflow-state-machine.md` for formal state definitions. The 
 | TestsPass | `docs-discover` (Mode 2) | Tests pass, docs not reviewed |
 | DocsOK | `commit` | Docs OK, uncommitted changes |
 | Committed | `pr-create` | Committed, no PR |
-| CIPending | Delegate CI-wait | `pull_requests.open[].ci_status == "pending"` |
-| BotReviewPending | Delegate review-wait | Bot review not yet completed |
+| CIPending | Delegate via `delegation--ci-wait-only.md` (`run_in_background: true`, `model: "fast"`) | `pull_requests.open[].ci_status == "pending"` |
+| BotReviewPending | Delegate via `delegation--review-wait.md` (`run_in_background: true`, `model: "fast"`) | Bot review not yet completed |
 | ReadyForReview | `pr-review` | CI green, bot review terminal |
 | ExceptionFlow | `pr-create` (exception path) | Hotfix or no-issue work |
 | CIFailed | Fix inline, re-push | `ci_status == "failure"` |
@@ -108,7 +108,7 @@ Issue A: ... → pr-create → CI pending
 - All policies remain invariant after user approval (`HS-NO-SKIP`)
 - Subagent delegation per `subagent-policy.mdc` for all blocking operations
 
-> **Observation gap**: All external state is acquired via `make` evidence targets. If information is not available from any target, report it as a missing evidence target — do not work around it with ad-hoc commands.
+> **Observation boundary**: Observation commands MUST use `make evidence-*` targets (`HS-EVIDENCE-FIRST`). Execution commands use raw CLI. Polling MUST be delegated (`HS-NO-INLINE-POLL`). See `controls--observation-execution-boundary.md`.
 
 > **Anti-pattern — judgment creep**: If this procedure starts accumulating complex conditional logic, the logic belongs in Knowledge atoms or the FSM specification, not here.
 
