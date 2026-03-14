@@ -33,6 +33,13 @@ Closes #<!-- issue number -->
 - [ ] S7 class updated (`R/`)
 - [ ] Both schema and S7 updated (consistency verified)
 
+## Acceptance Criteria (Definition of Done)
+
+<!-- Transfer from the linked Issue's Acceptance Criteria. Check off as completed.
+     Required by HS-NO-SKIP — pr-policy.yaml validates this section exists. -->
+
+- [ ]
+
 ## Test Evidence
 
 <!-- Paste CI result summary (e.g., "CI all pass" or `gh pr checks` output).
