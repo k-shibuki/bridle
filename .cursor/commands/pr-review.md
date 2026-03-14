@@ -13,7 +13,7 @@
 
 ## Act
 
-1. Review diff against each `AGENTS.md` category (S7 type safety, test quality, architecture/ADR compliance, traceability, security, NULL handling).
+1. Review diff against each `AGENTS.md` category (S7 type safety, test quality, architecture/ADR compliance, traceability, security, code quality/naming/duplication, NULL handling).
 2. Integrate bot findings: check `reviews.bot_coderabbit.status` from evidence. Deduplicate with Cursor findings.
 3. Verify thread baseline: `reviews.threads_total` and `reviews.threads_unresolved` match classified findings.
 4. Produce merge recommendation: **Mergeable** → recommend `pr-merge`. **Changes required** → recommend `review-fix`.
