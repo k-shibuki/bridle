@@ -26,9 +26,9 @@ Every Issue and PR MUST have exactly one **type label** matching its Conventiona
 | Label | When to use |
 |-------|-------------|
 | `hotfix` | Critical fix meeting the hotfix threshold (see `workflow-policy.mdc` § fix vs hotfix Decision Criteria) |
-| `no-issue` | Justified exception bypassing Issue-driven flow (includes docs-only direct push) |
+| `no-issue` | Justified exception bypassing Issue-driven flow (docs-only changes, meta-implementation of workflow, etc.) |
 
-Exception labels do NOT replace the type label — a PR has both (e.g., `fix` + `hotfix`). For documentation-only direct push, the combination is `docs` (type) + `no-issue` (exception).
+Exception labels do NOT replace the type label — a PR has both (e.g., `fix` + `hotfix`, or `docs` + `no-issue`).
 
 ## Meta labels (zero or more, additional context)
 

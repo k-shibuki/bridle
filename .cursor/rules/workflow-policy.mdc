@@ -13,7 +13,7 @@ All implementation work must be traceable to a GitHub Issue:
 3. **1 Issue ≈ 1 PR**: Each Issue should be implementable in a single PR. Large tasks are split into child Issues.
 4. **Commits reference Issues**: Include `Refs: #<issue>` in every commit footer.
 5. **PRs close Issues**: Include `Closes #<issue>` in every PR body.
-6. **No main direct push** for normal changes: All code changes go through the PR flow with CI validation.
+6. **No main direct push**: All changes go through the PR flow. Branch Protection requires status checks (`ci-pass`, `check-policy`) on every push to `main` — this is a Deterministic enforcement with no exception path.
 
 ### fix vs hotfix Decision Criteria
 
@@ -38,9 +38,9 @@ The following exception types may bypass the Issue-driven flow:
 | Label | When to use | Delivery method |
 |-------|-------------|-----------------|
 | `hotfix` | Critical fix meeting the hotfix threshold above | **Exception PR** (via `pr-create` exception path) |
-| `no-issue` | Other justified exceptions (docs-only changes, meta-implementation of workflow, etc.) | **Exception PR** or **direct push** (direct push only when type is `docs`) |
+| `no-issue` | Other justified exceptions (docs-only changes, meta-implementation of workflow, etc.) | **Exception PR** (via `pr-create` exception path) |
 
-**All code changes — including hotfix — MUST go through a PR.** Direct push to `main` is permitted only for documentation-only changes (type: `docs` + exception: `no-issue`). This ensures CI validation and an auditable merge record for every code change.
+**All changes — including docs-only — MUST go through a PR.** Branch Protection requires status checks (`ci-pass`, `check-policy`) on every push to `main`, making direct push impossible regardless of change type. This is a Deterministic enforcement — no agent or human can bypass it without admin override.
 
 **Exception requirements** (enforced by CI):
 
