@@ -6,9 +6,9 @@
 
 ## Sense
 
+State (branch, uncommitted files) is already known from `next`. Read the diff content for commit message composition:
+
 ```bash
-git branch --show-current
-git status --short
 git diff --stat
 git diff
 ```

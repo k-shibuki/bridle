@@ -156,8 +156,8 @@ captures explicit user/agent actions.
 | ST_READY | `selected_issue_number != null` | Issue selected | ST_IMPL | `implement` (branch created) |
 | ST_IMPL | `workflow_phase == "implementation_done"` | Implement step complete | ST_IMPL_DONE | Continue workflow |
 | ST_IMPL_DONE | `workflow_phase == "tests_done"` | `test-create` completed | ST_TESTS_DONE | Continue workflow |
-| ST_TESTS_DONE | `workflow_phase == "quality_ok"` | `verify` completed (lint/check) | ST_QUALITY_OK | Continue workflow |
-| ST_QUALITY_OK | `workflow_phase == "tests_pass"` | `verify` completed (full test suite) | ST_TESTS_PASS | Continue workflow |
+| ST_TESTS_DONE | `workflow_phase == "quality_ok"` | `verify` completed (format + lint + check) | ST_QUALITY_OK | Continue workflow |
+| ST_QUALITY_OK | `workflow_phase == "tests_pass"` | `verify` completed (full test suite + coverage) | ST_TESTS_PASS | Continue workflow |
 | ST_TESTS_PASS | `no_uncommitted AND pr_exists_for_branch == false` | `commit` completed | ST_COMMITTED | Doc review is a precondition of commit |
 | ST_COMMITTED | `pr_exists_for_branch` | `pr-create` completed | ST_CI_PENDING | CI + bot review start |
 | ST_CI_PENDING | `ci_status == "success"` | none | ST_BOT_PENDING | Wait for bot terminal state |

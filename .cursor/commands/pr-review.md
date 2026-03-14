@@ -25,5 +25,5 @@
 - Required changes list (if any, with source and severity)
 
 ## Guard
-- `HS-CI-MERGE`: CI must be green before review
+- `HS-CI-MERGE`: CI must be green before merge (review may start earlier)
 - Bot review freshness: terminal state covering latest push

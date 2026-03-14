@@ -5,6 +5,8 @@
 - `.github/PULL_REQUEST_TEMPLATE.md` (PR body SSOT — read before every PR creation per `HS-PR-TEMPLATE`)
 - `commit-format.mdc` § Branch Naming Convention
 - `review--bot-operations.md` § CR Review Budget
+- `subagent-policy.mdc` (delegation for CI + review wait)
+- `agent--delegation-decision.md` (template selection)
 
 ## Sense
 
