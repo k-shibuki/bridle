@@ -1,102 +1,32 @@
 # implement
 
-## Purpose
-
-Select and implement the next task from open GitHub Issues (code changes only; no tests in this step).
-
-## Inputs
-
-- **Issue number** (optional): if omitted, auto-selects from open Issues
-- Context documents (optional)
+## Reads
+- `workflow--issue-selection.md` (selection algorithm when no Issue provided)
+- `workflow--docs-discovery-heuristics.md` (early doc impact identification)
+- `integration-strategy.mdc` (if change touches cross-module interfaces)
 
 ## Sense
 
-### Issue selection (when no Issue number provided)
-
-Run `make evidence-issue` for structured Issue metadata.
-
-Consult `workflow--issue-selection.md` for the selection algorithm:
-1. **Actionability filter**: not blocked, not parent, not assigned to others, has test plan + DoD
-2. **Ranking**: priority label → unblocks most → dependency depth → age
-
-Present selection with rationale and wait for user approval.
-
-### Issue specification
-
-Run `make evidence-issue ISSUE=<issue-number>` for structured Issue metadata.
-
-Extract: summary, acceptance criteria (DoD), test plan, schema impact, related ADRs.
-If any required field is unavailable, report a missing evidence target.
-
-### Environment
-
-```bash
-make status
-```
-
-If container not running: `make container-up`.
-
-## Orient
-
-### Scope confirmation
-
-Based on:
-- Issue acceptance criteria
-- User instructions
-- Attached context documents
-
-### Context discovery
-
-Actively search the codebase to understand:
-- Existing code paths and patterns
-- Related modules and dependencies
-- Project conventions
-
-Run **docs-discover (Mode 1)**: identify which docs are relevant to the upcoming change.
-
-### Integration design (if needed)
-
-If the change touches interfaces across modules (APIs, schemas, parameter propagation), consider `integration-design` to verify the flow. See `integration-strategy.mdc`.
-
-### FSM context
-
-This command runs in state **ReadyToStart**. Valid transitions: → Implementing → ImplementationDone.
+1. If no Issue number provided: `make evidence-issue` for selection per `workflow--issue-selection.md`. Present selection with rationale and wait for approval.
+2. `make evidence-issue ISSUE=<N>` for structured Issue metadata (summary, DoD, test plan, schema impact, related ADRs).
+3. `make status` — if container not running: `make container-up`.
 
 ## Act
 
-### 1. Create feature branch
-
-```bash
-make new-branch PREFIX=<type> ISSUE=<number> DESC=<short-description>
-```
-
-### 2. Implement
-
-1. Identify the minimal set of files to change
-2. Implement the change
-3. Quick sanity check (basic execution path review)
-
-## Guard / Validation
-
-- All work traceable to Issue — if scope drifts, update Issue or create new one
-- `pre-push` hook validates before push (`HS-LOCAL-VERIFY`)
-
-> **Observation boundary**: Observation commands MUST use `make evidence-*` targets (`HS-EVIDENCE-FIRST`). Execution commands use raw CLI. Polling MUST be delegated (`HS-NO-INLINE-POLL`). See `controls--observation-execution-boundary.md`.
-
-> **Anti-pattern — judgment creep**: Issue selection rules are in `workflow--issue-selection.md`. Integration patterns are in `integration-strategy.mdc`. This procedure routes to them.
+1. Create feature branch: `make git-new-branch PREFIX=<type> ISSUE=<number> DESC=<short-description>`
+2. Search codebase to understand existing code paths, patterns, and dependencies.
+3. **Doc discovery (Mode 1)**: Identify candidate docs affected by the upcoming change using `workflow--docs-discovery-heuristics.md`. Output a doc impact list that carries forward to `commit`.
+4. If cross-module: consider `integration-design` to verify flow.
+5. Implement the change (minimal file set, code only — no tests in this step).
 
 ## Output
+- Issue: `#<number>` — title (with selection rationale if auto-selected)
+- Scope recap: what changed (1-3 bullets)
+- Files changed: list of paths
+- DoD progress: which acceptance criteria are met
+- Doc impact list: candidates from step 3
 
-- **Issue**: `#<number>` — title (with selection rationale if auto-selected)
-- **Scope recap**: what changed (1-3 bullets)
-- **Files changed**: list of paths
-- **DoD progress**: which acceptance criteria are now met
-- **Docs impact**: candidates from docs-discover (Mode 1)
-
-## Related
-
-- `workflow--issue-selection.md` — selection algorithm
-- `issue-create.md` — previous step
-- `test-create.md` — next step
-- `commit-format.mdc` — branch naming
-- `integration-strategy.mdc` — cross-module design
+## Guard
+- All work traceable to Issue
+- `HS-LOCAL-VERIFY`: pre-push hook validates before push
+- `HS-EVIDENCE-FIRST`: observation via `make evidence-*` only

@@ -46,6 +46,20 @@ See `@.cursor/rules/workflow-policy.mdc` § fix vs hotfix Decision Criteria for 
 - **`BREAKING CHANGE:`**: Required for backward-incompatible changes (or use `!` notation: `fix!:`).
 - **Exception**: `hotfix`/`docs` may omit `Refs:` but must justify in body.
 
+## Atomic Commits
+
+Split changes into **logically cohesive, minimal commits** when beneficial:
+
+| Split when | Keep together when |
+|------------|-------------------|
+| Multiple unrelated fixes in one session | Tightly coupled changes that break if separated |
+| Refactor + feature in same diff | Single logical change across multiple files |
+| Docs update independent of code change | Code + its corresponding test |
+
+Each commit should be independently meaningful and pass tests.
+Prefer 2-4 focused commits over 1 large commit or 10+ micro-commits.
+When in doubt, fewer commits is safer.
+
 ## Prohibitions
 
 - Non-English summary

@@ -72,7 +72,7 @@ For R-specific testing gotchas (mock scoping constraints, NULL assignment trap, 
 
 - **Test helpers**: `@.cursor/knowledge/test--helper-conventions.md` (helper files, setup, naming)
 - **Snapshot testing**: `@.cursor/knowledge/test--snapshot-guidelines.md` (`expect_snapshot`, `_snaps/`)
-- **Coverage policy**: `@.cursor/commands/quality-check.md` § Coverage Commands; `@.cursor/knowledge/ci--job-dependency-graph.md` (enforcement model, thresholds). Coverage is not on the PR CI critical path.
+- **Coverage policy**: `@.cursor/commands/verify.md` § Act (coverage-verify step); `@.cursor/knowledge/ci--job-dependency-graph.md` (enforcement model, thresholds). Coverage is not on the PR CI critical path.
 
 ---
 

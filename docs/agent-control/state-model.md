@@ -14,8 +14,7 @@ of available transitions.
 | ST_IMPL_DONE | `ImplementationDone` | Code written, tests not yet created | `on_feature_branch AND workflow_phase == "implementation_done"` |
 | ST_TESTS_DONE | `TestsDone` | Tests created, quality not yet checked | `on_feature_branch AND workflow_phase == "tests_done"` |
 | ST_QUALITY_OK | `QualityOK` | Quality gates passed, tests not run as full suite | `on_feature_branch AND workflow_phase == "quality_ok"` |
-| ST_TESTS_PASS | `TestsPass` | Full test suite passed, docs not reviewed | `on_feature_branch AND workflow_phase == "tests_pass"` |
-| ST_DOCS_OK | `DocsOK` | Documentation reviewed/updated, uncommitted changes remain | `on_feature_branch AND workflow_phase == "docs_ok"` |
+| ST_TESTS_PASS | `TestsPass` | Full test suite passed, ready to commit | `on_feature_branch AND workflow_phase == "tests_pass"` |
 | ST_COMMITTED | `Committed` | All changes committed, no PR exists | `on_feature_branch AND no_uncommitted AND pr_exists_for_branch == false` |
 | ST_CI_PENDING | `CIPending` | PR exists, CI still running | `pr_exists_for_branch AND ci_status == "pending"` |
 | ST_CI_FAILED | `CIFailed` | PR exists, CI failed | `pr_exists_for_branch AND ci_status == "failure"` |
@@ -32,7 +31,7 @@ of available transitions.
 
 **State classification**:
 
-- **Progress states** (ST_READY–ST_COMMITTED, ST_CYCLE_DONE): normal forward movement through the workflow
+- **Progress states** (ST_READY–ST_COMMITTED, ST_CYCLE_DONE): normal forward movement through the workflow (DocsOK removed — doc review is a precondition of commit, not a separate state)
 - **Waiting states** (ST_CI_PENDING, ST_BOT_PENDING): blocked on external process
 - **Intervention states** (ST_CI_FAILED, ST_UNRESOLVED, ST_CHANGES_REQ, ST_REBASE): require agent action to resolve
 - **Maintenance states** (ST_NO_WORK, ST_PREFLIGHT, ST_STALE, ST_ENV_ISSUE): housekeeping or setup
@@ -107,7 +106,7 @@ procedure context for in-progress local work.
 
 | Signal | Type | Source | Interpretation |
 |--------|------|--------|---------------|
-| `workflow_phase` | enum | Procedure context | `"implementing"` \| `"implementation_done"` \| `"tests_done"` \| `"quality_ok"` \| `"tests_pass"` \| `"docs_ok"` |
+| `workflow_phase` | enum | Procedure context | `"implementing"` \| `"implementation_done"` \| `"tests_done"` \| `"quality_ok"` \| `"tests_pass"` |
 | `selected_issue_number` | integer \| null | Procedure context | Issue selected for current implementation cycle |
 
 ## Evidence-to-signal mapping
@@ -157,10 +156,9 @@ captures explicit user/agent actions.
 | ST_READY | `selected_issue_number != null` | Issue selected | ST_IMPL | `implement` (branch created) |
 | ST_IMPL | `workflow_phase == "implementation_done"` | Implement step complete | ST_IMPL_DONE | Continue workflow |
 | ST_IMPL_DONE | `workflow_phase == "tests_done"` | `test-create` completed | ST_TESTS_DONE | Continue workflow |
-| ST_TESTS_DONE | `workflow_phase == "quality_ok"` | `quality-check` completed | ST_QUALITY_OK | Continue workflow |
-| ST_QUALITY_OK | `workflow_phase == "tests_pass"` | `test-regression` completed | ST_TESTS_PASS | Continue workflow |
-| ST_TESTS_PASS | `workflow_phase == "docs_ok"` | `docs-discover` (Mode 2) completed | ST_DOCS_OK | Continue workflow |
-| ST_DOCS_OK | `no_uncommitted AND pr_exists_for_branch == false` | `commit` completed | ST_COMMITTED | Continue workflow |
+| ST_TESTS_DONE | `workflow_phase == "quality_ok"` | `verify` completed (lint/check) | ST_QUALITY_OK | Continue workflow |
+| ST_QUALITY_OK | `workflow_phase == "tests_pass"` | `verify` completed (full test suite) | ST_TESTS_PASS | Continue workflow |
+| ST_TESTS_PASS | `no_uncommitted AND pr_exists_for_branch == false` | `commit` completed | ST_COMMITTED | Doc review is a precondition of commit |
 | ST_COMMITTED | `pr_exists_for_branch` | `pr-create` completed | ST_CI_PENDING | CI + bot review start |
 | ST_CI_PENDING | `ci_status == "success"` | none | ST_BOT_PENDING | Wait for bot terminal state |
 | ST_CI_PENDING | `ci_status == "failure"` | none | ST_CI_FAILED | Diagnose and fix |

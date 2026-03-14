@@ -58,11 +58,13 @@ See `workflow--label-taxonomy.md` for the full taxonomy (type, exception, meta l
 
 ## Command Separation of Concerns
 
-Each workflow command has a defined role. Commands must not perform actions that belong to another command's scope:
+Review, fix, and merge are distinct FSM states with distinct evidence requirements and distinct actions. The agent must not conflate them:
 
-- **Review does not merge**: `pr-review` produces a judgment only. Merge execution is always delegated to `pr-merge`.
-- **Review does not fix**: `pr-review` identifies issues. Fix execution is always delegated to `review-fix`.
-- **Merge does not review**: `pr-merge` executes merge decisions. Review judgment is handled by `pr-review`.
+- **ReadyForReview** → `pr-review`: produces a judgment only.
+- **ChangesRequired / UnresolvedThreads** → `review-fix`: applies fixes and seeks consensus.
+- **ReviewDone** → `pr-merge`: executes the merge decision.
+
+The FSM state model (`docs/agent-control/state-model.md`) is the authoritative source for which action is appropriate in each state. The `next` command routes states to action cards.
 
 ## Review Comment Response
 
@@ -74,7 +76,25 @@ All R commands MUST run inside container `bridle-dev`. Run `make doctor` to veri
 
 ## Knowledge Consultation Triggers
 
-Certain task types require reading a specific knowledge file **before** starting work. This is not optional — the knowledge files capture hard-won patterns that prevent recurring bugs.
+Certain task types require reading specific knowledge/principle files **before** starting work. This is not optional — these files capture hard-won patterns that prevent recurring bugs.
+
+Each action card declares its required reads in a `## Reads` section. The table below is the cross-reference backup — it maps task types to required reads for all action cards and general task types.
+
+### Action card reads
+
+| Task type (action card) | Read these files |
+|---|---|
+| Implementation (`implement`) | `workflow--issue-selection.md`, `workflow--docs-discovery-heuristics.md` |
+| Test creation (`test-create`) | `test-strategy.mdc`, `test--perspectives-table.md`, `test--mock-scope-constraint.md`, `test--mock-external-function.md`, `test--layered-mock-strategy.md`, `r--null-assignment-trap.md` |
+| Verification (`verify`) | `quality-policy.mdc`, `test-strategy.mdc` |
+| Commit (`commit`) | `commit-format.mdc`, `workflow--docs-discovery-heuristics.md` |
+| PR creation (`pr-create`) | `workflow-policy.mdc` § Exception Policy, `.github/PULL_REQUEST_TEMPLATE.md` |
+| PR review (`pr-review`) | `AGENTS.md`, `review--bot-operations.md` |
+| Review fix (`review-fix`) | `review--consensus-protocol.md`, `review--bot-operations.md` |
+| PR merge (`pr-merge`) | `controls--merge-invariants.md`, `workflow--merge-strategy.md` |
+| Issue review (`issue-review`) | `workflow--issue-quality-checklist.md` |
+
+### General task type reads
 
 | Task type | Read these atoms | Referenced by |
 |---|---|---|
@@ -84,4 +104,4 @@ Certain task types require reading a specific knowledge file **before** starting
 | Responding to review comments | `review--consensus-protocol.md` | `workflow-policy.mdc` § Review Comment Response |
 | CI/review polling or delegation | `subagent-policy.mdc`, `agent--delegation-decision.md`, `review--bot-operations.md` | `agent-safety.mdc` `HS-NO-INLINE-POLL` |
 
-**Rule**: When the agent enters one of these task types, it MUST read the listed atoms as its first action. For unexpected situations (errors not covered above), use `knowledge-index.mdc` as a reactive lookup table. Do not rely on memory from previous sessions — knowledge files may have been updated.
+**Rule**: When the agent enters one of these task types, it MUST read the listed atoms as its first action. Each action card's `## Reads` section is the primary source; this table is the cross-reference. For unexpected situations, use `knowledge-index.mdc` as a reactive lookup table. Do not rely on memory from previous sessions — knowledge files may have been updated.

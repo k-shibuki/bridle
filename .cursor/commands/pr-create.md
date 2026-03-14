@@ -1,118 +1,30 @@
 # pr-create
 
-## Purpose
-
-Create a pull request on GitHub that closes the tracking Issue.
-
-## Inputs (ask if missing)
-
-- **Issue number** (required unless exception)
-- If no Issue: user must confirm exception type (`hotfix` or `no-issue`)
+## Reads
+- `workflow-policy.mdc` § Exception Policy (standard vs exception path)
+- `.github/PULL_REQUEST_TEMPLATE.md` (PR body SSOT — read before every PR creation per `HS-PR-TEMPLATE`)
+- `commit-format.mdc` § Branch Naming Convention
+- `review--bot-operations.md` § CR Review Budget
 
 ## Sense
 
-Run `make evidence-workflow-position` and verify:
-- `git.on_main` is `false` (must be on feature branch)
-- `git.uncommitted_files` is `0` (or commit first)
-
-## Orient
-
-### Branch and base policy
-
-- Feature branches: `<prefix>/<issue-number>-<short-description>` per `commit-format.mdc`
-- **Always target `main`** (`HS-PR-BASE`) — never use `--base feat/<branch>`
-- Document dependencies in PR body, not through base branch
-
-### PR body template
-
-Read `.github/PULL_REQUEST_TEMPLATE.md` (SSOT) before every PR creation (`HS-PR-TEMPLATE`). Required sections:
-
-| Section | Required? |
-|---------|-----------|
-| `## Summary` | Always |
-| `## Traceability` | Always (`Closes #N` or Exception block) |
-| `## Risk / Impact` | Always |
-| `## Rollback Plan` | Non-docs/test |
-
-### Standard vs Exception path
-
-- **Standard**: PR body includes `Closes #<issue>`. Delete `## Exception` section.
-- **Exception** (hotfix/no-issue): Add exception label, fill `## Exception` section with Type + Justification (min 20 chars).
-
-### FSM context
-
-This command runs in state **Committed**. Valid transitions: → CIPending (PR created, CI starts).
+`make evidence-workflow-position` — verify on feature branch with no uncommitted files.
 
 ## Act
 
-### 1. Ensure feature branch
+1. Push: `git push -u origin HEAD` (pre-push hook runs per `HS-LOCAL-VERIFY`).
+2. Create PR: `gh pr create --title "<type>(<scope>): <desc>" --base "main" --label "<type>" --body "<from template>"`. For exceptions: add `--label "<no-issue|hotfix>"`.
+3. Trigger CodeRabbit: `gh pr comment <PR> --body "@coderabbitai review"`. Codex only on user instruction.
+4. Delegate CI + review wait via `delegation--review-wait.md` (Monitor CI: YES). MUST NOT set auto-merge while bot review is pending.
+5. On `check-policy` failure: `gh pr edit <N> --body "<corrected body>"`.
 
-If on `main`, create branch per `commit-format.mdc` § Branch Naming.
+## Output
+- PR URL and number
+- CI status at delegation time
+- Bot review trigger confirmation
 
-### 2. Commit if needed
-
-Follow `commit-format.mdc`. Include `Refs: #<issue>` in footer (standard path). For exception types (`hotfix`/`no-issue`), see `commit-format.mdc` § Footer for allowed alternatives.
-
-### 3. Local verification and push
-
-The `pre-push` hook runs differential checks automatically (`HS-LOCAL-VERIFY`).
-
-```bash
-git push -u origin HEAD
-```
-
-### 4. Create PR
-
-```bash
-gh pr create --title "<type>(<scope>): <description>" \
-  --base "main" \
-  --label "<type>" \
-  --body "<body from PULL_REQUEST_TEMPLATE.md>"
-```
-
-For exceptions, add `--label "<no-issue|hotfix>"`.
-
-### 5. Trigger bot review and delegate monitoring
-
-#### 5a. CodeRabbit (always)
-
-```bash
-gh pr comment <PR> --body "@coderabbitai review"
-```
-
-#### 5b. Codex (user instruction only)
-
-Only when user explicitly requests: `gh pr comment <PR> --body "@codex review"`
-
-#### 5c. Delegate CI + review wait
-
-Delegate to background subagent using `.cursor/templates/delegation--review-wait.md` (Monitor CI: YES). See `agent--delegation-decision.md` for the decision flowchart.
-
-**Auto-merge guard**: MUST NOT set auto-merge until bot review completes (per `controls--merge-invariants.md`).
-
-### 6. CI failure handling
-
-Per `coding-policy.mdc` § CI Failure Autonomy: diagnose, fix, re-push. See `ci--failure-triage.md` for classification. For `check-policy` failures, update the PR body:
-
-```bash
-gh pr edit <N> --body "<corrected body>"
-```
-
-## Guard / Validation
-
+## Guard
 - `HS-PR-BASE`: all PRs target `main`
 - `HS-PR-TEMPLATE`: all required sections present
-- `HS-LOCAL-VERIFY`: pre-push hook runs before every push
-- `check-policy` CI job: validates PR body structure
-
-> **Observation boundary**: Observation commands MUST use `make evidence-*` targets (`HS-EVIDENCE-FIRST`). Execution commands use raw CLI. Polling MUST be delegated (`HS-NO-INLINE-POLL`). See `controls--observation-execution-boundary.md`.
-
-> **Anti-pattern — judgment creep**: PR body structure is defined in the template. Branch policy is in `commit-format.mdc`. This procedure assembles them — it does not redefine them.
-
-## Related
-
-- `.github/PULL_REQUEST_TEMPLATE.md` — PR body SSOT
-- `commit-format.mdc` — commit + branch naming
-- `controls--merge-invariants.md` — auto-merge guard
-- `agent--delegation-decision.md` — delegation flowchart
-- `ci--failure-triage.md` — CI failure classification
+- `HS-LOCAL-VERIFY`: pre-push hook runs
+- `HS-CI-MERGE`: auto-merge guard (no auto-merge while bot review pending)

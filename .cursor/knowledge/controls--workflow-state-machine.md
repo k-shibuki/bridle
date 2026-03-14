@@ -9,13 +9,13 @@ guards. The executable classifier is `make evidence-workflow-position`.
 
 Canonical specification: `docs/agent-control/state-model.md`.
 
-## State Categories (22 states)
+## State Categories (21 states)
 
 Full state catalog with entry conditions is in `state-model.md`
 § State catalog. States are classified into 5 categories:
 
 - **Progress** (normal forward movement): ReadyToStart, Implementing,
-  ImplementationDone, TestsDone, QualityOK, TestsPass, DocsOK,
+  ImplementationDone, TestsDone, QualityOK, TestsPass,
   Committed, CycleComplete, ExceptionFlow
 - **Waiting** (blocked on external process — delegate to subagent):
   CIPending, BotReviewPending
@@ -28,7 +28,8 @@ Full state catalog with entry conditions is in `state-model.md`
 
 ## Key Paths
 
-- **Happy path**: ReadyToStart → Implementing → ... → Committed →
+- **Happy path**: ReadyToStart → Implementing → ImplementationDone →
+  TestsDone → QualityOK → TestsPass → Committed →
   CIPending → BotReviewPending → ReadyForReview → ReviewDone →
   CycleComplete
 - **CI failure loop**: CIPending → CIFailed → (fix, push) → CIPending

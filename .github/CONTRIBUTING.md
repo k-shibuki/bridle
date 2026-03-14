@@ -21,8 +21,8 @@ All changes follow an **Issue-driven workflow**. Every task starts as a GitHub I
 The full AI workflow is documented in [`docs/agent-control/`](../docs/agent-control/). The standard flow is:
 
 ```
-doctor → issue-create → implement → test-create → quality-check
-  → test-regression → docs-discover → commit → pr-create → [CI] → pr-review → pr-merge
+doctor → issue-create → implement → test-create → verify
+  → commit → pr-create → [CI] → pr-review → review-fix → pr-merge
 ```
 
 ### For Human Contributors

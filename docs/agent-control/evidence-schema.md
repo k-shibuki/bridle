@@ -314,7 +314,7 @@ into a single JSON document for state classification.
 
 **Nullability**: all fields required. `findings` may be empty array.
 
-**Downstream**: quality-check, ST_TESTS_DONE→ST_QUALITY_OK transition verification.
+**Downstream**: verify, ST_TESTS_DONE→ST_QUALITY_OK transition verification.
 
 ### Target 4: `evidence-pull-request`
 
