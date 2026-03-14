@@ -47,9 +47,9 @@ make doctor output here
 
 <!-- When is this bug considered fixed? -->
 
-- [ ] Bug no longer reproducible with steps above
-- [ ] Regression test added
-- [ ]
+- Bug no longer reproducible with steps above
+- Regression test added
+-
 
 ## Regression Test Plan
 

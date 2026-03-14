@@ -77,7 +77,7 @@ evidence target, proving no observation is lost in the transition.
 | `git branch --show-current` | next, commit, pr-create | `evidence-workflow-position` | `git.branch` |
 | `git status --short` | next, commit, pr-create | `evidence-workflow-position` | `git.uncommitted_files` |
 | `git log --oneline` | next, commit, session-retro | Not evidence (historical) | Use `git` directly |
-| `git diff --stat` / `git diff` | commit, docs-discover | Not evidence (content) | Use `git` directly |
+| `git diff --stat` / `git diff` | commit, implement | Not evidence (content) | Use `git` directly |
 | Stale branch detection | next | `evidence-workflow-position` | `git.stale_branches` |
 | `git stash list` | subagent signal scan | `evidence-workflow-position` | `git.stash_count` |
 | `gh issue list` | next, implement, issue-review | `evidence-issue` | `issues[]` |
@@ -91,14 +91,14 @@ evidence target, proving no observation is lost in the transition.
 | `gh api pulls/<N>/reviews` | pr-review, pr-merge | `evidence-pull-request` | `reviews.*` |
 | `gh api pulls/<N>/comments` | pr-create, review-fix | `evidence-pull-request` | `reviews.bot_*` |
 | GraphQL review threads | next, review-fix | `evidence-pull-request` | `reviews.threads_*` |
-| `make doctor` / `make doctor-json` | next, doctor, quality-check | `evidence-environment` | all fields |
-| `make format` / `make format-check` | quality-check | Not evidence (action) | Remains as quality target |
-| `make lint` / `make lint-json` | quality-check | `evidence-lint` | all fields |
-| `make test` | quality-check, test-regression | Not evidence (action) | Remains as quality target |
-| `make check` | quality-check | Not evidence (action) | Remains as quality target |
-| `make coverage-check` | test-regression | Not evidence (action) | Remains as quality target |
-| `make validate-schemas` | quality-check | Not evidence (action) | Remains as quality target |
-| `make kb-validate` | quality-check | Not evidence (action) | Remains as quality target |
+| `make doctor` / `make doctor-json` | next, doctor, verify | `evidence-environment` | all fields |
+| `make format` / `make format-check` | verify | Not evidence (action) | Remains as quality target |
+| `make lint` / `make lint-json` | verify | `evidence-lint` | all fields |
+| `make test` | verify | Not evidence (action) | Remains as quality target |
+| `make check` | verify | Not evidence (action) | Remains as quality target |
+| `make coverage-check` | verify | Not evidence (action) | Remains as quality target |
+| `make validate-schemas` | verify | Not evidence (action) | Remains as quality target |
+| `make kb-validate` | verify | Not evidence (action) | Remains as quality target |
 | `gh auth status` | pr-create | Not evidence (precondition) | Guard: check in Procedure |
 | `gh api repos/.../protection` | pr-merge, controls-review | Not evidence (configuration) | Remains in Procedure |
 | Subagent transcript check | next | Not evidence (agent-internal) | Remains agent-internal |

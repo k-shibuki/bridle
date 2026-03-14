@@ -4,8 +4,8 @@ alwaysApply: false
 ---
 # Quality Policy
 
-This rule defines the **policy** applied when executing `/quality-check`.
-Procedures (which commands to run and how) are documented in `@.cursor/commands/quality-check.md`.
+This rule defines the **policy** applied when running verification.
+Procedures (which commands to run and how) are documented in `@.cursor/commands/verify.md`.
 
 ## Basic Principle
 
@@ -104,7 +104,7 @@ Per ADR-0001, S7 classes are the source of truth once implemented.
 
 ## Mandatory Verification After Changes
 
-See `@.cursor/commands/quality-check.md` § Verification Order for the full verification table (what to run, when, and skip conditions).
+See the `verify` action card (`@.cursor/commands/verify.md`) for the execution sequence. The verification order follows: format → lint → check → test → coverage → schema-validate.
 
 ## Definition of Done
 

@@ -1,49 +1,20 @@
 # scaffold-class
 
-## Purpose
+## Reads
+- `docs/adr/0001-use-s7-class-system.md` (ADR-0001: S7 class system)
+- `quality-policy.mdc` § Type Strictness (S7) (no `class_any`, explicit types, validators)
 
-Generate S7 class boilerplate from a YAML schema definition, following ADR-0001.
+## Sense
 
-## When to use
+Read the target schema file (`docs/schemas/*.schema.yaml`).
 
-- When implementing a new S7 class that corresponds to a YAML schema in `docs/schemas/`
-- As the first step of `implement` for domain model classes
+## Act
 
-## Inputs (attach as `@...`)
+1. `make scaffold-class SCHEMA=docs/schemas/<name>.schema.yaml` — generates `R/{name}.R` and `tests/testthat/test-{name}.R`.
+2. Refine generated code: replace `class_list` TODO comments with dedicated S7 classes, add cross-field validator logic, fill test skeletons.
+3. Ensure `#' @include <dependency>.R` for cross-file S7 class references.
 
-- Target schema file (`@docs/schemas/*.schema.yaml`) (required)
-- `@docs/adr/0001-use-s7-class-system.md` (recommended)
-- Related ADRs for the specific schema (recommended)
-
-## Automated Tool
-
-Use the automated scaffold tool for the initial boilerplate:
-
-```bash
-make scaffold-class SCHEMA=docs/schemas/<name>.schema.yaml
-```
-
-This runs `tools/scaffold-class.R` which generates:
-- `R/{name}.R` — S7 class with typed properties, roxygen2 docs, and validator skeleton
-- `tests/testthat/test-{name}.R` — test skeleton
-
-The generated code is a starting point. Review and refine:
-- Nested structures are typed as `class_list` with TODO comments — consider dedicated S7 classes
-- Validators contain enum checks but need manual cross-field constraint logic
-- Test skeletons need concrete test cases
-
-## Manual Steps (when refining generated code)
-
-1. **Read the schema**: identify all fields, their types, and constraints.
-2. **Map to S7 properties**: translate YAML field types to S7 property types.
-3. **Generate class file**: create `R/{class_name}.R` with:
-   - S7 class definition using `S7::new_class()`
-   - Typed properties (NO `class_any` — use concrete types or `new_union()`)
-   - Validator function for constraints that types alone cannot express
-   - roxygen2 documentation
-4. **Generate test skeleton**: create `tests/testthat/test-{class_name}.R` (or use `make scaffold-test FILE=R/{class_name}.R`).
-
-## Type mapping reference
+### Type mapping
 
 | YAML type | S7 property type |
 |-----------|-----------------|
@@ -51,27 +22,14 @@ The generated code is a starting point. Review and refine:
 | integer | `class_integer` |
 | number | `class_double` |
 | boolean | `class_logical` |
-| array of strings | `class_character` (vector) |
 | nullable string | `new_union(class_character, class_missing)` |
 | enum | `class_character` + validator with `match.arg()` |
 | nested object | Another S7 class |
-| list of objects | `class_list` + validator |
 
-## Constraints
+## Output
+- Class file: `R/{name}.R`
+- Test file: `tests/testthat/test-{name}.R`
+- Properties and validators summary
 
-- Type strictness and `class_any` prohibition are defined in `@.cursor/rules/quality-policy.mdc` § Type Strictness (S7).
-- Validators must check constraints that types cannot express (e.g., value ranges, cross-field dependencies).
-- Follow existing patterns in `R/` if any classes already exist.
-
-## Output (response format)
-
-- **Class file**: path to generated `R/{class_name}.R`
-- **Test file**: path to generated test skeleton
-- **Properties**: list of properties with types
-- **Validators**: list of validation rules implemented
-
-## Related
-
-- `@docs/adr/0001-use-s7-class-system.md`
-- `@.cursor/rules/quality-policy.mdc` (type strictness policy)
-- `@.cursor/commands/implement.md` (for the actual implementation)
+## Guard
+- `class_any` prohibition per `quality-policy.mdc`

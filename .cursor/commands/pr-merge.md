@@ -1,119 +1,26 @@
 # pr-merge
 
-## Purpose
-
-Execute a merge after `pr-review` concludes "Mergeable" or the user explicitly instructs.
-
-## Inputs
-
-- PR number (required)
-- Merge strategy: squash / merge (required)
+## Reads
+- `controls--merge-invariants.md` (5 mandatory preconditions, merge state resolution, auto-merge decision)
+- `workflow--merge-strategy.md` (squash vs merge selection, high-risk change policy)
 
 ## Sense
 
-Run `make evidence-pull-request PR=<N>` for structured PR state.
-
-Key fields to extract:
-- `ci.status` — must be `"success"`
-- `merge.merge_state_status` — must be `CLEAN` or `HAS_HOOKS` (per `controls--merge-invariants.md` § Merge State Resolution)
-- `reviews.threads_unresolved` — must be 0
-- `reviews.*` fields required for derived signal `review_concluded` — compute per `state-model.md` § derived signals, or accept user explicit merge
-- `reviews.bot_coderabbit.review_submitted_at` vs `reviews.last_push_at` — freshness
-
-## Orient
-
-### Merge preconditions
-
-Consult `controls--merge-invariants.md` for the 5 mandatory preconditions. All must be TRUE:
-
-1. CI is green (`HS-CI-MERGE`)
-2. Review concluded mergeable
-3. CI evidence recorded (`## Test Evidence` non-empty)
-4. Branch is mergeable (merge state resolution table in Knowledge atom)
-5. Bot review covers latest push (freshness check)
-
-### Merge strategy selection
-
-| Source | Pattern | Strategy |
-|--------|---------|----------|
-| AI agent | Many micro-commits | **squash** |
-| Human | 2-5 meaningful commits | merge |
-
-### High-risk change policy
-
-Changes to schemas, CI pipeline, AI rules, or security areas require extra caution. Confirm with user before merging.
-
-### FSM context
-
-This command runs in state **ReviewDone**. Valid transitions: → CycleComplete (merge success) or → CIFailed (post-merge CI failure on main).
+`make evidence-pull-request PR=<N>` — extract `ci.status`, `merge.merge_state_status`, `reviews.threads_unresolved`, `reviews.*` for `review_concluded`, and bot review freshness.
 
 ## Act
 
-### 1. Verify preconditions
+1. Verify all 5 preconditions from `controls--merge-invariants.md`. If any fails, STOP and report.
+2. If `## Test Evidence` is empty, update PR body: `gh pr edit <N> --body "<updated>"`.
+3. Merge (preferred: auto-merge): `gh pr merge <N> --auto <--squash|--merge>`. Fallback: delegated merge via `delegation--ci-wait-only.md`.
+4. Post-merge: verify `state == "MERGED"` via `make evidence-pull-request PR=<N>`, then `make git-post-merge-cleanup BRANCH=<branch>`.
 
-Check each precondition from `controls--merge-invariants.md` against evidence fields. If any fails, **STOP** and report the blocking condition.
+## Output
+- Merge status: success/blocked (with reason)
+- Merge strategy used
+- Post-merge cleanup confirmation
 
-### 2. Record CI evidence
-
-If `## Test Evidence` is empty, update PR body with CI summary:
-
-```bash
-gh pr edit <N> --body "<updated body with CI evidence>"
-```
-
-### 3. Merge
-
-**Preferred: auto-merge** (Deterministic enforcement):
-
-```bash
-gh pr merge <N> --auto <--squash|--merge>
-```
-
-Use the merge strategy from Inputs (squash or merge), not a hardcoded default.
-
-Preconditions for auto-merge per `controls--merge-invariants.md` § Auto-Merge Decision:
-- All mandatory preconditions pass
-- Consensus on all threads (unresolved == 0)
-- Bot review NOT pending
-
-**Fallback: delegated merge** when auto-merge fails:
-- Use `.cursor/templates/delegation--ci-wait-only.md`
-- Main agent executes `gh pr merge <N> <--squash|--merge>` after subagent reports CI green
-
-**NEVER use `--admin` flag** (`HS-CI-MERGE(a)`).
-
-### 4. Post-merge cleanup
-
-**Gate on observed merged state** — `gh pr merge --auto` returns before the merge completes. Run `make evidence-pull-request PR=<N>` and verify `state == "MERGED"` before cleanup. If not yet merged (auto-merge set), delegate wait via `.cursor/templates/delegation--ci-wait-only.md` and run cleanup after confirmed merge.
-
-```bash
-make git-post-merge-cleanup BRANCH=<branch>
-```
-
-### 5. Local merge (documentation-only exception)
-
-For docs-only changes (type: `docs` + exception: `no-issue`) that bypass PR flow:
-
-```bash
-git checkout main && git merge --no-edit <branch>
-```
-
-**Code changes (including hotfix) MUST use the GitHub PR merge flow above.**
-
-## Guard / Validation
-
-- `HS-CI-MERGE`: CI must be green; `--admin` prohibited; amend+force-push prohibited
-- `HS-CI-MERGE` auto-merge guard: MUST NOT set auto-merge while bot review is pending
-- `required_conversation_resolution`: all threads resolved before merge
-- Post-merge: `R-CMD-check.yaml` runs on main push (safety net)
-
-> **Observation boundary**: Observation commands MUST use `make evidence-*` targets (`HS-EVIDENCE-FIRST`). Execution commands use raw CLI. Polling MUST be delegated (`HS-NO-INLINE-POLL`). See `controls--observation-execution-boundary.md`.
-
-> **Anti-pattern — judgment creep**: Merge preconditions are declared in `controls--merge-invariants.md`. This procedure checks them — it does not redefine them.
-
-## Related
-
-- `controls--merge-invariants.md` — preconditions, merge state resolution, auto-merge decision
-- `pr-review.md` — produces the merge recommendation
-- `agent-safety.mdc` § HS-CI-MERGE — Hard Stop definition
-- `git--squash-merge-dependent-branch.md` — dependent chain rebase
+## Guard
+- `HS-CI-MERGE`: CI green required; `--admin` flag prohibited; amend+force-push prohibited
+- `HS-CI-MERGE` auto-merge guard: MUST NOT set while bot review pending
+- `HS-REVIEW-RESOLVE`: all threads resolved

@@ -1,127 +1,34 @@
 # commit
 
-## Purpose
+## Reads
+- `commit-format.mdc` (message format, branch naming, atomic commits policy)
+- `workflow--docs-discovery-heuristics.md` (pre-commit doc alignment)
 
-Create git commit(s) with **English message(s)** in the project's standard format.
+## Sense
 
-## When to use
-
-- After tests pass and you're ready to record changes (typically after `test-regression`)
-
-## Policy (rules)
-
-Follow the commit message policy here:
-
-- `@.cursor/rules/commit-format.mdc`
-
-This command intentionally avoids duplicating the policy (format/prefixes/language). Keep `commit-format.mdc` as the single source of truth.
-
-**Note**: The `commit-msg` hook (`tools/check-commit-msg.sh`) validates format at git level. It fires on `git commit -m` too, so malformed messages are caught even from AI agents.
-
-## Issue reference (required)
-
-Per `@.cursor/rules/commit-format.mdc` § Footer: every commit must include `Refs: #<issue-number>`. Exemptions for `hotfix`/`docs` are defined there.
-
-## Atomic commits (recommended)
-
-Split changes into **logically cohesive, minimal commits** when beneficial:
-
-| Split when | Keep together when |
-|------------|-------------------|
-| Multiple unrelated fixes in one session | Tightly coupled changes that break if separated |
-| Refactor + feature in same diff | Single logical change across multiple files |
-| Docs update independent of code change | Code + its corresponding test |
-
-**Judgment criteria**:
-
-- Each commit should be independently meaningful and pass tests
-- Prefer 2-4 focused commits over 1 large commit or 10+ micro-commits
-- When in doubt, fewer commits is safer
-
-## Documentation alignment (required)
-
-Before committing, run **docs-discover (Mode 2)** to ensure documentation is aligned with the change:
-
-1. Review the finalized diff against the doc impact list from `implement` (Mode 1).
-2. Apply any necessary doc updates (ADRs, README, Cursor commands/rules, DESCRIPTION, etc.).
-3. If no docs changes are needed, explicitly state "No docs updates needed" and proceed.
-
-See `@.cursor/commands/docs-discover.md` for the full procedure.
-
-## Workflow
+State (branch, uncommitted files) is already known from `next`. Read the diff content for commit message composition:
 
 ```bash
-git branch --show-current
-git status --short
-
-if [ -z "$(git status --porcelain)" ]; then
-    echo "No changes to commit"
-    exit 0
-fi
-
 git diff --stat
 git diff
 ```
 
-### Single commit (simple case)
+## Act
 
-```bash
-git add -A
-git commit -m "<type>(<scope>): <summary>
+1. **Doc alignment (Mode 2)**: Review finalized diff against the doc impact list from `implement`. Apply doc updates per `workflow--docs-discovery-heuristics.md`. If no docs need updating, state "No docs updates needed" and proceed.
+2. Stage and commit per `commit-format.mdc` (format, footer with `Refs: #<issue>`). Split into atomic commits when beneficial per § Atomic Commits.
+3. Do not open interactive editor (`git commit` without `-m`). English only.
 
-- Change item 1
-- Change item 2
+### Exception: documentation-only direct push
 
-Refs: #<issue-number>"
-```
+For docs-only changes (type: `docs` + exception: `no-issue`), direct push to `main` is permitted. If the change touches any code, CI config, or Makefile logic: use `pr-create` instead.
 
-### Multiple commits (when splitting)
+## Output
+- Branch: current branch name
+- Issue: `#<number>` referenced
+- Commits: list (message + short hash)
+- Summary: `git log --oneline -n <count>`
 
-```bash
-git add <specific-files>
-git commit -m "<type>(<scope>): <summary-1>
-
-- Change item
-Refs: #<issue-number>"
-
-git add <specific-files>
-git commit -m "<type>(<scope>): <summary-2>
-
-- Change item
-Refs: #<issue-number>"
-```
-
-## Constraints
-
-- Do **not** open an interactive editor (`git commit` without `-m`).
-- Keep messages **English only**.
-- Include `Refs: #<issue>` in every commit (except hotfix/docs exceptions).
-
-## Output (response format)
-
-- **Branch**: current branch name
-- **Issue**: `#<number>` being referenced
-- **Commits**: list of commits created (message + short hash for each)
-- **Summary**: `git log --oneline -n <count>` showing the new commits
-
-## Exception: documentation-only direct push
-
-For **documentation-only changes** (no R code, no CI config, no Makefile logic), direct push to `main` is permitted instead of the PR flow. This uses the `no-issue` exception with type `docs`.
-
-**Preconditions**: On `main`, change is documentation-only, commit body explains the exception.
-
-```bash
-# Verify on main with unpushed commits
-git log origin/main..main --oneline
-
-# Push (only after confirming documentation-only scope)
-git push origin main
-```
-
-If the change touches **any** code, CI config, or Makefile logic: STOP and use `pr-create` instead.
-
-## Related
-
-- `@.cursor/rules/commit-format.mdc`
-- `@.cursor/commands/docs-discover.md` (Mode 2: pre-commit doc alignment)
-- `@.cursor/commands/pr-create.md` (next step: PR flow, or exception path for hotfix/no-issue)
+## Guard
+- `commit-msg` hook validates format
+- `HS-NO-SKIP`: every commit references an Issue (except hotfix/docs exceptions per `commit-format.mdc` § Footer)

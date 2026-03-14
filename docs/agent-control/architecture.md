@@ -43,7 +43,7 @@ The control system has 6 components:
 ```text
 Controls
 ├── Principle      .cursor/rules/        ← invariants + policies
-├── Procedure      .cursor/commands/     ← thin entry points (Sense → Orient → Act)
+├── Procedure      .cursor/commands/     ← action cards + full commands (see § Procedure layer design)
 ├── Knowledge      .cursor/knowledge/    ← project-specific semantics
 ├── Evidence       Makefile + tools/     ← structured observation → JSON
 ├── Guard          hooks, CI, BP         ← deterministic enforcement
@@ -56,25 +56,108 @@ The architecture design document lives in `docs/agent-control/`
 | Component | Responsibility | What it must NOT contain |
 |-----------|---------------|------------------------|
 | **Principle** | Declare MUST / MUST NOT policies, invariants | Procedures (numbered steps), observation commands |
-| **Procedure** | Thin SOA entry points: Sense (read evidence) → Orient (classify state) → Act (invoke tool) | Judgment logic, embedded observation, policy declarations |
+| **Procedure** | Thin entry points: action cards (Reads → Sense → Act → Output → Guard) or full commands for judgment-intensive workflows. See § Procedure layer design. | Judgment logic, embedded observation, policy declarations |
 | **Knowledge** | Project-specific semantics: patterns, gotchas, domain heuristics | CLI commands, API calls, executable procedures |
 | **Evidence** | Structured observation via `make` targets → JSON | Policy decisions, workflow logic |
 | **Guard** | Deterministic enforcement of Principle | Policy content (reference Principle for justification) |
 | **Interface** | External entry points for humans and AI agent reviewers (`AGENTS.md`, `.cursor/templates/`, `.github/PULL_REQUEST_TEMPLATE.md`, `.github/ISSUE_TEMPLATE/`) | Implementation details, procedures |
 
+## Procedure layer design
+
+### Action cards
+
+The standard Procedure form is the **action card** — a thin entry point
+of ~15–25 lines with a fixed structure:
+
+```text
+# <command-name>
+## Reads      — prerequisite Principle/Knowledge files
+## Sense      — evidence targets to run
+## Act        — numbered execution steps (3–8 lines)
+## Output     — brief output specification
+## Guard      — relevant Hard Stops
+```
+
+Action cards are **not** the thinking itself (Principle 5). They declare
+what to read, what to observe, what to do, and what constraints apply.
+Judgment logic lives in Principle; domain heuristics live in Knowledge.
+The card connects them.
+
+The **Orient** step from the original SOA cycle is deliberately absent
+from action cards. State classification is the sole responsibility of
+`next` (the orchestrator). When a card executes, the agent already
+knows which FSM state it is in — `next` routed it there.
+
+### FSM-to-command mapping
+
+FSM states and Procedure commands are **not** 1:1. The FSM maintains
+fine-grained states for accurate workflow position tracking (21 states),
+while commands consolidate related states into coarser action units.
+
+```text
+FSM states (fine-grained, observational)
+  ╲  many-to-one
+   ╲
+    → Action cards (coarse-grained, actionable)
+         ↑
+       next (orchestrator: classifies state → routes to card)
+```
+
+Examples of many-to-one mapping:
+
+- `TestsDone`, `QualityOK`, `TestsPass` → all route to `verify`
+- `ChangesRequired`, `UnresolvedThreads` → both route to `review-fix`
+- `CIPending`, `BotReviewPending` → both delegate to background subagents
+
+The canonical routing table lives in `next.md` § Act. The canonical
+state definitions live in `state-model.md`.
+
+### Full commands (exception form)
+
+Some workflows require embedded judgment that cannot be cleanly
+separated into Principle + Knowledge. These remain as **full commands**
+— longer, structured procedures with their own reasoning steps.
+
+Criteria for full command status:
+
+| Criterion | Explanation |
+|-----------|-------------|
+| Hypothesis-driven | The workflow requires forming, testing, and revising hypotheses (e.g., `debug`) |
+| Multi-signal synthesis | The output requires cross-referencing 5+ disparate signal sources (e.g., `session-retro`) |
+| Audit scope | The procedure systematically audits an entire subsystem (e.g., `controls-review`) |
+| Complex artifacts | The output is a structured artifact (sequence diagrams, propagation maps) that requires step-by-step construction (e.g., `integration-design`) |
+
+Full commands do not follow the action card structure. They use their
+own section layout appropriate to their workflow.
+
+### Reads mechanism
+
+Every action card declares a `## Reads` section listing Principle and
+Knowledge files the agent must read before execution. This is the
+primary mechanism ensuring that judgment context (which lives outside
+the card) reaches the agent at the right time.
+
+`workflow-policy.mdc` § Knowledge Consultation Triggers maintains a
+cross-reference table of all card reads as a backup. The card's own
+`## Reads` is the primary source.
+
 ## Data flow
 
 ```text
 Evidence ──→ Agent reasoning ←── Principle / Knowledge
-                  │
-             Procedure = entry point (Sense → Orient → Act)
+                  │                      ↑
+             Procedure                   │
+               next (orchestrator)       │
+                  │  routes to           │
+               Action card ─── Reads ────┘
                   │
              Guard = enforcement (deterministic check on output)
 ```
 
-The agent receives Evidence (structured JSON), reasons about it using
-Principle (invariants) and Knowledge (semantics), enters through Procedure
-(thin entry point), and Guard enforces constraints deterministically.
+The `next` orchestrator classifies the current FSM state from Evidence,
+then routes to the appropriate action card. The card's `Reads` section
+directs the agent to load relevant Principle and Knowledge before acting.
+Guard enforces constraints deterministically on the output.
 
 ## Authority hierarchy
 
@@ -113,6 +196,7 @@ Key SSOTs:
 | Issue template structure | `.github/ISSUE_TEMPLATE/` |
 | Makefile target naming | `docs/agent-control/evidence-schema.md` |
 | FSM state definitions | `docs/agent-control/state-model.md` |
+| Procedure layer design (action cards, full commands, FSM mapping) | `docs/agent-control/architecture.md` § Procedure layer design |
 
 ## Reusability
 
@@ -120,7 +204,7 @@ Key SSOTs:
 |--------|----------------------------|---------------------------|
 | Observation patterns (evidence targets) | Yes | |
 | State transition skeleton (FSM) | Yes | |
-| SOA command form | Yes | |
+| Action card form (Reads/Sense/Act/Output/Guard) | Yes | |
 | Guard/validation discipline | Yes | |
 | Evidence schema conventions | Yes | |
 | | | Project knowledge atoms |

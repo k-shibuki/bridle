@@ -36,8 +36,8 @@ labels: ""
 
 <!-- Concrete, verifiable criteria. The PR reviewer will check these. -->
 
-- [ ]
-- [ ]
+-
+-
 
 ## Test Plan
 
