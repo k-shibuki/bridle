@@ -74,12 +74,13 @@ For copy-paste reply templates with examples, see
 
 ## API Reference
 
-Execution commands for reply, resolve, and thread enumeration are in
-`templates/review--disposition-reply.md` and `review--thread-graphql.md`.
+Execution commands (reply, resolve) and identifier mapping are in
+`templates/review--disposition-reply.md` § API Commands.
+Thread enumeration (observation) uses `make evidence-review-threads PR=<N>`.
 
-Key identifiers:
-- `databaseId` (inner) → REST reply API comment ID
-- `id` (outer) → GraphQL resolve API thread ID
+Key identifiers (from `make evidence-review-threads`):
+- `database_id` → REST reply `in_reply_to` parameter
+- `graphql_id` → GraphQL `resolveReviewThread` mutation input
 
 Thread counts are available from `make evidence-pull-request` as
 `reviews.threads_total` and `reviews.threads_unresolved`.
