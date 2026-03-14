@@ -172,10 +172,18 @@ _collect_env() {
 
 # --- Run all sections in parallel ---
 _collect_git > "$_tmpdir/git.json" &
+pid_git=$!
 _collect_issues > "$_tmpdir/issues.json" &
+pid_issues=$!
 _collect_prs > "$_tmpdir/prs.json" &
+pid_prs=$!
 _collect_env > "$_tmpdir/env.json" &
-wait || evidence_error "parallel" "One or more collection jobs failed" false
+pid_env=$!
+
+wait "$pid_git" || evidence_error "git" "Git collection failed" false
+wait "$pid_issues" || evidence_error "issues" "Issues collection failed" false
+wait "$pid_prs" || evidence_error "prs" "PRs collection failed" false
+wait "$pid_env" || evidence_error "env" "Environment collection failed" false
 
 # Defaults for sections that produced no output
 [ -s "$_tmpdir/git.json" ] || echo '{"branch":"","on_main":false,"uncommitted_files":0,"stale_branches":[],"commits_ahead_of_remote":0,"stash_count":0}' > "$_tmpdir/git.json"

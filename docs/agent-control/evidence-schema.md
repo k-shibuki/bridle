@@ -241,7 +241,7 @@ into a single JSON document for state classification.
 - `issues.open[].blocked_by`: Issue numbers referenced in "Depends on" or "Blocks" sections
 - `pull_requests.open[].ci_status`: aggregated from `statusCheckRollup` — `success` only if ALL checks pass
 - `pull_requests.open[].review_threads_*`: from GraphQL `reviewThreads` query
-- `environment.doctor_healthy`: true when the development container is running (equivalent to `container_running`). Full health diagnosis is delegated to `evidence-environment`.
+- `environment.doctor_healthy`: true when the development container is running (equivalent to `container_running`; both fields provided for backward compatibility during transition). Full health diagnosis is delegated to `evidence-environment`.
 
 **Nullability**: all fields are required. Empty arrays for absent collections. `blocked_by` may be empty.
 
