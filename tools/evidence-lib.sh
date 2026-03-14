@@ -6,6 +6,7 @@
 #   evidence_init TARGET_NAME   Initialize meta envelope, start timer
 #   evidence_error SOURCE MSG [FATAL]   Record an error
 #   evidence_emit JSON_BODY     Wrap body in meta envelope and print to stdout
+#   _resolve_repo               Set REPO_OWNER and REPO_NAME from git remote (no API call)
 
 set -euo pipefail
 
@@ -65,6 +66,22 @@ evidence_emit() {
     echo "$body" | jq -c --argjson meta "$meta" \
       '. + {"_meta": $meta}'
   fi
+}
+
+# Sets REPO_OWNER and REPO_NAME from git remote origin (used by callers).
+# shellcheck disable=SC2034
+_resolve_repo() {
+  local url
+  url=$(git remote get-url origin 2>/dev/null || echo "")
+  if [ -z "$url" ]; then
+    REPO_OWNER=""
+    REPO_NAME=""
+    return 1
+  fi
+  # SSH:   git@github.com:owner/repo.git
+  # HTTPS: https://github.com/owner/repo.git
+  REPO_OWNER=$(echo "$url" | sed -E 's|.*[:/]([^/]+)/[^/]+\.git$|\1|; s|.*[:/]([^/]+)/[^/]+$|\1|')
+  REPO_NAME=$(echo "$url" | sed -E 's|.*/([^/]+)\.git$|\1|; s|.*/([^/]+)$|\1|')
 }
 
 _require_cmd() {

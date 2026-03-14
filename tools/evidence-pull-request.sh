@@ -15,11 +15,12 @@ if [ -z "$PR" ]; then
   exit 0
 fi
 
-owner=$(gh repo view --json owner --jq '.owner.login' 2>/dev/null || echo "")
-repo=$(gh repo view --json name --jq '.name' 2>/dev/null || echo "")
+_resolve_repo
+owner="$REPO_OWNER"
+repo="$REPO_NAME"
 
 if [ -z "$owner" ] || [ -z "$repo" ]; then
-  evidence_error "gh" "Could not determine repo owner/name" true
+  evidence_error "gh" "Could not determine repo owner/name from git remote" true
   evidence_emit '{}'
   exit 0
 fi

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # tools/evidence-workflow-position.sh -- Primary FSM input
 # Aggregates git, GitHub, and environment state into a single JSON document.
+# Sections (git, issues, prs, env) run in parallel for performance.
 # Network access: GitHub API (gh)
 set -euo pipefail
 # shellcheck disable=SC1091 source=evidence-lib.sh
@@ -8,45 +9,55 @@ set -euo pipefail
 
 evidence_init "evidence-workflow-position"
 
-# --- Git state ---
-git_branch=$(git branch --show-current 2>/dev/null || echo "")
-git_on_main=false
-[ "$git_branch" = "main" ] && git_on_main=true
+_tmpdir=$(mktemp -d)
+trap 'rm -rf "$_tmpdir"' EXIT
 
-git_uncommitted=$(git status --short 2>/dev/null | wc -l | tr -d ' ')
+# --- Section: Git state (local only) ---
+_collect_git() {
+  local branch on_main uncommitted stale_branches ahead stash ahead_behind stale
+  branch=$(git branch --show-current 2>/dev/null || echo "")
+  on_main=false
+  [ "$branch" = "main" ] && on_main=true
 
-git_stale_branches="[]"
-stale=$(git branch --format='%(refname:short) %(upstream:track)' 2>/dev/null \
-  | grep '\[gone\]' | awk '{print $1}' || true)
-if [ -n "$stale" ]; then
-  git_stale_branches=$(echo "$stale" | jq -Rsc 'split("\n") | map(select(length > 0))')
-fi
+  uncommitted=$(git status --short 2>/dev/null | wc -l | tr -d ' ')
 
-git_ahead=0
-ahead_behind=$(git rev-list --left-right --count "HEAD...@{upstream}" 2>/dev/null || echo "0 0")
-git_ahead=$(echo "$ahead_behind" | awk '{print $1}')
+  stale_branches="[]"
+  stale=$(git branch --format='%(refname:short) %(upstream:track)' 2>/dev/null \
+    | grep '\[gone\]' | awk '{print $1}' || true)
+  if [ -n "$stale" ]; then
+    stale_branches=$(echo "$stale" | jq -Rsc 'split("\n") | map(select(length > 0))')
+  fi
 
-git_stash=$(git stash list 2>/dev/null | wc -l | tr -d ' ')
+  ahead=0
+  ahead_behind=$(git rev-list --left-right --count "HEAD...@{upstream}" 2>/dev/null || echo "0 0")
+  ahead=$(echo "$ahead_behind" | awk '{print $1}')
 
-git_json=$(jq -nc \
-  --arg branch "$git_branch" \
-  --argjson on_main "$git_on_main" \
-  --argjson uncommitted "$git_uncommitted" \
-  --argjson stale "$git_stale_branches" \
-  --argjson ahead "$git_ahead" \
-  --argjson stash "$git_stash" \
-  '{
-    "branch": $branch,
-    "on_main": $on_main,
-    "uncommitted_files": $uncommitted,
-    "stale_branches": $stale,
-    "commits_ahead_of_remote": $ahead,
-    "stash_count": $stash
-  }')
+  stash=$(git stash list 2>/dev/null | wc -l | tr -d ' ')
 
-# --- Issues state ---
-issues_json='{"open_count": 0, "open": []}'
-if command -v gh >/dev/null 2>&1; then
+  jq -nc \
+    --arg branch "$branch" \
+    --argjson on_main "$on_main" \
+    --argjson uncommitted "$uncommitted" \
+    --argjson stale "$stale_branches" \
+    --argjson ahead "$ahead" \
+    --argjson stash "$stash" \
+    '{
+      "branch": $branch,
+      "on_main": $on_main,
+      "uncommitted_files": $uncommitted,
+      "stale_branches": $stale,
+      "commits_ahead_of_remote": $ahead,
+      "stash_count": $stash
+    }'
+}
+
+# --- Section: Issues state (1 API call) ---
+_collect_issues() {
+  if ! command -v gh >/dev/null 2>&1; then
+    echo '{"open_count": 0, "open": []}'
+    return
+  fi
+  local raw_issues issues_open issues_count
   raw_issues=$(gh issue list --state open --json number,title,labels,body --limit 50 2>/dev/null || echo "[]")
   issues_open=$(echo "$raw_issues" | jq -c '[.[] | {
     number: .number,
@@ -56,13 +67,19 @@ if command -v gh >/dev/null 2>&1; then
     blocked_by: ([(.body // "") | scan("#(\\d+)"; "g") | .[0] | tonumber] | unique)
   }]')
   issues_count=$(echo "$issues_open" | jq 'length')
-  issues_json=$(jq -nc --argjson count "$issues_count" --argjson open "$issues_open" \
-    '{"open_count": $count, "open": $open}')
-fi
+  jq -nc --argjson count "$issues_count" --argjson open "$issues_open" \
+    '{"open_count": $count, "open": $open}'
+}
 
-# --- Pull requests state ---
-prs_json='{"open_count": 0, "open": [], "recently_merged": []}'
-if command -v gh >/dev/null 2>&1; then
+# --- Section: Pull requests state (batched GraphQL for review threads) ---
+_collect_prs() {
+  if ! command -v gh >/dev/null 2>&1; then
+    echo '{"open_count": 0, "open": [], "recently_merged": []}'
+    return
+  fi
+
+  local raw_prs prs_open pr_numbers prs_count raw_merged prs_merged
+
   raw_prs=$(gh pr list --state open \
     --json number,title,headRefName,statusCheckRollup,mergeable \
     --limit 10 2>/dev/null || echo "[]")
@@ -83,35 +100,39 @@ if command -v gh >/dev/null 2>&1; then
     review_threads_unresolved: 0
   }]')
 
-  # Enrich with review thread counts via GraphQL
-  owner=$(gh repo view --json owner --jq '.owner.login' 2>/dev/null || echo "")
-  repo=$(gh repo view --json name --jq '.name' 2>/dev/null || echo "")
-  if [ -n "$owner" ] && [ -n "$repo" ]; then
-    for pr_num in $(echo "$prs_open" | jq -r '.[].number'); do
-      # shellcheck disable=SC2016
-      threads=$(gh api graphql -f query='
-        query($owner: String!, $repo: String!, $pr: Int!) {
-          repository(owner: $owner, name: $repo) {
-            pullRequest(number: $pr) {
-              reviewThreads(first: 100) {
-                totalCount
-                nodes { isResolved }
-              }
-            }
-          }
-        }
-      ' -f owner="$owner" -f repo="$repo" -F pr="$pr_num" \
-        --jq '{
-          total: .data.repository.pullRequest.reviewThreads.totalCount,
-          unresolved: [.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)] | length
-        }' 2>/dev/null || echo '{"total":0,"unresolved":0}')
+  # Batched GraphQL: single query for all PRs using aliases
+  pr_numbers=$(echo "$prs_open" | jq -r '.[].number')
+  if [ -n "$pr_numbers" ]; then
+    _resolve_repo
+    if [ -n "$REPO_OWNER" ] && [ -n "$REPO_NAME" ]; then
+      local query_body=""
+      local num
+      for num in $pr_numbers; do
+        query_body="${query_body} pr${num}: pullRequest(number: ${num}) { reviewThreads(first: 100) { totalCount nodes { isResolved } } }"
+      done
 
-      total=$(echo "$threads" | jq '.total')
-      unresolved=$(echo "$threads" | jq '.unresolved')
-      prs_open=$(echo "$prs_open" | jq -c \
-        --argjson num "$pr_num" --argjson t "$total" --argjson u "$unresolved" \
-        '[.[] | if .number == $num then .review_threads_total = $t | .review_threads_unresolved = $u else . end]')
-    done
+      local gql_query
+      # shellcheck disable=SC2016
+      gql_query='query($owner: String!, $repo: String!) { repository(owner: $owner, name: $repo) {'"${query_body}"' } }'
+
+      local threads_result
+      threads_result=$(gh api graphql \
+        -f query="$gql_query" \
+        -f owner="$REPO_OWNER" \
+        -f repo="$REPO_NAME" \
+        2>/dev/null || echo "")
+
+      if [ -n "$threads_result" ]; then
+        local total unresolved
+        for num in $pr_numbers; do
+          total=$(echo "$threads_result" | jq ".data.repository.pr${num}.reviewThreads.totalCount // 0")
+          unresolved=$(echo "$threads_result" | jq "[.data.repository.pr${num}.reviewThreads.nodes[] | select(.isResolved | not)] | length" 2>/dev/null || echo "0")
+          prs_open=$(echo "$prs_open" | jq -c \
+            --argjson num "$num" --argjson t "$total" --argjson u "$unresolved" \
+            '[.[] | if .number == $num then .review_threads_total = $t | .review_threads_unresolved = $u else . end]')
+        done
+      fi
+    fi
   fi
 
   prs_count=$(echo "$prs_open" | jq 'length')
@@ -123,45 +144,64 @@ if command -v gh >/dev/null 2>&1; then
     merged_at: .mergedAt
   }]')
 
-  prs_json=$(jq -nc \
+  jq -nc \
     --argjson count "$prs_count" \
     --argjson open "$prs_open" \
     --argjson merged "$prs_merged" \
-    '{"open_count": $count, "open": $open, "recently_merged": $merged}')
-fi
+    '{"open_count": $count, "open": $open, "recently_merged": $merged}'
+}
 
-# --- Environment state ---
-doctor_healthy=false
-container_running=false
+# --- Section: Environment state (local only, no doctor.sh) ---
+# Full diagnosis delegated to evidence-environment via the doctor action card.
+_collect_env() {
+  local container_running=false
+  local cname="${CONTAINER_NAME:-bridle-dev}"
+  local runtime="${RUNTIME:-$(command -v podman >/dev/null 2>&1 && echo podman || echo docker)}"
 
-if command -v "${RUNTIME:-podman}" >/dev/null 2>&1; then
-  cname="${CONTAINER_NAME:-bridle-dev}"
-  runtime="${RUNTIME:-$(command -v podman >/dev/null 2>&1 && echo podman || echo docker)}"
-  if $runtime inspect "$cname" --format '{{.State.Running}}' 2>/dev/null | grep -q true; then
-    container_running=true
+  if command -v "$runtime" >/dev/null 2>&1; then
+    if $runtime inspect "$cname" --format '{{.State.Running}}' 2>/dev/null | grep -q true; then
+      container_running=true
+    fi
   fi
-fi
 
-if bash "$(dirname "$0")/doctor.sh" >/dev/null 2>&1; then
-  doctor_healthy=true
-fi
+  jq -nc \
+    --argjson healthy "$container_running" \
+    --argjson running "$container_running" \
+    '{"doctor_healthy": $healthy, "container_running": $running}'
+}
 
-env_json=$(jq -nc \
-  --argjson healthy "$doctor_healthy" \
-  --argjson running "$container_running" \
-  '{"doctor_healthy": $healthy, "container_running": $running}')
+# --- Run all sections in parallel ---
+_collect_git > "$_tmpdir/git.json" &
+pid_git=$!
+_collect_issues > "$_tmpdir/issues.json" &
+pid_issues=$!
+_collect_prs > "$_tmpdir/prs.json" &
+pid_prs=$!
+_collect_env > "$_tmpdir/env.json" &
+pid_env=$!
+
+wait "$pid_git" || evidence_error "git" "Git collection failed" false
+wait "$pid_issues" || evidence_error "issues" "Issues collection failed" false
+wait "$pid_prs" || evidence_error "prs" "PRs collection failed" false
+wait "$pid_env" || evidence_error "env" "Environment collection failed" false
+
+# Defaults for sections that produced no output
+[ -s "$_tmpdir/git.json" ] || echo '{"branch":"","on_main":false,"uncommitted_files":0,"stale_branches":[],"commits_ahead_of_remote":0,"stash_count":0}' > "$_tmpdir/git.json"
+[ -s "$_tmpdir/issues.json" ] || echo '{"open_count":0,"open":[]}' > "$_tmpdir/issues.json"
+[ -s "$_tmpdir/prs.json" ] || echo '{"open_count":0,"open":[],"recently_merged":[]}' > "$_tmpdir/prs.json"
+[ -s "$_tmpdir/env.json" ] || echo '{"doctor_healthy":false,"container_running":false}' > "$_tmpdir/env.json"
 
 # --- Compose final output ---
 body=$(jq -nc \
-  --argjson git "$git_json" \
-  --argjson issues "$issues_json" \
-  --argjson prs "$prs_json" \
-  --argjson env "$env_json" \
+  --slurpfile git "$_tmpdir/git.json" \
+  --slurpfile issues "$_tmpdir/issues.json" \
+  --slurpfile prs "$_tmpdir/prs.json" \
+  --slurpfile env "$_tmpdir/env.json" \
   '{
-    "git": $git,
-    "issues": $issues,
-    "pull_requests": $prs,
-    "environment": $env
+    "git": $git[0],
+    "issues": $issues[0],
+    "pull_requests": $prs[0],
+    "environment": $env[0]
   }')
 
 evidence_emit "$body"
