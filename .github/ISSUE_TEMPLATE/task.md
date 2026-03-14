@@ -34,7 +34,7 @@ labels: ""
 
 ## Acceptance Criteria (Definition of Done)
 
-<!-- Concrete, verifiable criteria. The PR reviewer will check these. -->
+<!-- Concrete, verifiable criteria. Use plain bullets (- item), not checkboxes. -->
 
 -
 -
