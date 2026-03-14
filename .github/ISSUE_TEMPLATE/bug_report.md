@@ -45,7 +45,7 @@ make doctor output here
 
 ## Acceptance Criteria (Definition of Done)
 
-<!-- When is this bug considered fixed? -->
+<!-- When is this bug considered fixed? Use plain bullets (- item), not checkboxes. -->
 
 - Bug no longer reproducible with steps above
 - Regression test added
