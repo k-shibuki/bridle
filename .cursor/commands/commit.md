@@ -19,10 +19,6 @@ git diff
 2. Stage and commit per `commit-format.mdc` (format, footer with `Refs: #<issue>`). Split into atomic commits when beneficial per § Atomic Commits.
 3. Do not open interactive editor (`git commit` without `-m`). English only.
 
-### Exception: documentation-only direct push
-
-For docs-only changes (type: `docs` + exception: `no-issue`), direct push to `main` is permitted. If the change touches any code, CI config, or Makefile logic: use `pr-create` instead.
-
 ## Output
 - Branch: current branch name
 - Issue: `#<number>` referenced

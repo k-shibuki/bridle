@@ -25,42 +25,81 @@ The system IS:
 - A set of **declarative constraints** that bound agent reasoning
 - A collection of **structured observations** that the agent consumes
 
-## Design principles
+## Structure
 
-1. Don't make the agent memorize procedures. Show it state.
-2. Don't let observation be ad hoc. Structure it.
-3. Don't bury invariants in procedures. Declare them separately.
-4. Limit Knowledge to semantics. Never mix in execution.
-5. Keep Procedure thin. It is not the thinking itself.
-6. Self-improvement starts with Evidence, not Principle. Don't let
-   the agent modify its own rules.
-7. Treat the control system itself as testable software.
+```text
+Agent Control System
+├── Design              README.md, docs/adr/, docs/schemas/
+│                       architectural authority (immutable once accepted)
+│     constrains ↓
+└── Controls
+    ├── Principle       .cursor/rules/          ← policy authority (declarative)
+    ├── Procedure       .cursor/commands/        ← entry points (see § Procedure layer design)
+    ├── Knowledge       .cursor/knowledge/       ← project-specific semantics
+    ├── Evidence        Makefile + tools/        ← structured observation → JSON
+    ├── Guard           hooks, CI, BP            ← deterministic enforcement
+    └── Interface       AGENTS.md, .cursor/templates/, .github/templates  ← external entry points
+```
+
+Design defines the project's identity (README) and architectural
+decisions (ADRs, schemas). Controls implement the agent's information
+space under Design authority. Deviating from an ADR requires a new ADR
+that supersedes it — editing a Principle rule is not sufficient.
 
 ## Components
 
-The control system has 6 components:
-
-```text
-Controls
-├── Principle      .cursor/rules/        ← invariants + policies
-├── Procedure      .cursor/commands/     ← action cards + full commands (see § Procedure layer design)
-├── Knowledge      .cursor/knowledge/    ← project-specific semantics
-├── Evidence       Makefile + tools/     ← structured observation → JSON
-├── Guard          hooks, CI, BP         ← deterministic enforcement
-└── Interface      AGENTS.md, .cursor/templates/, .github/PULL_REQUEST_TEMPLATE.md, .github/ISSUE_TEMPLATE/  ← external entry points
-```
-
-The architecture design document lives in `docs/agent-control/`
-(Design domain), not inside Controls.
-
 | Component | Responsibility | What it must NOT contain |
 |-----------|---------------|------------------------|
+| **Design** | Project identity (`README.md`), architectural decisions (`docs/adr/`), data contracts (`docs/schemas/`) | Mutable policies, operational procedures |
 | **Principle** | Declare MUST / MUST NOT policies, invariants | Procedures (numbered steps), observation commands |
 | **Procedure** | Thin entry points: action cards (Reads → Sense → Act → Output → Guard) or full commands for judgment-intensive workflows. See § Procedure layer design. | Judgment logic, embedded observation, policy declarations |
 | **Knowledge** | Project-specific semantics: patterns, gotchas, domain heuristics | CLI commands, API calls, executable procedures |
 | **Evidence** | Structured observation via `make` targets → JSON | Policy decisions, workflow logic |
 | **Guard** | Deterministic enforcement of Principle | Policy content (reference Principle for justification) |
 | **Interface** | External entry points for humans and AI agent reviewers (`AGENTS.md`, `.cursor/templates/`, `.github/PULL_REQUEST_TEMPLATE.md`, `.github/ISSUE_TEMPLATE/`) | Implementation details, procedures |
+
+## Design principles
+
+Six principles govern the control system. Each is independent: removing
+any one loses the ability to generate a specific structural property or
+defend against a specific anti-pattern.
+
+1. **Design is the supreme authority.** The project's identity (README)
+   and architectural decisions (ADRs, schemas) constrain all Controls
+   components. Principle, Procedure, Knowledge, Evidence, and Guard
+   operate under Design authority.
+2. **Show the agent structured state; don't make it memorize.** The
+   agent receives its situational awareness from Evidence (structured
+   JSON), not from memorized procedures or ad-hoc CLI queries.
+3. **Knowledge is semantics only.** Knowledge atoms hold domain
+   heuristics, patterns, and gotchas. They never contain CLI commands,
+   API calls, or executable procedures.
+4. **Each piece of information has exactly one authoritative location
+   (SSOT).** When information must be referenced from multiple places,
+   one location is the source of truth and others link to it.
+   Duplication is a defect.
+5. **Self-improvement starts with Evidence, not Principle.** When the
+   agent encounters an observation gap, it proposes a new evidence
+   target — not an ad-hoc workaround or a rule patch. The agent does
+   not modify its own Principle rules.
+6. **The control system is testable software.** Guards, CI checks, and
+   validation targets enforce Principle deterministically. The control
+   system itself is subject to the same engineering discipline as the
+   code it governs.
+
+### What the principles derive (not stated as principles)
+
+The following properties emerge from the six principles by exclusion
+and are not restated as separate principles:
+
+- **Principle layer exists**: Design is immutable (P1) and Knowledge
+  holds only semantics (P3), so mutable policies need their own layer.
+- **Procedure is thin**: Evidence observes (P2), Principle declares
+  (derived from P1), Knowledge advises (P3) — Procedure is the
+  residual, providing only routing.
+- **Authority hierarchy**: Design constrains Principle (P1); Principle
+  declares policy that Procedure references; Knowledge is advisory
+  (P3). The hierarchy follows from component responsibilities.
 
 ## Procedure layer design
 
@@ -78,7 +117,8 @@ of ~15–25 lines with a fixed structure:
 ## Guard      — relevant Hard Stops
 ```
 
-Action cards are **not** the thinking itself (Principle 5). They declare
+Action cards are **not** the thinking itself — Procedure is a derived
+property, not a principle (see § What the principles derive). They declare
 what to read, what to observe, what to do, and what constraints apply.
 Judgment logic lives in Principle; domain heuristics live in Knowledge.
 The card connects them.
@@ -159,28 +199,10 @@ then routes to the appropriate action card. The card's `Reads` section
 directs the agent to load relevant Principle and Knowledge before acting.
 Guard enforces constraints deterministically on the output.
 
-## Authority hierarchy
+## SSOT registry
 
-```text
-Design (ADRs, schemas)     ← architectural authority (immutable once accepted)
-  │ constrains
-Principle (rules)          ← policy authority (declarative)
-  │ referenced by
-Procedure (commands)       ← entry point (thin, no authority)
-  │ advised by
-Knowledge (atoms)          ← advisory (no enforcement power)
-```
-
-Declarative rules carry authority. Executable scripts are subordinate.
-Deviating from an ADR requires a new ADR that supersedes it.
-
-## SSOT (Single Source of Truth)
-
-Each piece of information exists in exactly one place. When information
-must be referenced from multiple locations, one location is authoritative
-and others link to it. Duplication is a defect.
-
-Key SSOTs:
+Design principle 4 establishes the SSOT invariant. This registry is
+the authoritative list of source-of-truth locations:
 
 | Information | SSOT location |
 |-------------|---------------|
