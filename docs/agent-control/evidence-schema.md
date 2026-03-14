@@ -241,7 +241,7 @@ into a single JSON document for state classification.
 - `issues.open[].blocked_by`: Issue numbers referenced in "Depends on" or "Blocks" sections
 - `pull_requests.open[].ci_status`: aggregated from `statusCheckRollup` — `success` only if ALL checks pass
 - `pull_requests.open[].review_threads_*`: from GraphQL `reviewThreads` query
-- `environment.doctor_healthy`: `errors == 0` from doctor output
+- `environment.doctor_healthy`: true when the development container is running (equivalent to `container_running`). Full health diagnosis is delegated to `evidence-environment`.
 
 **Nullability**: all fields are required. Empty arrays for absent collections. `blocked_by` may be empty.
 
@@ -283,7 +283,7 @@ into a single JSON document for state classification.
 
 **Nullability**: all fields required. `detail` may be empty string.
 
-**Composability**: `evidence-workflow-position` extracts `doctor_healthy` and `container_running` from the same underlying doctor check, but does NOT depend on this target.
+**Composability**: `evidence-workflow-position` uses container running state as a lightweight proxy for `doctor_healthy`. This target provides the full diagnosis when the `doctor` action card is invoked. Neither target depends on the other.
 
 **Downstream**: ST_ENV_ISSUE (EnvironmentIssue) detection, `doctor` command.
 
