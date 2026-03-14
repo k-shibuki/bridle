@@ -13,7 +13,7 @@ All implementation work must be traceable to a GitHub Issue:
 3. **1 Issue ≈ 1 PR**: Each Issue should be implementable in a single PR. Large tasks are split into child Issues.
 4. **Commits reference Issues**: Include `Refs: #<issue>` in every commit footer.
 5. **PRs close Issues**: Include `Closes #<issue>` in every PR body.
-6. **No main direct push**: All changes go through the PR flow. Branch Protection requires status checks (`ci-pass`, `check-policy`) on every push to `main` — this is a Deterministic enforcement with no exception path.
+6. **No main direct push**: All changes go through the PR flow. Branch Protection requires status checks (`ci-pass`, `check-policy`) on every push to `main`.
 
 ### fix vs hotfix Decision Criteria
 
@@ -40,11 +40,11 @@ The following exception types may bypass the Issue-driven flow:
 | `hotfix` | Critical fix meeting the hotfix threshold above | **Exception PR** (via `pr-create` exception path) |
 | `no-issue` | Other justified exceptions (docs-only changes, meta-implementation of workflow, etc.) | **Exception PR** (via `pr-create` exception path) |
 
-**All changes — including docs-only — MUST go through a PR.** Branch Protection requires status checks (`ci-pass`, `check-policy`) on every push to `main`, making direct push impossible regardless of change type. This is a Deterministic enforcement — no agent or human can bypass it without admin override.
+**All changes — including docs-only — MUST go through a PR.** Branch Protection requires status checks (`ci-pass`, `check-policy`) on every push to `main`. On personal repositories, `enforce_admins` does not reliably prevent repo-owner bypass (see `agent-safety.mdc` `HS-CI-MERGE`(a)); admin override is technically possible but strictly prohibited by policy.
 
 **Exception requirements** (enforced by CI):
 
-- **Commits**: `hotfix`/`docs` types may omit `Refs: #<issue>` (see `commit-format.mdc` § Footer for SSOT) but must include justification in the body. Other exception types still require `Refs:`.
+- **Commits**: `hotfix`/`docs` types may omit `Refs: #<issue>` (see `commit-format.mdc` § Footer for SSOT) but must include justification in the body. This exception applies to commits **within Exception PRs** — it does not bypass the PR requirement itself. Other exception types still require `Refs:`.
 - **PRs**: Must have an exception label AND a `## Exception` section with:
   - `- Type:` one of `hotfix` / `no-issue`
   - `- Justification:` reason (min 20 characters)
