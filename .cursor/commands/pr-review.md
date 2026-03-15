@@ -1,6 +1,7 @@
 # pr-review
 
 ## Reads
+
 - `AGENTS.md` § Review guidelines (severity: P0/P1 only, category rules)
 - `review--bot-operations.md` (detection, terminal states, agreement mechanics)
 - `test-strategy.mdc` (test quality: P0 if missing, P1 if incomplete)
@@ -19,11 +20,13 @@
 4. Produce merge recommendation: **Mergeable** → recommend `pr-merge`. **Changes required** → recommend `review-fix`.
 
 ## Output
+
 - Merge decision + strategy (squash/merge per `workflow--merge-strategy.md`)
 - Issue DoD check (met/not met per criterion)
 - Bot review status + findings incorporated
 - Required changes list (if any, with source and severity)
 
 ## Guard
+
 - `HS-CI-MERGE`: CI must be green before merge (review may start earlier)
 - Bot review freshness: terminal state covering latest push

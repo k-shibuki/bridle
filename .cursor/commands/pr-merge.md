@@ -1,6 +1,7 @@
 # pr-merge
 
 ## Reads
+
 - `controls--merge-invariants.md` (5 mandatory preconditions, merge state resolution, auto-merge decision)
 - `workflow--merge-strategy.md` (squash vs merge selection, high-risk change policy)
 
@@ -16,11 +17,13 @@
 4. Post-merge: verify `state == "MERGED"` via `make evidence-pull-request PR=<N>`, then `make git-post-merge-cleanup BRANCH=<branch>`.
 
 ## Output
+
 - Merge status: success/blocked (with reason)
 - Merge strategy used
 - Post-merge cleanup confirmation
 
 ## Guard
+
 - `HS-CI-MERGE`: CI green required; `--admin` flag prohibited; amend+force-push prohibited
 - `HS-CI-MERGE` auto-merge guard: MUST NOT set while bot review pending
 - `HS-REVIEW-RESOLVE`: all threads resolved

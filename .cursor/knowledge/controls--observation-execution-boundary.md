@@ -51,7 +51,7 @@ Prohibited in the main agent per `HS-NO-INLINE-POLL`; permitted inside
 
 ## Decision Rule
 
-```
+```text
 Is the command reading state or changing state?
 ├── Reading → Use `make evidence-*` target (HS-EVIDENCE-FIRST)
 │   ├── Repeated read / poll loop? → Delegate to subagent (HS-NO-INLINE-POLL)

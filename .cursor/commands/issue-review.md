@@ -1,6 +1,7 @@
 # issue-review
 
 ## Reads
+
 - `workflow--issue-quality-checklist.md` (12-item per-Issue checklist, 6-item cross-Issue analysis, finding classification)
 - `test-strategy.mdc` (test plan quality standards)
 
@@ -19,21 +20,25 @@
 ## Output
 
 ### Per-Issue
+
 - Issue: `#<N>` — title
 - Checklist: pass/fail per criterion
 - Status: Clean / Needs fix (Cat A) / Needs discussion (Cat B)
 
 ### Cross-Issue
+
 - Dependency graph
 - Interface contracts (agreements / conflicts)
 - Parallel opportunities
 
 ### Action summary
+
 - Category A fixes applied: count
 - Category B discussion points: count
 - Overall readiness: ready / blocked
 
 ## Guard
+
 - Do NOT create or close Issues (only edit existing bodies)
 - Do NOT modify R source code
 - Preserve original author's intent when editing

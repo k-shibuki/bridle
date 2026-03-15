@@ -22,8 +22,10 @@ CONTAINER_DIR  := containers
 # to bypass container exec and call Rscript directly.
 ifdef BRIDLE_IN_CONTAINER
   RSCRIPT := Rscript
+  CONTAINER_EXEC :=
 else
   RSCRIPT := $(RUNTIME) exec -w $(WORKDIR) $(CONTAINER_NAME) Rscript
+  CONTAINER_EXEC := $(RUNTIME) exec -w $(WORKDIR) $(CONTAINER_NAME)
 endif
 
 .PHONY: help \
@@ -31,6 +33,7 @@ endif
 	package-init package-restore package-snapshot \
 	check check-quick test lint format format-verify document coverage coverage-verify site-build package-install clean \
 	gate-quality gate-fast gate-pull-request gate-full doctor doctor-json schema-validate evidence-validate \
+	markdown-lint markdown-lint-changed \
 	lint-changed test-changed test-junit lint-json scaffold-test scaffold-class \
 	status git-new-branch git-install-hooks git-post-merge-cleanup \
 	knowledge-manifest knowledge-validate knowledge-new review-sync-verify \
@@ -105,6 +108,17 @@ test: _require_container ## Run tests
 lint: _require_container ## Run lintr (with package namespace loaded for accurate object_usage_linter)
 	$(RSCRIPT) -e "pkgload::load_all('.', quiet = TRUE); lintr::lint_package()"
 
+markdown-lint: _require_container ## Lint all Markdown files
+	$(CONTAINER_EXEC) markdownlint-cli2 "**/*.md"
+
+markdown-lint-changed: _require_container ## Lint changed Markdown files only
+	@files=$$(bash tools/changed-files.sh "**/*.md"); \
+	if [ -n "$$files" ]; then \
+		$(CONTAINER_EXEC) markdownlint-cli2 $$files; \
+	else \
+		echo "No changed Markdown files to lint"; \
+	fi
+
 format: _require_container ## Auto-format with styler
 	$(RSCRIPT) -e "styler::style_pkg()"
 
@@ -151,7 +165,7 @@ package-sync-verify: _require_container ## Verify renv.lock is in sync with DESC
 
 gate-quality: schema-validate lint test check ## Full quality gate: schema-validate + lint + test + check
 
-gate-fast: schema-validate package-sync-verify knowledge-validate lint ## Fast gate: schema-validate + package-sync-verify + knowledge-validate + lint
+gate-fast: schema-validate package-sync-verify knowledge-validate lint markdown-lint ## Fast gate: schema-validate + package-sync-verify + knowledge-validate + lint + markdown-lint
 
 gate-pull-request: gate-quality document ## PR-ready gate: full quality + document (run before pr-create)
 

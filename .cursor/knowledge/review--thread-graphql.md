@@ -9,6 +9,7 @@ Thread counts for completeness verification. Used by `pr-review`
 ## Evidence-first approach
 
 `make evidence-pull-request PR=<N>` provides:
+
 - `reviews.threads_total` — total thread count
 - `reviews.threads_unresolved` — unresolved count
 

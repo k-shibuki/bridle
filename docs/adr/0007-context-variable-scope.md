@@ -48,6 +48,7 @@ variables:
 ```
 
 Each variable specifies:
+
 - `available_from`: Phase when the variable becomes computable. One of `data_loaded`, `parameter_decided`, or `post_fit`.
 - `depends_on_node` (optional): The specific graph node after which this variable is available. Enables fine-grained availability checking.
 - `source_expression`: R expression the runtime evaluates to obtain the value.
@@ -75,6 +76,7 @@ This is informational (used by `context_gathering` nodes and `validate_plugin()`
 ### Validation rules
 
 `validate_plugin()` checks:
+
 - Every `computable_hint` in the decision graph and knowledge entries is parsed with `all.vars()` to extract referenced variable names.
 - Variables matching static declarations are verified: does `available_from` / `depends_on_node` make sense given the node's position in the graph?
 - Variables not in static declarations are assumed to be dynamic (data columns) and are not flagged as errors.

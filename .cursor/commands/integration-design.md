@@ -59,12 +59,14 @@ This command focuses on the concrete deliverables and how to produce them.
 ## Checklists
 
 ### Pre-Implementation
+
 - [ ] Specification review (docs/adr/, DESCRIPTION)
 - [ ] Codebase understanding
 - [ ] Dependency verification
 - [ ] Coding convention check
 
 ### Design & Implementation
+
 - [ ] Sequence diagram created
 - [ ] S7 classes defined
 - [ ] **Propagation table for added parameters/fields** (where received, where passed, where effect occurs)
@@ -73,6 +75,7 @@ This command focuses on the concrete deliverables and how to produce them.
 - [ ] R CMD check passes
 
 ### Post-Implementation
+
 - [ ] Specification compliance verified
 - [ ] Comment language verified
 - [ ] Consistency verified

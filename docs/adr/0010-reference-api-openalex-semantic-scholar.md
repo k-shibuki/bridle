@@ -57,7 +57,7 @@ Rate limiting is implemented with `Sys.sleep()` between requests, tracking the l
 
 Profile selection is automatic based on environment variables:
 
-```
+```text
 BRIDLE_OPENALEX_EMAIL → identified profile (recommended)
 BRIDLE_S2_API_KEY     → authenticated profile (optional)
 ```
@@ -66,7 +66,7 @@ When no environment variables are set, both APIs fall back to anonymous profiles
 
 ### Fallback strategy
 
-```
+```text
 fetch_references(dois)
   |-> OpenAlex lookup (primary)
   |     |-> abstract_inverted_index → text reconstruction
@@ -114,7 +114,7 @@ Concrete API specifications, state management design, and error-handling mechani
 
 **DOI lookup endpoint**:
 
-```
+```text
 GET https://api.openalex.org/works/https://doi.org/{doi}
 ```
 
@@ -144,7 +144,7 @@ The DOI is embedded directly in the path (URL-encoded by `httr2`). This is the s
 
 **DOI lookup endpoint**:
 
-```
+```text
 GET https://api.semanticscholar.org/graph/v1/paper/DOI:{doi}
 ```
 
@@ -177,7 +177,7 @@ The `DOI:` prefix is required by the S2 API to distinguish DOI lookups from S2 p
 
 State is held in a package-level `environment` (`.api_state`), initialized by `detect_profiles()` on the first `fetch_references()` call per session:
 
-```
+```text
 .api_state fields:
   oa_last        numeric   Last OA request timestamp (0 = never)
   oa_interval    numeric   Current OA min interval (0.25 or 0.33)

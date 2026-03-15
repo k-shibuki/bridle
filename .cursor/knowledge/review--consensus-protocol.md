@@ -17,7 +17,7 @@ until the reviewer's final response confirms the disposition.
 
 ## Completeness Invariant
 
-```
+```text
 unresolved threads == 0  ⟺  all review findings have consensus
 ```
 
@@ -79,6 +79,7 @@ Execution commands (reply, resolve) and identifier mapping are in
 Thread enumeration (observation) uses `make evidence-review-threads PR=<N>`.
 
 Key identifiers (from `make evidence-review-threads`):
+
 - `database_id` → REST reply `in_reply_to` parameter
 - `graphql_id` → GraphQL `resolveReviewThread` mutation input
 

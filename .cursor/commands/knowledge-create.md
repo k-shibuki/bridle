@@ -1,6 +1,7 @@
 # knowledge-create
 
 ## Reads
+
 - `docs/agent-control/knowledge-guidelines.md` (what to include/exclude, format, anti-patterns)
 - `knowledge-index.mdc` (check for existing coverage before creating)
 
@@ -19,10 +20,12 @@ Check `knowledge-index.mdc` trigger keywords — does an existing atom already c
 7. Include in next commit (no separate commit needed).
 
 ## Output
+
 - File created: `.cursor/knowledge/<name>.md`
 - Index updated: `.cursor/rules/knowledge-index.mdc`
 - Validation: pass/fail
 
 ## Guard
+
 - Knowledge must NOT contain executable commands (see `knowledge-guidelines.md` § Anti-pattern)
 - Knowledge must NOT declare MUST/MUST NOT rules (those belong in Principle)

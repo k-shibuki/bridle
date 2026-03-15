@@ -149,6 +149,7 @@ convention: `<category>--<topic>.md`. Categories relevant to review:
 ### Commands (`.cursor/commands/`)
 
 Workflow procedures readable by any agent:
+
 - `pr-review.md`: full review procedure with category table
 - `review-fix.md`: procedure for addressing review findings
 - `pr-create.md`: PR creation with quality gates

@@ -90,6 +90,7 @@ entry:
 ```
 
 Optional fields (defined in schema, omitted in initial implementation):
+
 - `model_context`: `{ provider, model, temperature, prompt_hash }`
 - `cost_metrics`: `{ latency_ms, input_tokens, output_tokens }`
 - `error_info`: `{ class, message, traceback_ref }`

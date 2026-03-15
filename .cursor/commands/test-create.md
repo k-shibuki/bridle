@@ -1,6 +1,7 @@
 # test-create
 
 ## Reads
+
 - `test-strategy.mdc` (test design policy, mock conventions, coverage targets)
 - `test--perspectives-table.md` (table format, Issue Test Plan import, template)
 - `test--mock-scope-constraint.md`, `test--mock-external-function.md`, `test--layered-mock-strategy.md` (mock patterns)
@@ -20,10 +21,12 @@ Review the implementation diff and the Issue's Test Plan section.
 4. Implement tests based on the matrix. Include GWT comments, wiring/effect tests for new parameters, and exception type+message assertions.
 
 ## Output
+
 - Test perspectives table (updated if scope changes)
 - New/updated test files: list of paths
 - Notes: gaps, flakiness risks, runtime concerns
 
 ## Guard
+
 - `HS-NO-DISMISS`: every test failure is a defect
 - Test design must follow `test-strategy.mdc`

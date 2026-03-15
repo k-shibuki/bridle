@@ -26,9 +26,10 @@ renv_changed=$(echo "$changed" | grep -E '^(DESCRIPTION|renv\.lock|renv/)' || tr
 # knowledge-validate checks atom/index consistency; review-sync-verify validates
 # AGENTS.md ↔ pr-review.md category parity. Both run when any KB file changes.
 kb_changed=$(echo "$changed" | grep -E '^(\.cursor/(knowledge/|rules/knowledge-index\.mdc|commands/pr-review\.md)|AGENTS\.md)' || true)
+md_changed=$(echo "$changed" | grep -E '\.md$' || true)
 
 # --- Nothing to verify ---
-if [[ -z "$r_changed" && -z "$schema_changed" && -z "$renv_changed" && -z "$kb_changed" ]]; then
+if [[ -z "$r_changed" && -z "$schema_changed" && -z "$renv_changed" && -z "$kb_changed" && -z "$md_changed" ]]; then
   exit 0
 fi
 
@@ -75,4 +76,9 @@ if [[ -n "$kb_changed" ]]; then
   echo "pre-push: Knowledge base changes detected — running knowledge-validate + review-sync-verify..."
   make knowledge-validate || { echo "BLOCKED (HS-LOCAL-VERIFY): make knowledge-validate failed. Run 'make knowledge-manifest' to update the index, then stage and commit." >&2; exit 1; }
   make review-sync-verify || { echo "BLOCKED (HS-LOCAL-VERIFY): make review-sync-verify failed. AGENTS.md and pr-review.md categories are out of sync." >&2; exit 1; }
+fi
+
+if [[ -n "$md_changed" ]]; then
+  echo "pre-push: Markdown changes detected — running markdown-lint-changed..."
+  make markdown-lint-changed || { echo "BLOCKED (HS-LOCAL-VERIFY): make markdown-lint-changed failed" >&2; exit 1; }
 fi
