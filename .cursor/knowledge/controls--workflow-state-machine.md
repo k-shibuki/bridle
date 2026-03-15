@@ -5,7 +5,9 @@ trigger: workflow state machine, FSM, finite state machine, state catalog, signa
 
 Formal FSM specification for the AI agent workflow. This atom is the
 **Orient** component — it defines states, signals, transitions, and
-guards. The executable classifier is `make evidence-workflow-position`.
+guards. `make evidence-workflow-position` returns the primary FSM input
+(structured evidence). State classification is performed by `next` using
+this evidence, not by the evidence target itself.
 
 Canonical specification: `docs/agent-control/state-model.md`.
 
@@ -76,5 +78,5 @@ Guards map to Hard Stops in `agent-safety.mdc`. See `state-model.md`
 ## Related
 
 - `docs/agent-control/state-model.md` — canonical specification
-- `evidence-workflow-position` — executable state classifier
+- `evidence-workflow-position` — primary FSM evidence input
 - `agent-safety.mdc` — Hard Stop definitions

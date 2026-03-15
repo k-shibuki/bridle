@@ -36,9 +36,10 @@ record() {
     results+=("{\"name\":\"$name\",\"status\":\"$status\",\"detail\":\"$detail\"}")
   else
     case "$status" in
-      ok)   printf '\033[0;32m✓\033[0m %s\n' "$name" ;;
-      fail) printf '\033[0;31m✗\033[0m %s (required) %s\n' "$name" "$detail" ;;
-      warn) printf '\033[1;33m!\033[0m %s (optional) %s\n' "$name" "$detail" ;;
+      ok)      printf '\033[0;32m✓\033[0m %s\n' "$name" ;;
+      error)   printf '\033[0;31m✗\033[0m %s (required) %s\n' "$name" "$detail" ;;
+      warning) printf '\033[1;33m!\033[0m %s (optional) %s\n' "$name" "$detail" ;;
+      skip)    printf '\033[0;36m⊘\033[0m %s (skipped) %s\n' "$name" "$detail" ;;
     esac
   fi
 }
@@ -52,10 +53,10 @@ check_r_pkg() {
       && [[ "$out" == "TRUE" ]]; then
     record "R pkg: $pkg" "ok"
   elif [[ "$required" == "true" ]]; then
-    record "R pkg: $pkg" "fail" "not installed"
+    record "R pkg: $pkg" "error" "not installed"
     errors=$((errors + 1))
   else
-    record "R pkg: $pkg" "warn" "not installed"
+    record "R pkg: $pkg" "warning" "not installed"
     warnings=$((warnings + 1))
   fi
 }
@@ -68,14 +69,14 @@ $JSON_MODE || echo ""
 if [[ -n "$RUNTIME" ]]; then
   record "Container runtime: $RUNTIME" "ok"
 else
-  record "Container runtime (podman or docker)" "fail" "neither found"
+  record "Container runtime (podman or docker)" "error" "neither found"
   errors=$((errors + 1))
 fi
 
 if command -v git &>/dev/null; then
   record "git" "ok"
 else
-  record "git" "fail" "not found"
+  record "git" "error" "not found"
   errors=$((errors + 1))
 fi
 
@@ -83,7 +84,7 @@ fi
 if git config --get commit.template &>/dev/null; then
   record "git commit.template" "ok"
 else
-  record "git commit.template" "warn" "not set (run: git config commit.template .gitmessage)"
+  record "git commit.template" "warning" "not set (run: git config commit.template .gitmessage)"
   warnings=$((warnings + 1))
 fi
 
@@ -111,13 +112,13 @@ if [[ ${#hooks_missing[@]} -gt 0 ]]; then
       if [[ -f "$hook_file" ]] && grep -q 'bridle-guard-hook' "$hook_file" 2>/dev/null; then
         record "git hook: $hook_type" "ok" "auto-installed"
       else
-        record "git hook: $hook_type" "warn" "auto-install failed — run 'make install-hooks' manually"
+        record "git hook: $hook_type" "warning" "auto-install failed — run 'make git-install-hooks' manually"
         warnings=$((warnings + 1))
       fi
     done
   else
     for hook_type in "${hooks_missing[@]}"; do
-      record "git hook: $hook_type" "warn" "auto-install failed — run 'make install-hooks' manually"
+      record "git hook: $hook_type" "warning" "auto-install failed — run 'make git-install-hooks' manually"
       warnings=$((warnings + 1))
     done
   fi
@@ -129,7 +130,7 @@ if command -v podman-compose &>/dev/null; then
 elif docker compose version &>/dev/null 2>&1; then
   record "docker compose" "ok"
 else
-  record "compose" "warn" "not available (direct build/run used as fallback; renv cache volume not mounted)"
+  record "compose" "warning" "not available (direct build/run used as fallback; renv cache volume not mounted)"
   warnings=$((warnings + 1))
 fi
 
@@ -140,7 +141,7 @@ if [[ -n "$RUNTIME" ]]; then
     record "Container '$CONTAINER_NAME'" "ok"
     container_running=true
   else
-    record "Container '$CONTAINER_NAME'" "warn" "not running (run 'make container-up')"
+    record "Container '$CONTAINER_NAME'" "warning" "not running (run 'make container-start')"
     warnings=$((warnings + 1))
   fi
 fi
@@ -158,11 +159,11 @@ if $container_running; then
     if printf '%s\n%s\n' "$MIN_R_VERSION" "$r_ver" | sort -V | head -1 | grep -q "^${MIN_R_VERSION}$"; then
       record "R $r_ver (>= $MIN_R_VERSION)" "ok"
     else
-      record "R $r_ver (need >= $MIN_R_VERSION)" "fail"
+      record "R $r_ver (need >= $MIN_R_VERSION)" "error"
       errors=$((errors + 1))
     fi
   else
-    record "R version" "fail" "could not detect"
+    record "R version" "error" "could not detect"
     errors=$((errors + 1))
   fi
 
@@ -172,7 +173,7 @@ if $container_running; then
       | tail -1 | grep -q TRUE; then
     record "renv" "ok"
   else
-    record "renv" "fail" "not installed in container"
+    record "renv" "error" "not installed in container"
     errors=$((errors + 1))
   fi
 
@@ -183,7 +184,7 @@ if $container_running; then
   if [[ "$renv_ok" == "TRUE" ]]; then
     record "renv sync" "ok"
   else
-    record "renv sync" "fail" "out of sync (run 'make renv-snapshot' then commit renv.lock)"
+    record "renv sync" "error" "out of sync (run 'make package-snapshot' then commit renv.lock)"
     errors=$((errors + 1))
   fi
 

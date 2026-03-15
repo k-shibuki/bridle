@@ -44,10 +44,11 @@ validate_json() {
   fi
 
   # Validate target-specific required top-level keys
+  # Use has() instead of -e to handle boolean false and zero values correctly
   case "$target" in
     evidence-workflow-position)
       for key in git issues pull_requests environment; do
-        if ! echo "$json" | jq -e ".$key" >/dev/null 2>&1; then
+        if ! echo "$json" | jq -e "has(\"$key\")" >/dev/null 2>&1; then
           echo "FAIL [$target]: missing required key '$key'" >&2
           return 1
         fi
@@ -55,7 +56,7 @@ validate_json() {
       ;;
     evidence-environment)
       for key in errors warnings runtime checks; do
-        if ! echo "$json" | jq -e ".$key" >/dev/null 2>&1; then
+        if ! echo "$json" | jq -e "has(\"$key\")" >/dev/null 2>&1; then
           echo "FAIL [$target]: missing required key '$key'" >&2
           return 1
         fi
@@ -63,7 +64,7 @@ validate_json() {
       ;;
     evidence-lint)
       for key in file_count finding_count findings; do
-        if ! echo "$json" | jq -e ".$key" >/dev/null 2>&1; then
+        if ! echo "$json" | jq -e "has(\"$key\")" >/dev/null 2>&1; then
           echo "FAIL [$target]: missing required key '$key'" >&2
           return 1
         fi
@@ -71,7 +72,7 @@ validate_json() {
       ;;
     evidence-pull-request)
       for key in number title ci merge reviews traceability; do
-        if ! echo "$json" | jq -e ".$key" >/dev/null 2>&1; then
+        if ! echo "$json" | jq -e "has(\"$key\")" >/dev/null 2>&1; then
           echo "FAIL [$target]: missing required key '$key'" >&2
           return 1
         fi
@@ -79,7 +80,15 @@ validate_json() {
       ;;
     evidence-issue)
       for key in issues dependency_graph; do
-        if ! echo "$json" | jq -e ".$key" >/dev/null 2>&1; then
+        if ! echo "$json" | jq -e "has(\"$key\")" >/dev/null 2>&1; then
+          echo "FAIL [$target]: missing required key '$key'" >&2
+          return 1
+        fi
+      done
+      ;;
+    evidence-review-threads)
+      for key in total unresolved threads files_changed truncated; do
+        if ! echo "$json" | jq -e "has(\"$key\")" >/dev/null 2>&1; then
           echo "FAIL [$target]: missing required key '$key'" >&2
           return 1
         fi
