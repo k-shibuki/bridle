@@ -377,7 +377,7 @@ review freshness, and bot review status.
 - `reviews.last_push_at`: timestamp of most recent push to PR branch (for review freshness)
 - `reviews.last_review_at`: timestamp of most recent review submission (null if none)
 - `reviews.disposition`: merged disposition from review timeline used by FSM transitions
-- `reviews.bot_*.findings_count`: number of findings from that reviewer (0 for clean/silent)
+- `reviews.bot_*.findings_count`: total findings from that reviewer, including both inline review comments and body-embedded "outside diff range" findings (0 for clean/silent)
 - `reviews.bot_coderabbit.review_count`: total number of CR review submissions for this PR (budget: max 2)
 - `traceability.closes_issues`: Issue numbers from `Closes #N` / `Fixes #N` in PR body
 
@@ -389,7 +389,7 @@ review freshness, and bot review status.
 
 **Purpose**: Per-thread review details for `review-fix` (disposition replies, thread resolution) and `pr-review` (finding classification).
 
-**Input**: GitHub GraphQL API + `gh pr diff`. Requires `PR=<number>` argument.
+**Input**: GitHub GraphQL API + REST API + `gh pr diff`. Requires `PR=<number>` argument.
 
 **Output schema**:
 
@@ -417,6 +417,17 @@ review freshness, and bot review status.
       ]
     }
   ],
+  "body_findings": [
+    {
+      "review_id": "integer",
+      "author": "string",
+      "path": "string",
+      "line_range": "string (e.g. '121-121')",
+      "body": "string (finding title)",
+      "submitted_at": "ISO8601"
+    }
+  ],
+  "body_findings_count": "integer",
   "files_changed": ["string"],
   "truncated": "boolean"
 }
@@ -429,9 +440,11 @@ review freshness, and bot review status.
 - `database_id`: required for `POST /pulls/{N}/comments/{id}/replies` REST API
 - `body`: first comment in thread (the reviewer's finding)
 - `replies`: subsequent comments (disposition replies, bot confirmations)
+- `body_findings`: findings embedded in review body as "outside diff range comments". These are not GitHub review threads and do not affect `required_conversation_resolution`. Extracted from `<summary>filepath (N)</summary>` sections in review bodies.
+- `body_findings_count`: total number of body-embedded findings across all reviews (0 if none)
 - `files_changed`: paths from `gh pr diff --name-only`
 
-**Nullability**: all top-level fields required. `path` and `line` nullable (for PR-level comments outside diff).
+**Nullability**: all top-level fields required. `path` and `line` nullable (for PR-level comments outside diff). `body_findings` may be empty array.
 
 **Downstream**: `review-fix` Steps 1 (classify findings) and 3 (post disposition + check consensus), `pr-review` Step 2 (thread baseline).
 

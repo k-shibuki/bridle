@@ -32,6 +32,17 @@
       "replies": []
     }
   ],
+  "body_findings": [
+    {
+      "review_id": 98765432,
+      "author": "coderabbitai[bot]",
+      "path": "tools/doctor.sh",
+      "line_range": "121-121",
+      "body": "Inconsistent status label and command reference.",
+      "submitted_at": "2026-03-12T10:30:00Z"
+    }
+  ],
+  "body_findings_count": 1,
   "files_changed": ["R/example.R", "R/scanner.R", "tests/testthat/test-example.R"],
   "truncated": false,
   "_meta": {
