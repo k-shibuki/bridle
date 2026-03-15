@@ -19,6 +19,7 @@ Quality enforcement is distributed across three execution contexts with distinct
 | Schemas (`docs/schemas/`, `tools/validate-schemas.R`) | `schema-validate` |
 | renv (`DESCRIPTION`, `renv.lock`, `renv/`) | `package-sync-verify` |
 | Knowledge base (`.cursor/knowledge/`, `.cursor/rules/knowledge-index.mdc`, `AGENTS.md` (repo root), `.cursor/commands/pr-review.md`) | `knowledge-validate` + `review-sync-verify` |
+| Markdown (`**/*.md`) | `markdown-lint-changed` |
 
 All matching change types trigger independently (no elif single-match).
 
@@ -34,7 +35,7 @@ All matching change types trigger independently (no elif single-match).
 
 **Scope** (full package, parallel execution):
 
-```
+```text
 changes ──┬── schema-validate      (r_source OR schemas)
           ├── format-verify        (r_source)
           ├── lint                 (r_source)
@@ -42,7 +43,8 @@ changes ──┬── schema-validate      (r_source OR schemas)
           ├── check               (r_source OR r_deps; --no-tests)
           ├── ci-config            (ci_config)
           ├── package-sync-verify  (renv_deps)
-          └── knowledge-validate   (kb_files)
+          ├── knowledge-validate   (kb_files)
+          └── markdown-lint        (markdown)
                        │
                   ci-pass (required status check)
 ```
@@ -52,6 +54,7 @@ changes ──┬── schema-validate      (r_source OR schemas)
 **Design principle**: Completeness for the PR scope. Parallel execution for speed. No coverage (moved to Layer 3).
 
 **Guard notes**:
+
 - `ci-config` shellcheck is blocking (no `|| true` bypass), so shell script diagnostics now fail PR CI.
 - `lint` runs `pkgload::load_all()` before `lintr::lint_package()` to align CI behavior with local lint execution and reduce cross-file false positives.
 
@@ -75,7 +78,7 @@ changes ──┬── schema-validate      (r_source OR schemas)
 
 ## Layer Interaction
 
-```
+```text
 Developer pushes
       │
       ▼

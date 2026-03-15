@@ -31,6 +31,7 @@ jobs:
       schemas: ${{ steps.filter.outputs.schemas }}
       ci_config: ${{ steps.filter.outputs.ci_config }}
       kb_files: ${{ steps.filter.outputs.kb_files }}
+      markdown: ${{ steps.filter.outputs.markdown }}
     steps:
       - uses: dorny/paths-filter@v3
         id: filter
@@ -63,6 +64,9 @@ jobs:
               - '.cursor/rules/knowledge-index.mdc'
               - 'AGENTS.md'
               - '.cursor/commands/pr-review.md'
+            markdown:
+              - '**/*.md'
+              - '.markdownlint-cli2.jsonc'
 
   ci-config:
     needs: changes
@@ -310,12 +314,21 @@ jobs:
       - name: Check review category sync (AGENTS.md vs pr-review.md)
         run: make review-sync-verify
 
+  markdown-lint:
+    needs: changes
+    if: needs.changes.outputs.markdown == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: DavidAnson/markdownlint-cli2-action@v19
+
   # Required status check that always runs.
   # Use this as the single required check in branch protection settings.
   # It passes when all relevant jobs pass or are correctly skipped.
   ci-pass:
     if: always()
-    needs: [changes, ci-config, package-sync-verify, schema-validate, format-verify, lint, test, check, knowledge-validate]
+    needs: [changes, ci-config, package-sync-verify, schema-validate, format-verify, lint, test, check, knowledge-validate, markdown-lint]
     runs-on: ubuntu-latest
     steps:
       - name: Verify all jobs passed or were skipped
@@ -328,7 +341,8 @@ jobs:
                    "${{ needs.lint.result }}" \
                    "${{ needs.test.result }}" \
                    "${{ needs.check.result }}" \
-                   "${{ needs.knowledge-validate.result }}")
+                   "${{ needs.knowledge-validate.result }}" \
+                   "${{ needs.markdown-lint.result }}")
           for r in "${results[@]}"; do
             if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
               echo "Job failed or was cancelled: $r"
@@ -339,7 +353,7 @@ jobs:
 
   ci-summary:
     if: always()
-    needs: [changes, ci-config, package-sync-verify, schema-validate, format-verify, lint, test, check, knowledge-validate]
+    needs: [changes, ci-config, package-sync-verify, schema-validate, format-verify, lint, test, check, knowledge-validate, markdown-lint]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -358,7 +372,8 @@ jobs:
               'lint': '${{ needs.lint.result }}',
               'test': '${{ needs.test.result }}',
               'check': '${{ needs.check.result }}',
-              'knowledge-validate': '${{ needs.knowledge-validate.result }}'
+              'knowledge-validate': '${{ needs.knowledge-validate.result }}',
+              'markdown-lint': '${{ needs.markdown-lint.result }}'
             };
             const rows = Object.entries(jobs).map(([name, result]) => {
               const icon = result === 'success' ? '✅' :

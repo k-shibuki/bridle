@@ -79,7 +79,7 @@ Plugins are defined **per R package**. For example, `bridle.meta` is the knowled
 
 ### Directory Layout
 
-```
+```text
 bridle.meta/
 ├── inst/
 │   └── bridle/
@@ -179,7 +179,7 @@ agent <- bridle_agent(plugins = "metafor", provider = "anthropic")
 agent$console()
 ```
 
-```
+```text
 ╔══════════════════════════════════════════════╗
 ║  bridle + bridle.metafor v0.1                ║
 ║  Type your question or paste data.           ║

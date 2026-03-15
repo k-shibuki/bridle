@@ -14,7 +14,7 @@ message(sprintf("[%s] H1: %s = %s", Sys.time(), "location", value))
 
 For debugging value propagation issues, add instrumentation at each boundary:
 
-```
+```text
 [Entry point] → [Transform 1] → [Transform 2] → [Exit point]
      ↓               ↓               ↓               ↓
    H1-L1           H1-L2           H1-L3           H1-L4

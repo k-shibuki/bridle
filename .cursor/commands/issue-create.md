@@ -1,6 +1,7 @@
 # issue-create
 
 ## Reads
+
 - `.github/ISSUE_TEMPLATE/task.md` or `.github/ISSUE_TEMPLATE/bug_report.md` (read the appropriate template — SSOT for Issue structure)
 - `workflow-policy.mdc` § Issue-Driven Workflow (traceability requirements)
 
@@ -17,6 +18,7 @@ Search the codebase to understand: relevant ADRs and schemas, existing code path
 5. Recommend next step: `implement` with Issue number.
 
 ## Output
+
 - Issue URL
 - Related ADRs
 - Acceptance criteria (copied from Issue)
@@ -25,6 +27,7 @@ Search the codebase to understand: relevant ADRs and schemas, existing code path
 - Sub-issues (if decomposed)
 
 ## Guard
+
 - Do NOT write code in this step
 - Issue title: `<type>: <description>` convention
 - `HS-EVIDENCE-FIRST`: use `make evidence-issue` for observation

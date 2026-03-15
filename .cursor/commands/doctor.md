@@ -1,9 +1,11 @@
 # doctor
 
 ## Reads
+
 - `workflow-policy.mdc` § Container Prerequisite
 
 ## Sense
+
 None required.
 
 ## Act
@@ -23,10 +25,12 @@ make doctor
 ```
 
 ## Output
+
 - Status: pass/fail
 - Critical issues: missing required components
 - Warnings: missing optional components
 - Recommended action
 
 ## Guard
+
 - `HS-LOCAL-VERIFY`: doctor ensures hooks are installed

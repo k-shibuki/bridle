@@ -58,6 +58,7 @@ Scan the gathered evidence for signals in 5 categories:
 | **Efficiency** | Unnecessarily long procedure, redundant verification, steps that could be parallelized | Transcript: sequential operations that could batch, repeated context-gathering |
 
 For each detected signal, record:
+
 - **Category**: one of the 5 above
 - **Evidence**: specific commit, transcript excerpt, or command output
 - **Confidence**: high / medium / low (based on signal strength)
@@ -82,13 +83,16 @@ Before proposing new atoms or changes, check for overlap:
 
 1. **Read `knowledge-index.mdc`** trigger keywords — does an existing atom already cover this finding?
 2. **Search existing atoms** for related content:
+
    ```bash
    ls .cursor/knowledge/
    ```
+
    Read any atoms whose triggers overlap with the finding.
 3. **Check rules and commands** for existing coverage — the finding may already be addressed by a rule that wasn't followed, rather than being a genuine gap.
 
 Mark each finding as:
+
 - **New**: no existing coverage — candidate for new atom or rule change
 - **Update**: existing atom covers the topic but needs revision
 - **Redundant**: already fully covered — no action needed
@@ -114,7 +118,7 @@ For each non-redundant finding, propose an action:
 
 Format the retrospective report:
 
-```
+```text
 ## Session Retrospective
 
 ### Session summary

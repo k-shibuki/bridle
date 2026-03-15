@@ -1,6 +1,7 @@
 # implement
 
 ## Reads
+
 - `workflow--issue-selection.md` (selection algorithm when no Issue provided)
 - `workflow--docs-discovery-heuristics.md` (early doc impact identification)
 - `integration-strategy.mdc` (if change touches cross-module interfaces)
@@ -20,6 +21,7 @@
 5. Implement the change (minimal file set, code only — no tests in this step).
 
 ## Output
+
 - Issue: `#<number>` — title (with selection rationale if auto-selected)
 - Scope recap: what changed (1-3 bullets)
 - Files changed: list of paths
@@ -27,6 +29,7 @@
 - Doc impact list: candidates from step 3
 
 ## Guard
+
 - All work traceable to Issue
 - `HS-LOCAL-VERIFY`: pre-push hook validates before push
 - `HS-EVIDENCE-FIRST`: observation via `make evidence-*` only

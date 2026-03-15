@@ -1,0 +1,14 @@
+{
+  "config": {
+    "default": true,
+    // Prose line length is not enforced; R lintr handles code at 120
+    "MD013": false,
+    // Inline HTML is used extensively (details/summary, blockquote, etc.)
+    "MD033": false,
+    // Many files have YAML frontmatter before the first heading
+    "MD041": false,
+    // Table column style is too strict for compact tables used throughout
+    "MD060": false
+  },
+  "ignores": ["renv/**", "man/**"]
+}

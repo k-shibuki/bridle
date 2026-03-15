@@ -1,6 +1,7 @@
 # commit
 
 ## Reads
+
 - `commit-format.mdc` (message format, branch naming, atomic commits policy)
 - `workflow--docs-discovery-heuristics.md` (pre-commit doc alignment)
 
@@ -20,11 +21,13 @@ git diff
 3. Do not open interactive editor (`git commit` without `-m`). English only.
 
 ## Output
+
 - Branch: current branch name
 - Issue: `#<number>` referenced
 - Commits: list (message + short hash)
 - Summary: `git log --oneline -n <count>`
 
 ## Guard
+
 - `commit-msg` hook validates format
 - `HS-NO-SKIP`: every commit references an Issue (except hotfix/docs exceptions per `commit-format.mdc` § Footer)

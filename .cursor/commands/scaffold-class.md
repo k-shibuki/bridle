@@ -1,6 +1,7 @@
 # scaffold-class
 
 ## Reads
+
 - `docs/adr/0001-use-s7-class-system.md` (ADR-0001: S7 class system)
 - `quality-policy.mdc` § Type Strictness (S7) (no `class_any`, explicit types, validators)
 
@@ -27,9 +28,11 @@ Read the target schema file (`docs/schemas/*.schema.yaml`).
 | nested object | Another S7 class |
 
 ## Output
+
 - Class file: `R/{name}.R`
 - Test file: `tests/testthat/test-{name}.R`
 - Properties and validators summary
 
 ## Guard
+
 - `class_any` prohibition per `quality-policy.mdc`

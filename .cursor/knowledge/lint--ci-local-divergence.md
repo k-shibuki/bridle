@@ -34,7 +34,7 @@ if (is.null(pkg_name) || inherits(parent_env, "try-error")) {
 
 ```make
 lint: _require_container
-	$(RSCRIPT) -e "pkgload::load_all('.', quiet = TRUE); lintr::lint_package()"
+ $(RSCRIPT) -e "pkgload::load_all('.', quiet = TRUE); lintr::lint_package()"
 ```
 
 After `load_all()`, `getNamespace("bridle")` succeeds in both environments.

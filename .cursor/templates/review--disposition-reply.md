@@ -6,44 +6,52 @@ resolved (per `agent-safety.mdc` `HS-REVIEW-RESOLVE`).
 ## Reply Templates
 
 **Fixed** — evidence: commit SHA, explanation: what was changed
-```
+
+```text
 Fixed in `<sha7>`. <what changed>.
 ```
 
 Example:
-```
+
+```text
 Fixed in `f561c8d`. Aligned timeout values to 20 min across all sections.
 ```
 
 **By design** — evidence: reference (ADR/rule/command), explanation: design rationale
-```
+
+```text
 By design. <rationale> (ref: <source>).
 ```
 
 Example:
-```
+
+```text
 By design. Step 5 auto-loops after initial consent; HS-NO-SKIP ensures
 intra-command steps are still followed (ref: next.md § Approval scope).
 ```
 
 **False positive** — no evidence (the detection itself was wrong), explanation: why
-```
+
+```text
 False positive. <why detection was wrong>.
 ```
 
 Example:
-```
+
+```text
 False positive. The cross-reference formats differ intentionally —
 parenthetical vs dash style matches surrounding sentence structure.
 ```
 
 **Acknowledged** — evidence: tracking issue, explanation: assessment result
-```
+
+```text
 Acknowledged. <brief assessment>. Tracked in #<issue>.
 ```
 
 Example:
-```
+
+```text
 Acknowledged. Valid observation; container bootstrap step would improve
 usability. Out of scope for SSOT cleanup. Tracked in #201.
 ```

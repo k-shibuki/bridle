@@ -3,6 +3,13 @@ FROM docker.io/rocker/tidyverse:4.5.2
 # System dependencies for bridle and its future deps (ellmer, S7, etc.)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libyaml-dev \
+    ca-certificates curl gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Node.js 24 Active LTS (markdownlint-cli2 requires Node >= 20 for regex v flag)
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && npm install -g markdownlint-cli2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install renv globally

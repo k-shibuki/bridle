@@ -27,7 +27,7 @@ Adopt **option 3**: multi-stage extraction with confidence grading and interacti
 
 ### Extraction pipeline
 
-```
+```text
 scan_package("meta", "metabin")
   |-> Layer 1: formals()        [always succeeds]
   |-> Layer 2: Rd               [always succeeds]
@@ -117,7 +117,7 @@ Functions with `low` or `unclassified` confidence are presented to the expert du
 
 ### Interaction format
 
-```
+```r
 review_scan(scan_result)
 # -- Function Classification Review --
 # escalc: classified as "utility" (confidence: low)

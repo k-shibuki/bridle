@@ -108,7 +108,7 @@ through `gate-full` form a strict containment chain. `gate-fast` is a
 separate fast-feedback path that overlaps with but is not a subset of
 `gate-quality`.
 
-```
+```text
 gate-fast         schema-validate + package-sync-verify + knowledge-validate + lint
                   (fast-feedback path — overlaps gate-quality but includes
                    package-sync-verify and knowledge-validate which gate-quality omits)

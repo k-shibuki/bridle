@@ -1,6 +1,7 @@
 # pr-create
 
 ## Reads
+
 - `workflow-policy.mdc` § Exception Policy (standard vs exception path)
 - `.github/PULL_REQUEST_TEMPLATE.md` (PR body SSOT — read before every PR creation per `HS-PR-TEMPLATE`)
 - `commit-format.mdc` § Branch Naming Convention
@@ -21,11 +22,13 @@
 5. On `check-policy` failure: `gh pr edit <N> --body "<corrected body>"`.
 
 ## Output
+
 - PR URL and number
 - CI status at delegation time
 - Bot review trigger confirmation
 
 ## Guard
+
 - `HS-PR-BASE`: all PRs target `main`
 - `HS-PR-TEMPLATE`: all required sections present
 - `HS-LOCAL-VERIFY`: pre-push hook runs

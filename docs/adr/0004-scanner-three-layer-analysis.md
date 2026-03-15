@@ -66,7 +66,7 @@ The public API becomes `scan_package(package)` with a single argument (the packa
 
 ### Processing pipeline
 
-```
+```text
 scan_package("metafor")
   |-> 1. Function enumeration: getNamespaceExports()
   |-> 2. S3 method exclusion: filter registered S3 methods (print.*, summary.*, etc.)

@@ -3,9 +3,9 @@ trigger: CI job, job dependency, filter category, coverage gate, coverage thresh
 ---
 # CI Job Dependency Graph
 
-### PR CI (`ci.yaml`)
+## PR CI (`ci.yaml`)
 
-```
+```text
 changes ──┬── schema-validate      (r_source OR schemas)
           ├── format-verify        (r_source)
           ├── lint                 (r_source)
@@ -13,7 +13,8 @@ changes ──┬── schema-validate      (r_source OR schemas)
           ├── check               (r_source OR r_deps; --no-tests)
           ├── ci-config            (ci_config)
           ├── package-sync-verify  (renv_deps)
-          └── knowledge-validate   (kb_files)
+          ├── knowledge-validate   (kb_files)
+          └── markdown-lint        (markdown)
                        │
                   ci-pass (final gate, always runs; depends on changes + all above)
 ```
@@ -23,9 +24,9 @@ All quality jobs depend only on `changes` and run in parallel.
 Coverage is **not** on the PR critical path (see Main Push section below).
 Final gate: `ci-pass` depends on `changes` and all quality jobs; skipped jobs are treated as passing.
 
-### Main Push (`R-CMD-check.yaml`)
+## Main Push (`R-CMD-check.yaml`)
 
-```
+```text
 R-CMD-check (5-matrix: macOS/Windows/Linux × R versions)
       │
       └── coverage (ubuntu-latest, R release)
@@ -45,6 +46,7 @@ Coverage runs post-merge on main. If coverage drops below threshold (80%), a tem
 | `ci_config` | `Makefile`, `tools/**`, `.github/workflows/**`, `containers/**`, `.pre-commit-config.yaml`, `.lintr` | CI/build infrastructure changes |
 | `renv_deps` | `DESCRIPTION`, `renv.lock`, `renv/settings.json` | renv dependency changes |
 | `kb_files` | `.cursor/knowledge/**`, `.cursor/rules/knowledge-index.mdc`, `AGENTS.md`, `.cursor/commands/pr-review.md` | Knowledge base changes |
+| `markdown` | `**/*.md`, `.markdownlint-cli2.jsonc` | Markdown file or lint config changes |
 
 ## Job Trigger Conditions
 
@@ -58,6 +60,7 @@ Coverage runs post-merge on main. If coverage drops below threshold (80%), a tem
 | `ci-config` | `ci_config` | CI infrastructure validation |
 | `package-sync-verify` | `renv_deps` | DESCRIPTION/renv.lock sync verification |
 | `knowledge-validate` | `kb_files` | Knowledge base consistency (naming, frontmatter, index sync, review category sync) |
+| `markdown-lint` | `markdown` | Markdown style and structure validation (markdownlint-cli2) |
 
 ## Coverage Gate
 
@@ -65,7 +68,7 @@ Coverage enforcement runs on **main push** (`R-CMD-check.yaml`), not on PR CI. T
 
 Local equivalent: `make coverage-verify` (override with `COVERAGE_THRESHOLD=N`).
 
-### Related PR workflows (separate from `ci.yaml`)
+## Related PR workflows (separate from `ci.yaml`)
 
 | Workflow | File | Trigger | Purpose |
 |----------|------|---------|---------|

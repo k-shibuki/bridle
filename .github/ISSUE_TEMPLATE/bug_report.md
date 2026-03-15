@@ -27,7 +27,7 @@ labels: fix
 
 <!-- Paste output of `make doctor-json` or `make doctor` -->
 
-```
+```text
 make doctor output here
 ```
 

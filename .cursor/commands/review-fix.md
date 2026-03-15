@@ -1,6 +1,7 @@
 # review-fix
 
 ## Reads
+
 - `review--consensus-protocol.md` (disposition categories, reply templates, consensus flow, reviewer unavailable handling)
 - `review--bot-operations.md` (agreement mechanics, re-review budget, rate-limit recovery)
 
@@ -20,12 +21,14 @@
 7. One-shot check: `make evidence-pull-request PR=<N>`. If `threads_unresolved == 0 AND review_concluded` → skip delegation. Otherwise → delegate via `delegation--review-wait.md`.
 
 ## Output
+
 - Findings addressed: count by source and severity
 - False positives: count with reasons
 - Quality gate: pass/fail
 - Next step recommendation
 
 ## Guard
+
 - `HS-REVIEW-RESOLVE`: every thread gets disposition reply before resolve
 - `HS-NO-DISMISS`: every finding is evaluated on merit
 - `HS-LOCAL-VERIFY`: pre-push hook validates

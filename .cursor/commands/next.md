@@ -1,6 +1,7 @@
 # next
 
 ## Reads
+
 - `controls--workflow-state-machine.md` (state catalog, transitions, priority rules)
 - `subagent-policy.mdc` (delegation for blocking operations)
 - `agent--delegation-decision.md` (template selection)
@@ -51,11 +52,13 @@ State the current state, proposed action card, and reason. On approval, read the
 When state is CIPending or BotReviewPending, delegate per `subagent-policy.mdc`. After delegation, run Two-Tier Gate (§ Productive work during delegation) using the evidence already collected.
 
 ## Output
+
 - Current FSM state with evidence basis
 - Proposed action card and reason
 - Execution result (after card completes)
 
 ## Guard
+
 - `HS-EVIDENCE-FIRST`: observation via `make evidence-*` only
 - `HS-NO-INLINE-POLL`: delegate all waits > 10s to background subagents
 - `HS-NO-SKIP`: execute every step; gate passage requires evidence

@@ -20,7 +20,7 @@ All changes follow an **Issue-driven workflow**. Every task starts as a GitHub I
 
 The full AI workflow is documented in [`docs/agent-control/`](../docs/agent-control/). The standard flow is:
 
-```
+```text
 doctor → issue-create → implement → test-create → verify
   → commit → pr-create → [CI] → pr-review → review-fix → pr-merge
 ```
@@ -43,9 +43,12 @@ Run `make help` for all available commands.
 |------|---------|
 | Check environment | `make doctor` |
 | Run tests | `make test` |
-| Lint | `make lint` |
+| Lint (R) | `make lint` |
+| Lint (Markdown) | `make markdown-lint` |
 | Format | `make format` |
 | Full quality gate | `make gate-quality` |
+| Fast gate | `make gate-fast` |
+| Full CI locally | `make gate-full` |
 | R CMD check | `make check` |
 
 ## Commits

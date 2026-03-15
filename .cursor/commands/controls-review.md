@@ -27,7 +27,7 @@ Comprehensively audit the structural quality of the AI development system: desig
 Gather a complete manifest of all controls across both domains (Design + Controls):
 
 | Domain | Component | Location | Content |
-|--------|-----------|----------|---------| 
+|--------|-----------|----------|---------|
 | Design | ADRs | `docs/adr/*.md` | Architectural decisions (immutable records) |
 | Design | Schemas | `docs/schemas/*.yaml` | Data contracts for plugin artifacts |
 | Controls | Rules | `.cursor/rules/*.mdc` | MUST / MUST NOT policies |
@@ -71,20 +71,24 @@ Record: total file count, total size, per-type breakdown.
 Scan all control files for cross-references and verify each target exists:
 
 **`@` references** (e.g., `@.cursor/rules/quality-policy.mdc`):
+
 - Extract all `@<path>` patterns from every control file
 - Verify each referenced file exists on disk
 - Flag broken references as `REF_BROKEN`
 
 **`§` section references** (e.g., `§ Knowledge Consultation Triggers`):
+
 - Extract `§ <section>` patterns
 - Verify the referenced section heading exists in the target file
 - Flag missing sections as `SECTION_MISSING`
 
 **YAML frontmatter accuracy**:
+
 - For each `.mdc` rule file, verify the `description` field accurately summarizes the content
 - Flag misleading descriptions as `FRONTMATTER_DRIFT`
 
 **Makefile target references**:
+
 - Extract all `make <target>` references from commands and rules
 - Verify each target exists in the Makefile
 - Flag missing targets as `TARGET_MISSING`
@@ -117,6 +121,7 @@ For each information item below, enumerate all locations where it appears and cl
 | 20 | Agent control system structure (Design + Controls) | `docs/agent-control/architecture.md` |
 
 For each item:
+
 - **SSOT_OK**: defined in one place, referenced elsewhere with pointers
 - **SSOT_DUPLICATED**: substantive content repeated in multiple locations (fix: replace duplicates with `@` references)
 - **SSOT_MISSING**: not defined anywhere (fix: add to expected SSOT location)
@@ -127,6 +132,7 @@ For each item:
 Verify that Guards (Deterministic and Conditionally Deterministic) correctly implement the Rules they claim to enforce. This step detects enforcement gaps where a Rule declares a constraint but the corresponding Guard does not implement it (or implements it incorrectly).
 
 **4a. Extract Hard Stops from enforcement tier table**:
+
 - Read `agent-safety.mdc` § Enforcement Tiers
 - List all Hard Stops classified as **Deterministic** or **Cond. Deterministic**
 - For each, identify the declared Guard mechanism
@@ -146,6 +152,7 @@ For each Deterministic/Cond. Deterministic Hard Stop, compare the Rule declarati
 Flag mismatches as `GUARD_RULE_MISMATCH`.
 
 **4c. Verify Guard activation prerequisites**:
+
 - **Branch Protection**: `gh api repos/{owner}/{repo}/branches/main/protection` — confirm required status checks exist
 - **Git hooks**: Check `.git/hooks/` for pre-commit, pre-push, commit-msg installation
 - Flag inactive Guards as `GUARD_INACTIVE`
@@ -155,15 +162,18 @@ Flag mismatches as `GUARD_RULE_MISMATCH`.
 Scan for logical contradictions across controls:
 
 **MUST/MUST NOT exclusivity**:
+
 - Extract all MUST and MUST NOT statements from rules
 - Check for pairs that contradict (e.g., "MUST use X" vs "MUST NOT use X")
 - Flag as `CONTRADICTION`
 
 **Command procedures vs rule constraints**:
+
 - For each command step, verify it does not violate any rule constraint
 - Flag violations as `PROCEDURE_VIOLATES_RULE`
 
 **Makefile target preconditions vs command preconditions**:
+
 - Verify that command-documented preconditions match Makefile target dependencies
 - Flag inconsistencies as `PRECONDITION_MISMATCH`
 
@@ -188,14 +198,17 @@ Exceptions: Rules may reference command steps via `@` links. Commands may quote 
 Assess the token cost of the control system:
 
 **`alwaysApply` rules total size**:
+
 - Sum the character count of all rules with `alwaysApply: true`
 - These are loaded into every agent context — excessive size wastes tokens
 
 **Content density per rule**:
+
 - For each rule, calculate the ratio of actionable content (MUST/MUST NOT statements, tables, code blocks) to prose
 - Flag rules with low density as `LOW_DENSITY` (candidate for compression)
 
 **Design document duplication**:
+
 - Compare `docs/agent-control/` content with `README.md`
 - Flag significant overlaps as `DESIGN_DOC_OVERLAP`
 
@@ -206,6 +219,7 @@ Split all findings into two categories following the `issue-review` pattern:
 #### Category A: Fix immediately
 
 Improvements that can be applied without design discussion:
+
 - Broken `@` references (update path or remove)
 - Missing `§` section targets (add section or update reference)
 - Frontmatter description drift (update description)
@@ -218,6 +232,7 @@ Apply fixes directly and report what changed.
 #### Category B: Discussion required
 
 Changes that require design decisions:
+
 - SSOT contradictions (which version is correct?)
 - Structural reorganization (split/merge files)
 - Token efficiency trade-offs (compress vs readability)
