@@ -315,12 +315,13 @@ jobs:
   # It passes when all relevant jobs pass or are correctly skipped.
   ci-pass:
     if: always()
-    needs: [ci-config, package-sync-verify, schema-validate, format-verify, lint, test, check, knowledge-validate]
+    needs: [changes, ci-config, package-sync-verify, schema-validate, format-verify, lint, test, check, knowledge-validate]
     runs-on: ubuntu-latest
     steps:
       - name: Verify all jobs passed or were skipped
         run: |
-          results=("${{ needs.ci-config.result }}" \
+          results=("${{ needs.changes.result }}" \
+                   "${{ needs.ci-config.result }}" \
                    "${{ needs.package-sync-verify.result }}" \
                    "${{ needs.schema-validate.result }}" \
                    "${{ needs.format-verify.result }}" \
@@ -338,7 +339,7 @@ jobs:
 
   ci-summary:
     if: always()
-    needs: [ci-config, package-sync-verify, schema-validate, format-verify, lint, test, check, knowledge-validate]
+    needs: [changes, ci-config, package-sync-verify, schema-validate, format-verify, lint, test, check, knowledge-validate]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -349,6 +350,7 @@ jobs:
         with:
           script: |
             const jobs = {
+              'changes': '${{ needs.changes.result }}',
               'ci-config': '${{ needs.ci-config.result }}',
               'package-sync-verify': '${{ needs.package-sync-verify.result }}',
               'schema-validate': '${{ needs.schema-validate.result }}',

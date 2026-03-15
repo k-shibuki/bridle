@@ -33,7 +33,7 @@ Follow the same Issue-driven flow: pick an Issue, branch, implement, commit (wit
 
 - **S7 classes**: follow [ADR-0001](docs/adr/0001-use-s7-class-system.md). See [quality-policy.mdc](.cursor/rules/quality-policy.mdc) § Type Strictness (S7) for type requirements.
 - **Lint**: configured in [`.lintr`](.lintr). Run `make lint` to check, `make format` to auto-fix formatting.
-- **Quality gate**: `make check` must pass with 0 errors, 0 warnings, 0 notes.
+- **R CMD check**: `make check` must pass with 0 errors, 0 warnings, 0 notes. For the full quality gate (lint + test + check), use `make gate-quality`.
 
 ## Make Targets
 

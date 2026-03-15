@@ -15,13 +15,13 @@ changes ──┬── schema-validate      (r_source OR schemas)
           ├── package-sync-verify  (renv_deps)
           └── knowledge-validate   (kb_files)
                        │
-                  ci-pass (final gate, always runs)
+                  ci-pass (final gate, always runs; depends on changes + all above)
 ```
 
-All jobs depend only on `changes` and run in parallel.
+All quality jobs depend only on `changes` and run in parallel.
 `check` uses `--no-tests` flag — tests are handled by the dedicated `test` job.
 Coverage is **not** on the PR critical path (see Main Push section below).
-Final gate: `ci-pass` depends on all above; skipped jobs are treated as passing.
+Final gate: `ci-pass` depends on `changes` and all quality jobs; skipped jobs are treated as passing.
 
 ### Main Push (`R-CMD-check.yaml`)
 

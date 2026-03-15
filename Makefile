@@ -30,7 +30,7 @@ endif
 	container-build container-start container-stop container-shell container-rstudio \
 	package-init package-restore package-snapshot \
 	check check-quick test lint format format-verify document coverage coverage-verify site-build package-install clean \
-	gate-quality gate-fast gate-pull-request gate-full doctor doctor-json schema-validate validate-evidence \
+	gate-quality gate-fast gate-pull-request gate-full doctor doctor-json schema-validate evidence-validate \
 	lint-changed test-changed test-junit lint-json scaffold-test scaffold-class \
 	status git-new-branch git-install-hooks git-post-merge-cleanup \
 	knowledge-manifest knowledge-validate knowledge-new review-sync-verify \
@@ -256,7 +256,7 @@ evidence-review-threads: ## Evidence: per-thread review details for review-fix (
 evidence-issue: ## Evidence: Issue metadata and dependency graph (usage: make evidence-issue [ISSUE=42])
 	@bash tools/evidence-issue.sh
 
-validate-evidence: ## Validate evidence golden outputs against schema
+evidence-validate: ## Validate evidence golden outputs against schema
 	@bash tools/validate-evidence.sh
 
 # === Cleanup ===
