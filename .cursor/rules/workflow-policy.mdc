@@ -72,7 +72,7 @@ Every review thread (bot or human) must reach consensus before resolve. GitHub B
 
 ## Container Prerequisite
 
-All R commands MUST run inside container `bridle-dev`. Run `make doctor` to verify; `make container-up` to start.
+All R commands MUST run inside container `bridle-dev`. Run `make doctor` to verify; `make container-start` to start.
 
 ## Knowledge Consultation Triggers
 

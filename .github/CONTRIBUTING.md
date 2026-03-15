@@ -6,10 +6,10 @@ See the [Development Environment](README.md#development-environment) section in 
 
 ```bash
 make container-build
-make container-up
-make renv-init
-make install-hooks   # Install git hooks (pre-commit, pre-push, commit-msg)
-make doctor          # Verify everything works
+make container-start
+make package-init
+make git-install-hooks   # Install git hooks (pre-commit, pre-push, commit-msg)
+make doctor              # Verify everything works
 ```
 
 ## Issue-Driven Workflow
@@ -45,7 +45,7 @@ Run `make help` for all available commands.
 | Run tests | `make test` |
 | Lint | `make lint` |
 | Format | `make format` |
-| Full CI locally | `make ci` |
+| Full quality gate | `make gate-quality` |
 | R CMD check | `make check` |
 
 ## Commits

@@ -15,10 +15,10 @@ Quality enforcement is distributed across three execution contexts with distinct
 
 | Change type | Checks |
 |-------------|--------|
-| R source (`R/`, `tests/`, `DESCRIPTION`, `NAMESPACE`) | `format-check` + `changed-lint` + `changed-test` |
-| Schemas (`docs/schemas/`, `tools/validate-schemas.R`) | `validate-schemas` |
-| renv (`DESCRIPTION`, `renv.lock`, `renv/`) | `renv-check` |
-| Knowledge base (`.cursor/knowledge/`, `.cursor/rules/knowledge-index.mdc`, `AGENTS.md` (repo root), `.cursor/commands/pr-review.md`) | `kb-validate` + `review-sync-check` |
+| R source (`R/`, `tests/`, `DESCRIPTION`, `NAMESPACE`) | `format-verify` + `lint-changed` + `test-changed` |
+| Schemas (`docs/schemas/`, `tools/validate-schemas.R`) | `schema-validate` |
+| renv (`DESCRIPTION`, `renv.lock`, `renv/`) | `package-sync-verify` |
+| Knowledge base (`.cursor/knowledge/`, `.cursor/rules/knowledge-index.mdc`, `AGENTS.md` (repo root), `.cursor/commands/pr-review.md`) | `knowledge-validate` + `review-sync-verify` |
 
 All matching change types trigger independently (no elif single-match).
 
@@ -35,16 +35,16 @@ All matching change types trigger independently (no elif single-match).
 **Scope** (full package, parallel execution):
 
 ```
-changes ──┬── validate-schemas  (r_source OR schemas)
-          ├── format-check      (r_source)
-          ├── lint              (r_source)
-          ├── test              (r_source)
-          ├── check             (r_source OR r_deps; --no-tests)
-          ├── ci-config         (ci_config)
-          ├── renv-check        (renv_deps)
-          └── kb-validate       (kb_files)
-                    │
-               ci-pass (required status check)
+changes ──┬── schema-validate      (r_source OR schemas)
+          ├── format-verify        (r_source)
+          ├── lint                 (r_source)
+          ├── test                 (r_source)
+          ├── check               (r_source OR r_deps; --no-tests)
+          ├── ci-config            (ci_config)
+          ├── package-sync-verify  (renv_deps)
+          └── knowledge-validate   (kb_files)
+                       │
+                  ci-pass (required status check)
 ```
 
 **Authority**: Required — `ci-pass` is a branch protection required check. PRs cannot merge without it.

@@ -27,13 +27,13 @@ else
 endif
 
 .PHONY: help \
-	container-build container-up container-down container-shell rstudio \
-	renv-init renv-restore renv-snapshot \
-	check check-fast test lint format format-check document coverage coverage-check site install clean \
-	ci ci-fast ci-pr pr-ready doctor doctor-json validate-schemas validate-evidence \
-	changed-lint changed-test test-json lint-json scaffold-test scaffold-class \
-	status new-branch install-hooks git-post-merge-cleanup \
-	kb-manifest kb-validate kb-new review-sync-check \
+	container-build container-start container-stop container-shell container-rstudio \
+	package-init package-restore package-snapshot \
+	check check-quick test lint format format-verify document coverage coverage-verify site-build package-install clean \
+	gate-quality gate-fast gate-pull-request gate-full doctor doctor-json schema-validate validate-evidence \
+	lint-changed test-changed test-junit lint-json scaffold-test scaffold-class \
+	status git-new-branch git-install-hooks git-post-merge-cleanup \
+	knowledge-manifest knowledge-validate knowledge-new review-sync-verify \
 	evidence-workflow-position evidence-environment evidence-lint evidence-pull-request evidence-issue \
 	evidence-review-threads
 
@@ -52,7 +52,7 @@ else
 	$(RUNTIME) build -t $(IMAGE_NAME) -f $(CONTAINER_DIR)/Containerfile .
 endif
 
-container-up: ## Start development container (detached)
+container-start: ## Start development container (detached)
 ifeq ($(HAS_COMPOSE),1)
 	$(COMPOSE) -f $(CONTAINER_DIR)/compose.yaml up -d
 else
@@ -69,7 +69,7 @@ else
 	fi
 endif
 
-container-down: ## Stop development container
+container-stop: ## Stop development container
 ifeq ($(HAS_COMPOSE),1)
 	$(COMPOSE) -f $(CONTAINER_DIR)/compose.yaml down
 else
@@ -80,18 +80,18 @@ endif
 container-shell: ## Open R console in container
 	$(RUNTIME) exec -it -w $(WORKDIR) $(CONTAINER_NAME) R
 
-rstudio: ## Show RStudio Server URL
+container-rstudio: ## Show RStudio Server URL
 	@echo "RStudio Server: http://localhost:8787"
 
-# === renv Package Management ===
+# === Package Management ===
 
-renv-init: _require_container ## Initialize renv (first time only)
+package-init: _require_container ## Initialize renv (first time only)
 	$(RSCRIPT) -e "renv::init()"
 
-renv-restore: _require_container ## Restore packages from renv.lock
+package-restore: _require_container ## Restore packages from renv.lock
 	$(RSCRIPT) -e "renv::restore()"
 
-renv-snapshot: _require_container ## Update renv.lock from installed packages
+package-snapshot: _require_container ## Update renv.lock from installed packages
 	$(RSCRIPT) -e "renv::snapshot()"
 
 # === Quality Gates ===
@@ -108,7 +108,7 @@ lint: _require_container ## Run lintr (with package namespace loaded for accurat
 format: _require_container ## Auto-format with styler
 	$(RSCRIPT) -e "styler::style_pkg()"
 
-format-check: _require_container ## Check formatting without modifying files (dry-run)
+format-verify: _require_container ## Check formatting without modifying files (dry-run)
 	$(RSCRIPT) -e "out <- styler::style_pkg(dry = 'on'); if (any(out[['changed']])) stop('Formatting issues found')"
 
 document: _require_container ## Generate documentation with roxygen2
@@ -120,20 +120,20 @@ coverage: _require_container ## Measure test coverage
 # Coverage threshold SSOT: test-strategy.mdc § Coverage Threshold Policy
 COVERAGE_THRESHOLD ?= 80
 
-coverage-check: _require_container ## Verify test coverage meets threshold (default 80%)
+coverage-verify: _require_container ## Verify test coverage meets threshold (default 80%)
 	$(RSCRIPT) -e "\
 	  cov <- covr::package_coverage(); \
 	  pct <- covr::percent_coverage(cov); \
 	  cat(sprintf('Line coverage: %.1f%% (threshold: $(COVERAGE_THRESHOLD)%%)\n', pct)); \
 	  if (pct < $(COVERAGE_THRESHOLD)) stop(sprintf('Coverage %.1f%% is below threshold $(COVERAGE_THRESHOLD)%%', pct))"
 
-site: _require_container ## Build pkgdown site
+site-build: _require_container ## Build pkgdown site
 	$(RSCRIPT) -e "pkgdown::build_site()"
 
-install: _require_container ## Install package locally
+package-install: _require_container ## Install package locally
 	$(RSCRIPT) -e "devtools::install()"
 
-check-fast: _require_container ## Quick R CMD check (no manual/vignettes)
+check-quick: _require_container ## Quick R CMD check (no manual/vignettes)
 	$(RSCRIPT) -e "devtools::check(manual = FALSE, vignettes = FALSE, env_vars = c('_R_CHECK_SYSTEM_CLOCK_' = '0'))"
 
 scaffold-test: _require_container ## Create test skeleton (usage: make scaffold-test FILE=R/foo.R)
@@ -144,18 +144,18 @@ scaffold-class: _require_container ## Generate S7 class from schema (usage: make
 	@if [ -z "$(SCHEMA)" ]; then echo "Usage: make scaffold-class SCHEMA=docs/schemas/foo.schema.yaml"; exit 1; fi
 	$(RSCRIPT) tools/scaffold-class.R $(SCHEMA)
 
-# === Integrated CI Targets ===
+# === Integrated Gate Targets ===
 
-renv-check: _require_container ## Verify renv.lock is in sync with DESCRIPTION
-	$(RSCRIPT) -e "s <- renv::status(dev = TRUE); if (!isTRUE(s[['synchronized']])) stop('renv out of sync. Run: make renv-snapshot')"
+package-sync-verify: _require_container ## Verify renv.lock is in sync with DESCRIPTION
+	$(RSCRIPT) -e "s <- renv::status(dev = TRUE); if (!isTRUE(s[['synchronized']])) stop('renv out of sync. Run: make package-snapshot')"
 
-ci: validate-schemas lint test check ## Full CI: validate-schemas + lint + test + check
+gate-quality: schema-validate lint test check ## Full quality gate: schema-validate + lint + test + check
 
-ci-fast: validate-schemas renv-check kb-validate lint ## Fast gate: validate-schemas + renv-check + kb-validate + lint
+gate-fast: schema-validate package-sync-verify knowledge-validate lint ## Fast gate: schema-validate + package-sync-verify + knowledge-validate + lint
 
-ci-pr: ci document ## PR-ready gate: full CI + document (run before pr-create)
+gate-pull-request: gate-quality document ## PR-ready gate: full quality + document (run before pr-create)
 
-pr-ready: validate-schemas format-check lint test check document ## Full pre-PR gate (format-check + CI + docs)
+gate-full: schema-validate format-verify lint test check document ## Full pre-PR gate (format-verify + quality + docs)
 
 doctor: ## Check development environment
 	@bash tools/doctor.sh
@@ -163,7 +163,7 @@ doctor: ## Check development environment
 doctor-json: ## Check development environment (JSON output)
 	@bash tools/doctor.sh --json
 
-validate-schemas: _require_container ## Validate YAML schemas
+schema-validate: _require_container ## Validate YAML schemas
 	$(RSCRIPT) tools/validate-schemas.R
 
 # === Project Status / Branch Management ===
@@ -172,12 +172,12 @@ status: ## Show git + container status
 	@echo "=== Git ===" && git status --short --branch
 	@echo "=== Container ===" && $(RUNTIME) inspect $(CONTAINER_NAME) --format '{{.State.Status}}' 2>/dev/null || echo "not found"
 
-install-hooks: ## Install git hooks (pre-commit, pre-push, commit-msg)
+git-install-hooks: ## Install git hooks (pre-commit, pre-push, commit-msg)
 	@bash tools/install-hooks.sh --force
 
-new-branch: ## Create feature branch (usage: make new-branch PREFIX=feat ISSUE=42 DESC=short-description)
+git-new-branch: ## Create feature branch (usage: make git-new-branch PREFIX=feat ISSUE=42 DESC=short-description)
 	@if [ -z "$(ISSUE)" ] || [ -z "$(DESC)" ]; then \
-		echo "Usage: make new-branch PREFIX=feat ISSUE=42 DESC=short-description"; exit 1; fi
+		echo "Usage: make git-new-branch PREFIX=feat ISSUE=42 DESC=short-description"; exit 1; fi
 	git checkout -b $(or $(PREFIX),feat)/$(ISSUE)-$(DESC)
 
 git-post-merge-cleanup: ## Post-merge: switch to main, pull, prune, delete branch (usage: make git-post-merge-cleanup BRANCH=feat/42-foo)
@@ -190,7 +190,7 @@ git-post-merge-cleanup: ## Post-merge: switch to main, pull, prune, delete branc
 
 # === Differential / Machine-Readable Targets ===
 
-changed-lint: _require_container ## Lint only changed R files
+lint-changed: _require_container ## Lint only changed R files
 	@files=$$(bash tools/changed-files.sh "R/*.R"); \
 	if [ -n "$$files" ]; then \
 		$(RSCRIPT) -e "for (f in commandArgs(TRUE)) print(lintr::lint(f))" $$files; \
@@ -198,7 +198,7 @@ changed-lint: _require_container ## Lint only changed R files
 		echo "No changed R files to lint"; \
 	fi
 
-changed-test: _require_container ## Run tests scoped to changed R/ and test files (skips when no mapping)
+test-changed: _require_container ## Run tests scoped to changed R/ and test files (skips when no mapping)
 	@filter=$$( \
 		{ \
 			bash tools/changed-files.sh "tests/testthat/test-*.R" \
@@ -216,7 +216,7 @@ changed-test: _require_container ## Run tests scoped to changed R/ and test file
 		echo "No testable R changes detected — skipping (CI runs full suite)"; \
 	fi
 
-test-json: _require_container ## Run tests with JUnit XML output
+test-junit: _require_container ## Run tests with JUnit XML output
 	$(RSCRIPT) -e "devtools::test(reporter = testthat::JunitReporter\$$new(file = 'test-results.xml'))"
 
 lint-json: _require_container ## Lint with JSON output
@@ -224,16 +224,16 @@ lint-json: _require_container ## Lint with JSON output
 
 # === Knowledge Base Management ===
 
-kb-manifest: ## Regenerate knowledge-index.mdc from atom frontmatter
+knowledge-manifest: ## Regenerate knowledge-index.mdc from atom frontmatter
 	@sh tools/kb-manifest.sh
 
-kb-validate: ## Validate knowledge base consistency (naming, frontmatter, index sync)
+knowledge-validate: ## Validate knowledge base consistency (naming, frontmatter, index sync)
 	@sh tools/kb-validate.sh
 
-review-sync-check: ## Check AGENTS.md and pr-review.md review categories are in sync
+review-sync-verify: ## Check AGENTS.md and pr-review.md review categories are in sync
 	@sh tools/review-sync-check.sh
 
-kb-new: ## Scaffold new knowledge atom (usage: make kb-new NAME=test--new-topic)
+knowledge-new: ## Scaffold new knowledge atom (usage: make knowledge-new NAME=test--new-topic)
 	@sh tools/kb-new.sh NAME=$(NAME)
 
 # === Evidence Targets (structured observation → JSON) ===
@@ -271,5 +271,5 @@ ifndef BRIDLE_IN_CONTAINER
 	@$(RUNTIME) inspect $(CONTAINER_NAME) --format '{{.State.Running}}' 2>/dev/null \
 		| grep -q true \
 		|| (printf '\033[0;31mError: Container "%s" is not running.\033[0m\n' "$(CONTAINER_NAME)" \
-		    && echo "Run 'make container-up' first." && exit 1)
+		    && echo "Run 'make container-start' first." && exit 1)
 endif

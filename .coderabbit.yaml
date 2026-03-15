@@ -63,7 +63,7 @@ reviews:
         YAML schemas must stay consistent with S7 classes in R/ (ADR-0001).
         Validate that property names, types, and constraints match.
         If a schema changes, the S7 class must be updated (or follow-up
-        task created). Run validate-schemas to verify.
+        task created). Run schema-validate to verify.
     - path: "docs/adr/**"
       instructions: |
         Architecture Decision Records govern codebase-wide design.

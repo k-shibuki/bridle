@@ -13,4 +13,4 @@ trigger: styler lintr conflict, indentation conflict, indentation_linter, format
 
 **Key point**: The first fix to try is always **restructuring the code** (extract variable, split expression), not `# nolint`. Code restructuring resolves the conflict for both tools.
 
-**Correct execution order**: Always run `make format` **before** `make ci-fast`. Running lint without formatting first produces false positives from these conflicts.
+**Correct execution order**: Always run `make format` **before** `make gate-fast`. Running lint without formatting first produces false positives from these conflicts.

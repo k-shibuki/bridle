@@ -10,14 +10,14 @@ None required.
 
 1. `make doctor` (human-readable) or `make doctor-json` (machine-readable).
 2. If hooks missing: doctor auto-installs via `tools/install-hooks.sh`.
-3. If container not running: `make container-build` then `make container-up`.
+3. If container not running: `make container-build` then `make container-start`.
 4. If renv out of sync: `make package-restore`.
 
 ### First-time setup
 
 ```bash
 make container-build
-make container-up
+make container-start
 make package-init
 make doctor
 ```
