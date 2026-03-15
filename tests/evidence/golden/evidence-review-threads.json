@@ -1,0 +1,43 @@
+{
+  "total": 2,
+  "unresolved": 1,
+  "threads": [
+    {
+      "graphql_id": "PRRT_kwDOExample1",
+      "is_resolved": true,
+      "is_outdated": false,
+      "path": "R/example.R",
+      "line": 42,
+      "author": "coderabbitai[bot]",
+      "body": "Consider using `match.arg()` here for type safety.",
+      "database_id": 12345678,
+      "replies": [
+        {
+          "database_id": 12345679,
+          "author": "contributor",
+          "body": "Fixed — switched to `match.arg()` as suggested.",
+          "created_at": "2026-03-12T11:00:00Z"
+        }
+      ]
+    },
+    {
+      "graphql_id": "PRRT_kwDOExample2",
+      "is_resolved": false,
+      "is_outdated": false,
+      "path": "R/scanner.R",
+      "line": 100,
+      "author": "coderabbitai[bot]",
+      "body": "Missing boundary test for empty input.",
+      "database_id": 12345680,
+      "replies": []
+    }
+  ],
+  "files_changed": ["R/example.R", "R/scanner.R", "tests/testthat/test-example.R"],
+  "truncated": false,
+  "_meta": {
+    "target": "evidence-review-threads",
+    "timestamp": "2026-03-12T12:00:00Z",
+    "version": "1.0.0",
+    "duration_ms": 450
+  }
+}

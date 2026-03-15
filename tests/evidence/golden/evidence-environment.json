@@ -7,7 +7,7 @@
     {"name": "container_runtime", "status": "ok", "detail": "podman 4.9.3"},
     {"name": "container_running", "status": "ok", "detail": "bridle-dev running"},
     {"name": "r_version", "status": "ok", "detail": "R 4.4.2"},
-    {"name": "covr", "status": "warn", "detail": "optional package not installed"}
+    {"name": "covr", "status": "warning", "detail": "optional package not installed"}
   ],
   "_meta": {
     "target": "evidence-environment",
