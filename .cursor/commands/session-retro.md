@@ -102,7 +102,7 @@ For each non-redundant finding, propose an action:
 |-------------|-------------------|-------------|
 | New knowledge atom | `knowledge-create` | Pattern/gotcha not covered by any existing atom |
 | Atom content update | Direct edit of `.cursor/knowledge/<atom>.md` | Existing atom is outdated or incomplete |
-| Atom trigger update | Direct edit of atom + `make kb-manifest` | Atom exists but triggers don't match how agents encounter it |
+| Atom trigger update | Direct edit of atom + `make knowledge-manifest` | Atom exists but triggers don't match how agents encounter it |
 | Rule/command clarification | Direct edit of `.cursor/rules/*.mdc` or `.cursor/commands/*.md` | Minor wording fix, missing edge case |
 | Structural problem | Recommend `controls-review` | Cross-file inconsistency, component boundary violation, SSOT breach — beyond session-retro scope |
 

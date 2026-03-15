@@ -95,7 +95,7 @@ jobs:
             echo "shellcheck not available, skipping"
           fi
 
-  renv-check:
+  package-sync-verify:
     needs: changes
     if: needs.changes.outputs.renv_deps == 'true'
     runs-on: ubuntu-latest
@@ -132,12 +132,12 @@ jobs:
             cat("Packages in DESCRIPTION but not in renv.lock:\n")
             cat(paste(" -", missing), sep = "\n")
             cat("\n")
-            stop("renv.lock is out of sync with DESCRIPTION. Run 'make renv-snapshot' and commit renv.lock.")
+            stop("renv.lock is out of sync with DESCRIPTION. Run 'make package-snapshot' and commit renv.lock.")
           }
           cat("All", length(all_deps), "DESCRIPTION dependencies are tracked in renv.lock.\n")
         shell: Rscript {0}
 
-  validate-schemas:
+  schema-validate:
     needs: changes
     if: needs.changes.outputs.schemas == 'true' || needs.changes.outputs.r_source == 'true'
     runs-on: ubuntu-latest
@@ -157,7 +157,7 @@ jobs:
       - name: Validate schemas
         run: Rscript tools/validate-schemas.R
 
-  format-check:
+  format-verify:
     needs: changes
     if: needs.changes.outputs.r_source == 'true'
     runs-on: ubuntu-latest
@@ -296,7 +296,7 @@ jobs:
           path: check
           retention-days: 7
 
-  kb-validate:
+  knowledge-validate:
     needs: changes
     if: needs.changes.outputs.kb_files == 'true'
     runs-on: ubuntu-latest
@@ -305,29 +305,30 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Validate knowledge base consistency
-        run: make kb-validate
+        run: make knowledge-validate
 
       - name: Check review category sync (AGENTS.md vs pr-review.md)
-        run: make review-sync-check
+        run: make review-sync-verify
 
   # Required status check that always runs.
   # Use this as the single required check in branch protection settings.
   # It passes when all relevant jobs pass or are correctly skipped.
   ci-pass:
     if: always()
-    needs: [ci-config, renv-check, validate-schemas, format-check, lint, test, check, kb-validate]
+    needs: [changes, ci-config, package-sync-verify, schema-validate, format-verify, lint, test, check, knowledge-validate]
     runs-on: ubuntu-latest
     steps:
       - name: Verify all jobs passed or were skipped
         run: |
-          results=("${{ needs.ci-config.result }}" \
-                   "${{ needs.renv-check.result }}" \
-                   "${{ needs.validate-schemas.result }}" \
-                   "${{ needs.format-check.result }}" \
+          results=("${{ needs.changes.result }}" \
+                   "${{ needs.ci-config.result }}" \
+                   "${{ needs.package-sync-verify.result }}" \
+                   "${{ needs.schema-validate.result }}" \
+                   "${{ needs.format-verify.result }}" \
                    "${{ needs.lint.result }}" \
                    "${{ needs.test.result }}" \
                    "${{ needs.check.result }}" \
-                   "${{ needs.kb-validate.result }}")
+                   "${{ needs.knowledge-validate.result }}")
           for r in "${results[@]}"; do
             if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
               echo "Job failed or was cancelled: $r"
@@ -338,7 +339,7 @@ jobs:
 
   ci-summary:
     if: always()
-    needs: [ci-config, renv-check, validate-schemas, format-check, lint, test, check, kb-validate]
+    needs: [changes, ci-config, package-sync-verify, schema-validate, format-verify, lint, test, check, knowledge-validate]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -349,14 +350,15 @@ jobs:
         with:
           script: |
             const jobs = {
+              'changes': '${{ needs.changes.result }}',
               'ci-config': '${{ needs.ci-config.result }}',
-              'renv-check': '${{ needs.renv-check.result }}',
-              'validate-schemas': '${{ needs.validate-schemas.result }}',
-              'format-check': '${{ needs.format-check.result }}',
+              'package-sync-verify': '${{ needs.package-sync-verify.result }}',
+              'schema-validate': '${{ needs.schema-validate.result }}',
+              'format-verify': '${{ needs.format-verify.result }}',
               'lint': '${{ needs.lint.result }}',
               'test': '${{ needs.test.result }}',
               'check': '${{ needs.check.result }}',
-              'kb-validate': '${{ needs.kb-validate.result }}'
+              'knowledge-validate': '${{ needs.knowledge-validate.result }}'
             };
             const rows = Object.entries(jobs).map(([name, result]) => {
               const icon = result === 'success' ? '✅' :

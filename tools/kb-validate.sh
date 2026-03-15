@@ -65,7 +65,7 @@ done
 
 # 2. Check index file exists
 if [ ! -f "$INDEX_FILE" ]; then
-  echo "ERROR: $INDEX_FILE not found (run make kb-manifest)" >&2
+  echo "ERROR: $INDEX_FILE not found (run make knowledge-manifest)" >&2
   errors=$((errors + 1))
 else
   # 3. Check for orphans in index (files listed but not existing)
@@ -91,7 +91,7 @@ else
       *) continue ;;
     esac
     if ! grep -q "$basename" "$INDEX_FILE" 2>/dev/null; then
-      echo "ERROR: $basename exists but is not in index (run make kb-manifest)" >&2
+      echo "ERROR: $basename exists but is not in index (run make knowledge-manifest)" >&2
       errors=$((errors + 1))
     fi
   done

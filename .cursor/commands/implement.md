@@ -9,7 +9,7 @@
 
 1. If no Issue number provided: `make evidence-issue` for selection per `workflow--issue-selection.md`. Present selection with rationale and wait for approval.
 2. `make evidence-issue ISSUE=<N>` for structured Issue metadata (summary, DoD, test plan, schema impact, related ADRs).
-3. `make status` — if container not running: `make container-up`.
+3. `make status` — if container not running: `make container-start`.
 
 ## Act
 

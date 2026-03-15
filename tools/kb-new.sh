@@ -15,8 +15,8 @@ for arg in "$@"; do
 done
 
 if [ -z "$NAME" ]; then
-  echo "Usage: make kb-new NAME=<category--topic>" >&2
-  echo "Example: make kb-new NAME=test--new-pattern" >&2
+  echo "Usage: make knowledge-new NAME=<category--topic>" >&2
+  echo "Example: make knowledge-new NAME=test--new-pattern" >&2
   exit 1
 fi
 
@@ -47,5 +47,5 @@ TEMPLATE
 echo "OK: created $TARGET"
 echo "Next steps:"
 echo "  1. Edit the file: fill trigger keywords, title, and content"
-echo "  2. Run: make kb-manifest  (regenerate index)"
-echo "  3. Run: make kb-validate  (verify consistency)"
+echo "  2. Run: make knowledge-manifest  (regenerate index)"
+echo "  3. Run: make knowledge-validate  (verify consistency)"

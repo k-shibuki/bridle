@@ -35,7 +35,7 @@ used directly in Procedure Act sections.
 | PR lifecycle | `gh pr create`, `gh pr merge`, `gh pr edit`, `gh pr comment` |
 | Review actions | `gh api .../comments/{id}/replies` (disposition reply), `gh api graphql ...resolveReviewThread` |
 | Issue mutations | `gh issue create`, `gh issue close`, `gh issue edit` |
-| Build/test | `make format-check`, `make test`, `devtools::check()` |
+| Build/test | `make format-verify`, `make test`, `devtools::check()` |
 
 ### 3. Delegated process (raw CLI in subagent only)
 

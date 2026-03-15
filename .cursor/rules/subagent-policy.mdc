@@ -25,7 +25,7 @@ Follow the **Decision Flowchart** in `agent--delegation-decision.md` § Decision
 **Tier 2 constraints** (all MUST be satisfied):
 
 - The subagent **MUST NOT** run `git commit`, `git push`, or `gh pr` commands
-- The subagent writes file changes only; the main agent reviews the diff, runs `make kb-validate`, and commits
+- The subagent writes file changes only; the main agent reviews the diff, runs `make knowledge-validate`, and commits
 - Disposition replies (`Acknowledged`, `Fixed`, etc.) MUST NOT be part of a Tier 2 delegation — they require PR lifecycle awareness (Tier 3)
 - The main agent MUST verify that the subagent's changes do not introduce broken references or policy violations before committing
 

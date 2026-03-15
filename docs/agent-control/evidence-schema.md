@@ -48,9 +48,7 @@ field names.
 
 ### Target catalog
 
-This catalog defines the canonical post-migration naming set.
-For old-to-new migration mapping and transition rationale, see
-`docs/agent-control/migration-mapping.md`.
+This catalog defines the canonical naming set.
 
 | Target | Category |
 |--------|----------|

@@ -36,7 +36,7 @@ The following are prohibited in principle (exception only with stated justificat
 1. **lintr** — `lintr::lint_package()`: errors and warnings
 2. **styler** — `styler::style_pkg(dry = "on")`: format diffs
 3. **R CMD check** — `devtools::check()`: errors, warnings, and notes
-4. **coverage** — `covr::package_coverage()`: line coverage >= threshold (see `test-strategy.mdc` § Coverage Threshold Policy; enforced via `make coverage-check` locally and `R-CMD-check.yaml` on main push — not on PR CI path)
+4. **coverage** — `covr::package_coverage()`: line coverage >= threshold (see `test-strategy.mdc` § Coverage Threshold Policy; enforced via `make coverage-verify` locally and `R-CMD-check.yaml` on main push — not on PR CI path)
 5. Inappropriate `# nolint` introduction (new additions, propagation)
 6. Clear security issues (authentication/authorization, input validation, data retention)
 
@@ -100,7 +100,7 @@ Per ADR-0001, S7 classes are the source of truth once implemented.
 
 - When creating/modifying an S7 class, verify it matches the corresponding YAML schema
 - When modifying a schema, update the corresponding S7 class (or create a follow-up task)
-- Run `make validate-schemas` after any schema-related change
+- Run `make schema-validate` after any schema-related change
 
 ## Mandatory Verification After Changes
 
@@ -113,7 +113,7 @@ All of the following must be satisfied (per `HS-NO-DISMISS`, no exception for pr
 - `lintr::lint_package()` has **zero errors/warnings**
 - `styler::style_pkg(dry = "on")` has **zero diffs**
 - `devtools::check()` shows **0 errors, 0 warnings, 0 notes**
-- `make validate-schemas` shows **zero errors and zero actionable warnings**
+- `make schema-validate` shows **zero errors and zero actionable warnings**
 - Exceptions (intentional lint) have **documented reasons**
 - No new unjustified `# nolint` added
 - Not hiding problems with `suppressWarnings()` / `suppressMessages()`

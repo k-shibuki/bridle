@@ -281,8 +281,8 @@ Development uses a containerized R environment. No local R installation is requi
 
 ```bash
 make container-build   # Build container (rocker/tidyverse + renv)
-make container-up      # Start container
-make renv-init         # Initialize renv (first time only)
+make container-start   # Start container
+make package-init      # Initialize renv (first time only)
 make doctor            # Verify environment
 ```
 

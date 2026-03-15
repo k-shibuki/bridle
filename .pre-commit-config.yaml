@@ -42,9 +42,9 @@ repos:
         exclude: '\.Rd'
   - repo: local
     hooks:
-      - id: validate-schemas
+      - id: schema-validate
         name: Validate YAML schemas
-        entry: make validate-schemas
+        entry: make schema-validate
         language: system
         files: 'docs/schemas/.*\.yaml$'
         pass_filenames: false

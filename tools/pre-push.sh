@@ -23,7 +23,7 @@ fi
 r_changed=$(echo "$changed" | grep -E '^(R/|tests/|DESCRIPTION|NAMESPACE)' || true)
 schema_changed=$(echo "$changed" | grep -E '^(docs/schemas/|tools/validate)' || true)
 renv_changed=$(echo "$changed" | grep -E '^(DESCRIPTION|renv\.lock|renv/)' || true)
-# kb-validate checks atom/index consistency; review-sync-check validates
+# knowledge-validate checks atom/index consistency; review-sync-verify validates
 # AGENTS.md ↔ pr-review.md category parity. Both run when any KB file changes.
 kb_changed=$(echo "$changed" | grep -E '^(\.cursor/(knowledge/|rules/knowledge-index\.mdc|commands/pr-review\.md)|AGENTS\.md)' || true)
 
@@ -48,31 +48,31 @@ if [[ "${BRIDLE_IN_CONTAINER:-}" != "1" ]]; then
 
   if ! $RUNTIME inspect bridle-dev --format '{{.State.Running}}' 2>/dev/null | grep -q true; then
     echo "BLOCKED (HS-LOCAL-VERIFY): Container 'bridle-dev' is not running." >&2
-    echo "Run 'make container-up' first, or set SKIP_PRE_PUSH=1 to bypass." >&2
+    echo "Run 'make container-start' first, or set SKIP_PRE_PUSH=1 to bypass." >&2
     exit 1
   fi
 fi
 
 # --- Run verification gates (independent blocks — all matching types trigger) ---
 if [[ -n "$r_changed" ]]; then
-  echo "pre-push: R source changes detected — running format-check + changed-lint + changed-test..."
-  make format-check || { echo "BLOCKED (HS-LOCAL-VERIFY): make format-check failed" >&2; exit 1; }
-  make changed-lint || { echo "BLOCKED (HS-LOCAL-VERIFY): make changed-lint failed" >&2; exit 1; }
-  make changed-test || { echo "BLOCKED (HS-LOCAL-VERIFY): make changed-test failed" >&2; exit 1; }
+  echo "pre-push: R source changes detected — running format-verify + lint-changed + test-changed..."
+  make format-verify || { echo "BLOCKED (HS-LOCAL-VERIFY): make format-verify failed" >&2; exit 1; }
+  make lint-changed || { echo "BLOCKED (HS-LOCAL-VERIFY): make lint-changed failed" >&2; exit 1; }
+  make test-changed || { echo "BLOCKED (HS-LOCAL-VERIFY): make test-changed failed" >&2; exit 1; }
 fi
 
 if [[ -n "$schema_changed" ]]; then
-  echo "pre-push: Schema changes detected — running validate-schemas..."
-  make validate-schemas || { echo "BLOCKED (HS-LOCAL-VERIFY): make validate-schemas failed" >&2; exit 1; }
+  echo "pre-push: Schema changes detected — running schema-validate..."
+  make schema-validate || { echo "BLOCKED (HS-LOCAL-VERIFY): make schema-validate failed" >&2; exit 1; }
 fi
 
 if [[ -n "$renv_changed" ]]; then
-  echo "pre-push: DESCRIPTION/renv changes detected — running renv-check..."
-  make renv-check || { echo "BLOCKED (HS-LOCAL-VERIFY): make renv-check failed" >&2; exit 1; }
+  echo "pre-push: DESCRIPTION/renv changes detected — running package-sync-verify..."
+  make package-sync-verify || { echo "BLOCKED (HS-LOCAL-VERIFY): make package-sync-verify failed" >&2; exit 1; }
 fi
 
 if [[ -n "$kb_changed" ]]; then
-  echo "pre-push: Knowledge base changes detected — running kb-validate + review-sync-check..."
-  make kb-validate || { echo "BLOCKED (HS-LOCAL-VERIFY): make kb-validate failed. Run 'make kb-manifest' to update the index, then stage and commit." >&2; exit 1; }
-  make review-sync-check || { echo "BLOCKED (HS-LOCAL-VERIFY): make review-sync-check failed. AGENTS.md and pr-review.md categories are out of sync." >&2; exit 1; }
+  echo "pre-push: Knowledge base changes detected — running knowledge-validate + review-sync-verify..."
+  make knowledge-validate || { echo "BLOCKED (HS-LOCAL-VERIFY): make knowledge-validate failed. Run 'make knowledge-manifest' to update the index, then stage and commit." >&2; exit 1; }
+  make review-sync-verify || { echo "BLOCKED (HS-LOCAL-VERIFY): make review-sync-verify failed. AGENTS.md and pr-review.md categories are out of sync." >&2; exit 1; }
 fi
