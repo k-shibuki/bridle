@@ -118,7 +118,7 @@ if [[ ${#hooks_missing[@]} -gt 0 ]]; then
     done
   else
     for hook_type in "${hooks_missing[@]}"; do
-      record "git hook: $hook_type" "warn" "auto-install failed — run 'make install-hooks' manually"
+      record "git hook: $hook_type" "warning" "auto-install failed — run 'make git-install-hooks' manually"
       warnings=$((warnings + 1))
     done
   fi
