@@ -87,7 +87,7 @@ validate_json() {
       done
       ;;
     evidence-review-threads)
-      for key in total unresolved threads files_changed truncated; do
+      for key in total unresolved threads body_findings body_findings_count files_changed truncated; do
         if ! echo "$json" | jq -e "has(\"$key\")" >/dev/null 2>&1; then
           echo "FAIL [$target]: missing required key '$key'" >&2
           return 1

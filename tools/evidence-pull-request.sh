@@ -104,10 +104,18 @@ if [ "$cr_rate_limit" -gt 0 ] && [ "$coderabbit_status" = "NOT_TRIGGERED" ]; the
   coderabbit_status="RATE_LIMITED"
 fi
 
-# Inline findings count
+# Inline findings count (review comments on specific lines)
 cr_inline=$(gh api "repos/$owner/$repo/pulls/$PR/comments" 2>/dev/null || echo "[]")
 coderabbit_findings=$(echo "$cr_inline" | jq '[.[] | select(.user.login == "coderabbitai[bot]")] | length')
 codex_findings=$(echo "$cr_inline" | jq '[.[] | select(.user.login | test("codex|chatgpt"; "i"))] | length')
+
+# Body-embedded findings ("Outside diff range comments" in review body)
+if [ -n "$cr_review" ]; then
+  cr_body_count=$(echo "$cr_review" | jq -r '.body // ""' \
+    | grep -oP 'Outside diff range comments \(\K\d+' || echo 0)
+  cr_body_count=${cr_body_count:-0}
+  coderabbit_findings=$((coderabbit_findings + cr_body_count))
+fi
 
 # --- Thread state ---
 # shellcheck disable=SC2016
