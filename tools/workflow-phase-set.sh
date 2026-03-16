@@ -41,8 +41,12 @@ branch=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --issue) issue="$2"; shift 2 ;;
-    --branch) branch="$2"; shift 2 ;;
+    --issue)
+      [ -z "${2:-}" ] && { echo "ERROR: --issue requires a value" >&2; _usage; }
+      issue="$2"; shift 2 ;;
+    --branch)
+      [ -z "${2:-}" ] && { echo "ERROR: --branch requires a value" >&2; _usage; }
+      branch="$2"; shift 2 ;;
     *) echo "ERROR: unknown option '$1'" >&2; _usage ;;
   esac
 done

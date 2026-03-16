@@ -201,7 +201,9 @@ _collect_procedure_context() {
   if [ -n "$updated_at" ]; then
     local now_epoch updated_epoch age_hours
     now_epoch=$(date +%s)
-    updated_epoch=$(date -d "$updated_at" +%s 2>/dev/null || echo "$now_epoch")
+    updated_epoch=$(date -d "$updated_at" +%s 2>/dev/null \
+      || python3 -c "from datetime import datetime; print(int(datetime.fromisoformat('$updated_at'.replace('Z','+00:00')).timestamp()))" 2>/dev/null \
+      || echo "$now_epoch")
     age_hours=$(( (now_epoch - updated_epoch) / 3600 ))
     if [ "$age_hours" -ge 24 ]; then
       stale="true"
