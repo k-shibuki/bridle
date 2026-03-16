@@ -20,12 +20,16 @@
     "bot_coderabbit": {
       "status": "COMPLETED",
       "review_submitted_at": "2026-03-12T09:00:00Z",
-      "findings_count": 2
+      "findings_count": 2,
+      "review_count": 1,
+      "max_reviews": 2
     },
     "bot_codex": {
       "status": "NOT_TRIGGERED",
       "review_submitted_at": null,
-      "findings_count": 0
+      "findings_count": 0,
+      "review_count": 0,
+      "max_reviews": null
     },
     "threads_total": 2,
     "threads_unresolved": 0,

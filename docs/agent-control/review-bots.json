@@ -1,0 +1,21 @@
+{
+  "bots": [
+    {
+      "id": "coderabbit",
+      "display_name": "CodeRabbit",
+      "login_pattern": "coderabbitai[bot]",
+      "match_type": "exact",
+      "rate_limit_pattern": "Rate limit exceeded",
+      "max_reviews": 2
+    },
+    {
+      "id": "codex",
+      "display_name": "Codex",
+      "login_pattern": "codex|chatgpt",
+      "match_type": "regex",
+      "match_flags": "i",
+      "rate_limit_pattern": null,
+      "max_reviews": null
+    }
+  ]
+}

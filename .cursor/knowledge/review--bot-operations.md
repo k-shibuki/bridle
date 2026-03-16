@@ -37,7 +37,12 @@ the budget (the original request was not fulfilled).
 
 ## Detection
 
-**Login patterns**: CodeRabbit = `coderabbit`, Codex = `chatgpt-codex-connector|codex|openai`.
+Bot identities are defined in `docs/agent-control/review-bots.json`
+(SSOT for bot configuration). The evidence script reads this config
+to dynamically detect bots without hardcoded login patterns.
+
+**Current login patterns** (from config):
+CodeRabbit = `coderabbitai[bot]` (exact), Codex = `codex|chatgpt` (regex, case-insensitive).
 
 ### API Channels
 
