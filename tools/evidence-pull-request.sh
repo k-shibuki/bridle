@@ -133,21 +133,17 @@ _detect_bot_reviews() {
     local findings=0
     local review_count=0
 
-    # Build jq filter for login matching
-    local jq_login_filter
+    # Reviews from this bot (uses --arg to safely pass regex patterns)
+    local bot_reviews_all
     if [ "$match_type" = "exact" ]; then
-      jq_login_filter="select(.user.login == \"$bot_login\")"
+      bot_reviews_all=$(echo "$reviews" | jq -c --arg login "$bot_login" '[.[] | select(.user.login == $login)]')
     else
       if [ -n "$match_flags" ]; then
-        jq_login_filter="select(.user.login | test(\"$bot_login\"; \"$match_flags\"))"
+        bot_reviews_all=$(echo "$reviews" | jq -c --arg pat "$bot_login" --arg flags "$match_flags" '[.[] | select(.user.login | test($pat; $flags))]')
       else
-        jq_login_filter="select(.user.login | test(\"$bot_login\"))"
+        bot_reviews_all=$(echo "$reviews" | jq -c --arg pat "$bot_login" '[.[] | select(.user.login | test($pat))]')
       fi
     fi
-
-    # Reviews from this bot
-    local bot_reviews_all
-    bot_reviews_all=$(echo "$reviews" | jq -c "[.[] | $jq_login_filter]")
     review_count=$(echo "$bot_reviews_all" | jq 'length')
 
     local latest_review
@@ -161,12 +157,15 @@ _detect_bot_reviews() {
     if [ -n "$rate_limit_pat" ] && [ "$rate_limit_pat" != "null" ]; then
       local rl_count
       if [ "$match_type" = "exact" ]; then
-        rl_count=$(echo "$pr_comments" | jq "[.[] | select(.user.login == \"$bot_login\" and (.body | test(\"$rate_limit_pat\")))] | length")
+        rl_count=$(echo "$pr_comments" | jq --arg login "$bot_login" --arg rlpat "$rate_limit_pat" \
+          '[.[] | select(.user.login == $login and (.body | test($rlpat)))] | length')
       else
         if [ -n "$match_flags" ]; then
-          rl_count=$(echo "$pr_comments" | jq "[.[] | select((.user.login | test(\"$bot_login\"; \"$match_flags\")) and (.body | test(\"$rate_limit_pat\")))] | length")
+          rl_count=$(echo "$pr_comments" | jq --arg pat "$bot_login" --arg flags "$match_flags" --arg rlpat "$rate_limit_pat" \
+            '[.[] | select((.user.login | test($pat; $flags)) and (.body | test($rlpat)))] | length')
         else
-          rl_count=$(echo "$pr_comments" | jq "[.[] | select((.user.login | test(\"$bot_login\")) and (.body | test(\"$rate_limit_pat\")))] | length")
+          rl_count=$(echo "$pr_comments" | jq --arg pat "$bot_login" --arg rlpat "$rate_limit_pat" \
+            '[.[] | select((.user.login | test($pat)) and (.body | test($rlpat)))] | length')
         fi
       fi
       if [ "$rl_count" -gt 0 ] && [ "$status" = "NOT_TRIGGERED" ]; then
@@ -176,12 +175,15 @@ _detect_bot_reviews() {
 
     # Inline findings count (top-level only, excluding reply comments)
     if [ "$match_type" = "exact" ]; then
-      findings=$(echo "$cr_inline" | jq "[.[] | select(.user.login == \"$bot_login\" and (.in_reply_to_id // null) == null)] | length")
+      findings=$(echo "$cr_inline" | jq --arg login "$bot_login" \
+        '[.[] | select(.user.login == $login and (.in_reply_to_id // null) == null)] | length')
     else
       if [ -n "$match_flags" ]; then
-        findings=$(echo "$cr_inline" | jq "[.[] | select((.user.login | test(\"$bot_login\"; \"$match_flags\")) and (.in_reply_to_id // null) == null)] | length")
+        findings=$(echo "$cr_inline" | jq --arg pat "$bot_login" --arg flags "$match_flags" \
+          '[.[] | select((.user.login | test($pat; $flags)) and (.in_reply_to_id // null) == null)] | length')
       else
-        findings=$(echo "$cr_inline" | jq "[.[] | select((.user.login | test(\"$bot_login\")) and (.in_reply_to_id // null) == null)] | length")
+        findings=$(echo "$cr_inline" | jq --arg pat "$bot_login" \
+          '[.[] | select((.user.login | test($pat)) and (.in_reply_to_id // null) == null)] | length')
       fi
     fi
 
@@ -244,41 +246,26 @@ threads_total=$(echo "$threads" | jq '.total')
 threads_unresolved=$(echo "$threads" | jq '.unresolved')
 
 # --- Disposition ---
-# Build a jq filter that excludes all configured bot logins from human review
-_build_bot_exclusion_filter() {
-  local filter=""
-  local i=0
-  while [ "$i" -lt "$bot_count" ]; do
-    local bot_login match_type match_flags
-    bot_login=$(echo "$bot_config" | jq -r ".bots[$i].login_pattern")
-    match_type=$(echo "$bot_config" | jq -r ".bots[$i].match_type")
-    match_flags=$(echo "$bot_config" | jq -r ".bots[$i].match_flags // \"\"")
+# Filter out bot reviews to find human review disposition
+_get_human_disposition() {
+  local bot_specs
+  bot_specs=$(echo "$bot_config" | jq -c '[.bots[] | {login_pattern, match_type, match_flags}]')
 
-    if [ -n "$filter" ]; then
-      filter="$filter and "
-    fi
-
-    if [ "$match_type" = "exact" ]; then
-      filter="${filter}.user.login != \"$bot_login\""
-    else
-      if [ -n "$match_flags" ]; then
-        filter="${filter}(.user.login | test(\"$bot_login\"; \"$match_flags\") | not)"
-      else
-        filter="${filter}(.user.login | test(\"$bot_login\") | not)"
-      fi
-    fi
-
-    i=$((i + 1))
-  done
-  # Also exclude github-actions[bot]
-  filter="${filter} and .user.login != \"github-actions[bot]\""
-  echo "$filter"
+  echo "$reviews" | jq -r --argjson bots "$bot_specs" '
+    def is_bot($login):
+      ($bots | any(
+        if .match_type == "exact" then $login == .login_pattern
+        elif (.match_flags // "") != "" then $login | test(.login_pattern; .match_flags)
+        else $login | test(.login_pattern)
+        end
+      )) or ($login == "github-actions[bot]");
+    [.[] | select(.user.login | is_bot(.) | not)]
+    | sort_by(.submitted_at) | last // empty | .state // ""
+  ' 2>/dev/null || echo ""
 }
 
-bot_exclusion=$(_build_bot_exclusion_filter)
-
 disposition="pending"
-latest_review=$(echo "$reviews" | jq -r "[.[] | select($bot_exclusion)] | sort_by(.submitted_at) | last // empty | .state // \"\"" 2>/dev/null || echo "")
+latest_review=$(_get_human_disposition)
 case "$latest_review" in
   APPROVED) disposition="approved" ;;
   CHANGES_REQUESTED) disposition="changes_requested" ;;
