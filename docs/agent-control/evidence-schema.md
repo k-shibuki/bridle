@@ -225,6 +225,13 @@ into a single JSON document for state classification.
   "environment": {
     "doctor_healthy": "boolean",
     "container_running": "boolean"
+  },
+  "procedure_context": {
+    "workflow_phase": "implementing | implementation_done | tests_done | quality_ok | tests_pass | null",
+    "issue_number": "integer | null",
+    "branch": "string",
+    "updated_at": "ISO8601 | null",
+    "stale": "boolean"
   }
 }
 ```
@@ -240,8 +247,11 @@ into a single JSON document for state classification.
 - `pull_requests.open[].ci_status`: aggregated from `statusCheckRollup` — `success` only if ALL checks pass
 - `pull_requests.open[].review_threads_*`: from GraphQL `reviewThreads` query
 - `environment.doctor_healthy`: true when the development container is running (equivalent to `container_running`; both fields provided for backward compatibility during transition). Full health diagnosis is delegated to `evidence-environment`.
+- `procedure_context.workflow_phase`: current local workflow phase from `.cursor/state/workflow-phase.json`. `null` when no active local work or file absent.
+- `procedure_context.issue_number`: Issue being worked on (for cross-validation with branch).
+- `procedure_context.stale`: `true` if the state file's `branch` does not match current branch, or if `updated_at` is older than 24 hours.
 
-**Nullability**: all fields are required. Empty arrays for absent collections. `blocked_by` may be empty.
+**Nullability**: all fields are required. Empty arrays for absent collections. `blocked_by` may be empty. `procedure_context.workflow_phase`, `procedure_context.issue_number`, and `procedure_context.updated_at` may be null.
 
 **Composability**: this target is self-contained. It does NOT call other evidence targets.
 

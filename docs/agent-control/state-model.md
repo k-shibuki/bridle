@@ -106,8 +106,9 @@ procedure context for in-progress local work.
 
 | Signal | Type | Source | Interpretation |
 |--------|------|--------|---------------|
-| `workflow_phase` | enum | Procedure context | `"implementing"` \| `"implementation_done"` \| `"tests_done"` \| `"quality_ok"` \| `"tests_pass"` |
-| `selected_issue_number` | integer \| null | Procedure context | Issue selected for current implementation cycle |
+| `workflow_phase` | enum \| null | `evidence-workflow-position.procedure_context.workflow_phase` | `"implementing"` \| `"implementation_done"` \| `"tests_done"` \| `"quality_ok"` \| `"tests_pass"` \| `null` |
+| `workflow_phase_stale` | boolean | `evidence-workflow-position.procedure_context.stale` | Phase file branch mismatch or > 24h old |
+| `selected_issue_number` | integer \| null | `evidence-workflow-position.procedure_context.issue_number` | Issue selected for current implementation cycle |
 
 ## Evidence-to-signal mapping
 
@@ -140,8 +141,9 @@ signals used in state conditions and transitions.
 | `warnings` | `evidence-environment` | `warnings` |
 | `issues_require_preflight_review` | `evidence-issue` | `issues[].has_test_plan`, `issues[].has_acceptance_criteria` |
 | `exception_issue_exists` | `evidence-issue` | `issues[].labels[]` |
-| `workflow_phase` | N/A (procedure context) | `procedure_context.workflow_phase` |
-| `selected_issue_number` | N/A (procedure context) | `procedure_context.selected_issue_number` |
+| `workflow_phase` | `evidence-workflow-position` | `procedure_context.workflow_phase` |
+| `workflow_phase_stale` | `evidence-workflow-position` | `procedure_context.stale` |
+| `selected_issue_number` | `evidence-workflow-position` | `procedure_context.issue_number` |
 
 ## Transition table
 
