@@ -345,16 +345,12 @@ review freshness, and bot review status.
     "merge_state_status": "CLEAN | HAS_HOOKS | BEHIND | DIRTY | BLOCKED | UNKNOWN"
   },
   "reviews": {
-    "bot_coderabbit": {
+    "bot_<id>": {
       "status": "COMPLETED | COMPLETED_CLEAN | COMPLETED_SILENT | RATE_LIMITED | TIMED_OUT | NOT_TRIGGERED | PENDING",
       "review_submitted_at": "ISO8601 | null",
       "findings_count": "integer",
-      "review_count": "integer"
-    },
-    "bot_codex": {
-      "status": "COMPLETED | COMPLETED_CLEAN | RATE_LIMITED | TIMED_OUT | NOT_TRIGGERED | PENDING",
-      "review_submitted_at": "ISO8601 | null",
-      "findings_count": "integer"
+      "review_count": "integer",
+      "max_reviews": "integer | null"
     },
     "threads_total": "integer",
     "threads_unresolved": "integer",
@@ -377,8 +373,10 @@ review freshness, and bot review status.
 - `reviews.last_push_at`: timestamp of most recent push to PR branch (for review freshness)
 - `reviews.last_review_at`: timestamp of most recent review submission (null if none)
 - `reviews.disposition`: merged disposition from review timeline used by FSM transitions
-- `reviews.bot_*.findings_count`: total findings from that reviewer, including both inline review comments and body-embedded "outside diff range" findings (0 for clean/silent)
-- `reviews.bot_coderabbit.review_count`: total number of CR review submissions for this PR (budget: max 2)
+- `reviews.bot_<id>`: dynamically generated from `docs/agent-control/review-bots.json` config. Each configured bot produces a `bot_<id>` key.
+- `reviews.bot_<id>.findings_count`: total findings from that reviewer, including both inline review comments and body-embedded "outside diff range" findings (0 for clean/silent)
+- `reviews.bot_<id>.review_count`: total number of review submissions for this PR
+- `reviews.bot_<id>.max_reviews`: budget from config (null if unlimited)
 - `traceability.closes_issues`: Issue numbers from `Closes #N` / `Fixes #N` in PR body
 
 **Nullability**: all top-level fields required. Nullable fields marked with `| null`.
