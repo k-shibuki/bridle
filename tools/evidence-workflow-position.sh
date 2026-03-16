@@ -176,14 +176,14 @@ _collect_procedure_context() {
   local phase="null" issue_number="null" ctx_branch="" updated_at="" stale="false"
 
   if [ ! -f "$state_file" ]; then
-    jq -nc '{"workflow_phase": null, "stale": false}'
+    jq -nc '{"workflow_phase": null, "issue_number": null, "branch": "", "updated_at": null, "stale": false}'
     return
   fi
 
   local raw
   if ! raw=$(jq -c '.' "$state_file" 2>/dev/null); then
     evidence_error "procedure_context" "Invalid JSON in $state_file" false
-    jq -nc '{"workflow_phase": null, "stale": false}'
+    jq -nc '{"workflow_phase": null, "issue_number": null, "branch": "", "updated_at": null, "stale": false}'
     return
   fi
 
@@ -248,7 +248,7 @@ wait "$pid_ctx" || evidence_error "procedure_context" "Procedure context collect
 [ -s "$_tmpdir/issues.json" ] || echo '{"open_count":0,"open":[]}' > "$_tmpdir/issues.json"
 [ -s "$_tmpdir/prs.json" ] || echo '{"open_count":0,"open":[],"recently_merged":[]}' > "$_tmpdir/prs.json"
 [ -s "$_tmpdir/env.json" ] || echo '{"doctor_healthy":false,"container_running":false}' > "$_tmpdir/env.json"
-[ -s "$_tmpdir/ctx.json" ] || echo '{"workflow_phase":null,"stale":false}' > "$_tmpdir/ctx.json"
+[ -s "$_tmpdir/ctx.json" ] || echo '{"workflow_phase":null,"issue_number":null,"branch":"","updated_at":null,"stale":false}' > "$_tmpdir/ctx.json"
 
 # --- Compose final output ---
 body=$(jq -nc \

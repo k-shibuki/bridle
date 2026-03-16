@@ -42,6 +42,9 @@
   },
   "procedure_context": {
     "workflow_phase": null,
+    "issue_number": null,
+    "branch": "",
+    "updated_at": null,
     "stale": false
   },
   "_meta": {

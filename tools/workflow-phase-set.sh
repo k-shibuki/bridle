@@ -43,6 +43,9 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --issue)
       [ -z "${2:-}" ] && { echo "ERROR: --issue requires a value" >&2; _usage; }
+      case "$2" in
+        ''|*[!0-9]*) echo "ERROR: --issue must be a numeric value" >&2; _usage ;;
+      esac
       issue="$2"; shift 2 ;;
     --branch)
       [ -z "${2:-}" ] && { echo "ERROR: --branch requires a value" >&2; _usage; }
