@@ -40,6 +40,23 @@ if [ -z "$bot_config" ]; then
   exit 0
 fi
 
+if ! echo "$bot_config" | jq -e '
+  (.bots | type) == "array" and (.bots | length) > 0 and
+  all(.bots[];
+    ((.id | type) == "string") and (.id | test("^[a-z0-9_]+$")) and
+    ((.display_name | type) == "string") and
+    ((.login_pattern | type) == "string") and
+    (.match_type == "exact" or .match_type == "regex") and
+    (.match_flags == null or ((.match_flags | type) == "string")) and
+    (.rate_limit_pattern == null or ((.rate_limit_pattern | type) == "string")) and
+    (.max_reviews == null or ((.max_reviews | type) == "number"))
+  )
+' >/dev/null 2>&1; then
+  evidence_error "config" "Invalid bot config schema: $BOT_CONFIG" true
+  evidence_emit '{}'
+  exit 0
+fi
+
 bot_count=$(echo "$bot_config" | jq '.bots | length')
 
 # --- PR basic info ---
@@ -157,25 +174,25 @@ _detect_bot_reviews() {
       fi
     fi
 
-    # Inline findings count (review comments on specific lines)
+    # Inline findings count (top-level only, excluding reply comments)
     if [ "$match_type" = "exact" ]; then
-      findings=$(echo "$cr_inline" | jq "[.[] | select(.user.login == \"$bot_login\")] | length")
+      findings=$(echo "$cr_inline" | jq "[.[] | select(.user.login == \"$bot_login\" and (.in_reply_to_id // null) == null)] | length")
     else
       if [ -n "$match_flags" ]; then
-        findings=$(echo "$cr_inline" | jq "[.[] | select(.user.login | test(\"$bot_login\"; \"$match_flags\"))] | length")
+        findings=$(echo "$cr_inline" | jq "[.[] | select((.user.login | test(\"$bot_login\"; \"$match_flags\")) and (.in_reply_to_id // null) == null)] | length")
       else
-        findings=$(echo "$cr_inline" | jq "[.[] | select(.user.login | test(\"$bot_login\"))] | length")
+        findings=$(echo "$cr_inline" | jq "[.[] | select((.user.login | test(\"$bot_login\")) and (.in_reply_to_id // null) == null)] | length")
       fi
     fi
 
-    # Body-embedded findings ("Outside diff range comments" in review body)
-    if [ -n "$latest_review" ]; then
-      local body_count
-      body_count=$(echo "$latest_review" | jq -r '.body // ""' \
-        | grep -oP 'Outside diff range comments \(\K\d+' || echo 0)
-      body_count=${body_count:-0}
-      findings=$((findings + body_count))
-    fi
+    # Body-embedded findings aggregated across all reviews
+    local body_count
+    body_count=$(echo "$bot_reviews_all" | jq '
+      [.[].body // ""
+       | try (capture("Outside diff range comments \\((?<count>\\d+)\\)").count | tonumber) catch empty
+      ] | add // 0
+    ')
+    findings=$((findings + body_count))
 
     # Compose bot entry
     local bot_entry

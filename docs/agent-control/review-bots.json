@@ -11,7 +11,7 @@
     {
       "id": "codex",
       "display_name": "Codex",
-      "login_pattern": "codex|chatgpt",
+      "login_pattern": "^(chatgpt-codex-connector|codex-bot|openai)\\[bot\\]$|^codex$|^chatgpt$",
       "match_type": "regex",
       "match_flags": "i",
       "rate_limit_pattern": null,
