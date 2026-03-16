@@ -16,3 +16,4 @@
 ^\.cursorignore$
 ^\.gitmessage$
 ^\.coderabbit\.yaml$
+^\.markdownlint-cli2\.jsonc$
