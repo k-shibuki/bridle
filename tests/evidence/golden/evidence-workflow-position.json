@@ -40,6 +40,10 @@
     "doctor_healthy": true,
     "container_running": true
   },
+  "procedure_context": {
+    "workflow_phase": null,
+    "stale": false
+  },
   "_meta": {
     "target": "evidence-workflow-position",
     "timestamp": "2026-03-12T10:30:00Z",

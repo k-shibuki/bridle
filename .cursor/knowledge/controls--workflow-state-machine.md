@@ -67,8 +67,9 @@ All signals derive from evidence targets. See `state-model.md`
 § Evidence-to-signal mapping for the complete table.
 
 Key targets: `evidence-workflow-position` (git, issues, PRs,
-environment), `evidence-pull-request` (CI, merge, reviews),
-`evidence-issue` (dependency graph), `evidence-environment` (health).
+environment, procedure context), `evidence-pull-request` (CI, merge,
+reviews), `evidence-issue` (dependency graph),
+`evidence-environment` (health).
 
 ## Guard Conditions
 

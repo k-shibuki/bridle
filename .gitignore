@@ -20,6 +20,9 @@ renv/cellar/
 test-results.xml
 lint-results.json
 
+# Agent local state (workflow phase tracking)
+.cursor/state/
+
 # IDE
 .vscode/
 *.Rproj
