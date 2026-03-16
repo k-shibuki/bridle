@@ -32,11 +32,13 @@ Exception labels do NOT replace the type label — a PR has both (e.g., `fix` + 
 
 ## Meta labels (zero or more, additional context)
 
-| Label | Description |
-|-------|-------------|
-| `blocked` | Issue/PR is blocked by an external dependency |
-| `dependencies` | Dependabot dependency update |
-| `github_actions` | Dependabot GitHub Actions update |
+| Label | Description | Applied by |
+|-------|-------------|------------|
+| `has-test-plan` | Issue has a populated Test Plan section | `issue-review` or manual |
+| `has-acceptance-criteria` | Issue has populated Acceptance Criteria / Definition of Done | `issue-review` or manual |
+| `blocked` | Issue/PR is blocked by an external dependency | manual |
+| `dependencies` | Dependabot dependency update | Dependabot |
+| `github_actions` | Dependabot GitHub Actions update | Dependabot |
 
 ## Assignment rules
 

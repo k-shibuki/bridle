@@ -33,8 +33,16 @@ issues=$(echo "$raw" | jq -c '[.[] | {
   title: .title,
   labels: [(.labels // [])[] | .name],
   body: (.body // ""),
-  has_test_plan: ((.body // "") | test("## Test Plan"; "i")),
-  has_acceptance_criteria: ((.body // "") | test("## (Acceptance Criteria|Definition of Done)"; "i")),
+  has_test_plan: (
+    if [(.labels // [])[] | .name] | any(. == "has-test-plan") then true
+    else ((.body // "") | test("## Test Plan"; "i"))
+    end
+  ),
+  has_acceptance_criteria: (
+    if [(.labels // [])[] | .name] | any(. == "has-acceptance-criteria") then true
+    else ((.body // "") | test("## (Acceptance Criteria|Definition of Done)"; "i"))
+    end
+  ),
   blocked_by: [(.body // "") | capture("(?:Depends on|Blocked by|After)[^\\n]*#(?<n>\\d+)"; "g") | .n | tonumber] | unique,
   blocks: [(.body // "") | capture("(?:Blocks|Enables|Before)[^\\n]*#(?<n>\\d+)"; "g") | .n | tonumber] | unique,
   is_parent: ((.body // "") | test("## Sub-issues"; "i")),
