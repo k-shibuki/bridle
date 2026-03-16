@@ -63,7 +63,11 @@ _collect_issues() {
     number: .number,
     title: .title,
     labels: [.labels[].name],
-    has_test_plan: ((.body // "") | test("## Test Plan"; "i")),
+    has_test_plan: (
+      if [.labels[].name] | any(. == "has-test-plan") then true
+      else ((.body // "") | test("## Test Plan"; "i"))
+      end
+    ),
     blocked_by: ([(.body // "") | scan("#(\\d+)"; "g") | .[0] | tonumber] | unique)
   }]')
   issues_count=$(echo "$issues_open" | jq 'length')

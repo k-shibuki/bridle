@@ -34,14 +34,16 @@ labels: ""
 
 ## Acceptance Criteria (Definition of Done)
 
-<!-- Concrete, verifiable criteria. Use plain bullets (- item), not checkboxes. -->
+<!-- Required section. After filling, apply label: has-acceptance-criteria.
+     Concrete, verifiable criteria. Use plain bullets (- item), not checkboxes. -->
 
 -
 -
 
 ## Test Plan
 
-<!-- Concrete test cases with specific inputs and expected outputs.
+<!-- Required section. After filling, apply label: has-test-plan.
+     Concrete test cases with specific inputs and expected outputs.
      Min: 2 normal + 2 error + 1 boundary case. No vague placeholders.
      Full guidelines: .cursor/commands/issue-create.md § Test Plan Guidelines -->
 
