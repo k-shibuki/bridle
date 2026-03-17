@@ -3,7 +3,6 @@
 # Run from repo root. Requires gh CLI. Idempotent.
 set -euo pipefail
 
-SCRIPT_DIR="$(dirname "$0")"
 # List of Issue numbers that are agent-control scope (docs/agent-control, .cursor, tools/evidence*, pr-policy, etc.)
 # Plan: #252, #253-257, #264, #269, #271-275; extend as needed.
 BACKFILL_ISSUES=(252 253 254 255 256 257 264 269 271 272 273 274 275)
