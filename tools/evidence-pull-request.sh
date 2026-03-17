@@ -254,9 +254,10 @@ _get_human_disposition() {
   echo "$reviews" | jq -r --argjson bots "$bot_specs" '
     def is_bot($login):
       ($bots | any(
-        if .match_type == "exact" then $login == .login_pattern
-        elif (.match_flags // "") != "" then $login | test(.login_pattern; .match_flags)
-        else $login | test(.login_pattern)
+        . as $bot
+        | if $bot.match_type == "exact" then $login == $bot.login_pattern
+        elif ($bot.match_flags // "") != "" then $login | test($bot.login_pattern; $bot.match_flags)
+        else $login | test($bot.login_pattern)
         end
       )) or ($login == "github-actions[bot]");
     [.[] | select(.user.login | is_bot(.) | not)]
