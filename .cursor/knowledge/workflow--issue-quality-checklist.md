@@ -20,7 +20,7 @@ Used by the `issue-review` action card during the PreFlightReview state.
 | 8 | **File predictions** | "Files likely to change" section is present and plausible | Warning |
 | 9 | **S7 type safety** | If new S7 classes are proposed, explicit types are mentioned (no `class_any`) | Warning |
 | 10 | **Mock strategy** | If LLM or external calls are involved, mock approach is documented | Warning |
-| 11 | **Scope** | Issue is implementable in 1 PR (not too large) | Warning |
+| 11 | **Scope** | Child Issue is implementable in 1 PR, OR parent Issue is explicitly structured as an Epic with linked child Issues | Warning |
 | 12 | **Title convention** | Follows `<type>: <description>` format | Warning |
 
 ## Cross-Issue Analysis (6 items)
@@ -44,7 +44,7 @@ Split findings into two categories:
   references, vague test plan entries, missing mock strategy, title convention
   fixes, missing file predictions. Apply via `gh issue edit`.
 - **Category B (discussion required)**: Interface contract disagreements, scope
-  concerns, ADR gaps, shared logic extraction, technology choices. Present as
+  concerns (including missing/unclear Epic decomposition), ADR gaps, shared logic extraction, technology choices. Present as
   numbered discussion points with context and options.
 
 ## Related

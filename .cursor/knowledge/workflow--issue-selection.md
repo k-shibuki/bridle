@@ -14,7 +14,7 @@ An Issue is **actionable** when ALL conditions hold:
 | Condition | Check | Evidence source |
 |-----------|-------|-----------------|
 | Not blocked | All `blocked_by` Issues are closed | `evidence-issue.issues[].blocked_by` |
-| Not a parent | No open sub-issues remain | `evidence-issue.issues[].is_parent` |
+| Implementation target | `is_parent == false` (parent Epic is orchestration-only) | `evidence-issue.issues[].is_parent` |
 | Not assigned to others | `assignee` is null or self | `evidence-issue.issues[].assignee` |
 | Has required fields | `has_test_plan` AND `has_acceptance_criteria` | `evidence-issue.issues[]` |
 
@@ -41,7 +41,7 @@ Among actionable Issues, rank by (highest weight first):
 
 - **No actionable Issues**: Transition to ST_NO_WORK; suggest `issue-create`
 - **All Issues blocked**: Report the blocking graph; suggest resolving blockers
-- **Parent Issues**: Never selected directly; select their unblocked children
+- **Parent Issues (Epic)**: Valid for planning/tracking; never selected directly for implementation. Select unblocked child Issues.
 - **Exception flow**: Hotfix/no-issue Issues bypass normal selection
 
 ## Related
