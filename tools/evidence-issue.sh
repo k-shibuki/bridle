@@ -9,6 +9,8 @@ set -euo pipefail
 evidence_init "evidence-issue"
 
 ISSUE="${ISSUE:-}"
+SCOPE="${SCOPE:-}"
+ISSUE_MIN="${ISSUE_MIN:-}"
 
 if ! command -v gh >/dev/null 2>&1; then
   evidence_error "gh" "gh CLI not found" true
@@ -49,6 +51,42 @@ issues=$(echo "$raw" | jq -c '[.[] | {
   assignee: ((.assignees // [])[0].login // null),
   created_at: .createdAt
 }]')
+
+# Optional scope filter: control-system (label agent-control or number >= ISSUE_MIN) or ISSUE_MIN only
+if [ -n "$SCOPE" ] || [ -n "$ISSUE_MIN" ]; then
+  if [ "$SCOPE" = "control-system" ]; then
+    min="${ISSUE_MIN:-252}"
+    issues=$(echo "$issues" | jq -c --argjson min "$min" '[.[] | select((.labels | index("agent-control")) or (.number >= $min))]')
+  elif [ -n "$ISSUE_MIN" ]; then
+    issues=$(echo "$issues" | jq -c --argjson min "$ISSUE_MIN" '[.[] | select(.number >= $min)]')
+  fi
+fi
+
+# Enrich parent issues: child_issues, children_closed, parent_closeable (Plan §7; state via gh, not checkbox)
+SCRIPT_DIR="$(dirname "$0")"
+enriched='['
+first=true
+while read -r issue; do
+  is_parent=$(echo "$issue" | jq -r '.is_parent')
+  if [ "$is_parent" != "true" ]; then
+    issue=$(echo "$issue" | jq -c '. + {child_issues: [], children_closed: true, parent_closeable: false}')
+  else
+    body=$(echo "$issue" | jq -r '.body')
+    child_issues=$(echo "$body" | bash "$SCRIPT_DIR/parse-sub-issues.sh")
+    children_closed="true"
+    for n in $(echo "$child_issues" | jq -r '.[]'); do
+      state=$(gh issue view "$n" --json state -q .state 2>/dev/null || echo "OPEN")
+      if [ "$state" != "CLOSED" ]; then children_closed="false"; fi
+    done
+    issue=$(echo "$issue" | jq -c --argjson child "$child_issues" \
+      --argjson closed "$children_closed" \
+      '. + {child_issues: $child, children_closed: $closed, parent_closeable: $closed}')
+  fi
+  if [ "$first" = true ]; then first=false; else enriched="$enriched,"; fi
+  enriched="$enriched$issue"
+done < <(echo "$issues" | jq -c '.[]')
+enriched="$enriched]"
+issues="$enriched"
 
 roots=$(echo "$issues" | jq -c '[.[] | select((.blocked_by | length) == 0) | .number]')
 

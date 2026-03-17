@@ -460,7 +460,7 @@ review freshness, and bot review status.
 
 **Purpose**: Issue metadata for prioritization and dependency analysis.
 
-**Input**: `gh` REST API. Optional `ISSUE=<number>` argument; without it, returns all open Issues.
+**Input**: `gh` REST API. Optional `ISSUE=<number>`; optional `SCOPE=control-system` or `ISSUE_MIN=<n>` to filter (control-system: label `agent-control` or number >= ISSUE_MIN; default ISSUE_MIN 252). Without ISSUE, returns open Issues (subject to scope filter).
 
 **Output schema**:
 
@@ -477,6 +477,9 @@ review freshness, and bot review status.
       "blocked_by": ["integer"],
       "blocks": ["integer"],
       "is_parent": "boolean",
+      "child_issues": ["integer"],
+      "children_closed": "boolean",
+      "parent_closeable": "boolean",
       "assignee": "string | null",
       "created_at": "ISO8601"
     }
@@ -492,7 +495,10 @@ review freshness, and bot review status.
 **Field semantics**:
 
 - `body`: full Issue body text including DoD, test plan, and acceptance criteria sections
-- `is_parent`: true if Issue has sub-issues (detected via checkbox list or "Sub-issues" section)
+- `is_parent`: true if Issue has sub-issues (detected via "## Sub-issues" section)
+- `child_issues`: list of Issue numbers from the `## Sub-issues` section (parent only). Parsed from list lines matching `^\s*[-*]\s+(?:\[[ xX]\]\s*)?#(\d+)` within that section; section runs until next `##` or end of body. Allowed forms: `- [ ] #N`, `- [x] #N`, `- #N`, `* [ ] #N` (SSOT: workflow-policy).
+- `children_closed`: true iff every `child_issues` Issue has state closed (via `gh issue view N --json state`; checkbox in body is not authoritative).
+- `parent_closeable`: true iff `is_parent` and `children_closed`; when false and PR would close the parent, pr-policy fails.
 - `blocked_by` / `blocks`: extracted from Issue body dependency references
 - `dependency_graph.roots`: Issues with no blockers (can start immediately)
 - `dependency_graph.leaves`: Issues that block nothing

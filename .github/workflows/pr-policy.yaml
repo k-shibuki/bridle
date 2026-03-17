@@ -21,6 +21,7 @@ jobs:
         uses: actions/github-script@v8
         with:
           script: |
+            const run = async () => {
             const pr = context.payload.pull_request;
             const body = pr.body || '';
             const labels = pr.labels.map(l => l.name);
@@ -117,6 +118,33 @@ jobs:
               );
             }
 
+            // --- 6b. Parent close: if PR closes a parent Issue, all children must be closed (workflow-policy § Parent Issue) ---
+            const closesMatch = body.match(/(?:closes|fixes|resolves)\s+#(\d+)/gi);
+            const closedNumbers = closesMatch ? [...new Set(closesMatch.map(m => (m.match(/#(\d+)/i) || [])[1]).filter(Boolean))] : [];
+            for (const numStr of closedNumbers) {
+              const N = parseInt(numStr, 10);
+              if (Number.isNaN(N)) continue;
+              try {
+                const { data: issue } = await github.rest.issues.get({ owner: context.repo.owner, repo: context.repo.repo, issue_number: N });
+                const ibody = issue.body || '';
+                if (!/^#{2,3}\s+Sub-issues\s*$/im.test(ibody)) continue;
+                const sectionStart = ibody.search(/^#{2,3}\s+Sub-issues\s*$/im);
+                const afterHeader = ibody.slice(sectionStart).replace(/^[^\n]*\n/, '');
+                const nextH2 = afterHeader.match(/\n##\s+/);
+                const section = nextH2 ? afterHeader.slice(0, nextH2.index) : afterHeader;
+                const childNums = [...section.matchAll(/^\s*[-*]\s+(?:\[[ xX]\]\s*)?#(\d+)/gm)].map(m => parseInt(m[1], 10));
+                const unique = [...new Set(childNums)];
+                for (const c of unique) {
+                  const { data: child } = await github.rest.issues.get({ owner: context.repo.owner, repo: context.repo.repo, issue_number: c });
+                  if (child.state !== 'closed') {
+                    errors.push('**Parent close**: PR closes parent #' + N + ' but child #' + c + ' is still open. Close all sub-issues first.');
+                  }
+                }
+              } catch (e) {
+                // Issue not found or API error: do not block (linkage already checked)
+              }
+            }
+
             // --- 7. Type label (workflow-policy § Label Taxonomy) ---
             // 'hotfix' is an exception label, not a type label — see workflow-policy.mdc § Label Taxonomy
             const TYPE_LABELS = ['feat', 'fix', 'refactor', 'perf', 'docs', 'test', 'ci', 'build', 'chore', 'style', 'revert'];
@@ -161,3 +189,5 @@ jobs:
             } else if (warnings.length > 0) {
               core.warning(warnings.join('\n'));
             }
+            };
+            return run();

@@ -9,7 +9,7 @@
 ## Sense
 
 1. Run `make evidence-workflow-position` for coarse state (git, issues, PRs, environment).
-2. If `on_main == true` and `open_issues_count > 0`, also run `make evidence-issue` to evaluate Issue quality (test plan, acceptance criteria) for PreFlightReview vs ReadyToStart classification.
+2. If `on_main == true` and `open_issues_count > 0`, also run `make evidence-issue` to evaluate Issue quality (test plan, acceptance criteria) for PreFlightReview vs ReadyToStart classification. If the user requested control-system scope or "252 and later", use `make evidence-issue SCOPE=control-system` (or `ISSUE_MIN=252`).
 3. If a PR exists for the current branch, also run `make evidence-pull-request PR=<number>` for detailed CI, merge, and review signals (preferred over workflow-position fallback per `state-model.md` § Signal catalog).
 
 If a background subagent was previously launched, check its transcript file per `subagent-policy.mdc` § Completion guarantee.

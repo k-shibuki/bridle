@@ -5,10 +5,11 @@
 - `workflow--issue-selection.md` (selection algorithm when no Issue provided)
 - `workflow--docs-discovery-heuristics.md` (early doc impact identification)
 - `integration-strategy.mdc` (if change touches cross-module interfaces)
+- **Control-system Issues**: when the Issue affects `docs/agent-control/`, `.cursor/`, `tools/evidence*`, or pr-policy, also read `docs/agent-control/architecture.md` (design principles) before changing behaviour.
 
 ## Sense
 
-1. If no Issue number provided: `make evidence-issue` for selection per `workflow--issue-selection.md`. Present selection with rationale and wait for approval.
+1. If no Issue number provided: `make evidence-issue` for selection per `workflow--issue-selection.md`. If the user requested control-system scope or "252 and later", use `make evidence-issue SCOPE=control-system` (or `ISSUE_MIN=252`). Present selection with rationale and wait for approval.
 2. `make evidence-issue ISSUE=<N>` for structured Issue metadata (summary, DoD, test plan, schema impact, related ADRs).
 3. `make status` — if container not running: `make container-start`.
 
