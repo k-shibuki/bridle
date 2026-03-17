@@ -11,10 +11,10 @@ Search the codebase to understand: relevant ADRs and schemas, existing code path
 
 ## Act
 
-1. Determine granularity: small change → 1 Issue; large feature → parent + child Issues.
+1. Determine granularity: small change → 1 child Issue; large feature → parent Issue (Epic) + child Issues. Parent Issue is for orchestration and does not require a direct implementation PR.
 2. Read the appropriate Issue template file. Draft Issue body with all required sections: Summary, Motivation, Related ADR, Schema Impact, Acceptance Criteria (2-5 verifiable), Test Plan (concrete inputs/outputs — no vague placeholders), Risks.
 3. Create: `gh issue create --title "<type>: <desc>" --body "<body>" --label "<type>"`.
-4. If decomposed: create child Issues and link from parent via Task List (`- [ ] #<N>`).
+4. If decomposed: create child Issues and link from parent via Task List (`- [ ] #<N>`). Keep implementation acceptance criteria in child Issues; keep integration acceptance criteria in the parent Issue.
 5. Recommend next step: `implement` with Issue number.
 
 ## Output

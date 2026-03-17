@@ -10,10 +10,19 @@ All implementation work must be traceable to a GitHub Issue:
 
 1. **Every task starts as an Issue**: Use `issue-create` to create a structured Issue with DoD and test plan.
 2. **Test Plan must be self-contained**: Each Issue's Test Plan must include concrete test cases with specific input values and expected outputs — not vague placeholders like "valid input / succeeds". The Issue should be independently actionable without consulting other documents. See `issue-create.md` Test Plan Guidelines for requirements.
-3. **1 Issue ≈ 1 PR**: Each Issue should be implementable in a single PR. Large tasks are split into child Issues.
+3. **Issue granularity**: Child implementation Issues follow **1 Issue ≈ 1 PR**. Large tasks may use a parent Issue (Epic) that tracks child Issues and does not require a direct implementation PR.
 4. **Commits reference Issues**: Include `Refs: #<issue>` in every commit footer.
 5. **PRs close Issues**: Include `Closes #<issue>` in every PR body.
 6. **No main direct push**: All changes go through the PR flow. Branch Protection requires status checks (`ci-pass`, `check-policy`) on every push to `main`.
+
+### Parent Issue (Epic) Convention
+
+Parent Issues are orchestration artifacts used to manage multi-PR work:
+
+- A parent Issue MUST link child Issues via a task list (`- [ ] #<N>`).
+- A parent Issue SHOULD define integration-level acceptance criteria and cross-Issue risks.
+- Direct code implementation is done in child Issues; the parent Issue itself is normally not selected as an implementation target.
+- Parent Issue completion is defined by child Issue completion plus integration acceptance.
 
 ### fix vs hotfix Decision Criteria
 
