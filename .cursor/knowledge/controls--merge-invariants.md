@@ -18,6 +18,7 @@ All 5 must be TRUE for merge to proceed:
 | 3 | CI evidence recorded | `## Test Evidence` section is non-empty | Audit trail |
 | 4 | Branch is mergeable | `merge_state_status ∈ {"CLEAN", "HAS_HOOKS"}` | — |
 | 5 | Bot review covers latest push | Bot review `submitted_at > last_push_at` OR silent clean bill | Review freshness |
+| 6 | Parent close only when all children closed | If PR closes a parent Issue, every sub-issue (from `## Sub-issues`) must be closed | pr-policy.yaml (error) |
 
 ## Merge State Resolution
 

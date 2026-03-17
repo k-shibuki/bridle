@@ -39,6 +39,7 @@ Exception labels do NOT replace the type label — a PR has both (e.g., `fix` + 
 | `blocked` | Issue/PR is blocked by an external dependency | manual |
 | `dependencies` | Dependabot dependency update | Dependabot |
 | `github_actions` | Dependabot GitHub Actions update | Dependabot |
+| `agent-control` | Agent control system scope (docs/agent-control, .cursor, tools/evidence*, pr-policy) | manual or backfill |
 
 ## Assignment rules
 

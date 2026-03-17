@@ -37,6 +37,13 @@ Among actionable Issues, rank by (highest weight first):
 | `leaves` | `evidence-issue.dependency_graph.leaves` | Issues that block nothing |
 | `depth` | `evidence-issue.dependency_graph.depth` | Max dependency chain length |
 
+## Scope filter: control-system
+
+When the user requests **control-system scope** or **"252 and later"** (development AI agent control system Issues):
+
+- Run `make evidence-issue SCOPE=control-system` (or `ISSUE_MIN=252`).
+- Filter: Issues with label `agent-control` **or** `number >= 252` (fallback when label not yet applied). See `workflow--label-taxonomy.md` for `agent-control`.
+
 ## Special Cases
 
 - **No actionable Issues**: Transition to ST_NO_WORK; suggest `issue-create`

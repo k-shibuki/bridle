@@ -9,6 +9,9 @@
       "blocked_by": [],
       "blocks": [11],
       "is_parent": false,
+      "child_issues": [],
+      "children_closed": true,
+      "parent_closeable": false,
       "assignee": null,
       "created_at": "2026-03-01T10:00:00Z"
     },
@@ -21,6 +24,9 @@
       "blocked_by": [10],
       "blocks": [],
       "is_parent": false,
+      "child_issues": [],
+      "children_closed": true,
+      "parent_closeable": false,
       "assignee": null,
       "created_at": "2026-03-02T10:00:00Z"
     }

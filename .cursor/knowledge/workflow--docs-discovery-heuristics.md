@@ -34,8 +34,8 @@ Use multiple signals (don't rely on one):
 5. **Makefile / Scripts**: if you changed `Makefile` or scripts:
    - Check `README.md` for accuracy.
    - Update related Cursor commands if command usage changed.
-6. **Cursor workflow docs**: if you changed `.cursor/commands/` or `.cursor/rules/`:
-   - Check `docs/agent-control/` for consistency (architecture, FSM, evidence schema).
+6. **Cursor workflow docs**: if you changed `.cursor/commands/`, `.cursor/rules/`, `.cursor/knowledge/`, `tools/evidence*`, or `.github/workflows/pr-policy.yaml` (control-system scope):
+   - Check `docs/agent-control/` for consistency (architecture, FSM, evidence schema). Control-system changes MUST keep architecture.md design principles (P1–P6) and evidence/schema in sync.
 
 ## Impact Classification
 

@@ -38,7 +38,7 @@ endif
 	status git-new-branch git-install-hooks git-post-merge-cleanup \
 	knowledge-manifest knowledge-validate knowledge-new review-sync-verify \
 	evidence-workflow-position evidence-environment evidence-lint evidence-pull-request evidence-issue \
-	evidence-review-threads
+	evidence-review-threads label-agent-control-backfill
 
 # === Help ===
 
@@ -267,8 +267,11 @@ evidence-pull-request: ## Evidence: detailed PR state (usage: make evidence-pull
 evidence-review-threads: ## Evidence: per-thread review details for review-fix (usage: make evidence-review-threads PR=42)
 	@bash tools/evidence-review-threads.sh
 
-evidence-issue: ## Evidence: Issue metadata and dependency graph (usage: make evidence-issue [ISSUE=42])
+evidence-issue: ## Evidence: Issue metadata and dependency graph (usage: make evidence-issue [ISSUE=42] [SCOPE=control-system] [ISSUE_MIN=252])
 	@bash tools/evidence-issue.sh
+
+label-agent-control-backfill: ## Create label agent-control and add to known control-system Issues (run once to backfill)
+	@bash tools/label-agent-control-backfill.sh
 
 evidence-validate: ## Validate evidence golden outputs against schema
 	@bash tools/validate-evidence.sh
