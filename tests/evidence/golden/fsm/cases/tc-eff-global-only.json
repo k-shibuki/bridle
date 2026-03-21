@@ -1,0 +1,16 @@
+{
+  "id": "tc-eff-global-only",
+  "kind": "effective_state",
+  "input": {
+    "workflow_position": {
+      "git": {"branch": "main", "on_main": true},
+      "routing": {"global_state_id": "NoWorkPlanned"}
+    },
+    "environment": {"errors": 0},
+    "issues_summary": null,
+    "pull_request": null
+  },
+  "expect": {
+    "effective_state_id": "NoWorkPlanned"
+  }
+}

@@ -6,7 +6,7 @@ alwaysApply: false
 
 ## Subagent Delegation Pattern
 
-The main agent **MUST** delegate all blocking operations (CI polling, sequential PR merges, long builds) to a background subagent — except when auto-merge handles the operation (see below). Inline `sleep` + poll loops in the main agent are prohibited.
+The main agent **MUST** delegate all blocking operations (CI polling, sequential PR merges, long builds) to a **Tier 1 subagent** — except when auto-merge handles the operation (see below). Inline `sleep` + poll loops in the main agent are prohibited. **Foreground-first** (blocking Task) is the default for a **single** active unit so the main agent does not need a transcript-monitoring loop; see § Subagent configuration and prompts.
 
 ### When to delegate (vs auto-merge)
 
@@ -47,7 +47,7 @@ The following pattern is **prohibited** in the main agent, regardless of context
 sleep 300 && gh pr checks <N>
 ```
 
-Every wait cycle over 10 seconds MUST be delegated to a background subagent. The main agent's only permitted inline wait is a brief API-propagation pause (`sleep 5` or less, e.g., waiting for a comment to appear after posting).
+Every wait cycle over 10 seconds MUST run **inside** a delegated Tier 1 subagent (the subagent may use `sleep` + `gh` as its tool), not as inline `sleep` + observation in the main agent. The main agent's only permitted inline wait is a brief API-propagation pause (`sleep 5` or less, e.g., waiting for a comment to appear after posting). **Blocking on a foreground subagent until it returns is not inline polling** — see `agent-safety.mdc` `HS-NO-INLINE-POLL`.
 
 After a CI fix + re-push, the main agent MUST re-enter `next` (which classifies state as "CI pending" and delegates to a subagent). See `next.md` CI failure row for the explicit return path.
 
@@ -55,7 +55,7 @@ After a CI fix + re-push, the main agent MUST re-enter `next` (which classifies 
 
 Every `git push` that triggers CI MUST be followed by a delegation action before the main agent switches context (branch change, new task, user interaction). Either:
 
-- Delegate CI+review monitoring to a background subagent, or
+- Delegate CI+review monitoring to a Tier 1 subagent (**foreground** default for one PR; **background** when coordinating multiple concurrent waits per § Multiple concurrent subagents), or
 - Set auto-merge (`gh pr merge --auto --squash`) if review is already done
 
 This applies to:
@@ -68,7 +68,8 @@ Switching branches or starting new work before delegating is prohibited. The del
 
 ### Subagent configuration and prompts
 
-- **MUST** use `run_in_background: true` for all delegated operations
+- **Foreground-first (default)** — For **one** active unit, Tier 1 waits (`CIPending`, `BotReviewPending`, merge-wait): **omit** `run_in_background` (or set `false`) so the Task **blocks** until the subagent finishes. The subagent owns long polls; the main agent **must not** run a read-transcript + `sleep` monitoring loop afterward. This is **not** a violation of `HS-NO-INLINE-POLL` (wait is delegated to the subagent process, not inline `sleep` + `gh` in the main agent).
+- **Background** — Use `run_in_background: true` only when more than one concurrent Tier 1 wait is active (e.g. multiple open PRs) or when policy explicitly requires parallel coordination. Then § Completion guarantee applies.
 - **MUST** use `model: "fast"` for Tier 1 operations (CI poll, merge, rebase). Omit `model` (inherit parent) for Tier 2 tasks requiring implementation judgment. Never hardcode specific model names.
 - **MUST** include in every prompt: Goal, Steps, Prohibitions, Error handling, and Return format
 
@@ -76,7 +77,9 @@ For `subagent_type` selection and the decision flowchart: see `agent--delegation
 
 ### Productive work during delegation (Two-Tier Gate)
 
-After delegating, decide what to do using a two-tier gate — not unconditional reasoning.
+**Foreground Tier 1**: Run the signal scan **before** launching the subagent if useful (e.g. commit or stash WIP). After the Task returns, **skip** § Completion guarantee — immediately re-run Sense (`make evidence-*`) and continue the `/next` loop (`next.md`).
+
+**Background Tier 1**: After launching, decide what to do using a two-tier gate — not unconditional reasoning.
 
 **Tier 1 — Signal scan** (always, low cost):
 
@@ -89,7 +92,7 @@ Re-use the `make evidence-workflow-position` output from the delegation trigger 
 | stash | `git.stash_count > 0` | `evidence-workflow-position` |
 | session-findings | Agent working memory | (no tool call) |
 
-**Gate decision**:
+**Gate decision** (background delegation only):
 
 - **All signals clear** → State "Signals clear, entering monitoring." and proceed directly to § Completion guarantee. No further reasoning.
 - **Any signal fires** → Proceed to Tier 2.
@@ -110,17 +113,19 @@ When N PRs are simultaneously in CI/review wait:
 - Each subagent monitors exactly one PR using the appropriate template
 - The main agent tracks all subagent output files
 
-Completion guarantee (§ below) applies to ALL active subagents, not just the most recently launched one.
+Completion guarantee (§ below) applies to **all** active **background** subagents, not just the most recently launched one.
 
 ### Completion guarantee
 
-After launching background subagent(s), the main agent MUST ensure all of the following:
+**Applies only when** `run_in_background: true` was used. Foreground Tier 1 tasks do not use this section — the Task return value is the completion signal.
+
+After launching **background** subagent(s), the main agent MUST ensure all of the following:
 
 - The Two-Tier Gate (§ Productive work during delegation) has been run and any resulting work performed
 - Each active subagent's output file is checked periodically between tasks
-- When no productive work remains, the agent enters a monitoring loop (read each output → sleep 10-30s → repeat)
+- When no productive work remains, the agent enters a monitoring loop (read each output → sleep 10-30s → repeat). **This loop is allowed here only** — it monitors subagent transcripts, not raw `gh pr checks` in the main agent; it does not replace foreground delegation for a **single** unit (use blocking Task instead).
 - Each result is processed as its subagent completes (report merged PRs, surface errors)
-- The user receives a report covering ALL subagents before the turn ends — ending the turn while any subagent is still running is prohibited
+- The user receives a report covering ALL subagents before the turn ends — ending the turn while any **background** subagent is still running is prohibited
 
 ### Git conflict prevention
 

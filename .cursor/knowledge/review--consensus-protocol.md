@@ -15,6 +15,30 @@ interact with review threads (`review-fix`, `pr-review`, `pr-merge`,
 **Unilateral resolve is prohibited.** The agent must not resolve a thread
 until the reviewer's final response confirms the disposition.
 
+## CodeRabbit resolution gate (`resolveReviewThread`)
+
+For threads whose root review comment is from **CodeRabbit** (e.g.
+`coderabbitai[bot]`):
+
+- The agent **must not** call GraphQL `resolveReviewThread` in the **same
+  turn** as posting the disposition reply, nor before observing CodeRabbit's
+  reaction (`HS-REVIEW-RESOLVE` — consensus is not "reply only").
+- **Resolve only after** evidence (e.g. `make evidence-review-threads PR=<N>`,
+  optionally after `delegation--review-wait.md`) shows at least one of:
+  - CodeRabbit **auto-resolved** the thread; or
+  - CodeRabbit **replied** on the thread without objecting to the disposition; or
+  - A **qualifying pull review** after `@coderabbitai review` per
+    `review--bot-operations.md` § Agreement / terminal states supports
+    treating the finding as agreed.
+- **Delegation**: A foreground Tier 1 subagent running `delegation--review-wait.md`
+  is the compliant way to wait for the above; then refresh thread evidence and
+  resolve threads that still need an explicit resolve and meet consensus.
+- **Exception**: **Reviewer Unavailable** (§ Reviewer Unavailable below) —
+  document the reason in the disposition path before resolving.
+
+Human review threads: follow § Consensus Flow and § Edge Cases · Human-replied
+threads (no CodeRabbit gate; still no drive-by resolve without acceptance).
+
 ## Completeness Invariant
 
 ```text
@@ -106,4 +130,4 @@ Thread counts are available from `make evidence-pull-request` as
 - `templates/review--disposition-reply.md` — copy-paste reply templates
 - `agent-safety.mdc` `HS-REVIEW-RESOLVE` — Hard Stop definition
 - `workflow-policy.mdc` § Review Comment Response — policy declaration
-- `review-fix.md` Step 3b — procedure for reply + resolve
+- `review-fix.md` Step 3b — CodeRabbit resolve gate + reply/resolve ordering

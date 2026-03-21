@@ -49,6 +49,7 @@ if ! echo "$bot_config" | jq -e '
     (.match_type == "exact" or .match_type == "regex") and
     (.match_flags == null or ((.match_flags | type) == "string")) and
     (.rate_limit_pattern == null or ((.rate_limit_pattern | type) == "string")) and
+    (.invalidate_review_pattern == null or ((.invalidate_review_pattern | type) == "string")) and
     (.max_reviews == null or ((.max_reviews | type) == "number")) and
     ((.required | type) == "boolean") and
     (.commit_status_name == null or ((.commit_status_name | type) == "string")) and
@@ -86,7 +87,7 @@ ci_checks=$(echo "$pr_data" | jq -c --argjson cfg "$bot_config" '
   | ([$cfg.bots[] | (.commit_status_name // "") | select(length > 0) | ascii_downcase]) as $npats
   | (if ($npats | length) == 0 then $roll else
       [ $roll[] | select(
-          .name as $cn
+          (.name // "") as $cn
           | [ $npats[] as $p | ($cn | ascii_downcase | contains($p)) ] | any | not
         )]
     end) as $filtered
@@ -114,7 +115,7 @@ ci_status=$(echo "$pr_data" | jq -r --argjson cfg "$bot_config" '
   | ([$cfg.bots[] | (.commit_status_name // "") | select(length > 0) | ascii_downcase]) as $npats
   | (if ($npats | length) == 0 then $roll else
       [ $roll[] | select(
-          .name as $cn
+          (.name // "") as $cn
           | [ $npats[] as $p | ($cn | ascii_downcase | contains($p)) ] | any | not
         )]
     end) as $filtered
@@ -151,6 +152,8 @@ _detect_bot_reviews() {
     match_type=$(echo "$bot_config" | jq -r ".bots[$i].match_type")
     match_flags=$(echo "$bot_config" | jq -r ".bots[$i].match_flags // \"\"")
     rate_limit_pat=$(echo "$bot_config" | jq -r ".bots[$i].rate_limit_pattern // \"\"")
+    local invalidate_pat
+    invalidate_pat=$(echo "$bot_config" | jq -r ".bots[$i].invalidate_review_pattern // \"\"")
     max_rev=$(echo "$bot_config" | jq ".bots[$i].max_reviews // null")
     local commit_cs_name
     commit_cs_name=$(echo "$bot_config" | jq -r ".bots[$i].commit_status_name // \"\"")
@@ -179,7 +182,7 @@ _detect_bot_reviews() {
       local cs_row_json
       cs_row_json=$(echo "$pr_data" | jq -c --arg pat "$commit_cs_name" '
         (.statusCheckRollup // []) as $r
-        | [ $r[] | select(.name | ascii_downcase | contains($pat | ascii_downcase)) ] as $m
+        | [ $r[] | select((.name // "") | ascii_downcase | contains($pat | ascii_downcase)) ] as $m
         | if ($m | length) == 0 then null
           else (
             $m
@@ -238,7 +241,7 @@ _detect_bot_reviews() {
       --arg last_push "$last_push_at" \
       '
       def ts($s):
-        if $s == null or $s == "" then null else try ($s | fromdateiso8601) catch null end end;
+        if $s == null or $s == "" then null else (try ($s | fromdateiso8601) catch null) end;
       ($last_push | ts(.)) as $tpush
       | (if $tpush == null then 0 else $tpush end) as $tp
       | (if $match_type == "exact" then
@@ -274,6 +277,39 @@ _detect_bot_reviews() {
       status=$(echo "$bot_status_json" | jq -r '.status')
       submitted=$(echo "$bot_status_json" | jq -r '.submitted // ""')
       if [ "$submitted" = "null" ]; then
+        submitted=""
+      fi
+    fi
+
+    # CodeRabbit (etc.): PR issue comment when review was voided mid-run (e.g. head moved while CR was reviewing)
+    if [ -n "$invalidate_pat" ] && [ "$invalidate_pat" != "null" ]; then
+      local inv_count
+      if [ "$match_type" = "exact" ]; then
+        inv_count=$(echo "$pr_comments" | jq -r --arg login "$bot_login" --arg ipat "$invalidate_pat" --arg lp "$last_push_at" '
+          def ts($s): if $s == null or $s == "" then null else (try ($s | fromdateiso8601) catch null) end;
+          ($lp | ts(.)) as $tpush | (if $tpush == null then 0 else $tpush end) as $tp
+          | [.[] | select(.user.login == $login and (.body | test($ipat)) and ((.created_at | ts(.)) != null) and ((.created_at | ts(.)) >= $tp))]
+          | length
+        ')
+      else
+        if [ -n "$match_flags" ]; then
+          inv_count=$(echo "$pr_comments" | jq -r --arg pat "$bot_login" --arg flags "$match_flags" --arg ipat "$invalidate_pat" --arg lp "$last_push_at" '
+            def ts($s): if $s == null or $s == "" then null else (try ($s | fromdateiso8601) catch null) end;
+            ($lp | ts(.)) as $tpush | (if $tpush == null then 0 else $tpush end) as $tp
+            | [.[] | select((.user.login | test($pat; $flags)) and (.body | test($ipat)) and ((.created_at | ts(.)) != null) and ((.created_at | ts(.)) >= $tp))]
+            | length
+          ')
+        else
+          inv_count=$(echo "$pr_comments" | jq -r --arg pat "$bot_login" --arg ipat "$invalidate_pat" --arg lp "$last_push_at" '
+            def ts($s): if $s == null or $s == "" then null else (try ($s | fromdateiso8601) catch null) end;
+            ($lp | ts(.)) as $tpush | (if $tpush == null then 0 else $tpush end) as $tp
+            | [.[] | select((.user.login | test($pat)) and (.body | test($ipat)) and ((.created_at | ts(.)) != null) and ((.created_at | ts(.)) >= $tp))]
+            | length
+          ')
+        fi
+      fi
+      if [ "${inv_count:-0}" -gt 0 ] 2>/dev/null; then
+        status="REVIEW_INVALIDATED"
         submitted=""
       fi
     fi
@@ -328,6 +364,65 @@ _detect_bot_reviews() {
 
 bot_reviews=$(_detect_bot_reviews)
 
+# --- CodeRabbit re-review: issue trigger vs pull review response (Refs: #282) ---
+# Aligns with delegation--review-wait.md (submitted_at > trigger_time). When REVIEW_INVALIDATED,
+# do not hold pending (avoid deadlock; re-trigger is procedural).
+coderabbit_status=$(echo "$bot_reviews" | jq -r '.bot_coderabbit.status // "NOT_TRIGGERED"')
+coderabbit_submitted=$(echo "$bot_reviews" | jq -r '.bot_coderabbit.review_submitted_at // empty')
+if [ "$coderabbit_submitted" = "null" ]; then
+  coderabbit_submitted=""
+fi
+re_review_signal=$(
+  jq -nc \
+    --argjson comments "$pr_comments" \
+    --argjson revs "$reviews" \
+    --arg cr_status "$coderabbit_status" \
+    --arg cr_sub "$coderabbit_submitted" \
+    '
+    def ts($s):
+      if $s == null or $s == "" then null else (try ($s | fromdateiso8601) catch null) end;
+    ([ $comments[]
+      | select((.body | ascii_downcase | contains("@coderabbitai")) and (.body | ascii_downcase | contains("review")))
+      | select((.created_at | ts(.)) != null)
+    ]) as $trig_comments
+    | (if ($trig_comments | length) == 0 then null
+       else ($trig_comments | max_by(.created_at | ts(.)) | .created_at)
+       end) as $trig_at
+    | ($trig_at | ts(.)) as $trig_ts
+    | (if $trig_ts == null then null
+       else
+         ([ $revs[]
+            | select(.user.login == "coderabbitai[bot]")
+            | select((.submitted_at | ts(.)) != null and (.submitted_at | ts(.)) > $trig_ts)
+          ]
+          | if length == 0 then null
+            else (max_by(.submitted_at | ts(.)) | .submitted_at)
+            end)
+       end) as $ans_rev
+    | (if $trig_ts == null or $cr_sub == null or $cr_sub == "" then null
+       elif (($cr_sub | ts(.)) != null and ($cr_sub | ts(.)) > $trig_ts) then $cr_sub
+       else null
+       end) as $ans_cs
+    | (if $ans_rev == null and $ans_cs == null then null
+       elif $ans_rev == null then $ans_cs
+       elif $ans_cs == null then $ans_rev
+       elif ($ans_rev | ts(.)) >= ($ans_cs | ts(.)) then $ans_rev
+       else $ans_cs
+       end) as $ans_at
+    | (if $cr_status == "REVIEW_INVALIDATED" then false
+       elif $trig_at == null then false
+       elif $ans_at == null then true
+       else false
+       end) as $pend
+    | {
+        latest_cr_trigger_created_at: $trig_at,
+        latest_cr_review_submitted_at_after_trigger: $ans_at,
+        cr_response_pending_after_latest_trigger: $pend
+      }
+    '
+)
+rereview_pending_json=$(echo "$re_review_signal" | jq -c '.cr_response_pending_after_latest_trigger')
+
 # --- Thread state ---
 # shellcheck disable=SC2016
 threads=$(gh api graphql -f query='
@@ -378,34 +473,32 @@ case "$latest_review" in
   *) disposition="pending" ;;
 esac
 
-# --- FSM-derived review signals (Refs: #272) ---
-review_signals=$(jq -nc \
-  --argjson bots_map "$bot_reviews" \
-  --argjson cfg "$bot_config" \
-  --arg disposition "$disposition" \
-  --argjson threads_u "$threads_unresolved" \
-  '
-  def reviewed($s):
-    $s == "COMPLETED" or $s == "COMPLETED_CLEAN" or $s == "COMPLETED_SILENT";
-  def failed($s):
-    $s == "RATE_LIMITED" or $s == "TIMED_OUT";
-  [ $cfg.bots[] | . as $b
-    | ($bots_map["bot_\($b.id)"].status // "NOT_TRIGGERED") as $st
-    | {required: $b.required, status: $st}
-  ] as $rows
-  | ($rows | any(.required and failed(.status))) as $failed
-  | ($rows | all(if .required then reviewed(.status) else (reviewed(.status) or (.status == "NOT_TRIGGERED")) end)) as $completed
-  | ($failed or $completed) as $terminal
-  | ($terminal | not) as $pending
-  | (($disposition == "approved") or ($disposition == "pending" and $completed and $threads_u == 0)) as $concluded
-  | {
-      bot_review_completed: $completed,
-      bot_review_failed: $failed,
-      bot_review_terminal: $terminal,
-      bot_review_pending: $pending,
-      review_concluded: $concluded
-    }
-  ')
+# --- FSM-derived diagnostics + merge readiness (Refs: #272, #282) — SSOT: docs/agent-control/fsm/pull-request-readiness.jq
+_fsm_dir="$(cd "$(dirname "$0")/.." && pwd)/docs/agent-control/fsm"
+readiness=$(
+  jq -nc \
+    --argjson bots_map "$bot_reviews" \
+    --argjson cfg "$bot_config" \
+    --arg disposition "$disposition" \
+    --argjson threads_u "$threads_unresolved" \
+    --arg mergeable "$mergeable" \
+    --arg merge_state "$merge_state" \
+    --arg ci_status "$ci_status" \
+    --argjson rereview_pending "$rereview_pending_json" \
+    '{
+      bots_map: $bots_map,
+      bot_config: $cfg,
+      disposition: $disposition,
+      threads_unresolved: $threads_u,
+      mergeable: $mergeable,
+      merge_state: $merge_state,
+      ci_status: $ci_status,
+      rereview_response_pending: $rereview_pending
+    }' | jq -f "$_fsm_dir/pull-request-readiness.jq"
+)
+review_diagnostics=$(echo "$readiness" | jq -c '.diagnostics')
+routing_pr=$(echo "$readiness" | jq -c '.routing')
+auto_merge_readiness=$(echo "$readiness" | jq -c '.auto_merge_readiness')
 
 # --- Timestamps ---
 last_review_at=$(echo "$reviews" | jq -r '[.[].submitted_at] | sort | last // ""')
@@ -441,13 +534,18 @@ body=$(jq -nc \
   --argjson closes "$closes_issues" \
   --argjson has_exc "$has_exception" \
   --argjson exc_type "$exception_type" \
-  --argjson signals "$review_signals" \
+  --argjson routing_pr "$routing_pr" \
+  --argjson auto_merge_readiness "$auto_merge_readiness" \
+  --argjson review_diagnostics "$review_diagnostics" \
+  --argjson re_review_signal "$re_review_signal" \
   '{
     "number": $number,
     "title": $title,
     "state": $state,
     "head_branch": $head,
     "base_branch": $base,
+    "routing": $routing_pr,
+    "auto_merge_readiness": $auto_merge_readiness,
     "ci": {
       "status": $ci_status,
       "checks": $ci_checks
@@ -462,8 +560,10 @@ body=$(jq -nc \
         "threads_unresolved": $threads_unresolved,
         "disposition": $disposition,
         "last_review_at": (if $last_review == "" then null else $last_review end),
-        "last_push_at": $last_push
-      } + $signals
+        "last_push_at": $last_push,
+        "diagnostics": $review_diagnostics,
+        "re_review_signal": $re_review_signal
+      }
     ),
     "traceability": {
       "closes_issues": $closes,

@@ -7,7 +7,7 @@
 
 ## Sense
 
-`make evidence-pull-request PR=<N>` — extract `ci.status`, `merge.merge_state_status`, `reviews.threads_unresolved`, `reviews.*` for `review_concluded`, and bot review freshness.
+`make evidence-pull-request PR=<N>` — extract `ci.status`, `merge.merge_state_status`, `reviews.threads_unresolved`, `reviews.diagnostics`, `auto_merge_readiness` (`safe_to_enable`, `blockers`), and `routing.pr_state_id`. Prefer `make evidence-fsm` when a merged workflow view is required.
 
 ## Act
 

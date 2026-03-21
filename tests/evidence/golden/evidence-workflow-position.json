@@ -14,6 +14,7 @@
         "title": "feat: implement decision graph engine",
         "labels": ["feat"],
         "has_test_plan": true,
+        "has_acceptance_criteria": true,
         "blocked_by": []
       },
       {
@@ -21,6 +22,7 @@
         "title": "feat: add scanner layer 3",
         "labels": ["feat"],
         "has_test_plan": true,
+        "has_acceptance_criteria": true,
         "blocked_by": [10]
       }
     ]
@@ -37,7 +39,6 @@
     ]
   },
   "environment": {
-    "doctor_healthy": true,
     "container_running": true
   },
   "procedure_context": {
@@ -46,6 +47,9 @@
     "branch": "",
     "updated_at": null,
     "stale": false
+  },
+  "routing": {
+    "global_state_id": "ReadyToStart"
   },
   "_meta": {
     "target": "evidence-workflow-position",

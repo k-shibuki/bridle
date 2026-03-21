@@ -3,6 +3,15 @@
   "title": "feat(scanner): add layer 3 analysis",
   "head_branch": "feat/42-scanner-layer-3",
   "base_branch": "main",
+  "routing": {
+    "pr_state_id": "ReviewDone"
+  },
+  "auto_merge_readiness": {
+    "review_consensus_complete": true,
+    "ci_all_required_passed": true,
+    "blockers": [],
+    "safe_to_enable": true
+  },
   "ci": {
     "status": "success",
     "checks": [
@@ -36,11 +45,19 @@
     "disposition": "approved",
     "last_review_at": "2026-03-12T09:15:00Z",
     "last_push_at": "2026-03-12T08:30:00Z",
-    "bot_review_completed": true,
-    "bot_review_failed": false,
-    "bot_review_terminal": true,
-    "bot_review_pending": false,
-    "review_concluded": true
+    "diagnostics": {
+      "bot_review_completed": true,
+      "bot_review_failed": false,
+      "bot_review_terminal": true,
+      "bot_review_pending": false,
+      "required_bot_findings_total": 2,
+      "rereview_response_pending": false
+    },
+    "re_review_signal": {
+      "latest_cr_trigger_created_at": null,
+      "latest_cr_review_submitted_at_after_trigger": null,
+      "cr_response_pending_after_latest_trigger": false
+    }
   },
   "traceability": {
     "closes_issues": [42],

@@ -88,7 +88,13 @@ gh api graphql -f query='
 ```
 
 - `graphql_id`: thread's `graphql_id` from `make evidence-review-threads`
-- Only resolve after bot confirms disposition (auto-resolve or explicit reply)
+- **CodeRabbit threads**: Call this **only after** CodeRabbit has reacted
+  (auto-resolve, accepting thread reply, or qualifying pull review per
+  `review--consensus-protocol.md` § CodeRabbit resolution gate). Do **not**
+  resolve in the same step as posting the disposition reply.
+- **Human threads**: Follow `review--consensus-protocol.md` § Consensus Flow;
+  do not resolve without acceptance or user instruction unless § Reviewer
+  Unavailable applies.
 
 ### Enumerate unresolved threads
 

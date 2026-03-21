@@ -47,7 +47,7 @@ validate_json() {
   # Use has() instead of -e to handle boolean false and zero values correctly
   case "$target" in
     evidence-workflow-position)
-      for key in git issues pull_requests environment procedure_context; do
+      for key in git issues pull_requests environment procedure_context routing; do
         if ! echo "$json" | jq -e "has(\"$key\")" >/dev/null 2>&1; then
           echo "FAIL [$target]: missing required key '$key'" >&2
           return 1
@@ -71,7 +71,43 @@ validate_json() {
       done
       ;;
     evidence-pull-request)
-      for key in number title ci merge reviews traceability; do
+      for key in number title routing auto_merge_readiness ci merge reviews traceability; do
+        if ! echo "$json" | jq -e "has(\"$key\")" >/dev/null 2>&1; then
+          echo "FAIL [$target]: missing required key '$key'" >&2
+          return 1
+        fi
+      done
+      if ! echo "$json" | jq -e '.routing | has("pr_state_id") and (.pr_state_id | type == "string")' >/dev/null 2>&1; then
+        echo "FAIL [$target]: routing.pr_state_id missing or not a string" >&2
+        return 1
+      fi
+      for amk in review_consensus_complete ci_all_required_passed safe_to_enable; do
+        if ! echo "$json" | jq -e --arg k "$amk" '.auto_merge_readiness | has($k) and (.[$k] | type == "boolean")' >/dev/null 2>&1; then
+          echo "FAIL [$target]: auto_merge_readiness.$amk missing or not boolean" >&2
+          return 1
+        fi
+      done
+      if ! echo "$json" | jq -e '.auto_merge_readiness | has("blockers") and (.blockers | type == "array")' >/dev/null 2>&1; then
+        echo "FAIL [$target]: auto_merge_readiness.blockers missing or not an array" >&2
+        return 1
+      fi
+      if ! echo "$json" | jq -e '.reviews | has("re_review_signal")' >/dev/null 2>&1; then
+        echo "FAIL [$target]: reviews.re_review_signal missing" >&2
+        return 1
+      fi
+      for sub in latest_cr_trigger_created_at latest_cr_review_submitted_at_after_trigger cr_response_pending_after_latest_trigger; do
+        if ! echo "$json" | jq -e ".reviews.re_review_signal | has(\"$sub\")" >/dev/null 2>&1; then
+          echo "FAIL [$target]: reviews.re_review_signal missing '$sub'" >&2
+          return 1
+        fi
+      done
+      if ! echo "$json" | jq -e '.reviews.diagnostics | has("rereview_response_pending")' >/dev/null 2>&1; then
+        echo "FAIL [$target]: reviews.diagnostics.rereview_response_pending missing" >&2
+        return 1
+      fi
+      ;;
+    evidence-fsm)
+      for key in workflow_position environment issues_summary pull_request routing; do
         if ! echo "$json" | jq -e "has(\"$key\")" >/dev/null 2>&1; then
           echo "FAIL [$target]: missing required key '$key'" >&2
           return 1

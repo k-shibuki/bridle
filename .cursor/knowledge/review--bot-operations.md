@@ -1,5 +1,5 @@
 ---
-trigger: bot review trigger, bot review detection, bot review timing, bot re-review, CodeRabbit trigger, Codex trigger, Two-Tier Trigger Model, coderabbit detection, CodeRabbit completion, coderabbit polling, Polling Algorithm, rate limit recovery, rate limit wait time, rate limit parse, 429 threshold, eyes reaction delay, re-review decision, review re-trigger, @coderabbitai review, @codex review, trigger conditions
+trigger: bot review trigger, bot review detection, bot review timing, bot re-review, CodeRabbit trigger, Codex trigger, Two-Tier Trigger Model, coderabbit detection, CodeRabbit completion, coderabbit polling, Polling Algorithm, rate limit recovery, rate limit wait time, rate limit parse, 429 threshold, eyes reaction delay, re-review decision, review re-trigger, @coderabbitai review, @codex review, trigger conditions, REVIEW_INVALIDATED, head commit changed, open source coderabbit yaml
 ---
 # Bot Review Operations
 
@@ -51,9 +51,21 @@ For the current login matchers, see `docs/agent-control/review-bots.json`.
 | Inline | `pulls/<N>/comments` | Line-level findings |
 | PR comment | `issues/<N>/comments` | Walkthrough / clean bill / rate limit |
 
+### Open-source: `.coderabbit.yaml` on the PR branch
+
+On **open-source** repositories, CodeRabbit applies **only** the configuration from the **base branch** for an open PR. Changes to `.coderabbit.yaml` in the PR (for example `commit_status: true`) are ignored until they are merged. Expect UI warnings to that effect; do not assume PR-local YAML is active for the current review run.
+
+### Voided review (head moved during bot run)
+
+If the branch is **force-pushed or updated** while CodeRabbit is reviewing, CR may post a PR comment such as “Review failed” / “The head commit changed during the review from … to …”. That is **not** a completed review for the new head.
+
+- **Evidence**: `make evidence-pull-request` sets `bot_coderabbit.status` to `REVIEW_INVALIDATED` when an issue comment from the bot matches `invalidate_review_pattern` in `review-bots.json` with `created_at` on or after `reviews.last_push_at` (same freshness rule as rate-limit comments).
+- **Procedure**: Re-trigger `@coderabbitai review` after the push stabilizes. Do not treat a voided run as `bot_review_completed` or merge-ready on bot evidence alone.
+- **Prevention**: Avoid pushing again while `BotReviewPending` unless you plan to re-trigger CR (or accept agent `pr-review` per FSM).
+
 ### Terminal States
 
-When CodeRabbit `commit_status` is enabled (`.coderabbit.yaml`) and `review-bots.json` sets `commit_status_name`, `make evidence-pull-request` prefers the matching GitHub `statusCheckRollup` check over review/comment heuristics for `bot_coderabbit.status`. That check is excluded from PR `ci.status` so pending bot review does not block the CI-green signal.
+When CodeRabbit `commit_status` is enabled (`.coderabbit.yaml`) and `review-bots.json` sets `commit_status_name`, `make evidence-pull-request` prefers the matching GitHub `statusCheckRollup` check over review/comment heuristics for `bot_coderabbit.status`. That check is excluded from PR `ci.status` so pending bot review does not block the CI-green signal. `REVIEW_INVALIDATED` (from issue comments) **overrides** commit-status/review-derived status when matched.
 
 | State | Detection |
 |---|---|
@@ -62,6 +74,7 @@ When CodeRabbit `commit_status` is enabled (`.coderabbit.yaml`) and `review-bots
 | **COMPLETED_CLEAN** | Codex only: thumbs-up on trigger comment |
 | **COMPLETED_SILENT** | CR incremental review only: trigger acked, > 10 min elapsed, no review object, no inline comments, no rate limit, no new threads |
 | **RATE_LIMITED** | Matching commit status `FAILURE` when present; else PR comment matches bot `rate_limit_pattern` with `created_at` on or after head push time (same cutoff as `reviews.last_push_at`; stale comments from before the push are ignored) |
+| **REVIEW_INVALIDATED** | PR **issue** comment from the bot matches `invalidate_review_pattern` since head push (e.g. head commit changed mid-review) — overrides other signals for that bot |
 | **TIMED_OUT** | 20 min elapsed, no completion signal |
 
 **COMPLETED_SILENT**: When CR's incremental review finds no new issues,
