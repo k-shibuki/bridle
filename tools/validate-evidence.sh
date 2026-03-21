@@ -47,7 +47,7 @@ validate_json() {
   # Use has() instead of -e to handle boolean false and zero values correctly
   case "$target" in
     evidence-workflow-position)
-      for key in git issues pull_requests environment procedure_context; do
+      for key in git issues pull_requests environment procedure_context routing; do
         if ! echo "$json" | jq -e "has(\"$key\")" >/dev/null 2>&1; then
           echo "FAIL [$target]: missing required key '$key'" >&2
           return 1
@@ -71,7 +71,15 @@ validate_json() {
       done
       ;;
     evidence-pull-request)
-      for key in number title ci merge reviews traceability; do
+      for key in number title routing auto_merge_readiness ci merge reviews traceability; do
+        if ! echo "$json" | jq -e "has(\"$key\")" >/dev/null 2>&1; then
+          echo "FAIL [$target]: missing required key '$key'" >&2
+          return 1
+        fi
+      done
+      ;;
+    evidence-fsm)
+      for key in workflow_position environment issues_summary pull_request routing; do
         if ! echo "$json" | jq -e "has(\"$key\")" >/dev/null 2>&1; then
           echo "FAIL [$target]: missing required key '$key'" >&2
           return 1

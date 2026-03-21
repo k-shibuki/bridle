@@ -197,6 +197,7 @@ into a single JSON document for state classification.
         "title": "string",
         "labels": ["string"],
         "has_test_plan": "boolean",
+        "has_acceptance_criteria": "boolean",
         "blocked_by": ["integer"]
       }
     ]
@@ -223,8 +224,10 @@ into a single JSON document for state classification.
     ]
   },
   "environment": {
-    "doctor_healthy": "boolean",
     "container_running": "boolean"
+  },
+  "routing": {
+    "global_state_id": "string"
   },
   "procedure_context": {
     "workflow_phase": "implementing | implementation_done | tests_done | quality_ok | tests_pass | null",
@@ -246,14 +249,15 @@ into a single JSON document for state classification.
 - `issues.open[].blocked_by`: Issue numbers referenced in "Depends on" or "Blocks" sections
 - `pull_requests.open[].ci_status`: aggregated from `statusCheckRollup` — `success` only if ALL checks pass
 - `pull_requests.open[].review_threads_*`: from GraphQL `reviewThreads` query
-- `environment.doctor_healthy`: true when the development container is running (equivalent to `container_running`; both fields provided for backward compatibility during transition). Full health diagnosis is delegated to `evidence-environment`.
+- `environment.container_running`: true when the development container is running. Full health diagnosis is delegated to `evidence-environment` (ST_ENV_ISSUE uses `evidence-environment.errors`).
+- `routing.global_state_id`: partial global FSM id from `docs/agent-control/fsm/global-workflow.jq` (ST_ENV_ISSUE requires `evidence-environment` merged in `evidence-fsm`).
 - `procedure_context.workflow_phase`: current local workflow phase from `.cursor/state/workflow-phase.json`. `null` when no active local work or file absent.
 - `procedure_context.issue_number`: Issue being worked on (for cross-validation with branch).
 - `procedure_context.stale`: `true` if the state file's `branch` does not match current branch, or if `updated_at` is older than 24 hours.
 
 **Nullability**: all fields are required. Empty arrays for absent collections. `blocked_by` may be empty. `procedure_context.workflow_phase`, `procedure_context.issue_number`, and `procedure_context.updated_at` may be null.
 
-**Composability**: this target is self-contained. It does NOT call other evidence targets.
+**Composability**: this target is self-contained. It does NOT call other evidence targets (routing is post-processed via jq; `evidence-fsm` recomputes global state with environment errors).
 
 **Downstream**: used by FSM state classification (all states), `next` command orientation.
 
@@ -291,7 +295,7 @@ into a single JSON document for state classification.
 
 **Nullability**: all fields required. `detail` may be empty string.
 
-**Composability**: `evidence-workflow-position` uses container running state as a lightweight proxy for `doctor_healthy`. This target provides the full diagnosis when the `doctor` action card is invoked. Neither target depends on the other.
+**Composability**: `evidence-workflow-position` exposes only `container_running` for lightweight UI; `errors` / `warnings` live here. `ST_ENV_ISSUE` uses `errors > 0` from this target (or the embedded copy in `evidence-fsm`).
 
 **Downstream**: ST_ENV_ISSUE (EnvironmentIssue) detection, `doctor` command.
 
@@ -340,6 +344,15 @@ review freshness, and bot review status.
   "state": "OPEN | MERGED | CLOSED",
   "head_branch": "string",
   "base_branch": "string",
+  "routing": {
+    "pr_state_id": "string"
+  },
+  "auto_merge_readiness": {
+    "review_consensus_complete": "boolean",
+    "ci_all_required_passed": "boolean",
+    "blockers": ["string"],
+    "safe_to_enable": "boolean"
+  },
   "ci": {
     "status": "success | failure | pending | no_checks",
     "checks": [
@@ -367,11 +380,13 @@ review freshness, and bot review status.
     "disposition": "approved | changes_requested | pending",
     "last_review_at": "ISO8601 | null",
     "last_push_at": "ISO8601",
-    "bot_review_completed": "boolean",
-    "bot_review_failed": "boolean",
-    "bot_review_terminal": "boolean",
-    "bot_review_pending": "boolean",
-    "review_concluded": "boolean"
+    "diagnostics": {
+      "bot_review_completed": "boolean",
+      "bot_review_failed": "boolean",
+      "bot_review_terminal": "boolean",
+      "bot_review_pending": "boolean",
+      "required_bot_findings_total": "integer"
+    }
   },
   "traceability": {
     "closes_issues": ["integer"],
@@ -393,12 +408,23 @@ review freshness, and bot review status.
 - `reviews.bot_<id>.review_count`: total number of review submissions for this PR
 - `reviews.bot_<id>.max_reviews`: budget from config (null if unlimited)
 - Bot registry (`docs/agent-control/review-bots.json`) may set `commit_status_name` (substring matched case-insensitively against `statusCheckRollup[].name`), `invalidate_review_pattern` (regex against PR **issue** comments since `last_push_at` — match yields `REVIEW_INVALIDATED`), `trigger` (`agent` \| `user_only`), and `fallback_priority` (nullable number, lower = earlier in human-invoked fallback). When `commit_status_name` matches a rollup entry, `evidence-pull-request` uses that check as the primary signal for `bot_<id>.status` and excludes it from `ci` aggregation.
-- `reviews.bot_review_completed` / `bot_review_failed` / `bot_review_terminal` / `bot_review_pending` / `review_concluded`: FSM-aligned aggregates derived from configured bots (`review-bots.json`, including `required`) and thread/disposition state — see `docs/agent-control/state-model.md` § Review signals
+- `reviews.diagnostics.*`: FSM-aligned aggregates derived from configured bots (`review-bots.json`, including `required`) and thread/disposition state — see `docs/agent-control/fsm/pull-request-readiness.jq` and `docs/agent-control/state-model.md` § Review signals
+- `auto_merge_readiness`: merge/consensus gate (`safe_to_enable` requires empty `blockers`); same jq SSOT as `routing.pr_state_id`
 - `traceability.closes_issues`: Issue numbers from `Closes #N` / `Fixes #N` in PR body
 
 **Nullability**: all top-level fields required. Nullable fields marked with `| null`.
 
 **Downstream**: ST_CI_PENDING–ST_REBASE states, `pr-review`, `pr-merge`, `review-fix`.
+
+### Target 4b: `evidence-fsm`
+
+**Purpose**: Single aggregate for merge/consensus gating and FSM orientation. Runs `evidence-environment` → strips `routing` from `evidence-workflow-position` and recomputes `routing.global_state_id` with real `errors` → (on `main` with open issues) `evidence-issue` → (if an open PR exists for the current branch) `evidence-pull-request`; then merges via `docs/agent-control/fsm/effective-state.jq`.
+
+**Input**: `tools/evidence-fsm.sh` (no arguments).
+
+**Output**: `workflow_position`, `environment`, `issues_summary` (or `null`), `pull_request` (or `null`), `routing` (`effective_state_id`, `global_state_id`, `pr_state_id`, `recommended_next_issue`).
+
+**Downstream**: `HS-MERGE-CONSENSUS`, `next` orientation when a unified view is required.
 
 ### Target 5: `evidence-review-threads`
 

@@ -37,7 +37,7 @@ endif
 	lint-changed test-changed test-junit lint-json scaffold-test scaffold-class \
 	status git-new-branch git-install-hooks git-post-merge-cleanup \
 	knowledge-manifest knowledge-validate knowledge-new review-sync-verify \
-	evidence-workflow-position evidence-environment evidence-lint evidence-pull-request evidence-issue \
+	evidence-workflow-position evidence-environment evidence-lint evidence-pull-request evidence-issue evidence-fsm \
 	evidence-review-threads label-agent-control-backfill
 
 # === Help ===
@@ -269,6 +269,9 @@ evidence-review-threads: ## Evidence: per-thread review details for review-fix (
 
 evidence-issue: ## Evidence: Issue metadata and dependency graph (usage: make evidence-issue [ISSUE=42] [SCOPE=control-system] [ISSUE_MIN=252])
 	@bash tools/evidence-issue.sh
+
+evidence-fsm: ## Evidence: unified FSM document (environment + workflow + optional issues + optional PR)
+	@bash tools/evidence-fsm.sh
 
 label-agent-control-backfill: ## Create label agent-control and add to known control-system Issues (run once to backfill)
 	@bash tools/label-agent-control-backfill.sh

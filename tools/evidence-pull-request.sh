@@ -414,34 +414,30 @@ case "$latest_review" in
   *) disposition="pending" ;;
 esac
 
-# --- FSM-derived review signals (Refs: #272). REVIEW_INVALIDATED = voided bot run for current head (not Reviewed / not Failed).
-review_signals=$(jq -nc \
-  --argjson bots_map "$bot_reviews" \
-  --argjson cfg "$bot_config" \
-  --arg disposition "$disposition" \
-  --argjson threads_u "$threads_unresolved" \
-  '
-  def reviewed($s):
-    $s == "COMPLETED" or $s == "COMPLETED_CLEAN" or $s == "COMPLETED_SILENT";
-  def failed($s):
-    $s == "RATE_LIMITED" or $s == "TIMED_OUT";
-  [ $cfg.bots[] | . as $b
-    | ($bots_map["bot_\($b.id)"].status // "NOT_TRIGGERED") as $st
-    | {required: $b.required, status: $st}
-  ] as $rows
-  | ($rows | any(.required and failed(.status))) as $failed
-  | ($rows | all(if .required then reviewed(.status) else (reviewed(.status) or (.status == "NOT_TRIGGERED") or (.status == "REVIEW_INVALIDATED")) end)) as $completed
-  | ($failed or $completed) as $terminal
-  | ($terminal | not) as $pending
-  | (($disposition == "approved") or ($disposition == "pending" and $completed and $threads_u == 0)) as $concluded
-  | {
-      bot_review_completed: $completed,
-      bot_review_failed: $failed,
-      bot_review_terminal: $terminal,
-      bot_review_pending: $pending,
-      review_concluded: $concluded
-    }
-  ')
+# --- FSM-derived diagnostics + merge readiness (Refs: #272, #282) — SSOT: docs/agent-control/fsm/pull-request-readiness.jq
+_fsm_dir="$(cd "$(dirname "$0")/.." && pwd)/docs/agent-control/fsm"
+readiness=$(
+  jq -nc \
+    --argjson bots_map "$bot_reviews" \
+    --argjson cfg "$bot_config" \
+    --arg disposition "$disposition" \
+    --argjson threads_u "$threads_unresolved" \
+    --arg mergeable "$mergeable" \
+    --arg merge_state "$merge_state" \
+    --arg ci_status "$ci_status" \
+    '{
+      bots_map: $bots_map,
+      bot_config: $cfg,
+      disposition: $disposition,
+      threads_unresolved: $threads_u,
+      mergeable: $mergeable,
+      merge_state: $merge_state,
+      ci_status: $ci_status
+    }' | jq -f "$_fsm_dir/pull-request-readiness.jq"
+)
+review_diagnostics=$(echo "$readiness" | jq -c '.diagnostics')
+routing_pr=$(echo "$readiness" | jq -c '.routing')
+auto_merge_readiness=$(echo "$readiness" | jq -c '.auto_merge_readiness')
 
 # --- Timestamps ---
 last_review_at=$(echo "$reviews" | jq -r '[.[].submitted_at] | sort | last // ""')
@@ -477,13 +473,17 @@ body=$(jq -nc \
   --argjson closes "$closes_issues" \
   --argjson has_exc "$has_exception" \
   --argjson exc_type "$exception_type" \
-  --argjson signals "$review_signals" \
+  --argjson routing_pr "$routing_pr" \
+  --argjson auto_merge_readiness "$auto_merge_readiness" \
+  --argjson review_diagnostics "$review_diagnostics" \
   '{
     "number": $number,
     "title": $title,
     "state": $state,
     "head_branch": $head,
     "base_branch": $base,
+    "routing": $routing_pr,
+    "auto_merge_readiness": $auto_merge_readiness,
     "ci": {
       "status": $ci_status,
       "checks": $ci_checks
@@ -498,8 +498,9 @@ body=$(jq -nc \
         "threads_unresolved": $threads_unresolved,
         "disposition": $disposition,
         "last_review_at": (if $last_review == "" then null else $last_review end),
-        "last_push_at": $last_push
-      } + $signals
+        "last_push_at": $last_push,
+        "diagnostics": $review_diagnostics
+      }
     ),
     "traceability": {
       "closes_issues": $closes,
