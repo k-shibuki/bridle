@@ -55,10 +55,10 @@ For the current login matchers, see `docs/agent-control/review-bots.json`.
 
 | State | Detection |
 |---|---|
-| **COMPLETED** | Review with `submitted_at > trigger_time` and `body != ""` |
+| **COMPLETED** | Review with `submitted_at` on or after the current head push (`reviews.last_push_at` in `evidence-pull-request`; aligns with delegation `trigger_time` after a push) |
 | **COMPLETED_CLEAN** | Codex only: thumbs-up on trigger comment |
 | **COMPLETED_SILENT** | CR incremental review only: trigger acked, > 10 min elapsed, no review object, no inline comments, no rate limit, no new threads |
-| **RATE_LIMITED** | PR comment contains "Rate limit exceeded" (after `trigger_time`) |
+| **RATE_LIMITED** | PR comment matches bot `rate_limit_pattern`, with `created_at` on or after head push time (same cutoff as `reviews.last_push_at`; stale comments from before the push are ignored) |
 | **TIMED_OUT** | 20 min elapsed, no completion signal |
 
 **COMPLETED_SILENT**: When CR's incremental review finds no new issues,

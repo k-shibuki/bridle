@@ -6,7 +6,8 @@
       "login_pattern": "coderabbitai[bot]",
       "match_type": "exact",
       "rate_limit_pattern": "Rate limit exceeded",
-      "max_reviews": 2
+      "max_reviews": 2,
+      "required": true
     },
     {
       "id": "codex",
@@ -15,7 +16,8 @@
       "match_type": "regex",
       "match_flags": "i",
       "rate_limit_pattern": null,
-      "max_reviews": null
+      "max_reviews": null,
+      "required": false
     }
   ]
 }

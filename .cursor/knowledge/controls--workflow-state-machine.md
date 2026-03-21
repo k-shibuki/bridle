@@ -39,7 +39,7 @@ Full state catalog with entry conditions is in `state-model.md`
   CIPending → ...
 - **Thread resolution**: UnresolvedThreads → (review-fix) →
   ReadyForReview (if `review_concluded == false`) or ReviewDone
-  (if `review_concluded`, e.g. approved review, or terminal bot-only review with all threads resolved)
+  (if `review_concluded`, e.g. approved review, or bot-only path with `bot_review_completed` and all threads resolved). `RATE_LIMITED` / `TIMED_OUT` on a required bot yield `bot_review_failed` and `review_concluded == false` until an agent review path applies — see `state-model.md` § Review signals.
 
 ## Priority Rules (Tie-Break)
 

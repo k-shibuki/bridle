@@ -366,7 +366,12 @@ review freshness, and bot review status.
     "threads_unresolved": "integer",
     "disposition": "approved | changes_requested | pending",
     "last_review_at": "ISO8601 | null",
-    "last_push_at": "ISO8601"
+    "last_push_at": "ISO8601",
+    "bot_review_completed": "boolean",
+    "bot_review_failed": "boolean",
+    "bot_review_terminal": "boolean",
+    "bot_review_pending": "boolean",
+    "review_concluded": "boolean"
   },
   "traceability": {
     "closes_issues": ["integer"],
@@ -387,6 +392,7 @@ review freshness, and bot review status.
 - `reviews.bot_<id>.findings_count`: total findings from that reviewer, including both inline review comments and body-embedded "outside diff range" findings (0 for clean/silent)
 - `reviews.bot_<id>.review_count`: total number of review submissions for this PR
 - `reviews.bot_<id>.max_reviews`: budget from config (null if unlimited)
+- `reviews.bot_review_completed` / `bot_review_failed` / `bot_review_terminal` / `bot_review_pending` / `review_concluded`: FSM-aligned aggregates derived from configured bots (`review-bots.json`, including `required`) and thread/disposition state — see `docs/agent-control/state-model.md` § Review signals
 - `traceability.closes_issues`: Issue numbers from `Closes #N` / `Fixes #N` in PR body
 
 **Nullability**: all top-level fields required. Nullable fields marked with `| null`.
