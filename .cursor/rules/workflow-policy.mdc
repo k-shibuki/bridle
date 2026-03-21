@@ -75,6 +75,8 @@ Review, fix, and merge are distinct FSM states with distinct evidence requiremen
 
 The FSM state model (`docs/agent-control/state-model.md`) is the authoritative source for which action is appropriate in each state. The `next` command routes states to action cards.
 
+**`next` post-approval execution** — After explicit user approval of the full path to Per-unit Definition of Done (`.cursor/commands/next.md`, `docs/agent-control/next-orchestration.md`), the agent **must** continue **autonomously** through that path: **no** mid-run permission prompts and **no** choice questions that gate progress. Use evidence refresh, action cards, and **delegation** for CI/bot waits per `subagent-policy.mdc`. **Stops** are limited to Hard Stops (`agent-safety.mdc`), genuine cannot-proceed (evidence-backed), proposal-only runs, or tooling limits — then **resume** the same approved path without a new approval gate.
+
 ## Review Comment Response
 
 Every review thread (bot or human) must reach consensus before resolve. GitHub Branch Protection enforces resolution (`required_conversation_resolution`); `review-fix` posts replies and resolves threads after bot agreement. The unresolved thread count is the completeness guarantee — any unprocessed finding blocks merge. Reply categories: Fixed / By design / False positive / Acknowledged — see `review--consensus-protocol.md` for the consensus model, reply format, and API commands.

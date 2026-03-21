@@ -22,6 +22,8 @@ For the unit at hand, the agent runs the full loop:
 
 **Branch creation → implementation → review → review consensus complete → review-fix as needed → consensus on fixes complete → CI green with auto-merge allowed → auto-merge → remote branch deleted when safe → local tracking branch cleanup.**
 
+**Hard boundary (agents):** “DoD” and “post-approval run until DoD” mean **through local tracking cleanup**, not “stop after `gh pr merge`.” If an agent treats merge as the end state, that is a **misread** of this section.
+
 **Single-unit run complete** when this loop is finished for that unit. **Batch complete** when every approved unit has finished this loop in approved order.
 
 Concrete gates (project SSOT): consensus and `auto_merge_readiness.safe_to_enable` (`HS-MERGE-CONSENSUS`), CI success (`HS-CI-MERGE`), merge and cleanup per `pr-merge.md`, `controls--merge-invariants.md`, `git--quick-recovery.md`.
@@ -32,8 +34,10 @@ When **one** clear work unit is active (typical: one checked-out branch for one 
 
 1. **Classify** FSM state from Evidence; determine the **immediate** routed action card from `next.md` § Act (do not duplicate the table here).
 2. **Plan (user-visible)** — Do **not** stop at “next card = X.” Trace **forward** from the current state along the routing table through **Per-unit Definition of Done**: list the **sequence of cards and waits** you expect (e.g. `test-create` → `verify` → `commit` → `pr-create` → … → `pr-merge`, including delegated CI/bot waits, rebase/conflict handling if evidence suggests it). Note gaps (“PR not opened yet”, “unknown until review”) honestly; still show **merge + remote delete + local tracking cleanup** as explicit end states.
-3. **Approval gate** — Present **once**: (a) unit identity (Issue # / PR # / branch), (b) the **ordered remainder** from current state through Per-unit Definition of Done, (c) the completion condition (§ Per-unit Definition of Done). Obtain **explicit user approval** to execute through that completion condition. **No per-card re-approval** after this gate (Hard Stops and genuine blocks excepted).
+3. **Approval gate** — Present **once**: (a) unit identity (Issue # / PR # / branch), (b) the **ordered remainder** from current state through Per-unit Definition of Done, (c) the completion condition (Per-unit Definition of Done section above). Obtain **explicit user approval** to execute through that completion condition. **No per-card re-approval** after this gate (Hard Stops and genuine blocks excepted).
 4. **Execute** — Run Sense → classify → route → execute cards in a loop until Per-unit Definition of Done for this unit, then stop with evidence-backed summary.
+
+**Post-approval autonomy (mandatory)** — From step 4 onward, the agent **must not** prompt the user for permission, choice, or continuation between action cards or between delegation cycles. Execution is **strictly step-by-step and self-driven** through the approved sequence until DoD or an allowed stop. **Prohibited**: rhetorical “want me to…?”, optional follow-ups that block progress, or ending the turn with questions instead of delegating waits. **Required**: delegate `CIPending` / `BotReviewPending` per `subagent-policy.mdc`; on tooling limits, **resume the same approved path** next turn without re-opening step 3.
 
 If the user asked **proposal only**, they must say so; otherwise default is execute after approval.
 
@@ -59,7 +63,7 @@ Present **once** to the user:
 2. **Order** — explicit sequence (dependency-respecting).
 3. **Completion condition** — § Per-unit Definition of Done for **each** unit; batch done when all units have finished in order.
 
-Obtain **explicit approval** (e.g. user confirms order, edits the list, or says to proceed as proposed). **No second approval** between units or between action cards after this gate.
+Obtain **explicit approval** (e.g. user confirms order, edits the list, or says to proceed as proposed). **No second approval** between units or between action cards after this gate. **No user prompts** that gate progress during Phase C (same contract as single-unit step 4 post-approval autonomy).
 
 If the user wants **proposal only** (no execution), they must say so explicitly; default `next` flow assumes execution after approval.
 
@@ -75,7 +79,7 @@ For **each unit** in order:
 6. Repeat steps 2–5 until **this unit** satisfies **§ Per-unit Definition of Done**.
 7. Sync **`main`**, delete merged remote branch when safe, clean up local tracking refs; then **next unit**.
 
-**Steering**: Do **not** truncate the approved queue because of conversation length or subjective “session scope.” If stopped by tooling limits, **resume the same approved queue** on the next turn without re-opening Phase B unless the user revokes or changes scope. The same applies to a **single-unit** approved path: resume toward **§ Per-unit Definition of Done** without asking for a new approval each card.
+**Steering**: Do **not** truncate the approved queue because of conversation length or subjective “session scope.” If stopped by tooling limits, **resume the same approved queue** on the next turn without re-opening Phase B unless the user revokes or changes scope. The same applies to a **single-unit** approved path: resume toward **Per-unit Definition of Done** without asking for a new approval each card. **Never** substitute mid-run user questions for continuing execution when the approved path still applies.
 
 **Stops** (no retry counters, no “N failures” escalation):
 
