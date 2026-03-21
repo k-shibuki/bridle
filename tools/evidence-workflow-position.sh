@@ -68,7 +68,7 @@ _collect_issues() {
       else ((.body // "") | test("## Test Plan"; "i"))
       end
     ),
-    blocked_by: ([(.body // "") | capture("(?:Depends on|Blocked by|After)[^\\n]*#(?<n>\\d+)"; "g") | .n | tonumber] | unique)
+    blocked_by: ([(.body // "") | capture("(?:Depends on|Blocked by|After)[^\\n]*?#(?<n>\\d+)"; "g") | .n | tonumber] | unique)
   }]')
   issues_count=$(echo "$issues_open" | jq 'length')
   jq -nc --argjson count "$issues_count" --argjson open "$issues_open" \

@@ -45,8 +45,8 @@ issues=$(echo "$raw" | jq -c '[.[] | {
     else ((.body // "") | test("## (Acceptance Criteria|Definition of Done)"; "i"))
     end
   ),
-  blocked_by: [(.body // "") | capture("(?:Depends on|Blocked by|After)[^\\n]*#(?<n>\\d+)"; "g") | .n | tonumber] | unique,
-  blocks: [(.body // "") | capture("(?:Blocks|Enables|Before)[^\\n]*#(?<n>\\d+)"; "g") | .n | tonumber] | unique,
+  blocked_by: [(.body // "") | capture("(?:Depends on|Blocked by|After)[^\\n]*?#(?<n>\\d+)"; "g") | .n | tonumber] | unique,
+  blocks: [(.body // "") | capture("(?:Blocks|Enables|Before)[^\\n]*?#(?<n>\\d+)"; "g") | .n | tonumber] | unique,
   is_parent: ((.body // "") | test("## Sub-issues"; "i")),
   assignee: ((.assignees // [])[0].login // null),
   created_at: .createdAt
