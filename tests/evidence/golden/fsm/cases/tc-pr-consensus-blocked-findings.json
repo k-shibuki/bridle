@@ -19,7 +19,7 @@
       }
     },
     "disposition": "pending",
-    "threads_unresolved": 0,
+    "threads_unresolved": 1,
     "mergeable": "MERGEABLE",
     "merge_state": "CLEAN",
     "ci_status": "success"
@@ -27,7 +27,7 @@
   "expect": {
     "review_consensus_complete": false,
     "safe_to_enable": false,
-    "pr_state_id": "ReadyForReview",
-    "blockers_contains": ["required_bot_findings"]
+    "pr_state_id": "UnresolvedThreads",
+    "blockers_contains": ["required_bot_findings", "unresolved_threads"]
   }
 }
