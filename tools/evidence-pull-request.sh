@@ -368,11 +368,16 @@ bot_reviews=$(_detect_bot_reviews)
 # Aligns with delegation--review-wait.md (submitted_at > trigger_time). When REVIEW_INVALIDATED,
 # do not hold pending (avoid deadlock; re-trigger is procedural).
 coderabbit_status=$(echo "$bot_reviews" | jq -r '.bot_coderabbit.status // "NOT_TRIGGERED"')
+coderabbit_submitted=$(echo "$bot_reviews" | jq -r '.bot_coderabbit.review_submitted_at // empty')
+if [ "$coderabbit_submitted" = "null" ]; then
+  coderabbit_submitted=""
+fi
 re_review_signal=$(
   jq -nc \
     --argjson comments "$pr_comments" \
     --argjson revs "$reviews" \
     --arg cr_status "$coderabbit_status" \
+    --arg cr_sub "$coderabbit_submitted" \
     '
     def ts($s):
       if $s == null or $s == "" then null else (try ($s | fromdateiso8601) catch null) end;
@@ -393,6 +398,16 @@ re_review_signal=$(
           | if length == 0 then null
             else (max_by(.submitted_at | ts(.)) | .submitted_at)
             end)
+       end) as $ans_rev
+    | (if $trig_ts == null or $cr_sub == null or $cr_sub == "" then null
+       elif (($cr_sub | ts(.)) != null and ($cr_sub | ts(.)) > $trig_ts) then $cr_sub
+       else null
+       end) as $ans_cs
+    | (if $ans_rev == null and $ans_cs == null then null
+       elif $ans_rev == null then $ans_cs
+       elif $ans_cs == null then $ans_rev
+       elif ($ans_rev | ts(.)) >= ($ans_cs | ts(.)) then $ans_rev
+       else $ans_cs
        end) as $ans_at
     | (if $cr_status == "REVIEW_INVALIDATED" then false
        elif $trig_at == null then false

@@ -77,6 +77,20 @@ validate_json() {
           return 1
         fi
       done
+      if ! echo "$json" | jq -e '.routing | has("pr_state_id") and (.pr_state_id | type == "string")' >/dev/null 2>&1; then
+        echo "FAIL [$target]: routing.pr_state_id missing or not a string" >&2
+        return 1
+      fi
+      for amk in review_consensus_complete ci_all_required_passed safe_to_enable; do
+        if ! echo "$json" | jq -e --arg k "$amk" '.auto_merge_readiness | has($k) and (.[$k] | type == "boolean")' >/dev/null 2>&1; then
+          echo "FAIL [$target]: auto_merge_readiness.$amk missing or not boolean" >&2
+          return 1
+        fi
+      done
+      if ! echo "$json" | jq -e '.auto_merge_readiness | has("blockers") and (.blockers | type == "array")' >/dev/null 2>&1; then
+        echo "FAIL [$target]: auto_merge_readiness.blockers missing or not an array" >&2
+        return 1
+      fi
       if ! echo "$json" | jq -e '.reviews | has("re_review_signal")' >/dev/null 2>&1; then
         echo "FAIL [$target]: reviews.re_review_signal missing" >&2
         return 1

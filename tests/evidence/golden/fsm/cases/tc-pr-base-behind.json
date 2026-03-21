@@ -28,6 +28,6 @@
     "review_consensus_complete": true,
     "safe_to_enable": false,
     "pr_state_id": "ReadyForReview",
-    "blockers_contains": ["base_branch_behind", "merge_state_blocked"]
+    "blockers_contains": ["base_branch_behind"]
   }
 }
