@@ -374,10 +374,14 @@ coderabbit_submitted=$(echo "$bot_reviews" | jq -r '.bot_coderabbit.review_submi
 if [ "$coderabbit_submitted" = "null" ]; then
   coderabbit_submitted=""
 fi
+coderabbit_rc=$(echo "$bot_reviews" | jq '.bot_coderabbit.review_count // 0')
+coderabbit_mx=$(echo "$bot_reviews" | jq -c 'if .bot_coderabbit.max_reviews == null then null else .bot_coderabbit.max_reviews end')
 re_review_signal=$(
   jq -nc \
     --argjson comments "$pr_comments" \
     --argjson revs "$reviews" \
+    --argjson rc "$coderabbit_rc" \
+    --argjson mx "$coderabbit_mx" \
     --arg cr_status "$coderabbit_status" \
     --arg cr_sub "$coderabbit_submitted" \
     '
@@ -416,10 +420,11 @@ re_review_signal=$(
        elif $ans_at == null then true
        else false
        end) as $pend
+    | (if ($mx != null) and ($rc >= $mx) then false else $pend end) as $pend2
     | {
         latest_cr_trigger_created_at: $trig_at,
         latest_cr_review_submitted_at_after_trigger: $ans_at,
-        cr_response_pending_after_latest_trigger: $pend
+        cr_response_pending_after_latest_trigger: $pend2
       }
     '
 )
