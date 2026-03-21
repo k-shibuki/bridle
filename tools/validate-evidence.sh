@@ -141,7 +141,14 @@ if [ "${1:-}" != "" ]; then
   target="$1"
   golden="$GOLDEN_DIR/$target.json"
   if [ -f "$golden" ]; then
-    validate_json "$golden" "$target" || errors=$((errors + 1))
+    case "$target" in
+      evidence-workflow-position-*)
+        validate_json "$golden" "evidence-workflow-position" || errors=$((errors + 1))
+        ;;
+      *)
+        validate_json "$golden" "$target" || errors=$((errors + 1))
+        ;;
+    esac
   else
     echo "FAIL [$target]: no golden file at $golden" >&2
     errors=$((errors + 1))
@@ -155,8 +162,16 @@ else
 
   for golden in "$GOLDEN_DIR"/*.json; do
     [ -f "$golden" ] || continue
-    target=$(basename "$golden" .json)
-    validate_json "$golden" "$target" || errors=$((errors + 1))
+    base=$(basename "$golden" .json)
+    # Variants share the same emitted _meta.target as evidence-workflow-position
+    case "$base" in
+      evidence-workflow-position-*)
+        validate_json "$golden" "evidence-workflow-position" || errors=$((errors + 1))
+        ;;
+      *)
+        validate_json "$golden" "$base" || errors=$((errors + 1))
+        ;;
+    esac
   done
 fi
 
