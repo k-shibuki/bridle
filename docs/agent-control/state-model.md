@@ -18,9 +18,9 @@ of available transitions.
 | ST_COMMITTED | `Committed` | All changes committed, no PR exists | `on_feature_branch AND no_uncommitted AND pr_exists_for_branch == false` |
 | ST_CI_PENDING | `CIPending` | PR exists, CI still running | `pr_exists_for_branch AND ci_status == "pending"` |
 | ST_CI_FAILED | `CIFailed` | PR exists, CI failed | `pr_exists_for_branch AND ci_status == "failure"` |
-| ST_BOT_PENDING | `BotReviewPending` | CI green, bot review not yet complete | `pr_exists_for_branch AND ci_status == "success" AND bot_review_pending` |
+| ST_BOT_PENDING | `BotReviewPending` | CI green, waiting on required bot outcome | `pr_exists_for_branch AND ci_status == "success" AND bot_review_pending` |
 | ST_UNRESOLVED | `UnresolvedThreads` | Review threads exist that lack consensus | `pr_exists_for_branch AND review_threads_unresolved > 0` |
-| ST_REVIEW_READY | `ReadyForReview` | CI green, bot review complete, agent review needed | `pr_exists_for_branch AND ci_status == "success" AND bot_review_terminal AND review_threads_unresolved == 0 AND review_concluded == false` |
+| ST_REVIEW_READY | `ReadyForReview` | CI green, bot phase settled, agent review needed | `pr_exists_for_branch AND ci_status == "success" AND bot_review_terminal AND review_threads_unresolved == 0 AND review_concluded == false` |
 | ST_CHANGES_REQ | `ChangesRequired` | Review complete, changes requested | `pr_exists_for_branch AND review_disposition == "changes_requested"` |
 | ST_REVIEW_DONE | `ReviewDone` | Review complete, mergeable | `pr_exists_for_branch AND review_concluded AND mergeable_status == "MERGEABLE"` |
 | ST_REBASE | `DependentChainRebase` | Merge conflict from squash-merged parent PR | `pr_exists_for_branch AND mergeable_status == "CONFLICTING" AND parent_pr_recently_merged` |
@@ -88,10 +88,20 @@ procedure context for in-progress local work.
 | `review_threads_unresolved` | integer | `evidence-pull-request.reviews.threads_unresolved` | Unresolved thread count |
 | `bot_coderabbit_status` | enum | `evidence-pull-request.reviews.bot_coderabbit.status` | `"COMPLETED"` \| `"COMPLETED_CLEAN"` \| `"COMPLETED_SILENT"` \| `"RATE_LIMITED"` \| `"TIMED_OUT"` \| `"NOT_TRIGGERED"` \| `"PENDING"` |
 | `bot_codex_status` | enum | `evidence-pull-request.reviews.bot_codex.status` | `"COMPLETED"` \| `"COMPLETED_CLEAN"` \| `"RATE_LIMITED"` \| `"TIMED_OUT"` \| `"NOT_TRIGGERED"` \| `"PENDING"` |
-| `bot_review_pending` | boolean | derived | Either bot status is `PENDING` or `NOT_TRIGGERED` |
-| `bot_review_terminal` | boolean | derived | Both bot statuses are terminal (`COMPLETED*`, `TIMED_OUT`, `RATE_LIMITED`) |
+| `bot_review_completed` | boolean | `evidence-pull-request.reviews.bot_review_completed` | All required bots in a **Reviewed** tier state; optional (`required: false`) bots may be `NOT_TRIGGERED` or Reviewed |
+| `bot_review_failed` | boolean | `evidence-pull-request.reviews.bot_review_failed` | Any **required** bot is in **Failed** tier (`RATE_LIMITED`, `TIMED_OUT`) |
+| `bot_review_terminal` | boolean | `evidence-pull-request.reviews.bot_review_terminal` | `bot_review_completed OR bot_review_failed` — polling may stop; **never** sufficient alone for `review_concluded` |
+| `bot_review_pending` | boolean | `evidence-pull-request.reviews.bot_review_pending` | `NOT bot_review_terminal` — still waiting on a required bot outcome |
 | `review_disposition` | enum | `evidence-pull-request.reviews.disposition` | `"approved"` \| `"changes_requested"` \| `"pending"` |
-| `review_concluded` | boolean | derived | `(review_disposition == "approved") OR (review_disposition == "pending" AND bot_review_terminal AND review_threads_unresolved == 0)` |
+| `review_concluded` | boolean | `evidence-pull-request.reviews.review_concluded` | `(review_disposition == "approved") OR (review_disposition == "pending" AND bot_review_completed AND review_threads_unresolved == 0)` |
+
+**Bot tier semantics** (declarative; recovery procedures live in delegation templates, not here):
+
+| Tier | `bot_*_status` values | Meaning |
+|------|------------------------|---------|
+| **Reviewed** | `COMPLETED`, `COMPLETED_CLEAN`, `COMPLETED_SILENT` | Bot produced a review for the current head |
+| **Failed** | `RATE_LIMITED`, `TIMED_OUT` | Bot could not complete a review |
+| **In-progress** | `PENDING`, `NOT_TRIGGERED` | No terminal outcome yet (`NOT_TRIGGERED` on a **required** bot still blocks `bot_review_completed`) |
 
 ### Environment signals
 
@@ -134,6 +144,11 @@ signals used in state conditions and transitions.
 | `review_threads_unresolved` | `evidence-pull-request` | `reviews.threads_unresolved` |
 | `bot_coderabbit_status` | `evidence-pull-request` | `reviews.bot_coderabbit.status` |
 | `bot_codex_status` | `evidence-pull-request` | `reviews.bot_codex.status` |
+| `bot_review_completed` | `evidence-pull-request` | `reviews.bot_review_completed` |
+| `bot_review_failed` | `evidence-pull-request` | `reviews.bot_review_failed` |
+| `bot_review_terminal` | `evidence-pull-request` | `reviews.bot_review_terminal` |
+| `bot_review_pending` | `evidence-pull-request` | `reviews.bot_review_pending` |
+| `review_concluded` | `evidence-pull-request` | `reviews.review_concluded` |
 | `review_disposition` | `evidence-pull-request` | `reviews.disposition` |
 | `doctor_healthy` | `evidence-workflow-position` | `environment.doctor_healthy` |
 | `container_running` | `evidence-workflow-position` | `environment.container_running` |
@@ -165,10 +180,10 @@ captures explicit user/agent actions.
 | ST_CI_PENDING | `ci_status == "success"` | none | ST_BOT_PENDING | Wait for bot terminal state |
 | ST_CI_PENDING | `ci_status == "failure"` | none | ST_CI_FAILED | Diagnose and fix |
 | ST_CI_FAILED | `ci_status == "pending"` | fix pushed | ST_CI_PENDING | Re-enter CI pending |
-| ST_BOT_PENDING | `bot_review_terminal AND review_concluded` | none | ST_REVIEW_DONE | Bot-only review concluded with no findings |
-| ST_BOT_PENDING | `bot_review_terminal AND NOT review_concluded AND review_threads_unresolved > 0` | none | ST_UNRESOLVED | Bot findings need addressing |
-| ST_BOT_PENDING | `bot_review_terminal AND NOT review_concluded AND review_threads_unresolved == 0` | none | ST_REVIEW_READY | Ready for human/agent review |
-| ST_BOT_PENDING | `bot_coderabbit_status == "RATE_LIMITED" OR bot_codex_status == "RATE_LIMITED"` | none | ST_BOT_PENDING | Recovery: sleep + re-trigger |
+| ST_BOT_PENDING | `bot_review_completed AND review_concluded` | none | ST_REVIEW_DONE | Bot-only review concluded with no findings |
+| ST_BOT_PENDING | `bot_review_completed AND NOT review_concluded AND review_threads_unresolved > 0` | none | ST_UNRESOLVED | Bot findings need addressing |
+| ST_BOT_PENDING | `bot_review_completed AND NOT review_concluded AND review_threads_unresolved == 0` | none | ST_REVIEW_READY | Ready for human/agent review |
+| ST_BOT_PENDING | `bot_review_failed` | none | ST_REVIEW_READY | Bot could not review — agent `pr-review` (recovery is procedural; see delegation templates) |
 | ST_UNRESOLVED | `review_threads_unresolved == 0 AND review_concluded == false` | `review-fix` completed | ST_REVIEW_READY | Ready for review |
 | ST_UNRESOLVED | `review_threads_unresolved == 0 AND review_concluded` | `review-fix` completed | ST_REVIEW_DONE | Mergeable review state |
 | ST_REVIEW_READY | `review_concluded` | `pr-review` completed | ST_REVIEW_DONE | Ready to merge |

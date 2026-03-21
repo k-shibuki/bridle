@@ -35,7 +35,12 @@
     "threads_unresolved": 0,
     "disposition": "approved",
     "last_review_at": "2026-03-12T09:15:00Z",
-    "last_push_at": "2026-03-12T08:30:00Z"
+    "last_push_at": "2026-03-12T08:30:00Z",
+    "bot_review_completed": true,
+    "bot_review_failed": false,
+    "bot_review_terminal": true,
+    "bot_review_pending": false,
+    "review_concluded": true
   },
   "traceability": {
     "closes_issues": [42],

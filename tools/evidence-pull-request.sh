@@ -49,7 +49,8 @@ if ! echo "$bot_config" | jq -e '
     (.match_type == "exact" or .match_type == "regex") and
     (.match_flags == null or ((.match_flags | type) == "string")) and
     (.rate_limit_pattern == null or ((.rate_limit_pattern | type) == "string")) and
-    (.max_reviews == null or ((.max_reviews | type) == "number"))
+    (.max_reviews == null or ((.max_reviews | type) == "number")) and
+    ((.required | type) == "boolean")
   )
 ' >/dev/null 2>&1; then
   evidence_error "config" "Invalid bot config schema: $BOT_CONFIG" true
@@ -107,6 +108,9 @@ ci_status=$(echo "$pr_data" | jq -r '
 mergeable=$(echo "$pr_data" | jq -r '.mergeable // "UNKNOWN"')
 merge_state=$(echo "$pr_data" | jq -r '.mergeStateStatus // "UNKNOWN"')
 
+# Head push time — bot status must ignore stale reviews / rate-limit comments from prior pushes
+last_push_at=$(echo "$pr_data" | jq -r '.commits[-1].committedDate // ""')
+
 # --- Fetch review data (shared across all bots) ---
 reviews=$(gh api "repos/$owner/$repo/pulls/$PR/reviews" 2>/dev/null || echo "[]")
 pr_comments=$(gh api "repos/$owner/$repo/issues/$PR/comments" 2>/dev/null || echo "[]")
@@ -146,31 +150,55 @@ _detect_bot_reviews() {
     fi
     review_count=$(echo "$bot_reviews_all" | jq 'length')
 
-    local latest_review
-    latest_review=$(echo "$bot_reviews_all" | jq -c 'sort_by(.submitted_at) | last // empty' 2>/dev/null || echo "")
-    if [ -n "$latest_review" ]; then
-      status="COMPLETED"
-      submitted=$(echo "$latest_review" | jq -r '.submitted_at // ""')
-    fi
-
-    # Rate limit detection via PR comments
-    if [ -n "$rate_limit_pat" ] && [ "$rate_limit_pat" != "null" ]; then
-      local rl_count
-      if [ "$match_type" = "exact" ]; then
-        rl_count=$(echo "$pr_comments" | jq --arg login "$bot_login" --arg rlpat "$rate_limit_pat" \
-          '[.[] | select(.user.login == $login and (.body | test($rlpat)))] | length')
-      else
-        if [ -n "$match_flags" ]; then
-          rl_count=$(echo "$pr_comments" | jq --arg pat "$bot_login" --arg flags "$match_flags" --arg rlpat "$rate_limit_pat" \
-            '[.[] | select((.user.login | test($pat; $flags)) and (.body | test($rlpat)))] | length')
+    # Status: fresh review (submitted_at >= last push) vs rate-limit comments since last push (timestamp order)
+    local bot_status_json
+    bot_status_json=$(jq -nc \
+      --argjson revs "$bot_reviews_all" \
+      --argjson comments "$pr_comments" \
+      --arg login_pat "$bot_login" \
+      --arg match_type "$match_type" \
+      --arg match_flags "$match_flags" \
+      --arg rlpat "$rate_limit_pat" \
+      --arg last_push "$last_push_at" \
+      '
+      def ts($s):
+        if $s == null or $s == "" then null else try ($s | fromdateiso8601) catch null end end;
+      ($last_push | ts(.)) as $tpush
+      | (if $tpush == null then 0 else $tpush end) as $tp
+      | (if $match_type == "exact" then
+          [ $revs[] | select(.user.login == $login_pat) ]
+        elif ($match_flags != null and $match_flags != "") then
+          [ $revs[] | select(.user.login | test($login_pat; $match_flags)) ]
         else
-          rl_count=$(echo "$pr_comments" | jq --arg pat "$bot_login" --arg rlpat "$rate_limit_pat" \
-            '[.[] | select((.user.login | test($pat)) and (.body | test($rlpat)))] | length')
-        fi
-      fi
-      if [ "$rl_count" -gt 0 ] && [ "$status" = "NOT_TRIGGERED" ]; then
-        status="RATE_LIMITED"
-      fi
+          [ $revs[] | select(.user.login | test($login_pat)) ]
+        end) as $allrev
+      | ([ $allrev[] | select((.submitted_at | ts(.)) != null and (.submitted_at | ts(.)) >= $tp) ]
+        | sort_by(.submitted_at)) as $fresh
+      | (if ($fresh | length) > 0 then ($fresh | last) else null end) as $latest_fresh
+      | (if ($rlpat == null or $rlpat == "" or $rlpat == "null") then []
+        elif $match_type == "exact" then
+          [ $comments[] | select(.user.login == $login_pat and (.body | test($rlpat))) ]
+        elif ($match_flags != null and $match_flags != "") then
+          [ $comments[] | select((.user.login | test($login_pat; $match_flags)) and (.body | test($rlpat))) ]
+        else
+          [ $comments[] | select((.user.login | test($login_pat)) and (.body | test($rlpat))) ]
+        end
+        | map(select((.created_at | ts(.)) != null and (.created_at | ts(.)) >= $tp))
+        ) as $rlc
+      | (if ($rlc | length) == 0 then null else ([$rlc[] | .created_at | ts(.)] | max) end) as $max_rl_ts
+      | (if $latest_fresh == null then null else ($latest_fresh.submitted_at | ts(.)) end) as $max_rev_ts
+      | if $latest_fresh != null and ($max_rl_ts == null or $max_rev_ts >= $max_rl_ts) then
+          {status: "COMPLETED", submitted: $latest_fresh.submitted_at}
+        elif $max_rl_ts != null then
+          {status: "RATE_LIMITED", submitted: (if $latest_fresh != null then $latest_fresh.submitted_at else null end)}
+        else
+          {status: "NOT_TRIGGERED", submitted: null}
+        end
+      ')
+    status=$(echo "$bot_status_json" | jq -r '.status')
+    submitted=$(echo "$bot_status_json" | jq -r '.submitted // ""')
+    if [ "$submitted" = "null" ]; then
+      submitted=""
     fi
 
     # Inline findings count (top-level only, excluding reply comments)
@@ -273,8 +301,36 @@ case "$latest_review" in
   *) disposition="pending" ;;
 esac
 
+# --- FSM-derived review signals (Refs: #272) ---
+review_signals=$(jq -nc \
+  --argjson bots_map "$bot_reviews" \
+  --argjson cfg "$bot_config" \
+  --arg disposition "$disposition" \
+  --argjson threads_u "$threads_unresolved" \
+  '
+  def reviewed($s):
+    $s == "COMPLETED" or $s == "COMPLETED_CLEAN" or $s == "COMPLETED_SILENT";
+  def failed($s):
+    $s == "RATE_LIMITED" or $s == "TIMED_OUT";
+  [ $cfg.bots[] | . as $b
+    | ($bots_map["bot_\($b.id)"].status // "NOT_TRIGGERED") as $st
+    | {required: $b.required, status: $st}
+  ] as $rows
+  | ($rows | any(.required and failed(.status))) as $failed
+  | ($rows | all(if .required then reviewed(.status) else (reviewed(.status) or (.status == "NOT_TRIGGERED")) end)) as $completed
+  | ($failed or $completed) as $terminal
+  | ($terminal | not) as $pending
+  | (($disposition == "approved") or ($disposition == "pending" and $completed and $threads_u == 0)) as $concluded
+  | {
+      bot_review_completed: $completed,
+      bot_review_failed: $failed,
+      bot_review_terminal: $terminal,
+      bot_review_pending: $pending,
+      review_concluded: $concluded
+    }
+  ')
+
 # --- Timestamps ---
-last_push_at=$(echo "$pr_data" | jq -r '.commits[-1].committedDate // ""')
 last_review_at=$(echo "$reviews" | jq -r '[.[].submitted_at] | sort | last // ""')
 [ "$last_review_at" = "null" ] && last_review_at=""
 
@@ -308,6 +364,7 @@ body=$(jq -nc \
   --argjson closes "$closes_issues" \
   --argjson has_exc "$has_exception" \
   --argjson exc_type "$exception_type" \
+  --argjson signals "$review_signals" \
   '{
     "number": $number,
     "title": $title,
@@ -329,7 +386,7 @@ body=$(jq -nc \
         "disposition": $disposition,
         "last_review_at": (if $last_review == "" then null else $last_review end),
         "last_push_at": $last_push
-      }
+      } + $signals
     ),
     "traceability": {
       "closes_issues": $closes,
