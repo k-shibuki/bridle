@@ -92,6 +92,12 @@ Always use API checks — never infer from timing alone.
 | Polling interval | 30 s | 30 s |
 | Timeout | 20 min | 20 min |
 
+## Optional-bot fallback ordering (v1)
+
+When CodeRabbit recovery is exhausted, operators may manually invoke **user_only** reviewers listed in `docs/agent-control/review-bots.json`. Sort by `fallback_priority` ascending (lower runs first; `null` sorts last). **Agents do not** post these mentions in v1 — document the mention text for the user (see `delegation--review-wait.md` § Recovery waterfall).
+
+**Claude Code** is registered as `claude_code` with `login_pattern` `^$` (matches no GitHub login) until a real bot username is confirmed — fallback is **documentation-only** until updated.
+
 ## Rate-Limit Recovery
 
 1. Detect: PR comment from bot containing "Rate limit exceeded"

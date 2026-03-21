@@ -33,10 +33,10 @@ Follow the **Decision Flowchart** in `agent--delegation-decision.md` § Decision
 
 ### Rate-Limit Recovery Policy
 
-When a bot reviewer returns RATE_LIMITED during subagent polling, the subagent **MUST** attempt recovery — not skip. Maximum 1 recovery attempt per reviewer per PR; a second RATE_LIMITED falls back to TIMED_OUT.
+When a bot reviewer returns RATE_LIMITED during subagent polling, the subagent **MUST** attempt recovery — not skip. Maximum **one** same-bot re-trigger per reviewer per delegated wait; after a **second** `RATE_LIMITED` or a `TIMED_OUT` without a Reviewed-tier outcome, follow `.cursor/templates/delegation--review-wait.md` § Recovery waterfall (v1): surface optional `user_only` bots for the **operator** to invoke manually; **do not** auto-post `@codex` / `@claude` from the subagent. When no automated path remains for the required reviewer, the subagent returns `REVIEW_NEEDED` so the main agent runs `pr-review` on current evidence.
 
 For detection mechanics and wait-time parsing: `review--bot-operations.md` § Rate-Limit Recovery.
-For execution steps within templates: `.cursor/templates/delegation--review-wait.md` § Steps (Steps 1-4).
+For execution steps within templates: `.cursor/templates/delegation--review-wait.md` § Steps.
 
 ### Anti-pattern: inline sleep polling
 

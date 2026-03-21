@@ -26,6 +26,20 @@
       "commit_status_name": null,
       "trigger": "user_only",
       "fallback_priority": 2
+    },
+    {
+      "id": "claude_code",
+      "display_name": "Claude Code",
+      "login_pattern": "^$",
+      "match_type": "regex",
+      "match_flags": null,
+      "rate_limit_pattern": null,
+      "invalidate_review_pattern": null,
+      "max_reviews": null,
+      "required": false,
+      "commit_status_name": null,
+      "trigger": "user_only",
+      "fallback_priority": 1
     }
   ]
 }

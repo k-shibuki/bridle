@@ -16,16 +16,22 @@ def rows($bots_map; $cfg):
     | {
         required: $b.required,
         status: ($row.status // "NOT_TRIGGERED"),
-        findings: ($row.findings_count // 0)
+        findings: ($row.findings_count // 0),
+        review_count: ($row.review_count // 0),
+        max_reviews: $b.max_reviews
       }
   ];
+
+def required_bot_done($r):
+  reviewed($r.status)
+  or ($r.status == "NOT_TRIGGERED" and ($r.max_reviews != null) and ($r.review_count >= $r.max_reviews));
 
 def required_findings_total($rows):
   [ $rows[] | select(.required) | .findings ] | add // 0;
 
 def bot_review_completed($rows):
   ($rows | all(
-    if .required then reviewed(.status)
+    if .required then required_bot_done(.)
     else (reviewed(.status) or (.status == "NOT_TRIGGERED"))
     end
   ));
@@ -46,7 +52,7 @@ def review_consensus_complete($rows; $disposition; $threads_u; $pending):
     and ($pending | not)
     and $threads_u == 0
     and ($rows | all(
-      if .required then reviewed(.status)
+      if .required then required_bot_done(.)
       else (reviewed(.status) or (.status == "NOT_TRIGGERED"))
       end
     ))
@@ -61,7 +67,17 @@ def blockers($rows; $disposition; $threads_u; $mergeable; $merge_state; $ci_stat
      then . + ["merge_state_blocked"] else . end)
   | (if $threads_u > 0 then . + ["unresolved_threads"] else . end)
   | (if $disposition == "changes_requested" then . + ["changes_requested"] else . end)
-  | (if ($rows | any(.required and (.status == "REVIEW_INVALIDATED" or .status == "PENDING" or .status == "NOT_TRIGGERED")))
+  | (if ($rows | any(
+        .required
+        and (
+          .status == "REVIEW_INVALIDATED"
+          or .status == "PENDING"
+          or (
+            .status == "NOT_TRIGGERED"
+            and ((.max_reviews == null) or (.review_count < .max_reviews))
+          )
+        )
+      ))
      then . + ["required_bot_rereview"] else . end)
   | (if (required_findings_total($rows) > 0) and ($threads_u > 0) then . + ["required_bot_findings"] else . end)
   | (if $pending and $threads_u == 0 then . + ["rereview_response_pending"] else . end);
