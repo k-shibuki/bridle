@@ -77,6 +77,20 @@ validate_json() {
           return 1
         fi
       done
+      if ! echo "$json" | jq -e '.reviews | has("re_review_signal")' >/dev/null 2>&1; then
+        echo "FAIL [$target]: reviews.re_review_signal missing" >&2
+        return 1
+      fi
+      for sub in latest_cr_trigger_created_at latest_cr_review_submitted_at_after_trigger cr_response_pending_after_latest_trigger; do
+        if ! echo "$json" | jq -e ".reviews.re_review_signal | has(\"$sub\")" >/dev/null 2>&1; then
+          echo "FAIL [$target]: reviews.re_review_signal missing '$sub'" >&2
+          return 1
+        fi
+      done
+      if ! echo "$json" | jq -e '.reviews.diagnostics | has("rereview_response_pending")' >/dev/null 2>&1; then
+        echo "FAIL [$target]: reviews.diagnostics.rereview_response_pending missing" >&2
+        return 1
+      fi
       ;;
     evidence-fsm)
       for key in workflow_position environment issues_summary pull_request routing; do

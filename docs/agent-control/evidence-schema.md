@@ -385,7 +385,13 @@ review freshness, and bot review status.
       "bot_review_failed": "boolean",
       "bot_review_terminal": "boolean",
       "bot_review_pending": "boolean",
-      "required_bot_findings_total": "integer"
+      "required_bot_findings_total": "integer",
+      "rereview_response_pending": "boolean"
+    },
+    "re_review_signal": {
+      "latest_cr_trigger_created_at": "ISO8601 | null",
+      "latest_cr_review_submitted_at_after_trigger": "ISO8601 | null",
+      "cr_response_pending_after_latest_trigger": "boolean"
     }
   },
   "traceability": {
@@ -409,6 +415,8 @@ review freshness, and bot review status.
 - `reviews.bot_<id>.max_reviews`: budget from config (null if unlimited)
 - Bot registry (`docs/agent-control/review-bots.json`) may set `commit_status_name` (substring matched case-insensitively against `statusCheckRollup[].name`), `invalidate_review_pattern` (regex against PR **issue** comments since `last_push_at` — match yields `REVIEW_INVALIDATED`), `trigger` (`agent` \| `user_only`), and `fallback_priority` (nullable number, lower = earlier in human-invoked fallback). When `commit_status_name` matches a rollup entry, `evidence-pull-request` uses that check as the primary signal for `bot_<id>.status` and excludes it from `ci` aggregation.
 - `reviews.diagnostics.*`: FSM-aligned aggregates derived from configured bots (`review-bots.json`, including `required`) and thread/disposition state — see `docs/agent-control/fsm/pull-request-readiness.jq` and `docs/agent-control/state-model.md` § Review signals
+- `reviews.diagnostics.rereview_response_pending`: same boolean as `reviews.re_review_signal.cr_response_pending_after_latest_trigger`, passed into `pull-request-readiness.jq` as `rereview_response_pending`
+- `reviews.re_review_signal`: detects PR **issue** comments that request CodeRabbit (`@coderabbitai` and `review`, case-insensitive) and compares the latest such `created_at` to `pulls/.../reviews` from `coderabbitai[bot]` with `submitted_at` strictly after that trigger. `cr_response_pending_after_latest_trigger` is `true` when a trigger exists and no such review exists yet. **Always `false`** when `bot_coderabbit.status == REVIEW_INVALIDATED` (avoid deadlock; re-trigger procedurally). Does not add extra pending solely for `RATE_LIMITED` / `PENDING` (those use existing bot blockers). If CodeRabbit completes incrementally without a new review object (`COMPLETED_SILENT` in `review--bot-operations.md`), this flag may stay `true` until a qualifying review appears — time-based silent completion remains the delegated wait’s job, not a static evidence snapshot.
 - `auto_merge_readiness`: merge/consensus gate (`safe_to_enable` requires empty `blockers`); same jq SSOT as `routing.pr_state_id`
 - `traceability.closes_issues`: Issue numbers from `Closes #N` / `Fixes #N` in PR body
 

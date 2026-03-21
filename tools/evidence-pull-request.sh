@@ -364,6 +364,50 @@ _detect_bot_reviews() {
 
 bot_reviews=$(_detect_bot_reviews)
 
+# --- CodeRabbit re-review: issue trigger vs pull review response (Refs: #282) ---
+# Aligns with delegation--review-wait.md (submitted_at > trigger_time). When REVIEW_INVALIDATED,
+# do not hold pending (avoid deadlock; re-trigger is procedural).
+coderabbit_status=$(echo "$bot_reviews" | jq -r '.bot_coderabbit.status // "NOT_TRIGGERED"')
+re_review_signal=$(
+  jq -nc \
+    --argjson comments "$pr_comments" \
+    --argjson revs "$reviews" \
+    --arg cr_status "$coderabbit_status" \
+    '
+    def ts($s):
+      if $s == null or $s == "" then null else (try ($s | fromdateiso8601) catch null) end;
+    ([ $comments[]
+      | select((.body | ascii_downcase | contains("@coderabbitai")) and (.body | ascii_downcase | contains("review")))
+      | select((.created_at | ts(.)) != null)
+    ]) as $trig_comments
+    | (if ($trig_comments | length) == 0 then null
+       else ($trig_comments | max_by(.created_at | ts(.)) | .created_at)
+       end) as $trig_at
+    | ($trig_at | ts(.)) as $trig_ts
+    | (if $trig_ts == null then null
+       else
+         ([ $revs[]
+            | select(.user.login == "coderabbitai[bot]")
+            | select((.submitted_at | ts(.)) != null and (.submitted_at | ts(.)) > $trig_ts)
+          ]
+          | if length == 0 then null
+            else (max_by(.submitted_at | ts(.)) | .submitted_at)
+            end)
+       end) as $ans_at
+    | (if $cr_status == "REVIEW_INVALIDATED" then false
+       elif $trig_at == null then false
+       elif $ans_at == null then true
+       else false
+       end) as $pend
+    | {
+        latest_cr_trigger_created_at: $trig_at,
+        latest_cr_review_submitted_at_after_trigger: $ans_at,
+        cr_response_pending_after_latest_trigger: $pend
+      }
+    '
+)
+rereview_pending_json=$(echo "$re_review_signal" | jq -c '.cr_response_pending_after_latest_trigger')
+
 # --- Thread state ---
 # shellcheck disable=SC2016
 threads=$(gh api graphql -f query='
@@ -425,6 +469,7 @@ readiness=$(
     --arg mergeable "$mergeable" \
     --arg merge_state "$merge_state" \
     --arg ci_status "$ci_status" \
+    --argjson rereview_pending "$rereview_pending_json" \
     '{
       bots_map: $bots_map,
       bot_config: $cfg,
@@ -432,7 +477,8 @@ readiness=$(
       threads_unresolved: $threads_u,
       mergeable: $mergeable,
       merge_state: $merge_state,
-      ci_status: $ci_status
+      ci_status: $ci_status,
+      rereview_response_pending: $rereview_pending
     }' | jq -f "$_fsm_dir/pull-request-readiness.jq"
 )
 review_diagnostics=$(echo "$readiness" | jq -c '.diagnostics')
@@ -476,6 +522,7 @@ body=$(jq -nc \
   --argjson routing_pr "$routing_pr" \
   --argjson auto_merge_readiness "$auto_merge_readiness" \
   --argjson review_diagnostics "$review_diagnostics" \
+  --argjson re_review_signal "$re_review_signal" \
   '{
     "number": $number,
     "title": $title,
@@ -499,7 +546,8 @@ body=$(jq -nc \
         "disposition": $disposition,
         "last_review_at": (if $last_review == "" then null else $last_review end),
         "last_push_at": $last_push,
-        "diagnostics": $review_diagnostics
+        "diagnostics": $review_diagnostics,
+        "re_review_signal": $re_review_signal
       }
     ),
     "traceability": {

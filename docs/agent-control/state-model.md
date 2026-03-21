@@ -18,7 +18,7 @@ of available transitions.
 | ST_COMMITTED | `Committed` | All changes committed, no PR exists | `on_feature_branch AND no_uncommitted AND pr_exists_for_branch == false` |
 | ST_CI_PENDING | `CIPending` | PR exists, CI still running | `pr_exists_for_branch AND ci_status == "pending"` |
 | ST_CI_FAILED | `CIFailed` | PR exists, CI failed | `pr_exists_for_branch AND ci_status == "failure"` |
-| ST_BOT_PENDING | `BotReviewPending` | CI green, waiting on required bot outcome | `pr_exists_for_branch AND ci_status == "success" AND bot_review_pending` |
+| ST_BOT_PENDING | `BotReviewPending` | CI green, waiting on required bot outcome or on a CodeRabbit pull review after the latest `@coderabbitai review` trigger | `pr_exists_for_branch AND ci_status == "success" AND (bot_review_pending OR rereview_response_pending)` — see `evidence-pull-request.reviews.diagnostics.rereview_response_pending` |
 | ST_UNRESOLVED | `UnresolvedThreads` | Review threads exist that lack consensus | `pr_exists_for_branch AND review_threads_unresolved > 0` |
 | ST_REVIEW_READY | `ReadyForReview` | CI green, bot phase settled, agent review needed | `pr_exists_for_branch AND ci_status == "success" AND bot_review_terminal AND review_threads_unresolved == 0 AND auto_merge_readiness.review_consensus_complete == false` |
 | ST_CHANGES_REQ | `ChangesRequired` | Review complete, changes requested | `pr_exists_for_branch AND review_disposition == "changes_requested"` |
@@ -92,6 +92,7 @@ procedure context for in-progress local work.
 | `bot_review_failed` | boolean | `evidence-pull-request.reviews.diagnostics.bot_review_failed` | Any **required** bot is in **Failed** tier (`RATE_LIMITED`, `TIMED_OUT`) |
 | `bot_review_terminal` | boolean | `evidence-pull-request.reviews.diagnostics.bot_review_terminal` | `bot_review_completed OR bot_review_failed` — polling may stop; **never** sufficient alone for merge consensus |
 | `bot_review_pending` | boolean | `evidence-pull-request.reviews.diagnostics.bot_review_pending` | `NOT bot_review_terminal` — still waiting on a required bot outcome |
+| `rereview_response_pending` | boolean | `evidence-pull-request.reviews.re_review_signal.cr_response_pending_after_latest_trigger` (same value as `reviews.diagnostics.rereview_response_pending`) | Latest PR issue comment requesting CodeRabbit re-review (`@coderabbitai` + `review`) is not yet followed by any `coderabbitai[bot]` pull review with `submitted_at` after that comment; avoids treating review as settled while CR may still post threads (`pull-request-readiness.jq` adds blocker `rereview_response_pending` and can route `BotReviewPending` even when `bot_review_pending` is false) |
 | `review_disposition` | enum | `evidence-pull-request.reviews.disposition` | `"approved"` \| `"changes_requested"` \| `"pending"` |
 | `review_consensus_complete` | boolean | `evidence-pull-request.auto_merge_readiness.review_consensus_complete` | Merge consensus: approved human review, or pending disposition with required bots reviewed, zero required-bot findings, and zero unresolved threads |
 | `safe_to_enable` | boolean | `evidence-pull-request.auto_merge_readiness.safe_to_enable` | Safe to enable auto-merge: consensus + CI + mergeable + merge state (see `docs/agent-control/fsm/pull-request-readiness.jq`) |
