@@ -238,7 +238,7 @@ _detect_bot_reviews() {
       --arg last_push "$last_push_at" \
       '
       def ts($s):
-        if $s == null or $s == "" then null else try ($s | fromdateiso8601) catch null end end;
+        if $s == null or $s == "" then null else (try ($s | fromdateiso8601) catch null) end;
       ($last_push | ts(.)) as $tpush
       | (if $tpush == null then 0 else $tpush end) as $tp
       | (if $match_type == "exact" then
