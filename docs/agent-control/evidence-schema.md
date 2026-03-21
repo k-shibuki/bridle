@@ -100,6 +100,7 @@ This catalog defines the canonical naming set.
 | `evidence-pull-request` | evidence |
 | `evidence-review-threads` | evidence |
 | `evidence-issue` | evidence |
+| `evidence-branch-protection` | evidence |
 
 ### Gate hierarchy
 
@@ -412,7 +413,7 @@ review freshness, and bot review status.
 - `reviews.bot_<id>`: dynamically generated from `docs/agent-control/review-bots.json` config. Each configured bot produces a `bot_<id>` key.
 - `reviews.bot_<id>.findings_count`: total findings from that reviewer, including both inline review comments and body-embedded "outside diff range" findings (0 for clean/silent)
 - `reviews.bot_<id>.review_count`: total number of review submissions for this PR
-- `reviews.bot_<id>.max_reviews`: budget from config (null if unlimited)
+- `reviews.bot_<id>.max_reviews`: copied from `docs/agent-control/review-bots.json` for that bot id (**SSOT** for the per-PR review request cap; `null` if unlimited)
 - Bot registry (`docs/agent-control/review-bots.json`) may set `commit_status_name` (substring matched case-insensitively against `statusCheckRollup[].name`), `invalidate_review_pattern` (regex against PR **issue** comments since `last_push_at` — match yields `REVIEW_INVALIDATED`), `trigger` (`agent` \| `user_only`), and `fallback_priority` (nullable number, lower = earlier in human-invoked fallback). When `commit_status_name` matches a rollup entry, `evidence-pull-request` uses that check as the primary signal for `bot_<id>.status` and excludes it from `ci` aggregation.
 - `reviews.diagnostics.*`: FSM-aligned aggregates derived from configured bots (`review-bots.json`, including `required`) and thread/disposition state — see `docs/agent-control/fsm/pull-request-readiness.jq` and `docs/agent-control/state-model.md` § Review signals
 - `reviews.diagnostics.rereview_response_pending`: same boolean as `reviews.re_review_signal.cr_response_pending_after_latest_trigger`, passed into `pull-request-readiness.jq` as `rereview_response_pending`
@@ -548,3 +549,32 @@ review freshness, and bot review status.
 **Nullability**: all fields required. `assignee` nullable. Arrays may be empty.
 
 **Downstream**: ST_PREFLIGHT (PreFlightReview), ST_READY (ReadyToStart) Issue selection, `implement` auto-select.
+
+### Target 7: `evidence-branch-protection`
+
+**Purpose**: Observe GitHub branch protection for a branch (default `main`) without raw `gh api` in procedures.
+
+**Input**: `gh` REST API `GET /repos/{owner}/{repo}/branches/{branch}/protection`. `BRANCH` env optional (default `main`). Repo resolved from `git remote origin`.
+
+**Output schema**:
+
+```json
+{
+  "repo_owner": "string",
+  "repo_name": "string",
+  "branch": "string",
+  "protection_present": "boolean",
+  "required_status_checks_strict": "boolean | null",
+  "required_status_contexts": ["string"]
+}
+```
+
+**Field semantics**:
+
+- `protection_present`: false when GitHub returns 404 (no rules on branch) or on fatal resolution errors
+- `required_status_checks_strict`: from GitHub `required_status_checks.strict` when protection exists; null when absent
+- `required_status_contexts`: GitHub `required_status_checks.contexts` when protection exists; empty when absent
+
+**Nullability**: all fields required in successful output; `required_status_checks_strict` may be null.
+
+**Downstream**: `controls-review.md` guard audit (branch protection row).

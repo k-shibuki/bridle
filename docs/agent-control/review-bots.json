@@ -7,7 +7,7 @@
       "match_type": "exact",
       "rate_limit_pattern": "Rate limit exceeded",
       "invalidate_review_pattern": "head commit changed during the review",
-      "max_reviews": 2,
+      "max_reviews": 3,
       "required": true,
       "commit_status_name": "CodeRabbit",
       "trigger": "agent",

@@ -37,7 +37,7 @@ endif
 	lint-changed test-changed test-junit lint-json scaffold-test scaffold-class \
 	status git-new-branch git-install-hooks git-post-merge-cleanup \
 	knowledge-manifest knowledge-validate knowledge-new review-sync-verify \
-	evidence-workflow-position evidence-environment evidence-lint evidence-pull-request evidence-issue evidence-fsm test-fsm-fixtures \
+	evidence-workflow-position evidence-environment evidence-lint evidence-pull-request evidence-issue evidence-fsm evidence-branch-protection test-fsm-fixtures \
 	evidence-review-threads label-agent-control-backfill
 
 # === Help ===
@@ -272,6 +272,9 @@ evidence-issue: ## Evidence: Issue metadata and dependency graph (usage: make ev
 
 evidence-fsm: ## Evidence: unified FSM document (environment + workflow + optional issues + optional PR)
 	@bash tools/evidence-fsm.sh
+
+evidence-branch-protection: ## Evidence: GitHub branch protection for BRANCH (default main)
+	@bash tools/evidence-branch-protection.sh
 
 label-agent-control-backfill: ## Create label agent-control and add to known control-system Issues (run once to backfill)
 	@bash tools/label-agent-control-backfill.sh
