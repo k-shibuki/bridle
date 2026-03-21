@@ -87,7 +87,7 @@ ci_checks=$(echo "$pr_data" | jq -c --argjson cfg "$bot_config" '
   | ([$cfg.bots[] | (.commit_status_name // "") | select(length > 0) | ascii_downcase]) as $npats
   | (if ($npats | length) == 0 then $roll else
       [ $roll[] | select(
-          .name as $cn
+          (.name // "") as $cn
           | [ $npats[] as $p | ($cn | ascii_downcase | contains($p)) ] | any | not
         )]
     end) as $filtered
@@ -115,7 +115,7 @@ ci_status=$(echo "$pr_data" | jq -r --argjson cfg "$bot_config" '
   | ([$cfg.bots[] | (.commit_status_name // "") | select(length > 0) | ascii_downcase]) as $npats
   | (if ($npats | length) == 0 then $roll else
       [ $roll[] | select(
-          .name as $cn
+          (.name // "") as $cn
           | [ $npats[] as $p | ($cn | ascii_downcase | contains($p)) ] | any | not
         )]
     end) as $filtered
@@ -182,7 +182,7 @@ _detect_bot_reviews() {
       local cs_row_json
       cs_row_json=$(echo "$pr_data" | jq -c --arg pat "$commit_cs_name" '
         (.statusCheckRollup // []) as $r
-        | [ $r[] | select(.name | ascii_downcase | contains($pat | ascii_downcase)) ] as $m
+        | [ $r[] | select((.name // "") | ascii_downcase | contains($pat | ascii_downcase)) ] as $m
         | if ($m | length) == 0 then null
           else (
             $m
