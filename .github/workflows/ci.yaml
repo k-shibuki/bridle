@@ -99,6 +99,9 @@ jobs:
             echo "shellcheck not available, skipping"
           fi
 
+      - name: FSM jq offline fixtures
+        run: bash tools/test-fsm-fixtures.sh
+
   package-sync-verify:
     needs: changes
     if: needs.changes.outputs.renv_deps == 'true'

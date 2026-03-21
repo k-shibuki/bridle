@@ -1,0 +1,56 @@
+{
+  "id": "tc-aug-exception-excluded",
+  "kind": "augment_routing",
+  "input": {
+    "current_user": "",
+    "base_fsm": {
+      "workflow_position": {
+        "git": {"on_main": true}
+      },
+      "environment": {"errors": 0},
+      "issues_summary": {
+        "issues": [
+          {
+            "number": 50,
+            "title": "hotfix exception",
+            "labels": ["hotfix", "fix"],
+            "has_test_plan": true,
+            "has_acceptance_criteria": true,
+            "blocked_by": [],
+            "blocks": [],
+            "is_parent": false,
+            "assignee": null,
+            "created_at": "2026-03-01T00:00:00Z"
+          },
+          {
+            "number": 51,
+            "title": "normal feat",
+            "labels": ["feat"],
+            "has_test_plan": true,
+            "has_acceptance_criteria": true,
+            "blocked_by": [],
+            "blocks": [],
+            "is_parent": false,
+            "assignee": null,
+            "created_at": "2026-03-03T00:00:00Z"
+          }
+        ],
+        "dependency_graph": {
+          "roots": [50, 51],
+          "leaves": [50, 51],
+          "depth": 0
+        }
+      },
+      "pull_request": null,
+      "routing": {
+        "effective_state_id": "ReadyToStart",
+        "global_state_id": "ReadyToStart",
+        "pr_state_id": null,
+        "recommended_next_issue": null
+      }
+    }
+  },
+  "expect": {
+    "recommended_next_issue": 51
+  }
+}

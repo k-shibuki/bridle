@@ -1,0 +1,33 @@
+{
+  "id": "tc-pr-review-invalidated",
+  "kind": "pull_request_readiness",
+  "input": {
+    "bots_map": {
+      "bot_coderabbit": {
+        "status": "REVIEW_INVALIDATED",
+        "review_submitted_at": null,
+        "findings_count": 0,
+        "review_count": 0,
+        "max_reviews": 2
+      },
+      "bot_codex": {
+        "status": "NOT_TRIGGERED",
+        "review_submitted_at": null,
+        "findings_count": 0,
+        "review_count": 0,
+        "max_reviews": null
+      }
+    },
+    "disposition": "pending",
+    "threads_unresolved": 0,
+    "mergeable": "MERGEABLE",
+    "merge_state": "CLEAN",
+    "ci_status": "success"
+  },
+  "expect": {
+    "review_consensus_complete": false,
+    "safe_to_enable": false,
+    "pr_state_id": "BotReviewPending",
+    "blockers_contains": ["required_bot_rereview"]
+  }
+}

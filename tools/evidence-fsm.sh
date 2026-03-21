@@ -47,4 +47,11 @@ body=$(jq -n \
   --argjson pull_request "$pr_json" \
   -f "$_fsm_dir/effective-state.jq")
 
+current_user=""
+if command -v gh >/dev/null 2>&1; then
+  current_user=$(gh api user -q .login 2>/dev/null || echo "")
+fi
+
+body=$(echo "$body" | jq -c --arg current_user "$current_user" -f "$_fsm_dir/augment-routing.jq")
+
 evidence_emit "$body"
