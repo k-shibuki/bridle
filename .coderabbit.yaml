@@ -15,8 +15,8 @@ reviews:
   high_level_summary_in_walkthrough: true
   poem: false
   in_progress_fortune: false
-  review_status: false
-  commit_status: false
+  review_status: true
+  commit_status: true
   review_details: true
   collapse_walkthrough: true
   changed_files_summary: false

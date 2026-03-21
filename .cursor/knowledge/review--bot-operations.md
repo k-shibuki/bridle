@@ -53,12 +53,15 @@ For the current login matchers, see `docs/agent-control/review-bots.json`.
 
 ### Terminal States
 
+When CodeRabbit `commit_status` is enabled (`.coderabbit.yaml`) and `review-bots.json` sets `commit_status_name`, `make evidence-pull-request` prefers the matching GitHub `statusCheckRollup` check over review/comment heuristics for `bot_coderabbit.status`. That check is excluded from PR `ci.status` so pending bot review does not block the CI-green signal.
+
 | State | Detection |
 |---|---|
-| **COMPLETED** | Review with `submitted_at` on or after the current head push (`reviews.last_push_at` in `evidence-pull-request`; aligns with delegation `trigger_time` after a push) |
+| **COMPLETED** | Preferred: matching commit status `SUCCESS` on the head. Otherwise: review with `submitted_at` on or after the current head push (`reviews.last_push_at`; aligns with delegation `trigger_time` after a push) |
+| **PENDING** | Matching commit status not yet `COMPLETED` on the head |
 | **COMPLETED_CLEAN** | Codex only: thumbs-up on trigger comment |
 | **COMPLETED_SILENT** | CR incremental review only: trigger acked, > 10 min elapsed, no review object, no inline comments, no rate limit, no new threads |
-| **RATE_LIMITED** | PR comment matches bot `rate_limit_pattern`, with `created_at` on or after head push time (same cutoff as `reviews.last_push_at`; stale comments from before the push are ignored) |
+| **RATE_LIMITED** | Matching commit status `FAILURE` when present; else PR comment matches bot `rate_limit_pattern` with `created_at` on or after head push time (same cutoff as `reviews.last_push_at`; stale comments from before the push are ignored) |
 | **TIMED_OUT** | 20 min elapsed, no completion signal |
 
 **COMPLETED_SILENT**: When CR's incremental review finds no new issues,

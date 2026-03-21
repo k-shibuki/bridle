@@ -7,7 +7,10 @@
       "match_type": "exact",
       "rate_limit_pattern": "Rate limit exceeded",
       "max_reviews": 2,
-      "required": true
+      "required": true,
+      "commit_status_name": "CodeRabbit",
+      "trigger": "agent",
+      "fallback_priority": null
     },
     {
       "id": "codex",
@@ -17,7 +20,10 @@
       "match_flags": "i",
       "rate_limit_pattern": null,
       "max_reviews": null,
-      "required": false
+      "required": false,
+      "commit_status_name": null,
+      "trigger": "user_only",
+      "fallback_priority": 2
     }
   ]
 }
