@@ -50,14 +50,20 @@ Poll using the algorithm from review--bot-operations.md § Polling Algorithm.
    - FAILED: any check fails
    - TIMEOUT: 20 min elapsed, checks still pending
 
-3. IF RATE_LIMITED:
+3. IF RATE_LIMITED (first occurrence for this reviewer in this delegated wait):
    - Parse wait time (regex: `wait \*\*(\d+) minutes? and (\d+) seconds?\*\*`)
    - Sleep for parsed_seconds (includes 30s buffer)
-   - Re-trigger: `gh pr comment <N> --body "@coderabbitai review"` (or @codex)
-   - Reset trigger_time/trigger_id, resume polling
-   - Second RATE_LIMITED → TIMED_OUT (max 1 retry)
+   - Re-trigger **the same** bot only: CodeRabbit → `gh pr comment <N> --body "@coderabbitai review"`; Codex only if this wait cycle was started from an explicit user Codex trigger (same pattern as Step 1 inputs)
+   - Reset trigger_time/trigger_id from the new trigger comment, resume polling
 
-4. Report when CI (if monitored) and all reviewers reach terminal state.
+3b. Recovery waterfall (v1 — after **second** RATE_LIMITED or **TIMED_OUT** for the same reviewer, or if Step 3 retry is not applicable):
+   - **Do not** post `@codex`, `@claude`, or other `user_only` bots from the subagent. Agents never auto-invoke optional bots in v1 (design freeze 2026-03-21; parent #271 / child #274).
+   - Read `docs/agent-control/review-bots.json`: list optional bots (`required: false`, `trigger: "user_only"`) sorted by `fallback_priority` ascending (nulls last). For each, tell the **operator** the exact mention/runbook step so they may invoke a review manually if they choose.
+   - If the operator does not invoke an optional bot, or invoked bots do not produce a review before the outer timeout, treat the reviewer line as exhausted for this cycle.
+
+4. When all automated reviewer paths are exhausted and CodeRabbit (required) is still not in a Reviewed-tier outcome, the subagent return must include **`REVIEW_NEEDED`**: the main agent shall run `pr-review` using `make evidence-pull-request PR=<N>` (FSM: `bot_review_failed` or incomplete required bot → `ReadyForReview` path).
+
+5. Report when CI (if monitored) and all reviewers reach terminal state (or `REVIEW_NEEDED` has been emitted for the required reviewer per Step 4).
 
 ## Prohibitions
 - Do NOT run `git checkout`, `git switch`, `git branch`, or `git rebase`
@@ -67,11 +73,13 @@ Poll using the algorithm from review--bot-operations.md § Polling Algorithm.
 
 ## Error handling
 - CI check fails: report which check and details URL
-- Reviewer times out: report TIMEOUT (pr-review proceeds without it)
-- Rate limit recovery fails: report TIMED_OUT
+- Reviewer times out: report TIMEOUT; if required bot still lacks a Reviewed-tier outcome, include `REVIEW_NEEDED` per Step 4
+- Rate limit recovery exhausted: report terminal state and optional-bot instructions from Step 3b; include `REVIEW_NEEDED` when the required reviewer never reached Reviewed tier
 
 ## Return format
 CI: PASSED / FAILED (<check-name> — <details-url>) / TIMEOUT / NOT_MONITORED
-CODERABBIT: REVIEWED / SILENT_CLEAN / RATE_LIMIT_RECOVERED / TIMEOUT / NOT_TRIGGERED
+CODERABBIT: REVIEWED / SILENT_CLEAN / RATE_LIMIT_RECOVERED / TIMEOUT / NOT_TRIGGERED / REVIEW_NEEDED
 CODEX: REVIEWED / CLEAN (👍) / RATE_LIMIT_RECOVERED / TIMEOUT / NOT_TRIGGERED
+CLAUDE_CODE: NOT_TRIGGERED / USER_PATH_ONLY (v1 — registry login_pattern placeholder; no agent auto-trigger)
+Aggregate: include `REVIEW_NEEDED` when Step 4 applies so the main agent runs `pr-review`.
 ```
