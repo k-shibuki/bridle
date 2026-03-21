@@ -75,7 +75,8 @@ Poll using the algorithm from review--bot-operations.md § Polling Algorithm.
 - Do NOT run `git checkout`, `git switch`, `git branch`, or `git rebase`
 - Do NOT run `gh pr merge`
 - Do NOT modify any files
-- Use only `gh` CLI commands and `sleep`
+- Use `gh` CLI for GitHub actions and `sleep` for waits
+- Read-only local commands are allowed when required by this template (e.g. `cat` / `jq` to read and sort `docs/agent-control/review-bots.json` in Step 3b)
 
 ## Error handling
 - CI check fails: report which check and details URL
