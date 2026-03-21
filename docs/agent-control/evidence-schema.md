@@ -356,7 +356,7 @@ review freshness, and bot review status.
   },
   "reviews": {
     "bot_<id>": {
-      "status": "COMPLETED | COMPLETED_CLEAN | COMPLETED_SILENT | RATE_LIMITED | TIMED_OUT | NOT_TRIGGERED | PENDING",
+      "status": "COMPLETED | COMPLETED_CLEAN | COMPLETED_SILENT | RATE_LIMITED | TIMED_OUT | NOT_TRIGGERED | PENDING | REVIEW_INVALIDATED",
       "review_submitted_at": "ISO8601 | null",
       "findings_count": "integer",
       "review_count": "integer",
@@ -392,7 +392,7 @@ review freshness, and bot review status.
 - `reviews.bot_<id>.findings_count`: total findings from that reviewer, including both inline review comments and body-embedded "outside diff range" findings (0 for clean/silent)
 - `reviews.bot_<id>.review_count`: total number of review submissions for this PR
 - `reviews.bot_<id>.max_reviews`: budget from config (null if unlimited)
-- Bot registry (`docs/agent-control/review-bots.json`) may set `commit_status_name` (substring matched case-insensitively against `statusCheckRollup[].name`), `trigger` (`agent` \| `user_only`), and `fallback_priority` (nullable number, lower = earlier in human-invoked fallback). When `commit_status_name` matches a rollup entry, `evidence-pull-request` uses that check as the primary signal for `bot_<id>.status` and excludes it from `ci` aggregation.
+- Bot registry (`docs/agent-control/review-bots.json`) may set `commit_status_name` (substring matched case-insensitively against `statusCheckRollup[].name`), `invalidate_review_pattern` (regex against PR **issue** comments since `last_push_at` — match yields `REVIEW_INVALIDATED`), `trigger` (`agent` \| `user_only`), and `fallback_priority` (nullable number, lower = earlier in human-invoked fallback). When `commit_status_name` matches a rollup entry, `evidence-pull-request` uses that check as the primary signal for `bot_<id>.status` and excludes it from `ci` aggregation.
 - `reviews.bot_review_completed` / `bot_review_failed` / `bot_review_terminal` / `bot_review_pending` / `review_concluded`: FSM-aligned aggregates derived from configured bots (`review-bots.json`, including `required`) and thread/disposition state — see `docs/agent-control/state-model.md` § Review signals
 - `traceability.closes_issues`: Issue numbers from `Closes #N` / `Fixes #N` in PR body
 

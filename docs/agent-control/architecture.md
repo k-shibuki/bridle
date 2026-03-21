@@ -70,7 +70,12 @@ defend against a specific anti-pattern.
    operate under Design authority.
 2. **Show the agent structured state; don't make it memorize.** The
    agent receives its situational awareness from Evidence (structured
-   JSON), not from memorized procedures or ad-hoc CLI queries.
+   JSON), not from memorized procedures or ad-hoc CLI queries. If
+   Evidence omits facts that exist in the source system (for example a
+   bot terminal outcome visible only in issue comments), the agent cannot
+   select the correct workflow state from JSON alone — fix the evidence
+   target (see P5), do not compensate with thicker Procedure or new
+   Hard Stops.
 3. **Knowledge is semantics only.** Knowledge atoms hold domain
    heuristics, patterns, and gotchas. They never contain CLI commands,
    API calls, or executable procedures.

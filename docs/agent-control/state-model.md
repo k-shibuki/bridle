@@ -86,8 +86,8 @@ procedure context for in-progress local work.
 |--------|------|--------|---------------|
 | `review_threads_total` | integer | `evidence-pull-request.reviews.threads_total` | Total review thread count |
 | `review_threads_unresolved` | integer | `evidence-pull-request.reviews.threads_unresolved` | Unresolved thread count |
-| `bot_coderabbit_status` | enum | `evidence-pull-request.reviews.bot_coderabbit.status` | `"COMPLETED"` \| `"COMPLETED_CLEAN"` \| `"COMPLETED_SILENT"` \| `"RATE_LIMITED"` \| `"TIMED_OUT"` \| `"NOT_TRIGGERED"` \| `"PENDING"` |
-| `bot_codex_status` | enum | `evidence-pull-request.reviews.bot_codex.status` | `"COMPLETED"` \| `"COMPLETED_CLEAN"` \| `"RATE_LIMITED"` \| `"TIMED_OUT"` \| `"NOT_TRIGGERED"` \| `"PENDING"` |
+| `bot_coderabbit_status` | enum | `evidence-pull-request.reviews.bot_coderabbit.status` | `"COMPLETED"` \| `"COMPLETED_CLEAN"` \| `"COMPLETED_SILENT"` \| `"RATE_LIMITED"` \| `"TIMED_OUT"` \| `"NOT_TRIGGERED"` \| `"PENDING"` \| `"REVIEW_INVALIDATED"` |
+| `bot_codex_status` | enum | `evidence-pull-request.reviews.bot_codex.status` | `"COMPLETED"` \| `"COMPLETED_CLEAN"` \| `"RATE_LIMITED"` \| `"TIMED_OUT"` \| `"NOT_TRIGGERED"` \| `"PENDING"` \| `"REVIEW_INVALIDATED"` |
 | `bot_review_completed` | boolean | `evidence-pull-request.reviews.bot_review_completed` | All required bots in a **Reviewed** tier state; optional (`required: false`) bots may be `NOT_TRIGGERED` or Reviewed |
 | `bot_review_failed` | boolean | `evidence-pull-request.reviews.bot_review_failed` | Any **required** bot is in **Failed** tier (`RATE_LIMITED`, `TIMED_OUT`) |
 | `bot_review_terminal` | boolean | `evidence-pull-request.reviews.bot_review_terminal` | `bot_review_completed OR bot_review_failed` — polling may stop; **never** sufficient alone for `review_concluded` |
@@ -101,7 +101,7 @@ procedure context for in-progress local work.
 |------|------------------------|---------|
 | **Reviewed** | `COMPLETED`, `COMPLETED_CLEAN`, `COMPLETED_SILENT` | Bot produced a review for the current head |
 | **Failed** | `RATE_LIMITED`, `TIMED_OUT` | Bot could not complete a review |
-| **In-progress** | `PENDING`, `NOT_TRIGGERED` | No terminal outcome yet (`NOT_TRIGGERED` on a **required** bot still blocks `bot_review_completed`) |
+| **In-progress** | `PENDING`, `NOT_TRIGGERED`, `REVIEW_INVALIDATED` | No valid Reviewed outcome for the current head (`REVIEW_INVALIDATED`: bot voided its run, e.g. head commit moved during review — re-trigger; `NOT_TRIGGERED` on a **required** bot still blocks `bot_review_completed`) |
 
 ### Environment signals
 
