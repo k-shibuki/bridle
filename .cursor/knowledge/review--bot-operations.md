@@ -29,11 +29,27 @@ Trigger commands are in `pr-create.md` Step 5a/5b (not duplicated here).
 
 ### CR Review Budget
 
-**Max 2 review requests per PR.** This includes the initial review and
-at most 1 re-review. If the budget is exhausted, the agent proceeds
-with the evidence already collected (existing review results + agent
-verification). Rate-limit recovery re-triggers do NOT count against
-the budget (the original request was not fulfilled).
+**SSOT (numeric cap)**: `max_reviews` on the `coderabbit` entry in
+`docs/agent-control/review-bots.json`. `evidence-pull-request` surfaces it as
+`reviews.bot_coderabbit.max_reviews`. Do not restate the number in other
+artifacts — link or reference that field.
+
+**Procedure**: Each agent-triggered `@coderabbitai review` cycle consumes
+budget in the sense that `review_count` (from the PR review timeline) is
+compared to `max_reviews` in merge-readiness logic (`pull-request-readiness.jq`,
+loaded with the same `review-bots.json`). When exhausted, do not post further
+`@coderabbitai review`; proceed with existing evidence plus human/agent
+verification. Rate-limit recovery re-triggers do NOT count against the budget
+(the original request was not fulfilled).
+
+**FSM when exhausted** (CI green, `disposition` still `pending`, no unresolved
+threads, no `rereview_response_pending`): required CodeRabbit is treated as
+**done** if `bot_coderabbit.status == "NOT_TRIGGERED"` and
+`review_count >= max_reviews` (`required_bot_done` in
+`pull-request-readiness.jq`). Then `required_bot_rereview` is **not** added for
+that row, so consensus can reach `review_consensus_complete` and
+`pr_state_id == "ReviewDone"` when merge preconditions are otherwise satisfied.
+See golden case `tc-pr-coderabbit-budget-exhausted.json`.
 
 ## Detection
 

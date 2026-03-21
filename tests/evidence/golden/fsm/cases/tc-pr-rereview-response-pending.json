@@ -8,7 +8,7 @@
         "review_submitted_at": "2026-03-21T14:00:00Z",
         "findings_count": 0,
         "review_count": 2,
-        "max_reviews": 2
+        "max_reviews": 3
       },
       "bot_codex": {
         "status": "NOT_TRIGGERED",

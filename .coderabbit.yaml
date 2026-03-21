@@ -1,6 +1,8 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 #
 # CodeRabbit configuration — Pro/OSS, primary bot reviewer.
+# Per-PR agent trigger budget (max @coderabbitai review cycles) is SSOT:
+# docs/agent-control/review-bots.json → bots[].max_reviews for id "coderabbit".
 # Auto-review OFF (requires paid seat). Agent triggers @coderabbitai review
 # explicitly in pr-create Step 5a and review-fix Step 5b.
 # See .cursor/knowledge/review--bot-operations.md for trigger and lifecycle details.
