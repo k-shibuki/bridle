@@ -43,6 +43,7 @@ Poll using the algorithm from review--bot-operations.md § Polling Algorithm.
    - COMPLETED_CLEAN: Codex thumbs-up > 0 on trigger comment
    - COMPLETED_SILENT: CR only — trigger acked, > 10 min, no review/inline/rate-limit/new-threads
    - RATE_LIMITED: rate limit comment detected
+   - REVIEW_INVALIDATED: PR issue comment from bot matches voided-review pattern since head push (e.g. head commit changed during review) — confirm via `make evidence-pull-request PR=<N>` → `reviews.bot_coderabbit.status`; then re-trigger `@coderabbitai review` and reset trigger metadata
    - TIMED_OUT: 20 min elapsed
 
    Terminal states (CI, if monitored):

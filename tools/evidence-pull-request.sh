@@ -49,6 +49,7 @@ if ! echo "$bot_config" | jq -e '
     (.match_type == "exact" or .match_type == "regex") and
     (.match_flags == null or ((.match_flags | type) == "string")) and
     (.rate_limit_pattern == null or ((.rate_limit_pattern | type) == "string")) and
+    (.invalidate_review_pattern == null or ((.invalidate_review_pattern | type) == "string")) and
     (.max_reviews == null or ((.max_reviews | type) == "number")) and
     ((.required | type) == "boolean") and
     (.commit_status_name == null or ((.commit_status_name | type) == "string")) and
@@ -151,6 +152,8 @@ _detect_bot_reviews() {
     match_type=$(echo "$bot_config" | jq -r ".bots[$i].match_type")
     match_flags=$(echo "$bot_config" | jq -r ".bots[$i].match_flags // \"\"")
     rate_limit_pat=$(echo "$bot_config" | jq -r ".bots[$i].rate_limit_pattern // \"\"")
+    local invalidate_pat
+    invalidate_pat=$(echo "$bot_config" | jq -r ".bots[$i].invalidate_review_pattern // \"\"")
     max_rev=$(echo "$bot_config" | jq ".bots[$i].max_reviews // null")
     local commit_cs_name
     commit_cs_name=$(echo "$bot_config" | jq -r ".bots[$i].commit_status_name // \"\"")
@@ -278,6 +281,39 @@ _detect_bot_reviews() {
       fi
     fi
 
+    # CodeRabbit (etc.): PR issue comment when review was voided mid-run (e.g. head moved while CR was reviewing)
+    if [ -n "$invalidate_pat" ] && [ "$invalidate_pat" != "null" ]; then
+      local inv_count
+      if [ "$match_type" = "exact" ]; then
+        inv_count=$(echo "$pr_comments" | jq -r --arg login "$bot_login" --arg ipat "$invalidate_pat" --arg lp "$last_push_at" '
+          def ts($s): if $s == null or $s == "" then null else (try ($s | fromdateiso8601) catch null) end;
+          ($lp | ts(.)) as $tpush | (if $tpush == null then 0 else $tpush end) as $tp
+          | [.[] | select(.user.login == $login and (.body | test($ipat)) and ((.created_at | ts(.)) != null) and ((.created_at | ts(.)) >= $tp))]
+          | length
+        ')
+      else
+        if [ -n "$match_flags" ]; then
+          inv_count=$(echo "$pr_comments" | jq -r --arg pat "$bot_login" --arg flags "$match_flags" --arg ipat "$invalidate_pat" --arg lp "$last_push_at" '
+            def ts($s): if $s == null or $s == "" then null else (try ($s | fromdateiso8601) catch null) end;
+            ($lp | ts(.)) as $tpush | (if $tpush == null then 0 else $tpush end) as $tp
+            | [.[] | select((.user.login | test($pat; $flags)) and (.body | test($ipat)) and ((.created_at | ts(.)) != null) and ((.created_at | ts(.)) >= $tp))]
+            | length
+          ')
+        else
+          inv_count=$(echo "$pr_comments" | jq -r --arg pat "$bot_login" --arg ipat "$invalidate_pat" --arg lp "$last_push_at" '
+            def ts($s): if $s == null or $s == "" then null else (try ($s | fromdateiso8601) catch null) end;
+            ($lp | ts(.)) as $tpush | (if $tpush == null then 0 else $tpush end) as $tp
+            | [.[] | select((.user.login | test($pat)) and (.body | test($ipat)) and ((.created_at | ts(.)) != null) and ((.created_at | ts(.)) >= $tp))]
+            | length
+          ')
+        fi
+      fi
+      if [ "${inv_count:-0}" -gt 0 ] 2>/dev/null; then
+        status="REVIEW_INVALIDATED"
+        submitted=""
+      fi
+    fi
+
     # Inline findings count (top-level only, excluding reply comments)
     if [ "$match_type" = "exact" ]; then
       findings=$(echo "$cr_inline" | jq --arg login "$bot_login" \
@@ -378,7 +414,7 @@ case "$latest_review" in
   *) disposition="pending" ;;
 esac
 
-# --- FSM-derived review signals (Refs: #272) ---
+# --- FSM-derived review signals (Refs: #272). REVIEW_INVALIDATED = voided bot run for current head (not Reviewed / not Failed).
 review_signals=$(jq -nc \
   --argjson bots_map "$bot_reviews" \
   --argjson cfg "$bot_config" \
@@ -394,7 +430,7 @@ review_signals=$(jq -nc \
     | {required: $b.required, status: $st}
   ] as $rows
   | ($rows | any(.required and failed(.status))) as $failed
-  | ($rows | all(if .required then reviewed(.status) else (reviewed(.status) or (.status == "NOT_TRIGGERED")) end)) as $completed
+  | ($rows | all(if .required then reviewed(.status) else (reviewed(.status) or (.status == "NOT_TRIGGERED") or (.status == "REVIEW_INVALIDATED")) end)) as $completed
   | ($failed or $completed) as $terminal
   | ($terminal | not) as $pending
   | (($disposition == "approved") or ($disposition == "pending" and $completed and $threads_u == 0)) as $concluded
