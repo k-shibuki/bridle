@@ -1,0 +1,18 @@
+{
+  "id": "tc-eff-priority-ci-failed",
+  "kind": "effective_state",
+  "input": {
+    "workflow_position": {
+      "git": {"branch": "feat/99-x", "on_main": false},
+      "routing": {"global_state_id": "Implementing"}
+    },
+    "environment": {"errors": 0},
+    "issues_summary": null,
+    "pull_request": {
+      "routing": {"pr_state_id": "CIFailed"}
+    }
+  },
+  "expect": {
+    "effective_state_id": "CIFailed"
+  }
+}

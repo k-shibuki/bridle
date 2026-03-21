@@ -1,6 +1,15 @@
 # CI gate for pull requests.
 # Runs schema validation, linting, tests, R CMD check, and coverage as separate jobs.
 # Full OS matrix is handled by R-CMD-check.yaml on push to main.
+#
+# Test skipping: when the PR still touches R paths (cumulative diff) but the current
+# push does not, the test job is skipped only if the parent commit already has a
+# successful "test" check run from this workflow. Otherwise tests run (closes the
+# loophole where a docs-only push could hide a prior failing test via skip).
+#
+# Manual PR checks: R-only change runs test; doc-only follow-up skips test after green
+# parent test; failing test then doc-only push re-runs test; fork PRs always run
+# tests when r_source is true (no parent check lookup on the fork repo).
 on:
   pull_request:
     branches: [main, master]
@@ -26,6 +35,7 @@ jobs:
       pull-requests: read
     outputs:
       r_source: ${{ steps.filter.outputs.r_source }}
+      r_source_push: ${{ steps.filter_push.outputs.r_source }}
       r_deps: ${{ steps.filter.outputs.r_deps }}
       renv_deps: ${{ steps.filter.outputs.renv_deps }}
       schemas: ${{ steps.filter.outputs.schemas }}
@@ -33,6 +43,10 @@ jobs:
       kb_files: ${{ steps.filter.outputs.kb_files }}
       markdown: ${{ steps.filter.outputs.markdown }}
     steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -55,6 +69,8 @@ jobs:
             ci_config:
               - 'Makefile'
               - 'tools/**'
+              - 'docs/agent-control/fsm/**'
+              - 'tests/evidence/golden/fsm/**'
               - '.github/workflows/**'
               - 'containers/**'
               - '.pre-commit-config.yaml'
@@ -67,6 +83,89 @@ jobs:
             markdown:
               - '**/*.md'
               - '.markdownlint-cli2.jsonc'
+
+      # Incremental R-related paths for this push only (parent..HEAD). Used to avoid
+      # skipping tests after a failing run when a later push only touches docs.
+      - uses: dorny/paths-filter@v3
+        id: filter_push
+        with:
+          base: ${{ github.event.before != '0000000000000000000000000000000000000000' && github.event.before || github.event.pull_request.base.sha }}
+          ref: ${{ github.sha }}
+          filters: |
+            r_source:
+              - 'R/**'
+              - 'tests/**'
+              - 'DESCRIPTION'
+              - 'NAMESPACE'
+
+  test-skip-guard:
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
+    outputs:
+      run_test: ${{ steps.decide.outputs.run_test }}
+    steps:
+      - name: Decide whether test job must run
+        id: decide
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          r_source='${{ needs.changes.outputs.r_source }}'
+          r_push='${{ needs.changes.outputs.r_source_push }}'
+          before='${{ github.event.before }}'
+          head_repo='${{ github.event.pull_request.head.repo.full_name }}'
+
+          if [ "$r_source" != "true" ]; then
+            echo "run_test=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$r_push" = "true" ]; then
+            echo "run_test=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ]; then
+            echo "run_test=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Fork PR: token may not list check runs on the head repo; run tests conservatively.
+          if [ "$head_repo" != "${{ github.repository }}" ]; then
+            echo "run_test=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          api_ok=0
+          resp="$(gh api "repos/${head_repo}/commits/${before}/check-runs?per_page=100" 2>/dev/null)" || api_ok=$?
+
+          if [ "$api_ok" -ne 0 ] || [ -z "$resp" ]; then
+            echo "run_test=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          conclusion="$(printf '%s' "$resp" | jq -r --arg b "$before" '
+            [ .check_runs[]?
+              | select(.name == "test"
+                  and .head_sha == $b
+                  and .app.slug == "github-actions"
+                  and .status == "completed")
+            ]
+            | sort_by(.completed_at)
+            | last
+            | .conclusion // "missing"
+          ' 2>/dev/null)" || conclusion="missing"
+          if [ -z "$conclusion" ]; then
+            conclusion="missing"
+          fi
+
+          if [ "$conclusion" = "success" ]; then
+            echo "run_test=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_test=true" >> "$GITHUB_OUTPUT"
+          fi
 
   ci-config:
     needs: changes
@@ -98,6 +197,9 @@ jobs:
           else
             echo "shellcheck not available, skipping"
           fi
+
+      - name: FSM jq offline fixtures
+        run: bash tools/test-fsm-fixtures.sh
 
   package-sync-verify:
     needs: changes
@@ -231,8 +333,10 @@ jobs:
           retention-days: 7
 
   test:
-    needs: [changes]
-    if: needs.changes.outputs.r_source == 'true'
+    needs: [changes, test-skip-guard]
+    if: |
+      needs.changes.outputs.r_source == 'true' &&
+      needs.test-skip-guard.outputs.run_test == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -328,12 +432,13 @@ jobs:
   # It passes when all relevant jobs pass or are correctly skipped.
   ci-pass:
     if: always()
-    needs: [changes, ci-config, package-sync-verify, schema-validate, format-verify, lint, test, check, knowledge-validate, markdown-lint]
+    needs: [changes, test-skip-guard, ci-config, package-sync-verify, schema-validate, format-verify, lint, test, check, knowledge-validate, markdown-lint]
     runs-on: ubuntu-latest
     steps:
       - name: Verify all jobs passed or were skipped
         run: |
           results=("${{ needs.changes.result }}" \
+                   "${{ needs.test-skip-guard.result }}" \
                    "${{ needs.ci-config.result }}" \
                    "${{ needs.package-sync-verify.result }}" \
                    "${{ needs.schema-validate.result }}" \
@@ -353,7 +458,7 @@ jobs:
 
   ci-summary:
     if: always()
-    needs: [changes, ci-config, package-sync-verify, schema-validate, format-verify, lint, test, check, knowledge-validate, markdown-lint]
+    needs: [changes, test-skip-guard, ci-config, package-sync-verify, schema-validate, format-verify, lint, test, check, knowledge-validate, markdown-lint]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -365,6 +470,7 @@ jobs:
           script: |
             const jobs = {
               'changes': '${{ needs.changes.result }}',
+              'test-skip-guard': '${{ needs.test-skip-guard.result }}',
               'ci-config': '${{ needs.ci-config.result }}',
               'package-sync-verify': '${{ needs.package-sync-verify.result }}',
               'schema-validate': '${{ needs.schema-validate.result }}',

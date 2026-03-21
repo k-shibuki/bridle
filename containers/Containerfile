@@ -3,6 +3,7 @@ FROM docker.io/rocker/tidyverse:4.5.2
 # System dependencies for bridle and its future deps (ellmer, S7, etc.)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libyaml-dev \
+    jq \
     ca-certificates curl gnupg \
     && rm -rf /var/lib/apt/lists/*
 

@@ -1,0 +1,30 @@
+{
+  "workflow_position": {
+    "git": {"branch": "main", "on_main": true, "uncommitted_files": 0, "stale_branches": [], "commits_ahead_of_remote": 0},
+    "issues": {"open_count": 0, "open": []},
+    "pull_requests": {"open_count": 0, "open": [], "recently_merged": []},
+    "environment": {"container_running": true},
+    "procedure_context": {"workflow_phase": null, "issue_number": null, "branch": "", "updated_at": null, "stale": false},
+    "routing": {"global_state_id": "NoWorkPlanned"}
+  },
+  "environment": {
+    "errors": 0,
+    "warnings": 0,
+    "runtime": "podman",
+    "checks": []
+  },
+  "issues_summary": null,
+  "pull_request": null,
+  "routing": {
+    "effective_state_id": "NoWorkPlanned",
+    "global_state_id": "NoWorkPlanned",
+    "pr_state_id": null,
+    "recommended_next_issue": null
+  },
+  "_meta": {
+    "target": "evidence-fsm",
+    "timestamp": "2026-03-12T10:30:20Z",
+    "version": "1.0.0",
+    "duration_ms": 5000
+  }
+}

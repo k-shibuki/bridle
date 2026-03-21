@@ -1,0 +1,56 @@
+{
+  "id": "tc-aug-assignee-filter",
+  "kind": "augment_routing",
+  "input": {
+    "current_user": "alice",
+    "base_fsm": {
+      "workflow_position": {
+        "git": {"on_main": true}
+      },
+      "environment": {"errors": 0},
+      "issues_summary": {
+        "issues": [
+          {
+            "number": 60,
+            "title": "assigned to bob",
+            "labels": ["feat"],
+            "has_test_plan": true,
+            "has_acceptance_criteria": true,
+            "blocked_by": [],
+            "blocks": [],
+            "is_parent": false,
+            "assignee": "bob",
+            "created_at": "2026-03-01T00:00:00Z"
+          },
+          {
+            "number": 61,
+            "title": "unassigned",
+            "labels": ["feat"],
+            "has_test_plan": true,
+            "has_acceptance_criteria": true,
+            "blocked_by": [],
+            "blocks": [],
+            "is_parent": false,
+            "assignee": null,
+            "created_at": "2026-03-05T00:00:00Z"
+          }
+        ],
+        "dependency_graph": {
+          "roots": [60, 61],
+          "leaves": [60, 61],
+          "depth": 0
+        }
+      },
+      "pull_request": null,
+      "routing": {
+        "effective_state_id": "ReadyToStart",
+        "global_state_id": "ReadyToStart",
+        "pr_state_id": null,
+        "recommended_next_issue": null
+      }
+    }
+  },
+  "expect": {
+    "recommended_next_issue": 61
+  }
+}

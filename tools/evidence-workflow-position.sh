@@ -68,6 +68,11 @@ _collect_issues() {
       else ((.body // "") | test("## Test Plan"; "i"))
       end
     ),
+    has_acceptance_criteria: (
+      if [.labels[].name] | any(. == "has-acceptance-criteria") then true
+      else ((.body // "") | test("## Acceptance Criteria"; "i"))
+      end
+    ),
     blocked_by: ([(.body // "") | capture("(?:Depends on|Blocked by|After)[^\\n]*?#(?<n>\\d+)"; "g") | .n | tonumber] | unique)
   }]')
   issues_count=$(echo "$issues_open" | jq 'length')
@@ -169,9 +174,8 @@ _collect_env() {
   fi
 
   jq -nc \
-    --argjson healthy "$container_running" \
     --argjson running "$container_running" \
-    '{"doctor_healthy": $healthy, "container_running": $running}'
+    '{"container_running": $running}'
 }
 
 # --- Section: Procedure context (local state file) ---
@@ -251,7 +255,7 @@ wait "$pid_ctx" || evidence_error "procedure_context" "Procedure context collect
 [ -s "$_tmpdir/git.json" ] || echo '{"branch":"","on_main":false,"uncommitted_files":0,"stale_branches":[],"commits_ahead_of_remote":0,"stash_count":0}' > "$_tmpdir/git.json"
 [ -s "$_tmpdir/issues.json" ] || echo '{"open_count":0,"open":[]}' > "$_tmpdir/issues.json"
 [ -s "$_tmpdir/prs.json" ] || echo '{"open_count":0,"open":[],"recently_merged":[]}' > "$_tmpdir/prs.json"
-[ -s "$_tmpdir/env.json" ] || echo '{"doctor_healthy":false,"container_running":false}' > "$_tmpdir/env.json"
+[ -s "$_tmpdir/env.json" ] || echo '{"container_running":false}' > "$_tmpdir/env.json"
 [ -s "$_tmpdir/ctx.json" ] || echo '{"workflow_phase":null,"issue_number":null,"branch":"","updated_at":null,"stale":false}' > "$_tmpdir/ctx.json"
 
 # --- Compose final output ---
@@ -268,5 +272,9 @@ body=$(jq -nc \
     "environment": $env[0],
     "procedure_context": $ctx[0]
   }')
+
+_fsm_dir="$(cd "$(dirname "$0")/.." && pwd)/docs/agent-control/fsm"
+# Partial global FSM: env_errors unknown here — ST_ENV_ISSUE requires evidence-environment (Refs: #282)
+body=$(echo "$body" | jq -c --argjson env_errors 0 -f "$_fsm_dir/global-workflow.jq")
 
 evidence_emit "$body"

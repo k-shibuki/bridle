@@ -152,10 +152,12 @@ Examples of many-to-one mapping:
 
 - `TestsDone`, `QualityOK`, `TestsPass` → all route to `verify`
 - `ChangesRequired`, `UnresolvedThreads` → both route to `review-fix`
-- `CIPending`, `BotReviewPending` → both delegate to background subagents
+- `CIPending`, `BotReviewPending` → both delegate to Tier 1 subagents (foreground default for one PR; background when multiple concurrent waits — `subagent-policy.mdc`, `next.md`)
 
-The canonical routing table lives in `next.md` § Act. The canonical
-state definitions live in `state-model.md`.
+The canonical routing table lives in `next.md` § Act only. The canonical
+state definitions live in `state-model.md`. Full-path proposal, approval,
+and execution through merge and branch cleanup (single-unit and batch) are
+SSOT in `docs/agent-control/next-orchestration.md`.
 
 ### Full commands (exception form)
 
@@ -223,6 +225,7 @@ the authoritative list of source-of-truth locations:
 | Issue template structure | `.github/ISSUE_TEMPLATE/` |
 | Makefile target naming | `docs/agent-control/evidence-schema.md` |
 | FSM state definitions | `docs/agent-control/state-model.md` |
+| `next` orchestration (single-unit path + batch Phases A–C, approval, per-unit DoD) | `docs/agent-control/next-orchestration.md` |
 | Procedure layer design (action cards, full commands, FSM mapping) | `docs/agent-control/architecture.md` § Procedure layer design |
 
 ## Reusability
