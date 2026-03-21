@@ -85,10 +85,11 @@ base_branch=$(echo "$pr_data" | jq -r '.baseRefName')
 ci_checks=$(echo "$pr_data" | jq -c --argjson cfg "$bot_config" '
   (.statusCheckRollup // []) as $roll
   | ([$cfg.bots[] | (.commit_status_name // "") | select(length > 0) | ascii_downcase]) as $npats
-  | (if ($npats | length) == 0 then $roll else
+  | (if ($npats | length) == 0 then [ $roll[] | select((.name // "") != "") ] else
       [ $roll[] | select(
           (.name // "") as $cn
-          | [ $npats[] as $p | ($cn | ascii_downcase | contains($p)) ] | any | not
+          | ($cn != "")
+            and ([ $npats[] as $p | ($cn | ascii_downcase | contains($p)) ] | any | not)
         )]
     end) as $filtered
   | [ $filtered[] | {
@@ -113,10 +114,11 @@ ci_checks=$(echo "$pr_data" | jq -c --argjson cfg "$bot_config" '
 ci_status=$(echo "$pr_data" | jq -r --argjson cfg "$bot_config" '
   (.statusCheckRollup // []) as $roll
   | ([$cfg.bots[] | (.commit_status_name // "") | select(length > 0) | ascii_downcase]) as $npats
-  | (if ($npats | length) == 0 then $roll else
+  | (if ($npats | length) == 0 then [ $roll[] | select((.name // "") != "") ] else
       [ $roll[] | select(
           (.name // "") as $cn
-          | [ $npats[] as $p | ($cn | ascii_downcase | contains($p)) ] | any | not
+          | ($cn != "")
+            and ([ $npats[] as $p | ($cn | ascii_downcase | contains($p)) ] | any | not)
         )]
     end) as $filtered
   | if ($filtered | length) == 0 then "no_checks"
