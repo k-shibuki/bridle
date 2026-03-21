@@ -73,7 +73,7 @@ If the user wants **proposal only** (no execution), they must say so explicitly;
 For **each unit** in order:
 
 1. `git fetch` / checkout the correct branch (PR head or new branch for Issue implementation).
-2. Re-run **Sense** for **this** branch per `next.md` § Sense **After approval** (and after delegation returns, the CI/bot recipe refresh list including `make evidence-fsm`).
+2. Re-run **Sense** for **this** branch per `next.md` § Sense **After approval** (and after delegation returns, follow the CI/bot recipe refresh list there — when it includes `make evidence-fsm`, run that **first** for aggregate orientation, then `make evidence-pull-request` / `make evidence-workflow-position` as specified).
 3. **Classify** FSM state; **route** using the **routing table in `next.md` § Act** (SSOT — do not duplicate the table here).
 4. Execute the routed **action card** (`implement`, `verify`, `commit`, `pr-create`, `pr-review`, `review-fix`, `pr-merge`, …) including its `## Reads`.
 5. **CIPending** / **BotReviewPending**: delegate per `subagent-policy.mdc` and `next.md` § Act · CI and bot wait recipe — **foreground** Tier 1 default for one unit; **no inline polling** in the main agent (`HS-NO-INLINE-POLL`).
