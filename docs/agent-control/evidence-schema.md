@@ -549,3 +549,32 @@ review freshness, and bot review status.
 **Nullability**: all fields required. `assignee` nullable. Arrays may be empty.
 
 **Downstream**: ST_PREFLIGHT (PreFlightReview), ST_READY (ReadyToStart) Issue selection, `implement` auto-select.
+
+### Target 7: `evidence-branch-protection`
+
+**Purpose**: Observe GitHub branch protection for a branch (default `main`) without raw `gh api` in procedures.
+
+**Input**: `gh` REST API `GET /repos/{owner}/{repo}/branches/{branch}/protection`. `BRANCH` env optional (default `main`). Repo resolved from `git remote origin`.
+
+**Output schema**:
+
+```json
+{
+  "repo_owner": "string",
+  "repo_name": "string",
+  "branch": "string",
+  "protection_present": "boolean",
+  "required_status_checks_strict": "boolean | null",
+  "required_status_contexts": ["string"]
+}
+```
+
+**Field semantics**:
+
+- `protection_present`: false when GitHub returns 404 (no rules on branch) or on fatal resolution errors
+- `required_status_checks_strict`: from GitHub `required_status_checks.strict` when protection exists; null when absent
+- `required_status_contexts`: GitHub `required_status_checks.contexts` when protection exists; empty when absent
+
+**Nullability**: all fields required in successful output; `required_status_checks_strict` may be null.
+
+**Downstream**: `controls-review.md` guard audit (branch protection row).

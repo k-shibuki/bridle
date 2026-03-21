@@ -58,7 +58,14 @@ else
       --arg owner "$REPO_OWNER" \
       --arg name "$REPO_NAME" \
       --arg br "$BRANCH" \
-      '{repo_owner: $owner, repo_name: $name, branch: $br, protection_present: false, required_status_contexts: []}')
+      '{
+        repo_owner: $owner,
+        repo_name: $name,
+        branch: $br,
+        protection_present: false,
+        required_status_checks_strict: null,
+        required_status_contexts: []
+      }')
     evidence_emit "$body"
     exit 1
   fi
