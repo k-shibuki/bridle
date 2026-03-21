@@ -26,7 +26,7 @@ of available transitions.
 | ST_REBASE | `DependentChainRebase` | Merge conflict from squash-merged parent PR | `pr_exists_for_branch AND mergeable_status == "CONFLICTING" AND parent_pr_recently_merged` |
 | ST_STALE | `StaleBranches` | Local branches track deleted remotes | `stale_branches_count > 0` |
 | ST_CYCLE_DONE | `CycleComplete` | PR merged, back on main | `on_main AND pr_just_merged` |
-| ST_ENV_ISSUE | `EnvironmentIssue` | Development environment unhealthy | `evidence-environment.errors > 0` |
+| ST_ENV_ISSUE | `EnvironmentIssue` | Development environment unhealthy | `evidence-environment.errors > 0` **or** `evidence-workflow-position.environment.container_running == false` (see `docs/agent-control/fsm/global-workflow.jq`) |
 | ST_EXCEPTION | `ExceptionFlow` | Hotfix or no-issue exception needed | `on_main AND exception_issue_exists` |
 
 **State classification**:
@@ -112,7 +112,7 @@ procedure context for in-progress local work.
 | `doctor_healthy` | boolean | `evidence-environment` | `errors == 0` (workflow position no longer mirrors doctor; use `make evidence-environment` or `make evidence-fsm`) |
 | `errors` | integer | `evidence-environment.errors` | Critical issue count |
 | `warnings` | integer | `evidence-environment.warnings` | Warning count |
-| `container_running` | boolean | `evidence-workflow-position.environment.container_running` | Dev container status |
+| `container_running` | boolean | `evidence-workflow-position.environment.container_running` | Dev container status; when `false`, `routing.global_state_id` is `EnvironmentIssue` (same rule in `evidence-fsm` after env merge) |
 
 ### Procedure-context signals
 
@@ -197,7 +197,7 @@ captures explicit user/agent actions.
 | ST_STALE | `stale_branches_count == 0 AND open_issues_count == 0` | cleanup completed | ST_NO_WORK | No work planned |
 | ST_CYCLE_DONE | `open_issues_count > 0` | none | ST_READY | Start next Issue |
 | ST_CYCLE_DONE | `open_issues_count == 0` | none | ST_NO_WORK | All work complete |
-| ST_ENV_ISSUE | `evidence-environment.errors == 0` | environment fixed | ST_READY or ST_NO_WORK | `doctor` then reassess |
+| ST_ENV_ISSUE | `evidence-environment.errors == 0` **and** dev container running | environment fixed | ST_READY or ST_NO_WORK | `doctor` / `make container-start` then reassess |
 | ST_EXCEPTION | `exception_issue_exists` | exception flow approved | ST_COMMITTED | `implement` → `pr-create` |
 
 ## Guard conditions
@@ -227,7 +227,7 @@ conditions. They correspond to Hard Stops in `agent-safety.mdc`.
 | Merge conflict (ST_REBASE) | `mergeable_status == "CONFLICTING"` + parent PR merged | `git rebase --onto` (`git--squash-merge-dependent-branch.md`), force-push → ST_CI_PENDING |
 | Bot rate limited | `bot_*_status == "RATE_LIMITED"` | Parse wait time, sleep, re-trigger → ST_BOT_PENDING |
 | Bot timed out | `bot_*_status == "TIMED_OUT"` | Report, proceed with available evidence → ST_REVIEW_READY |
-| Environment broken (ST_ENV_ISSUE) | `evidence-environment.errors > 0` | `make container-build` / `make container-start` / `make package-restore` |
+| Environment broken (ST_ENV_ISSUE) | `evidence-environment.errors > 0` **or** dev container not running | `make container-start` / `make container-build` / `make package-restore` / `make doctor` per action card |
 | Format-lint loop | styler and lintr disagree | `lint--styler-lintr-conflict.md` |
 | Pre-push rejection | Hook fails | Fix locally, re-attempt push |
 | `check-policy` failure | PR body missing sections | Edit PR body directly (no commit needed) |

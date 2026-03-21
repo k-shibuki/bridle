@@ -19,9 +19,11 @@ main agent per `HS-EVIDENCE-FIRST`.
 | Git state | `git status`, `git branch`, `git log` | `make evidence-workflow-position` |
 | Open Issues | `gh issue list`, `gh issue view` | `make evidence-issue ISSUE=N` |
 | Open PRs (routing) | `gh pr list`, `gh pr view`, `gh pr checks` | `make evidence-workflow-position` or `make evidence-pull-request PR=N` |
+| Unified FSM aggregate | N/A (no single raw CLI) | `make evidence-fsm` |
 | PR detail (CI, merge, reviews) | `gh api .../pulls/N/reviews` | `make evidence-pull-request PR=N` |
 | Review threads (per-thread) | `gh api graphql ...reviewThreads` | `make evidence-review-threads PR=N` |
 | Environment health | manual doctor checks | `make evidence-environment` |
+| Environment detail when container down | N/A | `make evidence-environment` when `evidence-workflow-position.environment.container_running == false` (Tier B; optional when container is up) |
 | Lint results | `lintr::lint_package()` direct | `make evidence-lint` |
 
 ### 2. Execution (raw CLI permitted)

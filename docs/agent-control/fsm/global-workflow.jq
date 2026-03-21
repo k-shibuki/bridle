@@ -1,6 +1,7 @@
 # Workflow-position partial FSM: add routing.global_state_id (SSOT for global mode).
 # Input: evidence-workflow-position body (without routing).
 # --argjson env_errors: integer; use 0 when environment errors unknown.
+# EnvironmentIssue also when environment.container_running == false (strict boolean).
 
 def preflight_needed($open):
   ($open | length > 0) and ($open | any(
@@ -17,6 +18,7 @@ def pr_for_branch($branch; $prs):
 | ($wp.procedure_context) as $ctx
 | (pr_for_branch($g.branch; $prs)) as $pr
 | (if $env_errors > 0 then "EnvironmentIssue"
+  elif ($wp.environment.container_running == false) then "EnvironmentIssue"
   elif ($g.stale_branches | length) > 0 then "StaleBranches"
   elif $is.open_count == 0 then "NoWorkPlanned"
   elif $g.on_main and ($g.uncommitted_files == 0) and preflight_needed($is.open) then "PreFlightReview"

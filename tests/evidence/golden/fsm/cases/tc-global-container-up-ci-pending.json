@@ -1,0 +1,51 @@
+{
+  "kind": "global_workflow",
+  "id": "tc-global-container-up-ci-pending",
+  "input": {
+    "env_errors": 0,
+    "workflow_body": {
+      "git": {
+        "branch": "feat/example",
+        "on_main": false,
+        "uncommitted_files": 0,
+        "stale_branches": [],
+        "commits_ahead_of_remote": 0,
+        "stash_count": 0
+      },
+      "issues": {
+        "open_count": 1,
+        "open": [
+          {
+            "number": 1,
+            "title": "placeholder",
+            "labels": [],
+            "has_test_plan": true,
+            "has_acceptance_criteria": true,
+            "blocked_by": []
+          }
+        ]
+      },
+      "pull_requests": {
+        "open_count": 1,
+        "open": [
+          {
+            "head_branch": "feat/example",
+            "ci_status": "pending",
+            "mergeable": "MERGEABLE",
+            "review_threads_unresolved": 0
+          }
+        ],
+        "recently_merged": []
+      },
+      "environment": { "container_running": true },
+      "procedure_context": {
+        "workflow_phase": null,
+        "issue_number": null,
+        "branch": "",
+        "updated_at": null,
+        "stale": false
+      }
+    }
+  },
+  "expect": { "global_state_id": "CIPending" }
+}

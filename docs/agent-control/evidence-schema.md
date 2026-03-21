@@ -249,8 +249,8 @@ into a single JSON document for state classification.
 - `issues.open[].blocked_by`: Issue numbers referenced in "Depends on" or "Blocks" sections
 - `pull_requests.open[].ci_status`: aggregated from `statusCheckRollup` — `success` only if ALL checks pass
 - `pull_requests.open[].review_threads_*`: from GraphQL `reviewThreads` query
-- `environment.container_running`: true when the development container is running. Full health diagnosis is delegated to `evidence-environment` (ST_ENV_ISSUE uses `evidence-environment.errors`).
-- `routing.global_state_id`: partial global FSM id from `docs/agent-control/fsm/global-workflow.jq` (ST_ENV_ISSUE requires `evidence-environment` merged in `evidence-fsm`).
+- `environment.container_running`: true when the development container is running. When **false**, `global-workflow.jq` sets `routing.global_state_id` to `EnvironmentIssue` (ST_ENV_ISSUE). Full health diagnosis (renv, R packages, etc.) remains in `evidence-environment` (`errors > 0` also yields `EnvironmentIssue` when merged in `evidence-fsm`).
+- `routing.global_state_id`: global FSM id from `docs/agent-control/fsm/global-workflow.jq` with `env_errors` passed as `0` here; container-down is still evaluated from `.environment.container_running`. `evidence-fsm` recomputes the same jq with real `evidence-environment.errors`.
 - `procedure_context.workflow_phase`: current local workflow phase from `.cursor/state/workflow-phase.json`. `null` when no active local work or file absent.
 - `procedure_context.issue_number`: Issue being worked on (for cross-validation with branch).
 - `procedure_context.stale`: `true` if the state file's `branch` does not match current branch, or if `updated_at` is older than 24 hours.
@@ -295,7 +295,7 @@ into a single JSON document for state classification.
 
 **Nullability**: all fields required. `detail` may be empty string.
 
-**Composability**: `evidence-workflow-position` exposes only `container_running` for lightweight UI; `errors` / `warnings` live here. `ST_ENV_ISSUE` uses `errors > 0` from this target (or the embedded copy in `evidence-fsm`).
+**Composability**: `evidence-workflow-position` exposes `container_running` for lightweight UI; `errors` / `warnings` live here. `ST_ENV_ISSUE` uses `errors > 0` from this target (or the embedded copy in `evidence-fsm`). **Tier B (agents):** run `make evidence-environment` when `evidence-workflow-position.environment.container_running == false` (optional at other times).
 
 **Downstream**: ST_ENV_ISSUE (EnvironmentIssue) detection, `doctor` command.
 

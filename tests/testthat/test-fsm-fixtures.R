@@ -13,7 +13,7 @@ run_fsm_fixture_script <- function(script) {
   list(out = out, status = as.integer(st))
 }
 
-test_that("FSM jq fixture suite passes (pull-request-readiness, effective-state, augment-routing)", {
+test_that("FSM jq fixture suite passes (pull-request-readiness, effective-state, global-workflow, augment-routing)", {
   skip_if_not(nzchar(Sys.which("bash")), "bash not on PATH")
   skip_if_not(nzchar(Sys.which("jq")), "jq not on PATH")
 

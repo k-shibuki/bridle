@@ -274,7 +274,7 @@ body=$(jq -nc \
   }')
 
 _fsm_dir="$(cd "$(dirname "$0")/.." && pwd)/docs/agent-control/fsm"
-# Partial global FSM: env_errors unknown here — ST_ENV_ISSUE requires evidence-environment (Refs: #282)
+# global-workflow.jq: env_errors=0 here; container_running from .environment still yields EnvironmentIssue when false
 body=$(echo "$body" | jq -c --argjson env_errors 0 -f "$_fsm_dir/global-workflow.jq")
 
 evidence_emit "$body"

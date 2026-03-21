@@ -110,6 +110,26 @@ run_effective_state() {
   echo "OK [$id] effective_state"
 }
 
+run_global_workflow() {
+  local file="$1"
+  local id exp got
+  id=$(jq -r '.id' "$file")
+  exp=$(jq -r '.expect.global_state_id' "$file")
+  local env_err
+  env_err=$(jq -r '.input.env_errors // 0' "$file")
+  got=$(
+    jq -c '.input.workflow_body' "$file" |
+      jq -c --argjson env_errors "$env_err" -f "$FSM/global-workflow.jq" |
+      jq -r '.routing.global_state_id'
+  )
+  if [ "$got" != "$exp" ]; then
+    echo "FAIL [$id] global_state_id: got $got expected $exp" >&2
+    errors=$((errors + 1))
+    return
+  fi
+  echo "OK [$id] global_workflow"
+}
+
 run_augment_routing() {
   local file="$1"
   local id base exp_rec got_rec
@@ -140,6 +160,7 @@ for f in "$CASE_DIR"/*.json; do
   case "$kind" in
     pull_request_readiness) run_pr_readiness "$f" ;;
     effective_state) run_effective_state "$f" ;;
+    global_workflow) run_global_workflow "$f" ;;
     augment_routing) run_augment_routing "$f" ;;
     *)
       echo "FAIL: unknown kind '$kind' in $f" >&2
