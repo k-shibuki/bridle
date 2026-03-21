@@ -1,5 +1,5 @@
 {
-  "id": "tc-pr-consensus-blocked-findings",
+  "id": "tc-pr-consensus-findings-resolved-no-threads",
   "kind": "pull_request_readiness",
   "input": {
     "bots_map": {
@@ -19,15 +19,15 @@
       }
     },
     "disposition": "pending",
-    "threads_unresolved": 1,
+    "threads_unresolved": 0,
     "mergeable": "MERGEABLE",
     "merge_state": "CLEAN",
     "ci_status": "success"
   },
   "expect": {
-    "review_consensus_complete": false,
-    "safe_to_enable": false,
-    "pr_state_id": "UnresolvedThreads",
-    "blockers_contains": ["required_bot_findings", "unresolved_threads"]
+    "review_consensus_complete": true,
+    "safe_to_enable": true,
+    "pr_state_id": "ReviewDone",
+    "blockers_empty": true
   }
 }

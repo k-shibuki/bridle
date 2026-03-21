@@ -32,10 +32,10 @@ Concrete gates (project SSOT): consensus and `auto_merge_readiness.safe_to_enabl
 
 When **one** clear work unit is active (typical: one checked-out branch for one Issue/PR path, and no multi-unit batch requested):
 
-1. **Classify** FSM state from Evidence; determine the **immediate** routed action card from `next.md` § Act (do not duplicate the table here).
-2. **Plan (user-visible)** — Do **not** stop at “next card = X.” Trace **forward** from the current state along the routing table through **Per-unit Definition of Done**: list the **sequence of cards and waits** you expect (e.g. `test-create` → `verify` → `commit` → `pr-create` → … → `pr-merge`, including delegated CI/bot waits, rebase/conflict handling if evidence suggests it). Note gaps (“PR not opened yet”, “unknown until review”) honestly; still show **merge + remote delete + local tracking cleanup** as explicit end states.
+1. **Classify** FSM state from Evidence **after** completing `next.md` § Sense **Before the approval gate** (includes **mandatory** `make evidence-fsm`). Determine the **immediate** routed action card from `next.md` § Act (do not duplicate the table here).
+2. **Plan (user-visible)** — Do **not** stop at “next card = X.” Trace **forward** from the current state along the routing table through **Per-unit Definition of Done**: list the **sequence of cards and waits** you expect (e.g. `test-create` → `verify` → `commit` → `pr-create` → … → `pr-merge`, including delegated CI/bot waits, rebase/conflict handling if evidence suggests it). State how **lightweight** evidence (workflow position, per-PR) and **aggregate** `evidence-fsm` support the plan. Note gaps (“PR not opened yet”, “unknown until review”) honestly; still show **merge + remote delete + local tracking cleanup** as explicit end states.
 3. **Approval gate** — Present **once**: (a) unit identity (Issue # / PR # / branch), (b) the **ordered remainder** from current state through Per-unit Definition of Done, (c) the completion condition (Per-unit Definition of Done section above). Obtain **explicit user approval** to execute through that completion condition. **No per-card re-approval** after this gate (Hard Stops and genuine blocks excepted).
-4. **Execute** — Run Sense → classify → route → execute cards in a loop until Per-unit Definition of Done for this unit, then stop with evidence-backed summary.
+4. **Execute** — Run **post-approval** Sense (`next.md` § Sense **After approval**), classify → route → execute cards in a loop until Per-unit Definition of Done for this unit, then stop with evidence-backed summary. After **CI/bot delegation** returns, use the **mandatory** refresh list in `next.md` § Act (includes `make evidence-fsm`).
 
 **Post-approval autonomy (mandatory)** — From step 4 onward, the agent **must not** prompt the user for permission, choice, or continuation between action cards or between delegation cycles. Execution is **strictly step-by-step and self-driven** through the approved sequence until DoD or an allowed stop. **Prohibited**: rhetorical “want me to…?”, optional follow-ups that block progress, or ending the turn with questions instead of delegating waits. **Required**: delegate `CIPending` / `BotReviewPending` per `subagent-policy.mdc` (**foreground** Tier 1 default for one unit — see `next.md` § Act · CI and bot wait recipe). When the subagent returns, immediately re-run Sense and the next routed card — do not treat “CI is slow” as a stop. On **tooling/session limits** only (narrow definition in Phase C below — **Tooling/session limits** and **Stops**), **resume the same approved path** next turn without re-opening step 3.
 
@@ -45,13 +45,14 @@ If the user asked **proposal only**, they must say so; otherwise default is exec
 
 1. Run `make evidence-workflow-position` (required).
 2. If `on_main == true` and `open_issues_count > 0`, run `make evidence-issue` (use `SCOPE=control-system` or `ISSUE_MIN=252` when the user requested that scope).
-3. For each open PR that may need merge/review detail, run `make evidence-pull-request PR=<N>` as needed. For a single aggregate view (`routing.effective_state_id`, embedded PR `auto_merge_readiness`), use `make evidence-fsm` ([`evidence-schema.md`](evidence-schema.md) Target 4b).
-4. **Build the work queue**:
+3. For each open PR that may need merge/review detail, run `make evidence-pull-request PR=<N>` as needed.
+4. Run `make evidence-fsm` **once** (mandatory before Phase B — same aggregate contract as `next.md` § Sense **Before the approval gate** step 4).
+5. **Build the work queue**:
    - Each **open PR** is one candidate unit (head branch + PR number).
    - Add **actionable Issues without an open PR** per `workflow--issue-selection.md` (ranking, `blocked_by`, parent Epic rules).
    - Respect **dependency order** (blocked issues after blockers; dependent PR chains per `git--squash-merge-dependent-branch.md`).
    - List **non-actionable** items separately with reason (blocked, missing test plan / acceptance criteria, parent-only Epic).
-5. **WIP / dirty tree**: Before Phase C, the agent MUST resolve conflicts with branch switching — **stash**, **commit**, or **explicit user direction** on current-branch uncommitted work. Do not silently discard work.
+6. **WIP / dirty tree**: Before Phase C, the agent MUST resolve conflicts with branch switching — **stash**, **commit**, or **explicit user direction** on current-branch uncommitted work. Do not silently discard work.
 
 **Output of Phase A**: A table — columns at minimum: unit id (PR # or Issue #), branch (if PR), title, suggested order, notes (blocked / deps). Include **§ Per-unit Definition of Done** verbatim (or by reference) and state that the batch completes when **each** unit has completed that loop in order.
 
@@ -72,7 +73,7 @@ If the user wants **proposal only** (no execution), they must say so explicitly;
 For **each unit** in order:
 
 1. `git fetch` / checkout the correct branch (PR head or new branch for Issue implementation).
-2. Re-run **Sense** for **this** branch (`evidence-workflow-position`, `evidence-pull-request PR=<N>` if PR exists, etc.) per `next.md` § Sense.
+2. Re-run **Sense** for **this** branch per `next.md` § Sense **After approval** (and after delegation returns, follow the CI/bot recipe refresh list there — when it includes `make evidence-fsm`, run that **first** for aggregate orientation, then `make evidence-pull-request` / `make evidence-workflow-position` as specified).
 3. **Classify** FSM state; **route** using the **routing table in `next.md` § Act** (SSOT — do not duplicate the table here).
 4. Execute the routed **action card** (`implement`, `verify`, `commit`, `pr-create`, `pr-review`, `review-fix`, `pr-merge`, …) including its `## Reads`.
 5. **CIPending** / **BotReviewPending**: delegate per `subagent-policy.mdc` and `next.md` § Act · CI and bot wait recipe — **foreground** Tier 1 default for one unit; **no inline polling** in the main agent (`HS-NO-INLINE-POLL`).

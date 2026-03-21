@@ -119,7 +119,11 @@ ADR_HEADER
     done < "$f"
 
     if [ -n "$fm_triggers" ]; then
-      triggers="$adr_num, $fm_triggers"
+      # Avoid "ADR-NNNN, ADR-NNNN, ..." when frontmatter already starts with the ADR token.
+      case "$fm_triggers" in
+        "$adr_num"*) triggers="$fm_triggers" ;;
+        *) triggers="$adr_num, $fm_triggers" ;;
+      esac
     else
       # Fallback: derive triggers from title heading
       title=""

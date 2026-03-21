@@ -44,21 +44,47 @@ record() {
   fi
 }
 
-check_r_pkg() {
-  local pkg="$1" required="${2:-true}"
-  local out
-  if out=$($RUNTIME exec -w /home/rstudio/bridle "$CONTAINER_NAME" \
-      Rscript -e "cat(requireNamespace('$pkg', quietly = TRUE))" 2>/dev/null \
-      | tail -1) \
-      && [[ "$out" == "TRUE" ]]; then
-    record "R pkg: $pkg" "ok"
-  elif [[ "$required" == "true" ]]; then
-    record "R pkg: $pkg" "error" "not installed"
+# All required + optional packages in one container exec (Refs: #284)
+check_r_pkgs_batch() {
+  local req_csv opt_csv r_st=0 r_out
+  req_csv=$(IFS=,; echo "${REQUIRED_R_PKGS[*]}")
+  opt_csv=$(IFS=,; echo "${OPTIONAL_R_PKGS[*]}")
+  r_out=$(
+    $RUNTIME exec -w /home/rstudio/bridle "$CONTAINER_NAME" Rscript -e "
+req <- strsplit('$req_csv', ',', fixed = TRUE)[[1]]
+opt <- strsplit('$opt_csv', ',', fixed = TRUE)[[1]]
+for (p in req) {
+  if (nzchar(p)) {
+    ok <- suppressWarnings(requireNamespace(p, quietly = TRUE))
+    cat(p, '|1|', as.integer(ok), '\n', sep = '')
+  }
+}
+for (p in opt) {
+  if (nzchar(p)) {
+    ok <- suppressWarnings(requireNamespace(p, quietly = TRUE))
+    cat(p, '|0|', as.integer(ok), '\n', sep = '')
+  }
+}
+" 2>/dev/null
+  ) || r_st=$?
+  if [[ $r_st -ne 0 ]]; then
+    record "R packages (batch)" "error" "batch namespace check failed"
     errors=$((errors + 1))
-  else
-    record "R pkg: $pkg" "warning" "not installed"
-    warnings=$((warnings + 1))
+    return
   fi
+  local pkg req_fl ok
+  while IFS='|' read -r pkg req_fl ok; do
+    [[ -z "$pkg" ]] && continue
+    if [[ "$ok" == "1" ]]; then
+      record "R pkg: $pkg" "ok"
+    elif [[ "$req_fl" == "1" ]]; then
+      record "R pkg: $pkg" "error" "not installed"
+      errors=$((errors + 1))
+    else
+      record "R pkg: $pkg" "warning" "not installed"
+      warnings=$((warnings + 1))
+    fi
+  done <<< "$r_out"
 }
 
 # --- Host checks ---
@@ -188,15 +214,7 @@ if $container_running; then
     errors=$((errors + 1))
   fi
 
-  # Required R packages
-  for pkg in "${REQUIRED_R_PKGS[@]}"; do
-    check_r_pkg "$pkg" true
-  done
-
-  # Optional R packages
-  for pkg in "${OPTIONAL_R_PKGS[@]}"; do
-    check_r_pkg "$pkg" false
-  done
+  check_r_pkgs_batch
 else
   $JSON_MODE || echo ""
   $JSON_MODE || echo "(Skipping R checks -- container not running)"
