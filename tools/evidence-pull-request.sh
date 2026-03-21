@@ -50,7 +50,10 @@ if ! echo "$bot_config" | jq -e '
     (.match_flags == null or ((.match_flags | type) == "string")) and
     (.rate_limit_pattern == null or ((.rate_limit_pattern | type) == "string")) and
     (.max_reviews == null or ((.max_reviews | type) == "number")) and
-    ((.required | type) == "boolean")
+    ((.required | type) == "boolean") and
+    (.commit_status_name == null or ((.commit_status_name | type) == "string")) and
+    ((.trigger | type) == "string") and (.trigger == "agent" or .trigger == "user_only") and
+    (.fallback_priority == null or ((.fallback_priority | type) == "number"))
   )
 ' >/dev/null 2>&1; then
   evidence_error "config" "Invalid bot config schema: $BOT_CONFIG" true
@@ -77,29 +80,47 @@ pr_state=$(echo "$pr_data" | jq -r '.state // "UNKNOWN"')
 head_branch=$(echo "$pr_data" | jq -r '.headRefName')
 base_branch=$(echo "$pr_data" | jq -r '.baseRefName')
 
-# --- CI status ---
-ci_checks=$(echo "$pr_data" | jq -c '[(.statusCheckRollup // [])[] | {
-  name: .name,
-  status: (
-    if .status != "COMPLETED" then "pending"
-    elif .conclusion == "SUCCESS" then "pass"
-    elif .conclusion == "FAILURE" then "fail"
-    elif .conclusion == "SKIPPED" then "skipped"
-    else "pending"
-    end
-  ),
-  elapsed_seconds: (
-    if .completedAt != null and .startedAt != null then
-      ((.completedAt | fromdateiso8601) - (.startedAt | fromdateiso8601))
-    else null
-    end
-  )
-}]')
+# --- CI status (exclude bot commit-status checks listed in review-bots.json) ---
+ci_checks=$(echo "$pr_data" | jq -c --argjson cfg "$bot_config" '
+  (.statusCheckRollup // []) as $roll
+  | ([$cfg.bots[] | (.commit_status_name // "") | select(length > 0) | ascii_downcase]) as $npats
+  | (if ($npats | length) == 0 then $roll else
+      [ $roll[] | select(
+          .name as $cn
+          | [ $npats[] as $p | ($cn | ascii_downcase | contains($p)) ] | any | not
+        )]
+    end) as $filtered
+  | [ $filtered[] | {
+    name: .name,
+    status: (
+      if .status != "COMPLETED" then "pending"
+      elif .conclusion == "SUCCESS" then "pass"
+      elif .conclusion == "FAILURE" then "fail"
+      elif .conclusion == "SKIPPED" then "skipped"
+      else "pending"
+      end
+    ),
+    elapsed_seconds: (
+      if .completedAt != null and .startedAt != null then
+        ((.completedAt | fromdateiso8601) - (.startedAt | fromdateiso8601))
+      else null
+      end
+    )
+  }]
+')
 
-ci_status=$(echo "$pr_data" | jq -r '
-  if (.statusCheckRollup | length) == 0 then "no_checks"
-  elif [.statusCheckRollup[] | select(.conclusion == "FAILURE")] | length > 0 then "failure"
-  elif [.statusCheckRollup[] | select(.status != "COMPLETED")] | length > 0 then "pending"
+ci_status=$(echo "$pr_data" | jq -r --argjson cfg "$bot_config" '
+  (.statusCheckRollup // []) as $roll
+  | ([$cfg.bots[] | (.commit_status_name // "") | select(length > 0) | ascii_downcase]) as $npats
+  | (if ($npats | length) == 0 then $roll else
+      [ $roll[] | select(
+          .name as $cn
+          | [ $npats[] as $p | ($cn | ascii_downcase | contains($p)) ] | any | not
+        )]
+    end) as $filtered
+  | if ($filtered | length) == 0 then "no_checks"
+  elif [$filtered[] | select(.conclusion == "FAILURE")] | length > 0 then "failure"
+  elif [$filtered[] | select(.status != "COMPLETED")] | length > 0 then "pending"
   else "success"
   end
 ')
@@ -131,6 +152,8 @@ _detect_bot_reviews() {
     match_flags=$(echo "$bot_config" | jq -r ".bots[$i].match_flags // \"\"")
     rate_limit_pat=$(echo "$bot_config" | jq -r ".bots[$i].rate_limit_pattern // \"\"")
     max_rev=$(echo "$bot_config" | jq ".bots[$i].max_reviews // null")
+    local commit_cs_name
+    commit_cs_name=$(echo "$bot_config" | jq -r ".bots[$i].commit_status_name // \"\"")
 
     local status="NOT_TRIGGERED"
     local submitted=""
@@ -150,9 +173,62 @@ _detect_bot_reviews() {
     fi
     review_count=$(echo "$bot_reviews_all" | jq 'length')
 
-    # Status: fresh review (submitted_at >= last push) vs rate-limit comments since last push (timestamp order)
+    # GitHub commit status (CodeRabbit) — primary when commit_status_name matches rollup (Refs: #273)
+    local used_commit_status=false
+    if [ -n "$commit_cs_name" ] && [ "$commit_cs_name" != "null" ]; then
+      local cs_row_json
+      cs_row_json=$(echo "$pr_data" | jq -c --arg pat "$commit_cs_name" '
+        (.statusCheckRollup // []) as $r
+        | [ $r[] | select(.name | ascii_downcase | contains($pat | ascii_downcase)) ] as $m
+        | if ($m | length) == 0 then null
+          else (
+            $m
+            | sort_by(
+                if .status != "COMPLETED" then 0
+                elif .conclusion == "FAILURE" then 1
+                elif .conclusion == "SUCCESS" then 2
+                else 3 end
+              )
+            | .[0]
+          )
+        end
+      ')
+      if [ -n "$cs_row_json" ] && [ "$cs_row_json" != "null" ]; then
+        used_commit_status=true
+        local cs_line
+        cs_line=$(echo "$cs_row_json" | jq -r '
+          if .status != "COMPLETED" then "pending"
+          elif .conclusion == "SUCCESS" then "success"
+          elif .conclusion == "FAILURE" then "failure"
+          else "pending"
+          end
+        ')
+        case "$cs_line" in
+          success)
+            status="COMPLETED"
+            submitted=$(echo "$cs_row_json" | jq -r '.completedAt // empty')
+            if [ -z "$submitted" ] || [ "$submitted" = "null" ]; then
+              submitted="$last_push_at"
+            fi
+            ;;
+          pending)
+            status="PENDING"
+            ;;
+          failure)
+            status="RATE_LIMITED"
+            submitted=""
+            ;;
+          *)
+            status="PENDING"
+            ;;
+        esac
+      fi
+    fi
+
+    # Fallback: fresh review (submitted_at >= last push) vs rate-limit comments since last push (timestamp order)
     local bot_status_json
-    bot_status_json=$(jq -nc \
+    if [ "$used_commit_status" = false ]; then
+      bot_status_json=$(jq -nc \
       --argjson revs "$bot_reviews_all" \
       --argjson comments "$pr_comments" \
       --arg login_pat "$bot_login" \
@@ -195,10 +271,11 @@ _detect_bot_reviews() {
           {status: "NOT_TRIGGERED", submitted: null}
         end
       ')
-    status=$(echo "$bot_status_json" | jq -r '.status')
-    submitted=$(echo "$bot_status_json" | jq -r '.submitted // ""')
-    if [ "$submitted" = "null" ]; then
-      submitted=""
+      status=$(echo "$bot_status_json" | jq -r '.status')
+      submitted=$(echo "$bot_status_json" | jq -r '.submitted // ""')
+      if [ "$submitted" = "null" ]; then
+        submitted=""
+      fi
     fi
 
     # Inline findings count (top-level only, excluding reply comments)
