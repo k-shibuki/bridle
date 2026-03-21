@@ -9,9 +9,7 @@ test_that("FSM jq fixture suite passes (pull-request-readiness, effective-state,
   skip_if_not(file.exists(script), paste("missing", script))
 
   # When: The bash harness runs all JSON cases against docs/agent-control/fsm/*.jq
-  out <- suppressWarnings(
-    system2("bash", script, stdout = TRUE, stderr = TRUE)
-  )
+  out <- system2("bash", script, stdout = TRUE, stderr = TRUE)
   st <- attr(out, "status", exact = TRUE)
   st <- if (is.null(st)) NA_integer_ else as.integer(st)
 
@@ -20,4 +18,24 @@ test_that("FSM jq fixture suite passes (pull-request-readiness, effective-state,
   expect_true(any(grepl("OK: all FSM fixtures passed", out, fixed = TRUE)),
     info = paste(out, collapse = "\n")
   )
+})
+
+test_that("FSM jq harness exits non-zero when a case file is invalid JSON", {
+  skip_if_not(nzchar(Sys.which("bash")), "bash not on PATH")
+  skip_if_not(nzchar(Sys.which("jq")), "jq not on PATH")
+
+  script <- testthat::test_path("../../tools/test-fsm-fixtures.sh")
+  skip_if_not(file.exists(script), paste("missing", script))
+
+  bad_dir <- tempfile("fsm_bad_case_")
+  dir.create(bad_dir)
+  writeLines("not valid json {", file.path(bad_dir, "broken.json"))
+
+  out <- withr::with_envvar(c(BRIDLE_TEST_FSM_CASE_DIR = bad_dir), {
+    system2("bash", script, stdout = TRUE, stderr = TRUE)
+  })
+  st <- attr(out, "status", exact = TRUE)
+  st <- if (is.null(st)) NA_integer_ else as.integer(st)
+
+  expect_false(identical(st, 0L), info = paste(out, collapse = "\n"))
 })

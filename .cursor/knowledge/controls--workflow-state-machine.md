@@ -39,7 +39,7 @@ Full state catalog with entry conditions is in `state-model.md`
   CIPending → ...
 - **Thread resolution**: UnresolvedThreads → (review-fix) →
   ReadyForReview (if `auto_merge_readiness.review_consensus_complete == false`) or ReviewDone
-  (if `review_consensus_complete`, e.g. approved review, or bot-only path with `reviews.diagnostics.bot_review_completed` and all threads resolved). `RATE_LIMITED` / `TIMED_OUT` on a required bot yield `bot_review_failed` and `review_consensus_complete == false` until an agent review path applies — see `state-model.md` § Review signals.
+  (if `auto_merge_readiness.review_consensus_complete`, e.g. approved review, or bot-only path with `reviews.diagnostics.bot_review_completed` and all threads resolved). `RATE_LIMITED` / `TIMED_OUT` on a required bot yield `bot_review_failed` and `auto_merge_readiness.review_consensus_complete == false` until an agent review path applies — see `state-model.md` § Review signals.
 
 ## Priority Rules (Tie-Break)
 
@@ -56,7 +56,7 @@ When multiple states apply simultaneously (highest priority first):
 ## State Classification
 
 - **Intermediate** (CIPending, BotReviewPending): external process in
-  progress, no agent action needed. Delegate to background subagents.
+  progress, no agent action needed. Delegate to Tier 1 subagents (foreground default; background for concurrent PR waits — `subagent-policy.mdc`).
 - **Constraint-violation** (CIFailed, UnresolvedThreads,
   ChangesRequired, DependentChainRebase, EnvironmentIssue): constraint
   violated, agent must take corrective action.

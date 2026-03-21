@@ -152,7 +152,7 @@ Examples of many-to-one mapping:
 
 - `TestsDone`, `QualityOK`, `TestsPass` → all route to `verify`
 - `ChangesRequired`, `UnresolvedThreads` → both route to `review-fix`
-- `CIPending`, `BotReviewPending` → both delegate to background subagents
+- `CIPending`, `BotReviewPending` → both delegate to Tier 1 subagents (foreground default for one PR; background when multiple concurrent waits — `subagent-policy.mdc`, `next.md`)
 
 The canonical routing table lives in `next.md` § Act only. The canonical
 state definitions live in `state-model.md`. Full-path proposal, approval,

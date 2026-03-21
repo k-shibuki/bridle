@@ -20,7 +20,7 @@
 
 **Multi-unit default** — If `evidence-workflow-position` shows **`pull_requests.open_count > 1`** OR **any actionable Issue without a corresponding open PR** (see `workflow--issue-selection.md`), you **must** run **`docs/agent-control/next-orchestration.md` Phase A** (build the ordered queue from evidence) and **not** silently reduce scope to “current branch’s PR only.” Single-unit path is for **one** clear unit **after** the queue is empty or the user explicitly narrows scope. When multiple PRs are open, still list **all** candidates in Phase A (order, deps, notes) before Phase B approval or single-unit carve-out.
 
-If a background subagent was previously launched, check its transcript file per `subagent-policy.mdc` § Completion guarantee.
+If a **background** subagent was previously launched (`run_in_background: true`), check its transcript file per `subagent-policy.mdc` § Completion guarantee. Foreground Tier 1 tasks do not use transcript monitoring — the Task return is the handoff.
 
 ## Act
 
@@ -39,8 +39,8 @@ Consult `controls--workflow-state-machine.md` for formal state definitions. When
 | TestsDone / QualityOK / TestsPass | `verify` |
 | TestsPass (no uncommitted) | `commit` |
 | Committed | `pr-create` |
-| CIPending | Delegate via `delegation--ci-wait-only.md` |
-| BotReviewPending | Delegate via `delegation--review-wait.md` |
+| CIPending | Tier 1 subagent + recipe below (`delegation--ci-wait-only.md`) |
+| BotReviewPending | Tier 1 subagent + recipe below (`delegation--review-wait.md`) |
 | ReadyForReview | `pr-review` |
 | ExceptionFlow | `pr-create` (exception path) |
 | CIFailed | Fix inline, re-push, re-enter `next` |
@@ -50,6 +50,17 @@ Consult `controls--workflow-state-machine.md` for formal state definitions. When
 | StaleBranches | Delete stale branches |
 | CycleComplete | Post-cycle scan → `implement` |
 | EnvironmentIssue | `doctor` |
+
+#### CI and bot wait recipe (`CIPending` / `BotReviewPending`)
+
+Use a **foreground** Tier 1 subagent by default (**omit** `run_in_background`) so the Task blocks until the wait completes — see `subagent-policy.mdc` § Subagent configuration and prompts. Template: `.cursor/templates/delegation--ci-wait-only.md` or `delegation--review-wait.md`; selection: `agent--delegation-decision.md`.
+
+1. Launch the subagent with the appropriate template and PR number.
+2. When the subagent returns, run Sense again (`make evidence-pull-request PR=<N>` and/or `make evidence-workflow-position`), then **re-classify** from § Route to action card — **do not** end the turn while still waiting.
+3. If evidence shows **CIFailed** → fix inline, push, re-enter this recipe (post-approval path; no new user approval).
+4. On CI success, continue to the next routed card (e.g. `ReadyForReview` → `pr-review`).
+
+**Multi-unit / N concurrent PR waits**: use `run_in_background: true` per PR and `subagent-policy.mdc` § Completion guarantee.
 
 ### 3. Proposal, approval, execution
 
@@ -64,15 +75,15 @@ After the user gives **explicit approval** for the full path (single-unit) or **
 
 - Asking whether to continue, which option to take, or “should I do X next” (including soft closers that function as a gate).
 - Stopping with only a roadmap while DoD remains unmet, when the agent could still act.
-- Substituting “tell the user to wait” for **delegation** where `subagent-policy.mdc` requires a background subagent.
+- Substituting “tell the user to wait” for **Tier 1 delegation** where `subagent-policy.mdc` requires a subagent (foreground or background).
 
-**Allowed stops** (same as `next-orchestration.md`): **Hard Stops** in `agent-safety.mdc`, **genuine cannot proceed** with evidence (credentials, org enforcement, unrecoverable GitHub block), **proposal-only** runs where the user declared no execution up front, or **tooling/session limits** — in the last case, **resume the same approved path on the next turn without re-approval** (no new Phase B / no new single-unit approval gate).
+**Allowed stops** (same as `next-orchestration.md`): **Hard Stops** in `agent-safety.mdc`, **genuine cannot proceed** with evidence (credentials, org enforcement, unrecoverable GitHub block), **proposal-only** runs where the user declared no execution up front, or **tooling/session limits** (narrow definition in `next-orchestration.md` — long CI/bot waits are **not** a tooling limit). In the last case, **resume the same approved path on the next turn without re-approval** (no new Phase B / no new single-unit approval gate).
 
 Final user-visible output **after** DoD (or after an allowed stop): evidence-backed summary only — not a mid-flight permission request.
 
 ### 4. Delegation for blocking operations
 
-When state is CIPending or BotReviewPending, delegate per `subagent-policy.mdc`. After delegation, run Two-Tier Gate (§ Productive work during delegation) using the evidence already collected.
+When state is CIPending or BotReviewPending, follow § Act · CI and bot wait recipe and `subagent-policy.mdc`. After a **foreground** subagent returns, re-run Sense and continue the `/next` loop — **do not** open a transcript monitoring loop. After **background** subagents only, run Two-Tier Gate and § Completion guarantee.
 
 ## Output
 
@@ -84,6 +95,6 @@ When state is CIPending or BotReviewPending, delegate per `subagent-policy.mdc`.
 ## Guard
 
 - `HS-EVIDENCE-FIRST`: observation via `make evidence-*` only
-- `HS-NO-INLINE-POLL`: delegate all waits > 10s to background subagents
+- `HS-NO-INLINE-POLL`: no inline `sleep`+poll in the main agent; use Tier 1 subagent (foreground default for one unit — `agent-safety.mdc`)
 - `HS-NO-SKIP`: execute every step; gate passage requires evidence
 - **Steering**: After the user approves a full path (single-unit or Phase B batch), do not abandon it before the applicable **full** Definition of Done (merge **and** remote/local branch cleanup per `next-orchestration.md`) without user direction or a genuine policy/GitHub block (evidence-backed). No counter-based failure escalation. **Do not** use mid-run questions to replace execution; see **Post-approval execution contract** above.

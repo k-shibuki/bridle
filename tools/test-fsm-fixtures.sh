@@ -6,7 +6,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FSM="$ROOT/docs/agent-control/fsm"
 BOT_CFG="$ROOT/docs/agent-control/review-bots.json"
-CASE_DIR="$ROOT/tests/evidence/golden/fsm/cases"
+# Optional override for testthat (single directory of case JSON files)
+CASE_DIR="${BRIDLE_TEST_FSM_CASE_DIR:-$ROOT/tests/evidence/golden/fsm/cases}"
 
 if ! command -v jq >/dev/null 2>&1; then
   echo "FAIL: jq is required" >&2

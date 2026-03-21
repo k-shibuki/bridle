@@ -55,6 +55,8 @@ jobs:
             ci_config:
               - 'Makefile'
               - 'tools/**'
+              - 'docs/agent-control/fsm/**'
+              - 'tests/evidence/golden/fsm/**'
               - '.github/workflows/**'
               - 'containers/**'
               - '.pre-commit-config.yaml'

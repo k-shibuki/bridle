@@ -18,7 +18,7 @@
 4. `make format-verify` — fix any failures.
 5. Commit and push: `git add -A && git commit -m "fix(<scope>): address review feedback\n\nRefs: #<issue>" && git push`.
 6. Trigger re-review if CR budget remaining: `gh pr comment <PR> --body "@coderabbitai review"`.
-7. One-shot check: `make evidence-pull-request PR=<N>`. If `threads_unresolved == 0 AND auto_merge_readiness.review_consensus_complete` (or `auto_merge_readiness.safe_to_enable` when merge is the goal) → skip delegation. Otherwise → delegate via `delegation--review-wait.md`.
+7. One-shot check: `make evidence-pull-request PR=<N>`. If `threads_unresolved == 0 AND auto_merge_readiness.review_consensus_complete` (or `auto_merge_readiness.safe_to_enable` when merge is the goal) → skip delegation. Otherwise → delegate via `delegation--review-wait.md` (Task: see template header for `run_in_background` — `true` for concurrent multi-PR waits; single-PR foreground default per `subagent-policy.mdc`).
 
 ## Output
 

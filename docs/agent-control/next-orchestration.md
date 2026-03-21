@@ -37,7 +37,7 @@ When **one** clear work unit is active (typical: one checked-out branch for one 
 3. **Approval gate** — Present **once**: (a) unit identity (Issue # / PR # / branch), (b) the **ordered remainder** from current state through Per-unit Definition of Done, (c) the completion condition (Per-unit Definition of Done section above). Obtain **explicit user approval** to execute through that completion condition. **No per-card re-approval** after this gate (Hard Stops and genuine blocks excepted).
 4. **Execute** — Run Sense → classify → route → execute cards in a loop until Per-unit Definition of Done for this unit, then stop with evidence-backed summary.
 
-**Post-approval autonomy (mandatory)** — From step 4 onward, the agent **must not** prompt the user for permission, choice, or continuation between action cards or between delegation cycles. Execution is **strictly step-by-step and self-driven** through the approved sequence until DoD or an allowed stop. **Prohibited**: rhetorical “want me to…?”, optional follow-ups that block progress, or ending the turn with questions instead of delegating waits. **Required**: delegate `CIPending` / `BotReviewPending` per `subagent-policy.mdc`; on tooling limits, **resume the same approved path** next turn without re-opening step 3.
+**Post-approval autonomy (mandatory)** — From step 4 onward, the agent **must not** prompt the user for permission, choice, or continuation between action cards or between delegation cycles. Execution is **strictly step-by-step and self-driven** through the approved sequence until DoD or an allowed stop. **Prohibited**: rhetorical “want me to…?”, optional follow-ups that block progress, or ending the turn with questions instead of delegating waits. **Required**: delegate `CIPending` / `BotReviewPending` per `subagent-policy.mdc` (**foreground** Tier 1 default for one unit — see `next.md` § Act · CI and bot wait recipe). When the subagent returns, immediately re-run Sense and the next routed card — do not treat “CI is slow” as a stop. On **tooling/session limits** only (defined below), **resume the same approved path** next turn without re-opening step 3.
 
 If the user asked **proposal only**, they must say so; otherwise default is execute after approval.
 
@@ -75,20 +75,28 @@ For **each unit** in order:
 2. Re-run **Sense** for **this** branch (`evidence-workflow-position`, `evidence-pull-request PR=<N>` if PR exists, etc.) per `next.md` § Sense.
 3. **Classify** FSM state; **route** using the **routing table in `next.md` § Act** (SSOT — do not duplicate the table here).
 4. Execute the routed **action card** (`implement`, `verify`, `commit`, `pr-create`, `pr-review`, `review-fix`, `pr-merge`, …) including its `## Reads`.
-5. **CIPending** / **BotReviewPending**: delegate per `subagent-policy.mdc` — **no inline polling** (`HS-NO-INLINE-POLL`).
+5. **CIPending** / **BotReviewPending**: delegate per `subagent-policy.mdc` and `next.md` § Act · CI and bot wait recipe — **foreground** Tier 1 default for one unit; **no inline polling** in the main agent (`HS-NO-INLINE-POLL`).
 6. Repeat steps 2–5 until **this unit** satisfies **§ Per-unit Definition of Done**.
 7. Sync **`main`**, delete merged remote branch when safe, clean up local tracking refs; then **next unit**.
 
-**Steering**: Do **not** truncate the approved queue because of conversation length or subjective “session scope.” If stopped by tooling limits, **resume the same approved queue** on the next turn without re-opening Phase B unless the user revokes or changes scope. The same applies to a **single-unit** approved path: resume toward **Per-unit Definition of Done** without asking for a new approval each card. **Never** substitute mid-run user questions for continuing execution when the approved path still applies.
+**Steering**: Do **not** truncate the approved queue because of conversation length or subjective “session scope.” If stopped by **tooling/session limits** (see below), **resume the same approved queue** on the next turn without re-opening Phase B unless the user revokes or changes scope. The same applies to a **single-unit** approved path: resume toward **Per-unit Definition of Done** without asking for a new approval each card. **Never** substitute mid-run user questions for continuing execution when the approved path still applies.
+
+**Tooling/session limits** (narrow definition — **not** an excuse to exit a wait):
+
+- Cursor chat **session ended** or **tooling unavailable** (e.g. cannot invoke Task/subagent or run `make evidence-*`).
+- **Context length** or platform limit makes further tool use impossible in this session.
+
+**Not** tooling limits: long CI or bot review duration, “this is taking a while,” or reluctance to block on a **foreground** Tier 1 subagent. For those, keep the subagent running until it returns, then continue.
 
 **Stops** (no retry counters, no “N failures” escalation):
 
 - **Hard Stops** in `agent-safety.mdc` (e.g. cannot merge without CI green; no `--admin` merge).
 - **Genuine cannot proceed** — missing credentials, org settings, or GitHub-enforced block — report with **evidence** and stop; do not invent counter-based escalation.
+- **Tooling/session limits** — as defined above only; then resume the same path next turn without a new approval gate.
 
 ## Parallelism
 
-Independent **wait** states (multiple PRs waiting on CI/bot) may use **one background subagent per PR** per `subagent-policy.mdc`. **Implementation** stays **one unit at a time** — no interleaved unrelated edits across units.
+Independent **wait** states (multiple PRs waiting on CI/bot) may use **one background subagent per PR** (`run_in_background: true`) per `subagent-policy.mdc` § Multiple concurrent subagents. A **single** PR wait uses a **foreground** Tier 1 subagent instead. **Implementation** stays **one unit at a time** — no interleaved unrelated edits across units.
 
 ## What not to put here
 

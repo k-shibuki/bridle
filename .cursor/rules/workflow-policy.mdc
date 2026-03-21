@@ -95,7 +95,7 @@ Each action card declares its required reads in a `## Reads` section. The table 
 
 | Task type (action card) | Read these files |
 |---|---|
-| Next orchestration (`next`) | `docs/agent-control/architecture.md` § Procedure layer design, `docs/agent-control/state-model.md`, `docs/agent-control/next-orchestration.md`, `controls--workflow-state-machine.md`, `subagent-policy.mdc`, `agent--delegation-decision.md` |
+| Next orchestration (`next`) | `docs/agent-control/architecture.md` § Procedure layer design, `docs/agent-control/state-model.md`, `docs/agent-control/next-orchestration.md`, `controls--workflow-state-machine.md`, `subagent-policy.mdc`, `agent--delegation-decision.md`, `review--bot-operations.md` |
 | Implementation (`implement`) | `workflow--issue-selection.md`, `workflow--docs-discovery-heuristics.md` |
 | Test creation (`test-create`) | `test-strategy.mdc`, `test--perspectives-table.md`, `test--mock-scope-constraint.md`, `test--mock-external-function.md`, `test--layered-mock-strategy.md`, `r--null-assignment-trap.md` |
 | Verification (`verify`) | `quality-policy.mdc`, `test-strategy.mdc` |
