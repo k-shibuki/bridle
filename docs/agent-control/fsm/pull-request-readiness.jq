@@ -45,7 +45,6 @@ def review_consensus_complete($rows; $disposition; $threads_u; $pending):
     $disposition == "pending"
     and ($pending | not)
     and $threads_u == 0
-    and (required_findings_total($rows) == 0)
     and ($rows | all(
       if .required then reviewed(.status)
       else (reviewed(.status) or (.status == "NOT_TRIGGERED"))
@@ -64,7 +63,7 @@ def blockers($rows; $disposition; $threads_u; $mergeable; $merge_state; $ci_stat
   | (if $disposition == "changes_requested" then . + ["changes_requested"] else . end)
   | (if ($rows | any(.required and (.status == "REVIEW_INVALIDATED" or .status == "PENDING" or .status == "NOT_TRIGGERED")))
      then . + ["required_bot_rereview"] else . end)
-  | (if (required_findings_total($rows) > 0) then . + ["required_bot_findings"] else . end)
+  | (if (required_findings_total($rows) > 0) and ($threads_u > 0) then . + ["required_bot_findings"] else . end)
   | (if $pending and $threads_u == 0 then . + ["rereview_response_pending"] else . end);
 
 def pr_state_id($rows; $disposition; $threads_u; $mergeable; $merge_state; $ci_status; $pending):
