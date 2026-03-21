@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Offline jq regression tests for FSM SSOT (Refs: #282).
+# Offline jq regression tests for FSM policy (docs/agent-control/fsm/).
 # Usage: bash tools/test-fsm-fixtures.sh
 set -euo pipefail
 
@@ -21,6 +21,7 @@ fi
 
 bot_config_json=$(jq -c '.' "$BOT_CFG")
 errors=0
+fixtures_ran=0
 
 run_pr_readiness() {
   local file="$1"
@@ -134,6 +135,7 @@ fi
 
 shopt -s nullglob
 for f in "$CASE_DIR"/*.json; do
+  fixtures_ran=$((fixtures_ran + 1))
   kind=$(jq -r '.kind' "$f")
   case "$kind" in
     pull_request_readiness) run_pr_readiness "$f" ;;
@@ -146,6 +148,11 @@ for f in "$CASE_DIR"/*.json; do
   esac
 done
 shopt -u nullglob
+
+if [ "$fixtures_ran" -eq 0 ]; then
+  echo "FAIL: no fixture JSON files in $CASE_DIR" >&2
+  exit 1
+fi
 
 if [ "$errors" -gt 0 ]; then
   echo "FAIL: $errors fixture error(s)" >&2
