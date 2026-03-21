@@ -86,6 +86,9 @@ procedure context for in-progress local work.
 |--------|------|--------|---------------|
 | `review_threads_total` | integer | `evidence-pull-request.reviews.threads_total` | Total review thread count |
 | `review_threads_unresolved` | integer | `evidence-pull-request.reviews.threads_unresolved` | Unresolved thread count |
+| `review_threads_truncated` | boolean | `evidence-pull-request.reviews.review_threads_truncated` | `reviewThreads(first:100)` has more pages — treat unresolved count as incomplete; merge consensus false while true |
+| `required_bot_findings_outstanding` | boolean | `evidence-pull-request.reviews.diagnostics.required_bot_findings_outstanding` | Required bots still report `findings_count > 0` (includes body-only findings) |
+| `non_thread_bot_findings_outstanding` | boolean | `evidence-pull-request.reviews.diagnostics.non_thread_bot_findings_outstanding` | Findings outstanding with zero unresolved threads (outside-diff / body findings) |
 | `bot_coderabbit_status` | enum | `evidence-pull-request.reviews.bot_coderabbit.status` | `"COMPLETED"` \| `"COMPLETED_CLEAN"` \| `"COMPLETED_SILENT"` \| `"RATE_LIMITED"` \| `"TIMED_OUT"` \| `"NOT_TRIGGERED"` \| `"PENDING"` \| `"REVIEW_INVALIDATED"` |
 | `bot_codex_status` | enum | `evidence-pull-request.reviews.bot_codex.status` | `"COMPLETED"` \| `"COMPLETED_CLEAN"` \| `"RATE_LIMITED"` \| `"TIMED_OUT"` \| `"NOT_TRIGGERED"` \| `"PENDING"` \| `"REVIEW_INVALIDATED"` |
 | `bot_review_completed` | boolean | `evidence-pull-request.reviews.diagnostics.bot_review_completed` | All required bots in a **Reviewed** tier state; optional (`required: false`) bots may be `NOT_TRIGGERED` or Reviewed |
@@ -94,7 +97,7 @@ procedure context for in-progress local work.
 | `bot_review_pending` | boolean | `evidence-pull-request.reviews.diagnostics.bot_review_pending` | `NOT bot_review_terminal` — still waiting on a required bot outcome |
 | `rereview_response_pending` | boolean | `evidence-pull-request.reviews.re_review_signal.cr_response_pending_after_latest_trigger` (same value as `reviews.diagnostics.rereview_response_pending`) | Latest PR issue comment requesting CodeRabbit re-review (`@coderabbitai` + `review`) is not yet followed by any `coderabbitai[bot]` pull review with `submitted_at` after that comment; avoids treating review as settled while CR may still post threads (`pull-request-readiness.jq` adds blocker `rereview_response_pending` and can route `BotReviewPending` even when `bot_review_pending` is false) |
 | `review_disposition` | enum | `evidence-pull-request.reviews.disposition` | `"approved"` \| `"changes_requested"` \| `"pending"` |
-| `review_consensus_complete` | boolean | `evidence-pull-request.auto_merge_readiness.review_consensus_complete` | Merge consensus: approved human review, or pending disposition with required bots reviewed, zero required-bot findings, and zero unresolved threads |
+| `review_consensus_complete` | boolean | `evidence-pull-request.auto_merge_readiness.review_consensus_complete` | Merge consensus: approved human review, or pending disposition with required bots reviewed, **zero required-bot `findings_count` total**, zero unresolved threads, **not** `review_threads_truncated`, and no pending re-review response (`rereview_response_pending`) |
 | `safe_to_enable` | boolean | `evidence-pull-request.auto_merge_readiness.safe_to_enable` | Safe to enable auto-merge: consensus + CI + mergeable + merge state (see `docs/agent-control/fsm/pull-request-readiness.jq`) |
 
 **Bot tier semantics** (declarative; recovery procedures live in delegation templates, not here):
@@ -144,12 +147,16 @@ signals used in state conditions and transitions.
 | `merge_state_status` | `evidence-pull-request` | `merge.merge_state_status` |
 | `review_threads_total` | `evidence-pull-request` | `reviews.threads_total` |
 | `review_threads_unresolved` | `evidence-pull-request` | `reviews.threads_unresolved` |
+| `review_threads_truncated` | `evidence-pull-request` | `reviews.review_threads_truncated` |
+| `required_bot_findings_outstanding` | `evidence-pull-request` | `reviews.diagnostics.required_bot_findings_outstanding` |
+| `non_thread_bot_findings_outstanding` | `evidence-pull-request` | `reviews.diagnostics.non_thread_bot_findings_outstanding` |
 | `bot_coderabbit_status` | `evidence-pull-request` | `reviews.bot_coderabbit.status` |
 | `bot_codex_status` | `evidence-pull-request` | `reviews.bot_codex.status` |
 | `bot_review_completed` | `evidence-pull-request` | `reviews.diagnostics.bot_review_completed` |
 | `bot_review_failed` | `evidence-pull-request` | `reviews.diagnostics.bot_review_failed` |
 | `bot_review_terminal` | `evidence-pull-request` | `reviews.diagnostics.bot_review_terminal` |
 | `bot_review_pending` | `evidence-pull-request` | `reviews.diagnostics.bot_review_pending` |
+| `rereview_response_pending` | `evidence-pull-request` | `reviews.re_review_signal.cr_response_pending_after_latest_trigger` |
 | `review_consensus_complete` | `evidence-pull-request` | `auto_merge_readiness.review_consensus_complete` |
 | `review_disposition` | `evidence-pull-request` | `reviews.disposition` |
 | `doctor_healthy` | `evidence-environment` | `errors == 0` |

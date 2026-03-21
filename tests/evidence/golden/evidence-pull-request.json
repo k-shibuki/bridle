@@ -42,6 +42,7 @@
     },
     "threads_total": 2,
     "threads_unresolved": 0,
+    "review_threads_truncated": false,
     "disposition": "approved",
     "last_review_at": "2026-03-12T09:15:00Z",
     "last_push_at": "2026-03-12T08:30:00Z",
@@ -51,12 +52,15 @@
       "bot_review_terminal": true,
       "bot_review_pending": false,
       "required_bot_findings_total": 2,
+      "required_bot_findings_outstanding": true,
+      "non_thread_bot_findings_outstanding": true,
       "rereview_response_pending": false
     },
     "re_review_signal": {
       "latest_cr_trigger_created_at": null,
       "latest_cr_review_submitted_at_after_trigger": null,
-      "cr_response_pending_after_latest_trigger": false
+      "cr_response_pending_after_latest_trigger": false,
+      "trigger_comment_log": []
     }
   },
   "traceability": {

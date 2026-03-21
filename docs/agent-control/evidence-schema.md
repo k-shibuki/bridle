@@ -378,6 +378,7 @@ review freshness, and bot review status.
     },
     "threads_total": "integer",
     "threads_unresolved": "integer",
+    "review_threads_truncated": "boolean",
     "disposition": "approved | changes_requested | pending",
     "last_review_at": "ISO8601 | null",
     "last_push_at": "ISO8601",
@@ -387,12 +388,15 @@ review freshness, and bot review status.
       "bot_review_terminal": "boolean",
       "bot_review_pending": "boolean",
       "required_bot_findings_total": "integer",
+      "required_bot_findings_outstanding": "boolean",
+      "non_thread_bot_findings_outstanding": "boolean",
       "rereview_response_pending": "boolean"
     },
     "re_review_signal": {
       "latest_cr_trigger_created_at": "ISO8601 | null",
       "latest_cr_review_submitted_at_after_trigger": "ISO8601 | null",
-      "cr_response_pending_after_latest_trigger": "boolean"
+      "cr_response_pending_after_latest_trigger": "boolean",
+      "trigger_comment_log": [{ "created_at": "ISO8601", "id": "integer" }]
     }
   },
   "traceability": {
@@ -417,7 +421,11 @@ review freshness, and bot review status.
 - Bot registry (`docs/agent-control/review-bots.json`) may set `commit_status_name` (substring matched case-insensitively against `statusCheckRollup[].name`), `invalidate_review_pattern` (regex against PR **issue** comments since `last_push_at` — match yields `REVIEW_INVALIDATED`), `trigger` (`agent` \| `user_only`), and `fallback_priority` (nullable number, lower = earlier in human-invoked fallback). When `commit_status_name` matches a rollup entry, `evidence-pull-request` uses that check as the primary signal for `bot_<id>.status` and excludes it from `ci` aggregation.
 - `reviews.diagnostics.*`: FSM-aligned aggregates derived from configured bots (`review-bots.json`, including `required`) and thread/disposition state — see `docs/agent-control/fsm/pull-request-readiness.jq` and `docs/agent-control/state-model.md` § Review signals
 - `reviews.diagnostics.rereview_response_pending`: same boolean as `reviews.re_review_signal.cr_response_pending_after_latest_trigger`, passed into `pull-request-readiness.jq` as `rereview_response_pending`
+- `reviews.diagnostics.required_bot_findings_outstanding`: `true` when the sum of `findings_count` over **required** bots (`review-bots.json`) is greater than zero (includes body-only / outside-diff-range findings that do not create `reviewThreads`)
+- `reviews.diagnostics.non_thread_bot_findings_outstanding`: `true` when `required_bot_findings_outstanding` and `threads_unresolved == 0` (actionable bot output with no open GitHub review threads — still blocks merge consensus for pending disposition)
+- `reviews.review_threads_truncated`: `true` when GraphQL `reviewThreads(first: 100)` reports `pageInfo.hasNextPage` — unresolved counts may be incomplete; `pull-request-readiness.jq` adds blocker `review_threads_truncated` and routes `UnresolvedThreads`
 - `reviews.re_review_signal`: detects PR **issue** comments that request CodeRabbit (`@coderabbitai` and `review`, case-insensitive) and compares the latest such `created_at` to (a) `pulls/.../reviews` from `coderabbitai[bot]` with `submitted_at` strictly after that trigger, and (b) `bot_coderabbit.review_submitted_at` when it is derived from commit-status completion (`commit_status_name` in `review-bots.json`) and is also strictly after the trigger. `cr_response_pending_after_latest_trigger` is `true` when a trigger exists and neither signal shows a completion after the trigger. **Always `false`** when `bot_coderabbit.status == REVIEW_INVALIDATED` (avoid deadlock; re-trigger procedurally). Does not add extra pending solely for `RATE_LIMITED` / `PENDING` (those use existing bot blockers).
+- `reviews.re_review_signal.trigger_comment_log`: up to five most recent qualifying trigger comments (same filter as above), newest first, each `{created_at, id}` — debugging / disambiguation when `latest_cr_trigger_created_at` alone is ambiguous
 - `auto_merge_readiness`: merge/consensus gate (`safe_to_enable` requires empty `blockers`); same jq SSOT as `routing.pr_state_id`
 - `traceability.closes_issues`: Issue numbers from `Closes #N` / `Fixes #N` in PR body
 

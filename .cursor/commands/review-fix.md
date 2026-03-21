@@ -7,8 +7,10 @@
 
 ## Sense
 
-1. `make evidence-pull-request PR=<N>` for thread state.
+1. `make evidence-pull-request PR=<N>` for thread state, findings totals, merge consensus, and re-review signal.
 2. `make evidence-review-threads PR=<N>` for per-thread details (bodies, replies, GraphQL IDs).
+
+**Correlate before acting** — In one read of `evidence-pull-request`, check together: `reviews.threads_unresolved`, `reviews.review_threads_truncated`, required `reviews.bot_* .findings_count`, `reviews.diagnostics` (`required_bot_findings_outstanding`, `non_thread_bot_findings_outstanding`, `rereview_response_pending`), `reviews.re_review_signal` (use `trigger_comment_log` if trigger timing is ambiguous), and `auto_merge_readiness.blockers` / `review_consensus_complete`. Body-only / outside-diff bot findings can leave `threads_unresolved == 0` while findings remain — do not skip work on threads count alone.
 
 ## Act
 
@@ -19,7 +21,7 @@
 4. `make format-verify` — fix any failures.
 5. Commit and push: `git add -A && git commit -m "fix(<scope>): address review feedback\n\nRefs: #<issue>" && git push`.
 6. Trigger re-review if CR budget remaining: `gh pr comment <PR> --body "@coderabbitai review"`. After posting, **do not** treat review as settled from a single snapshot where `threads_unresolved == 0` alone; CodeRabbit may still be posting threads or has not yet submitted a pull review answering this trigger (see `reviews.re_review_signal` in `docs/agent-control/evidence-schema.md` Target 4).
-7. **Order**: (1) If Step 6 ran this cycle, **delegate** review completion via `delegation--review-wait.md` (same trigger `created_at` / `trigger_id` semantics as `review--bot-operations.md` § Polling / Terminal States / `COMPLETED_SILENT`). **Do not** poll inline in the main agent (`HS-NO-INLINE-POLL`); there is no `until … evidence-pull-request` tight loop here. After the subagent returns, run `make evidence-pull-request PR=<N>` **once** to refresh `reviews.re_review_signal` before applying skip rules. (2) Then apply skip rules: if `threads_unresolved == 0` **and** `cr_response_pending_after_latest_trigger == false` **and** `auto_merge_readiness.review_consensus_complete` (or `auto_merge_readiness.safe_to_enable` when merge is the goal) → skip further delegation; otherwise → delegate again via `delegation--review-wait.md` (Task: see template header for `run_in_background` — `true` for concurrent multi-PR waits; single-PR foreground default per `subagent-policy.mdc`).
+7. **Order**: (1) If Step 6 ran this cycle, **delegate** review completion via `delegation--review-wait.md` (same trigger `created_at` / `trigger_id` semantics as `review--bot-operations.md` § Polling / Terminal States / `COMPLETED_SILENT`). **Do not** poll inline in the main agent (`HS-NO-INLINE-POLL`); there is no `until … evidence-pull-request` tight loop here. After the subagent returns, run `make evidence-pull-request PR=<N>` **once** to refresh `reviews.re_review_signal` before applying skip rules. (2) Then apply skip rules **only if all hold**: `review_threads_truncated == false`, `threads_unresolved == 0`, `reviews.diagnostics.required_bot_findings_outstanding == false`, `cr_response_pending_after_latest_trigger == false`, and `auto_merge_readiness.review_consensus_complete` (or `auto_merge_readiness.safe_to_enable` when merge is the goal). If any fails → continue `review-fix` / delegate again via `delegation--review-wait.md` (Task: see template header for `run_in_background` — `true` for concurrent multi-PR waits; single-PR foreground default per `subagent-policy.mdc`).
 
 ## Output
 

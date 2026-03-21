@@ -421,10 +421,16 @@ re_review_signal=$(
        else false
        end) as $pend
     | (if ($mx != null) and ($rc >= $mx) then false else $pend end) as $pend2
+    | ($trig_comments
+      | sort_by(.created_at | ts(.)) | reverse
+      | .[0:5]
+      | map({created_at: .created_at, id: .id})
+      ) as $trig_log
     | {
         latest_cr_trigger_created_at: $trig_at,
         latest_cr_review_submitted_at_after_trigger: $ans_at,
-        cr_response_pending_after_latest_trigger: $pend2
+        cr_response_pending_after_latest_trigger: $pend2,
+        trigger_comment_log: $trig_log
       }
     '
 )
@@ -438,6 +444,7 @@ threads=$(gh api graphql -f query='
       pullRequest(number: $pr) {
         reviewThreads(first: 100) {
           totalCount
+          pageInfo { hasNextPage }
           nodes { isResolved }
         }
       }
@@ -446,11 +453,13 @@ threads=$(gh api graphql -f query='
 ' -f owner="$owner" -f repo="$repo" -F pr="$PR" \
   --jq '{
     total: .data.repository.pullRequest.reviewThreads.totalCount,
-    unresolved: [.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)] | length
-  }' 2>/dev/null || echo '{"total":0,"unresolved":0}')
+    unresolved: [.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)] | length,
+    truncated: (.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage // false)
+  }' 2>/dev/null || echo '{"total":0,"unresolved":0,"truncated":false}')
 
 threads_total=$(echo "$threads" | jq '.total')
 threads_unresolved=$(echo "$threads" | jq '.unresolved')
+review_threads_truncated=$(echo "$threads" | jq -c '.truncated // false')
 
 # --- Disposition ---
 # Filter out bot reviews to find human review disposition
@@ -492,6 +501,7 @@ readiness=$(
     --arg merge_state "$merge_state" \
     --arg ci_status "$ci_status" \
     --argjson rereview_pending "$rereview_pending_json" \
+    --argjson threads_truncated "$review_threads_truncated" \
     '{
       bots_map: $bots_map,
       bot_config: $cfg,
@@ -500,7 +510,8 @@ readiness=$(
       mergeable: $mergeable,
       merge_state: $merge_state,
       ci_status: $ci_status,
-      rereview_response_pending: $rereview_pending
+      rereview_response_pending: $rereview_pending,
+      review_threads_truncated: $threads_truncated
     }' | jq -f "$_fsm_dir/pull-request-readiness.jq"
 )
 review_diagnostics=$(echo "$readiness" | jq -c '.diagnostics')
@@ -535,6 +546,7 @@ body=$(jq -nc \
   --argjson bot_reviews "$bot_reviews" \
   --argjson threads_total "$threads_total" \
   --argjson threads_unresolved "$threads_unresolved" \
+  --argjson review_threads_truncated "$review_threads_truncated" \
   --arg disposition "$disposition" \
   --arg last_review "$last_review_at" \
   --arg last_push "$last_push_at" \
@@ -565,6 +577,7 @@ body=$(jq -nc \
       $bot_reviews + {
         "threads_total": $threads_total,
         "threads_unresolved": $threads_unresolved,
+        "review_threads_truncated": $review_threads_truncated,
         "disposition": $disposition,
         "last_review_at": (if $last_review == "" then null else $last_review end),
         "last_push_at": $last_push,

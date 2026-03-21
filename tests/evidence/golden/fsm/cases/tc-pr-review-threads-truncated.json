@@ -1,10 +1,10 @@
 {
-  "id": "tc-pr-consensus-findings-resolved-no-threads",
+  "id": "tc-pr-review-threads-truncated",
   "kind": "pull_request_readiness",
   "input": {
     "bots_map": {
       "bot_coderabbit": {
-        "status": "COMPLETED",
+        "status": "COMPLETED_SILENT",
         "review_submitted_at": "2026-01-01T00:00:00Z",
         "findings_count": 0,
         "review_count": 1,
@@ -22,12 +22,13 @@
     "threads_unresolved": 0,
     "mergeable": "MERGEABLE",
     "merge_state": "CLEAN",
-    "ci_status": "success"
+    "ci_status": "success",
+    "review_threads_truncated": true
   },
   "expect": {
-    "review_consensus_complete": true,
-    "safe_to_enable": true,
-    "pr_state_id": "ReviewDone",
-    "blockers_empty": true
+    "review_consensus_complete": false,
+    "safe_to_enable": false,
+    "pr_state_id": "UnresolvedThreads",
+    "blockers_contains": ["review_threads_truncated"]
   }
 }
