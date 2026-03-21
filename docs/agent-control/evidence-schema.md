@@ -100,6 +100,7 @@ This catalog defines the canonical naming set.
 | `evidence-pull-request` | evidence |
 | `evidence-review-threads` | evidence |
 | `evidence-issue` | evidence |
+| `evidence-branch-protection` | evidence |
 
 ### Gate hierarchy
 

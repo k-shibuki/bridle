@@ -147,13 +147,13 @@ For each Deterministic/Cond. Deterministic Hard Stop, compare the Rule declarati
 | `check-commit-msg.sh` | `commit-format.mdc` § Footer | Exemption logic matches declared exceptions |
 | `check-nolint.sh` | `quality-policy.mdc` § Prohibited forms | Rejected patterns match the prohibited forms table |
 | `pre-push.sh` | `agent-safety.mdc` `HS-LOCAL-VERIFY` | Gate conditions match the `HS-LOCAL-VERIFY` requirements |
-| Branch Protection | `agent-safety.mdc` `HS-CI-MERGE` | `gh api repos/{owner}/{repo}/branches/main/protection` shows required status checks |
+| Branch Protection | `agent-safety.mdc` `HS-CI-MERGE` | `make evidence-branch-protection` shows `required_status_contexts` when protection is present |
 
 Flag mismatches as `GUARD_RULE_MISMATCH`.
 
 **4c. Verify Guard activation prerequisites**:
 
-- **Branch Protection**: `gh api repos/{owner}/{repo}/branches/main/protection` — confirm required status checks exist
+- **Branch Protection**: `make evidence-branch-protection` (optional `BRANCH=main`) — confirm `protection_present` and required status contexts match policy
 - **Git hooks**: Check `.git/hooks/` for pre-commit, pre-push, commit-msg installation
 - Flag inactive Guards as `GUARD_INACTIVE`
 

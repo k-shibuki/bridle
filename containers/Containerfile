@@ -19,6 +19,9 @@ RUN R -e "install.packages('renv', repos = 'https://cloud.r-project.org')"
 # Standardize on UTC for reproducible timestamps across environments
 ENV TZ=UTC
 
+# Avoid nested podman exec when running make inside the container (Makefile uses this flag)
+ENV BRIDLE_IN_CONTAINER=1
+
 # Enable renv global cache (persisted via named volume)
 ENV RENV_PATHS_CACHE=/home/rstudio/.cache/R/renv
 
