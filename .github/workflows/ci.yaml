@@ -3,13 +3,15 @@
 # Full OS matrix is handled by R-CMD-check.yaml on push to main.
 #
 # Test skipping: when the PR still touches R paths (cumulative diff) but the current
-# push does not, the test job is skipped only if the parent commit already has a
-# successful "test" check run from this workflow. Otherwise tests run (closes the
+# push does not, test-unit and test-e2e are skipped only if the parent commit already
+# has successful paired runs from this workflow (test-unit + test-e2e), or a legacy
+# successful "test" check before the job split. Otherwise tests run (closes the
 # loophole where a docs-only push could hide a prior failing test via skip).
 #
-# Manual PR checks: R-only change runs test; doc-only follow-up skips test after green
-# parent test; failing test then doc-only push re-runs test; fork PRs always run
-# tests when r_source is true (no parent check lookup on the fork repo).
+# Manual PR checks: R-only change runs test-unit and test-e2e; doc-only follow-up
+# skips both after green parent test pair (or legacy test); failing test then doc-only
+# push re-runs tests; fork PRs always run tests when r_source is true (no parent
+# check lookup on the fork repo).
 on:
   pull_request:
     branches: [main, master]
@@ -146,22 +148,29 @@ jobs:
             exit 0
           fi
 
-          conclusion="$(printf '%s' "$resp" | jq -r --arg b "$before" '
-            [ .check_runs[]?
-              | select(.name == "test"
-                  and .head_sha == $b
-                  and .app.slug == "github-actions"
-                  and .status == "completed")
-            ]
-            | sort_by(.completed_at)
-            | last
-            | .conclusion // "missing"
-          ' 2>/dev/null)" || conclusion="missing"
-          if [ -z "$conclusion" ]; then
-            conclusion="missing"
+          can_skip="$(printf '%s' "$resp" | jq -r --arg b "$before" '
+            def last_conclusion($name; $sha):
+              [ .check_runs[]?
+                | select(.name == $name
+                    and .head_sha == $sha
+                    and .app.slug == "github-actions"
+                    and .status == "completed")
+              ]
+              | sort_by(.completed_at)
+              | last
+              | .conclusion // "missing";
+            (last_conclusion("test-unit"; $b) == "success"
+              and last_conclusion("test-e2e"; $b) == "success")
+            or
+            (last_conclusion("test"; $b) == "success"
+              and last_conclusion("test-unit"; $b) == "missing"
+              and last_conclusion("test-e2e"; $b) == "missing")
+          ' 2>/dev/null)" || can_skip="false"
+          if [ -z "$can_skip" ]; then
+            can_skip="false"
           fi
 
-          if [ "$conclusion" = "success" ]; then
+          if [ "$can_skip" = "true" ]; then
             echo "run_test=false" >> "$GITHUB_OUTPUT"
           else
             echo "run_test=true" >> "$GITHUB_OUTPUT"
@@ -332,13 +341,15 @@ jobs:
           path: lint-results.json
           retention-days: 7
 
-  test:
+  test-unit:
     needs: [changes, test-skip-guard]
     if: |
       needs.changes.outputs.r_source == 'true' &&
       needs.test-skip-guard.outputs.run_test == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      BRIDLE_TEST_TIER: unit
     steps:
       - uses: actions/checkout@v6
 
@@ -350,7 +361,7 @@ jobs:
         with:
           extra-packages: any::testthat, any::rcmdcheck
 
-      - name: Run tests
+      - name: Run unit-tier tests
         run: |
           results <- devtools::test()
           df <- as.data.frame(results)
@@ -369,7 +380,49 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: test-results
+          name: test-results-unit
+          path: |
+            tests/testthat/_snaps/
+          retention-days: 7
+
+  test-e2e:
+    needs: [changes, test-skip-guard]
+    if: |
+      needs.changes.outputs.r_source == 'true' &&
+      needs.test-skip-guard.outputs.run_test == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::testthat, any::rcmdcheck
+
+      - name: Run e2e and integration tests
+        run: |
+          results <- devtools::test(filter = "e2e-|integration-|pipeline-")
+          df <- as.data.frame(results)
+          if (any(df$failed > 0)) {
+            stop("Tests had ", sum(df$failed), " failure(s)")
+          }
+          if (any(df$error > 0)) {
+            stop("Tests had ", sum(df$error), " error(s)")
+          }
+          if (any(df$warning > 0)) {
+            stop("Tests produced ", sum(df$warning), " warning(s)")
+          }
+        shell: Rscript {0}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-e2e
           path: |
             tests/testthat/_snaps/
           retention-days: 7
@@ -432,7 +485,7 @@ jobs:
   # It passes when all relevant jobs pass or are correctly skipped.
   ci-pass:
     if: always()
-    needs: [changes, test-skip-guard, ci-config, package-sync-verify, schema-validate, format-verify, lint, test, check, knowledge-validate, markdown-lint]
+    needs: [changes, test-skip-guard, ci-config, package-sync-verify, schema-validate, format-verify, lint, test-unit, test-e2e, check, knowledge-validate, markdown-lint]
     runs-on: ubuntu-latest
     steps:
       - name: Verify all jobs passed or were skipped
@@ -444,7 +497,8 @@ jobs:
                    "${{ needs.schema-validate.result }}" \
                    "${{ needs.format-verify.result }}" \
                    "${{ needs.lint.result }}" \
-                   "${{ needs.test.result }}" \
+                   "${{ needs.test-unit.result }}" \
+                   "${{ needs.test-e2e.result }}" \
                    "${{ needs.check.result }}" \
                    "${{ needs.knowledge-validate.result }}" \
                    "${{ needs.markdown-lint.result }}")
@@ -458,7 +512,7 @@ jobs:
 
   ci-summary:
     if: always()
-    needs: [changes, test-skip-guard, ci-config, package-sync-verify, schema-validate, format-verify, lint, test, check, knowledge-validate, markdown-lint]
+    needs: [changes, test-skip-guard, ci-config, package-sync-verify, schema-validate, format-verify, lint, test-unit, test-e2e, check, knowledge-validate, markdown-lint]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -476,7 +530,8 @@ jobs:
               'schema-validate': '${{ needs.schema-validate.result }}',
               'format-verify': '${{ needs.format-verify.result }}',
               'lint': '${{ needs.lint.result }}',
-              'test': '${{ needs.test.result }}',
+              'test-unit': '${{ needs.test-unit.result }}',
+              'test-e2e': '${{ needs.test-e2e.result }}',
               'check': '${{ needs.check.result }}',
               'knowledge-validate': '${{ needs.knowledge-validate.result }}',
               'markdown-lint': '${{ needs.markdown-lint.result }}'

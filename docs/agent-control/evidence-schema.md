@@ -73,6 +73,8 @@ This catalog defines the canonical naming set.
 | `check` | quality |
 | `check-quick` | quality |
 | `test` | quality |
+| `test-unit` | quality |
+| `test-e2e` | quality |
 | `test-junit` | quality |
 | `test-changed` | quality |
 | `coverage` | quality |

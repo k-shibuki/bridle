@@ -12,6 +12,7 @@
 # 3. The draft graph is flat (no template composition). build_graph() handles
 #    this correctly (ADR-0009 § flat graph path).
 
+skip_on_unit_tier()
 skip_if_not_installed("metafor")
 
 # -- Helpers -------------------------------------------------------------------

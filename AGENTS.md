@@ -117,7 +117,7 @@ Quality enforcement uses three layers with increasing scope:
 | Layer | Context | Purpose | Scope |
 |-------|---------|---------|-------|
 | Local | `pre-push` hook | Fail-fast filter | Differential: `format-verify`, `lint-changed`, `test-changed` for R; validators for schemas/renv/kb |
-| PR CI | `ci.yaml` | Merge gate | Full: parallel `lint` \| `test` \| `check --no-tests` + validators |
+| PR CI | `ci.yaml` | Merge gate | Full: parallel `lint` \| `test-unit` \| `test-e2e` \| `check --no-tests` + validators |
 | Main push | `R-CMD-check.yaml` | Full verification | 5-matrix R CMD check + coverage (80% threshold, auto-Issue on failure) |
 
 Coverage is **not** on the PR critical path. It runs post-merge on main push.

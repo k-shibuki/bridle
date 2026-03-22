@@ -31,7 +31,7 @@ endif
 .PHONY: help \
 	container-build container-start container-stop container-shell container-rstudio \
 	package-init package-restore package-snapshot \
-	check check-quick test lint format format-verify document coverage coverage-verify site-build package-install clean \
+	check check-quick test test-unit test-e2e lint format format-verify document coverage coverage-verify site-build package-install clean \
 	gate-quality gate-fast gate-pull-request gate-full doctor doctor-json schema-validate evidence-validate \
 	markdown-lint markdown-lint-changed \
 	lint-changed test-changed test-junit lint-json scaffold-test scaffold-class \
@@ -104,6 +104,12 @@ check: _require_container ## Run R CMD check (primary quality gate)
 
 test: _require_container ## Run tests
 	$(RSCRIPT) -e "devtools::test()"
+
+test-unit: _require_container ## Run unit-tier tests (skip e2e/integration via BRIDLE_TEST_TIER=unit)
+	$(RSCRIPT) -e "Sys.setenv(BRIDLE_TEST_TIER = 'unit'); devtools::test()"
+
+test-e2e: _require_container ## Run e2e, integration, and pipeline tests only
+	$(RSCRIPT) -e 'devtools::test(filter = "e2e-|integration-|pipeline-")'
 
 lint: _require_container ## Run lintr (with package namespace loaded for accurate object_usage_linter)
 	$(RSCRIPT) -e "pkgload::load_all('.', quiet = TRUE); lintr::lint_package()"

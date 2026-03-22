@@ -2,6 +2,7 @@
 # Issue #133: Full pipeline validation with metafor
 # scan_package runs against real metafor; HTTP and LLM are mocked.
 
+skip_on_unit_tier()
 skip_if_not_installed("metafor")
 
 # -- Helpers -------------------------------------------------------------------
