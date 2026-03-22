@@ -9,7 +9,7 @@ def dedupe_roll($roll):
   [ $roll[] | select((.name // "") != "") ]
   | group_by(.name)
   | map(
-      ( . | map(select(.completedAt != null)) | sort_by(.completedAt) | last) // .[0]
+      ( . | map(select(.status == "COMPLETED" and .completedAt != null)) | sort_by(.completedAt) | last) // .[0]
     );
 
 def filtered_roll($roll; $cfg):
