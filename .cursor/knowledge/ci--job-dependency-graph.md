@@ -9,7 +9,8 @@ trigger: CI job, job dependency, filter category, coverage gate, coverage thresh
 changes ──┬── schema-validate      (r_source OR schemas)
           ├── format-verify        (r_source)
           ├── lint                 (r_source)
-          ├── test                 (r_source)
+          ├── test-unit            (r_source; skips slow files via BRIDLE_TEST_TIER=unit)
+          ├── test-e2e             (r_source; devtools::test filter for e2e/integration/pipeline)
           ├── check               (r_source OR r_deps; --no-tests)
           ├── ci-config            (ci_config)
           ├── package-sync-verify  (renv_deps)
@@ -20,7 +21,7 @@ changes ──┬── schema-validate      (r_source OR schemas)
 ```
 
 All quality jobs depend only on `changes` and run in parallel.
-`check` uses `--no-tests` flag — tests are handled by the dedicated `test` job.
+`check` uses `--no-tests` flag — tests are handled by `test-unit` and `test-e2e`.
 Coverage is **not** on the PR critical path (see Main Push section below).
 Final gate: `ci-pass` depends on `changes` and all quality jobs; skipped jobs are treated as passing.
 
@@ -54,7 +55,8 @@ Coverage runs post-merge on main. If coverage drops below threshold (80%), a tem
 |-----|-----------|-----------|
 | `format-verify` | `r_source` | Formatting applies only to R source files |
 | `lint` | `r_source` | Linting applies only to R source files |
-| `test` | `r_source` | Tests run only when source or tests change |
+| `test-unit` | `r_source` | Unit-tier tests (e2e/integration files skipped when `BRIDLE_TEST_TIER=unit`) |
+| `test-e2e` | `r_source` | E2e, integration, and pipeline tests only (`devtools::test` filter) |
 | `check` | `r_source OR r_deps` | R CMD check is affected by dependency and .Rbuildignore changes |
 | `schema-validate` | `schemas OR r_source` | Schema-code consistency requires both sides |
 | `ci-config` | `ci_config` | CI infrastructure validation |
@@ -87,8 +89,8 @@ Fixed-interval polling wastes time. Use a stage-aware strategy:
 | Stage | Condition | Interval | Rationale |
 |-------|-----------|----------|-----------|
 | Early | No jobs completed | 20s | Initial queue + startup time |
-| Mid | Any of lint/test/check still running | 15s | Parallel jobs in progress, longest is ~90s |
-| Late | All of lint/test/check completed | 10s | Only ci-pass remains |
+| Mid | Any of lint/test-unit/test-e2e/check still running | 15s | Parallel jobs in progress, longest is ~90s |
+| Late | All of lint/test-unit/test-e2e/check completed | 10s | Only ci-pass remains |
 | Final | All except ci-pass | 5s | ci-pass completes in seconds |
 
 **Time budget**: Use elapsed time (max 5 minutes) rather than poll count as the upper bound. Poll count limits (e.g., 10 polls) can expire before long jobs finish.

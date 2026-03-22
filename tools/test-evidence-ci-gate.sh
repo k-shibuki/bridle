@@ -33,6 +33,17 @@ if [ "$(echo "$out" | jq -r '.ci_status')" != "success" ]; then
   exit 1
 fi
 
+# Duplicate check name: stale FAILURE + latest SUCCESS → merge gate green
+out=$(run_gate '[
+  {"name":"check-policy","status":"COMPLETED","conclusion":"FAILURE","completedAt":"2026-03-22T02:08:28Z"},
+  {"name":"check-policy","status":"COMPLETED","conclusion":"SUCCESS","completedAt":"2026-03-22T02:09:00Z"},
+  {"name":"ci-pass","status":"COMPLETED","conclusion":"SUCCESS","completedAt":"2026-03-22T02:10:00Z"}
+]')
+if [ "$(echo "$out" | jq -r '.ci_status')" != "success" ]; then
+  echo "FAIL: expected ci_status success when duplicate check name has latest SUCCESS, got: $out" >&2
+  exit 1
+fi
+
 # Unknown completed conclusion fails closed (merge gate)
 out=$(run_gate '[{"name":"ci-pass","status":"COMPLETED","conclusion":"NEUTRAL"}]')
 if [ "$(echo "$out" | jq -r '.ci_status')" != "failure" ]; then

@@ -8,6 +8,7 @@
 #   - Rate limiting: Sys.sleep(1) between LLM calls
 #   - Failure classification: capture and report failures, don't fail opaquely
 
+skip_on_unit_tier()
 skip_on_cran()
 skip_if_not_installed("metafor")
 skip_if_not_installed("ellmer")

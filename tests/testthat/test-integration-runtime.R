@@ -1,6 +1,7 @@
 # E2E integration tests for the bridle runtime pipeline.
 # Uses test-plugin fixture with mocked LLM and readline.
 
+skip_on_unit_tier()
 .plugin_dir <- function() {
   testthat::test_path("fixtures", "test-plugin")
 }

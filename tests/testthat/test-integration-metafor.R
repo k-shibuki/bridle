@@ -2,6 +2,7 @@
 # Issue #134: Realistic metafor plugin fixture + comprehensive E2E tests.
 # Uses build_graph() template composition (ADR-0009).
 
+skip_on_unit_tier()
 .metafor_dir <- function() {
   testthat::test_path("fixtures", "metafor-plugin")
 }

@@ -4,6 +4,14 @@
 # IMPORTANT: local_mocked_bindings() must be called inline in each test_that
 # block due to scope constraints. These helpers provide VALUES only.
 
+# -- Test tier (CI: BRIDLE_TEST_TIER=unit skips slow files in test-unit job) --
+skip_on_unit_tier <- function() {
+  testthat::skip_if(
+    identical(Sys.getenv("BRIDLE_TEST_TIER"), "unit"),
+    message = "Skipping e2e/integration test (BRIDLE_TEST_TIER=unit)"
+  )
+}
+
 # -- Scanner mock factories (used by scan_package, scan_layer2, scan_layer3a) --
 
 mock_resolve <- function(fn) {
