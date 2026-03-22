@@ -1,6 +1,6 @@
 # Shared definitions: merge-gate CI rollup (exclude bot commit_status_name rows from review-bots.json).
 # Sourced by concatenation before a program file; expects $cfg with .bots[].
-# SSOT with tools/evidence-pull-request.sh (Refs: #288 / PR observation alignment).
+# SSOT with tools/evidence-pull-request.sh merge-gate rollup.
 
 def filtered_roll($roll; $cfg):
   ([$cfg.bots[] | (.commit_status_name // "") | select(length > 0) | ascii_downcase]) as $npats
@@ -8,7 +8,7 @@ def filtered_roll($roll; $cfg):
       [ $roll[] | select(
           (.name // "") as $cn
           | ($cn != "")
-            and ([ $npats[] as $p | ($cn | ascii_downcase | contains($p)) ] | any | not)
+            and ([ $npats[] as $p | (($cn | ascii_downcase) == $p) ] | any | not)
         )]
     end);
 
@@ -19,6 +19,10 @@ def ci_gate($roll; $cfg):
         if ($filtered | length) == 0 then "no_checks"
         elif [$filtered[] | select(.conclusion == "FAILURE")] | length > 0 then "failure"
         elif [$filtered[] | select(.status != "COMPLETED")] | length > 0 then "pending"
+        elif [$filtered[] | select(
+          .status == "COMPLETED"
+          and (.conclusion != "SUCCESS" and .conclusion != "FAILURE" and .conclusion != "SKIPPED")
+        )] | length > 0 then "failure"
         else "success"
         end
       ),
@@ -30,6 +34,7 @@ def ci_gate($roll; $cfg):
             elif .conclusion == "SUCCESS" then "pass"
             elif .conclusion == "FAILURE" then "fail"
             elif .conclusion == "SKIPPED" then "skipped"
+            elif .status == "COMPLETED" then "fail"
             else "pending"
             end
           ),

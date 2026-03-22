@@ -431,7 +431,7 @@ review freshness, and bot review status.
 - `reviews.re_review_signal.trigger_comment_log`: up to five most recent qualifying trigger comments (same filter as above), newest first, each `{created_at, id}` — debugging / disambiguation when `latest_cr_trigger_created_at` alone is ambiguous
 - `reviews.bot_<id>.rate_limit`: when an issue-comment rate limit was merged into `status` (Refs: #288), non-null with `source: "issue_comment"` and `detected_at`; otherwise null
 - `reviews.diagnostics.required_bot_rate_limited` / `required_bot_timed_out`: derived in `pull-request-readiness.jq` for required bots
-- `auto_merge_readiness.blockers` may include `bot_rate_limited` when any required bot is `RATE_LIMITED` or `TIMED_OUT`
+- `auto_merge_readiness.blockers` may include `bot_rate_limited` when any required bot is `RATE_LIMITED`, and `bot_timed_out` when any required bot is `TIMED_OUT`
 - `auto_merge_readiness`: merge/consensus gate (`safe_to_enable` requires empty `blockers`); same jq SSOT as `routing.pr_state_id`
 - `traceability.closes_issues`: Issue numbers from `Closes #N` / `Fixes #N` in PR body
 

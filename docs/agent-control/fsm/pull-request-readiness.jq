@@ -84,8 +84,10 @@ def blockers($rows; $disposition; $threads_u; $mergeable; $merge_state; $ci_stat
      then . + ["required_bot_rereview"] else . end)
   | (if (required_findings_total($rows) > 0) and ($disposition != "approved") then . + ["required_bot_findings"] else . end)
   | (if $pending and $threads_u == 0 then . + ["rereview_response_pending"] else . end)
-  | (if ($rows | any(.required and (.status == "RATE_LIMITED" or .status == "TIMED_OUT")))
+  | (if ($rows | any(.required and .status == "RATE_LIMITED"))
      then . + ["bot_rate_limited"] else . end)
+  | (if ($rows | any(.required and .status == "TIMED_OUT"))
+     then . + ["bot_timed_out"] else . end)
   | (if $threads_truncated then . + ["review_threads_truncated"] else . end);
 
 def pr_state_id($rows; $disposition; $threads_u; $mergeable; $merge_state; $ci_status; $pending; $threads_truncated):

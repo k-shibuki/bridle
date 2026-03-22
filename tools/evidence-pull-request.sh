@@ -88,7 +88,7 @@ pr_state=$(echo "$pr_data" | jq -r '.state // "UNKNOWN"')
 head_branch=$(echo "$pr_data" | jq -r '.headRefName')
 base_branch=$(echo "$pr_data" | jq -r '.baseRefName')
 
-# --- CI status (exclude bot commit-status checks listed in review-bots.json; SSOT: tools/jq/evidence-ci-gate-defs.jq) ---
+# --- CI rollup excluding bot-named checks (same filter as tools/jq/evidence-ci-gate-defs.jq + review-bots.json commit_status_name) ---
 _ci_gate_json=$(_evidence_ci_gate)
 ci_checks=$(echo "$_ci_gate_json" | jq -c '.ci_checks')
 ci_status=$(echo "$_ci_gate_json" | jq -r '.ci_status')
@@ -107,11 +107,10 @@ pr_comments=$(gh api "repos/$owner/$repo/issues/$PR/comments" 2>/dev/null || ech
 cr_inline=$(gh api "repos/$owner/$repo/pulls/$PR/comments" 2>/dev/null || echo "[]")
 
 # --- Build bot review objects from config ---
-# Integration order (SSOT for bot status; Refs: #288):
-# 1) GitHub commit-status row when commit_status_name matches rollup
-# 2) Issue-comment rate_limit_pattern since last_push — overrides (1) when comment proves limit after success completedAt, or when (1) is PENDING
-# 3) Else PR reviews + issue comments (fresh vs rate-limit), when (1) not used
-# 4) invalidate_review_pattern overrides to REVIEW_INVALIDATED
+# Status resolution order: (1) commit-status row whose name equals commit_status_name (case-insensitive);
+# (2) issue comments matching rate_limit_pattern since head commit may override (1) for stale success or pending;
+# (3) if (1) unused, compare fresh PR reviews vs rate-limit comments since head;
+# (4) invalidate_review_pattern on issue comments since head forces REVIEW_INVALIDATED.
 _detect_bot_reviews() {
   local bot_json="{}"
   local i=0
@@ -154,7 +153,8 @@ _detect_bot_reviews() {
       local cs_row_json
       cs_row_json=$(echo "$pr_data" | jq -c --arg pat "$commit_cs_name" '
         (.statusCheckRollup // []) as $r
-        | [ $r[] | select((.name // "") | ascii_downcase | contains($pat | ascii_downcase)) ] as $m
+        | ($pat | ascii_downcase) as $p
+        | [ $r[] | select((.name // "") | ascii_downcase == $p) ] as $m
         | if ($m | length) == 0 then null
           else (
             $m
@@ -192,6 +192,8 @@ _detect_bot_reviews() {
           failure)
             status="RATE_LIMITED"
             submitted=""
+            rate_limit_meta=$(jq -nc --argjson cs "$cs_row_json" \
+              '{detected: true, source: "commit_status_row", check_name: ($cs.name // null), conclusion: ($cs.conclusion // null)}')
             ;;
           *)
             status="PENDING"
@@ -243,11 +245,14 @@ _detect_bot_reviews() {
              meta: (if $ov then {detected: true, source: "issue_comment", detected_at: $best.created_at} else null end)}
           end
         ')
+      _rl_meta=$(echo "$rl_out" | jq -c '.meta')
       if [ "$(echo "$rl_out" | jq -r '.override')" = "true" ]; then
         status="RATE_LIMITED"
         submitted=""
       fi
-      rate_limit_meta=$(echo "$rl_out" | jq -c '.meta')
+      if [ "$_rl_meta" != "null" ]; then
+        rate_limit_meta="$_rl_meta"
+      fi
     fi
 
     # Fallback: fresh review (submitted_at >= last push) vs rate-limit comments since last push (timestamp order)
@@ -286,14 +291,21 @@ _detect_bot_reviews() {
         end
         | map(select((.created_at | ts(.)) != null and (.created_at | ts(.)) >= $tp))
         ) as $rlc
+      | (if ($rlc | length) == 0 then null else ($rlc | max_by(.created_at | ts(.))) end) as $best_rl
       | (if ($rlc | length) == 0 then null else ([$rlc[] | .created_at | ts(.)] | max) end) as $max_rl_ts
       | (if $latest_fresh == null then null else ($latest_fresh.submitted_at | ts(.)) end) as $max_rev_ts
       | if $latest_fresh != null and ($max_rl_ts == null or $max_rev_ts >= $max_rl_ts) then
-          {status: "COMPLETED", submitted: $latest_fresh.submitted_at}
+          {status: "COMPLETED", submitted: $latest_fresh.submitted_at, rate_limit_meta: null}
         elif $max_rl_ts != null then
-          {status: "RATE_LIMITED", submitted: (if $latest_fresh != null then $latest_fresh.submitted_at else null end)}
+          {status: "RATE_LIMITED",
+           submitted: (if $latest_fresh != null then $latest_fresh.submitted_at else null end),
+           rate_limit_meta: (
+             if $best_rl != null then {detected: true, source: "issue_comment", detected_at: $best_rl.created_at}
+             else {detected: true, source: "issue_comment"}
+             end
+           )}
         else
-          {status: "NOT_TRIGGERED", submitted: null}
+          {status: "NOT_TRIGGERED", submitted: null, rate_limit_meta: null}
         end
       ')
       status=$(echo "$bot_status_json" | jq -r '.status')
@@ -301,6 +313,7 @@ _detect_bot_reviews() {
       if [ "$submitted" = "null" ]; then
         submitted=""
       fi
+      rate_limit_meta=$(echo "$bot_status_json" | jq -c '.rate_limit_meta // null')
     fi
 
     # CodeRabbit (etc.): PR issue comment when review was voided mid-run (e.g. head moved while CR was reviewing)
@@ -350,11 +363,15 @@ _detect_bot_reviews() {
       fi
     fi
 
-    # Body-embedded findings aggregated across all reviews
+    # Body-embedded "outside diff" counts: only reviews at or after head commit (ignore pre-push history)
     local body_count
-    body_count=$(echo "$bot_reviews_all" | jq '
-      [.[].body // ""
-       | try (capture("Outside diff range comments \\((?<count>\\d+)\\)").count | tonumber) catch empty
+    body_count=$(echo "$bot_reviews_all" | jq --arg lp "$last_push_at" '
+      def ts($s):
+        if $s == null or $s == "" then null else (try ($s | fromdateiso8601) catch null) end;
+      ($lp | ts(.)) as $tpush | (if $tpush == null then 0 else $tpush end) as $tp
+      | [.[] | select((.submitted_at | ts(.)) != null and (.submitted_at | ts(.)) >= $tp)
+        | .body // ""
+        | try (capture("Outside diff range comments \\((?<count>\\d+)\\)").count | tonumber) catch empty
       ] | add // 0
     ')
     findings=$((findings + body_count))
@@ -388,9 +405,8 @@ _detect_bot_reviews() {
 
 bot_reviews=$(_detect_bot_reviews)
 
-# --- CodeRabbit re-review: issue trigger vs pull review response (Refs: #282) ---
-# Aligns with delegation--review-wait.md (submitted_at > trigger_time). When REVIEW_INVALIDATED,
-# do not hold pending (avoid deadlock; re-trigger is procedural).
+# --- CodeRabbit re-review: latest @coderabbitai review issue comment vs answering pull review timestamp ---
+# Pending when trigger is newer than any qualifying pull review (and review cap not reached). REVIEW_INVALIDATED clears pending.
 coderabbit_status=$(echo "$bot_reviews" | jq -r '.bot_coderabbit.status // "NOT_TRIGGERED"')
 coderabbit_submitted=$(echo "$bot_reviews" | jq -r '.bot_coderabbit.review_submitted_at // empty')
 if [ "$coderabbit_submitted" = "null" ]; then
@@ -477,7 +493,7 @@ threads=$(gh api graphql -f query='
     total: .data.repository.pullRequest.reviewThreads.totalCount,
     unresolved: [.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)] | length,
     truncated: (.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage // false)
-  }' 2>/dev/null || echo '{"total":0,"unresolved":0,"truncated":false}')
+  }' 2>/dev/null || echo '{"total":0,"unresolved":0,"truncated":true}')
 
 threads_total=$(echo "$threads" | jq '.total')
 threads_unresolved=$(echo "$threads" | jq '.unresolved')
@@ -511,7 +527,7 @@ case "$latest_review" in
   *) disposition="pending" ;;
 esac
 
-# --- FSM-derived diagnostics + merge readiness (Refs: #272, #282) — SSOT: docs/agent-control/fsm/pull-request-readiness.jq
+# --- FSM merge-readiness + routing (jq module under docs/agent-control/fsm/pull-request-readiness.jq) ---
 _fsm_dir="$(cd "$(dirname "$0")/.." && pwd)/docs/agent-control/fsm"
 readiness=$(
   jq -nc \

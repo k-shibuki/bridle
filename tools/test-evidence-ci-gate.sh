@@ -26,4 +26,23 @@ if [ "$(echo "$out" | jq -r '.ci_status')" != "no_checks" ]; then
   exit 1
 fi
 
+# Bot name must match commit_status_name by equality (case-insensitive), not substring — do not drop unrelated checks
+out=$(run_gate '[{"name":"ci-pass","status":"COMPLETED","conclusion":"SUCCESS"},{"name":"CodeRabbit fixtures","status":"COMPLETED","conclusion":"SUCCESS"}]')
+if [ "$(echo "$out" | jq -r '.ci_status')" != "success" ]; then
+  echo "FAIL: expected ci_status success when bot row is superset string of CodeRabbit, got: $out" >&2
+  exit 1
+fi
+
+# Unknown completed conclusion fails closed (merge gate)
+out=$(run_gate '[{"name":"ci-pass","status":"COMPLETED","conclusion":"NEUTRAL"}]')
+if [ "$(echo "$out" | jq -r '.ci_status')" != "failure" ]; then
+  echo "FAIL: expected ci_status failure for unknown conclusion, got: $out" >&2
+  exit 1
+fi
+chk=$(echo "$out" | jq -r '.ci_checks[0].status')
+if [ "$chk" != "fail" ]; then
+  echo "FAIL: expected ci_checks[0].status fail for unknown conclusion, got: $chk" >&2
+  exit 1
+fi
+
 echo "OK evidence-ci-gate"

@@ -4,13 +4,13 @@
   "head_branch": "feat/42-scanner-layer-3",
   "base_branch": "main",
   "routing": {
-    "pr_state_id": "ReviewDone"
+    "pr_state_id": "UnresolvedThreads"
   },
   "auto_merge_readiness": {
-    "review_consensus_complete": true,
+    "review_consensus_complete": false,
     "ci_all_required_passed": true,
-    "blockers": [],
-    "safe_to_enable": true
+    "blockers": ["merge_state_blocked", "required_bot_findings"],
+    "safe_to_enable": false
   },
   "ci": {
     "status": "success",
@@ -23,7 +23,7 @@
   },
   "merge": {
     "mergeable": "MERGEABLE",
-    "merge_state_status": "CLEAN"
+    "merge_state_status": "BLOCKED"
   },
   "reviews": {
     "bot_coderabbit": {
@@ -45,7 +45,7 @@
     "threads_total": 2,
     "threads_unresolved": 0,
     "review_threads_truncated": false,
-    "disposition": "approved",
+    "disposition": "pending",
     "last_review_at": "2026-03-12T09:15:00Z",
     "last_push_at": "2026-03-12T08:30:00Z",
     "diagnostics": {
