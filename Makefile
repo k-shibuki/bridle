@@ -37,7 +37,7 @@ endif
 	lint-changed test-changed test-junit lint-json scaffold-test scaffold-class \
 	status git-new-branch git-install-hooks git-post-merge-cleanup \
 	knowledge-manifest knowledge-validate knowledge-new review-sync-verify \
-	evidence-workflow-position evidence-environment evidence-lint evidence-pull-request evidence-issue evidence-fsm evidence-branch-protection test-fsm-fixtures \
+	evidence-workflow-position evidence-environment evidence-lint evidence-pull-request evidence-issue evidence-fsm evidence-branch-protection test-fsm-fixtures test-evidence-ci-gate \
 	evidence-review-threads label-agent-control-backfill
 
 # === Help ===
@@ -282,9 +282,13 @@ label-agent-control-backfill: ## Create label agent-control and add to known con
 evidence-validate: ## Validate evidence golden outputs + FSM jq fixtures (offline)
 	@bash tools/validate-evidence.sh
 	@bash tools/test-fsm-fixtures.sh
+	@bash tools/test-evidence-ci-gate.sh
 
 test-fsm-fixtures: ## Offline jq regression tests for docs/agent-control/fsm (Refs: #282)
 	@bash tools/test-fsm-fixtures.sh
+
+test-evidence-ci-gate: ## Offline regression for merge-gate CI rollup filter (Refs: #288)
+	@bash tools/test-evidence-ci-gate.sh
 
 # === Cleanup ===
 

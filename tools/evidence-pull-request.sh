@@ -63,6 +63,13 @@ if ! echo "$bot_config" | jq -e '
 fi
 
 bot_count=$(echo "$bot_config" | jq '.bots | length')
+_JQ_DIR="$(cd "$(dirname "$0")" && pwd)/jq"
+_evidence_ci_gate() {
+  jq -n \
+    --argjson rollup "$(echo "$pr_data" | jq -c '.statusCheckRollup // []')" \
+    --argjson cfg "$bot_config" \
+    -f <(cat "$_JQ_DIR/evidence-ci-gate-defs.jq" "$_JQ_DIR/evidence-ci-gate-single.jq")
+}
 
 # --- PR basic info ---
 pr_data=$(gh pr view "$PR" \
@@ -81,52 +88,11 @@ pr_state=$(echo "$pr_data" | jq -r '.state // "UNKNOWN"')
 head_branch=$(echo "$pr_data" | jq -r '.headRefName')
 base_branch=$(echo "$pr_data" | jq -r '.baseRefName')
 
-# --- CI status (exclude bot commit-status checks listed in review-bots.json) ---
-ci_checks=$(echo "$pr_data" | jq -c --argjson cfg "$bot_config" '
-  (.statusCheckRollup // []) as $roll
-  | ([$cfg.bots[] | (.commit_status_name // "") | select(length > 0) | ascii_downcase]) as $npats
-  | (if ($npats | length) == 0 then [ $roll[] | select((.name // "") != "") ] else
-      [ $roll[] | select(
-          (.name // "") as $cn
-          | ($cn != "")
-            and ([ $npats[] as $p | ($cn | ascii_downcase | contains($p)) ] | any | not)
-        )]
-    end) as $filtered
-  | [ $filtered[] | {
-    name: .name,
-    status: (
-      if .status != "COMPLETED" then "pending"
-      elif .conclusion == "SUCCESS" then "pass"
-      elif .conclusion == "FAILURE" then "fail"
-      elif .conclusion == "SKIPPED" then "skipped"
-      else "pending"
-      end
-    ),
-    elapsed_seconds: (
-      if .completedAt != null and .startedAt != null then
-        ((.completedAt | fromdateiso8601) - (.startedAt | fromdateiso8601))
-      else null
-      end
-    )
-  }]
-')
-
-ci_status=$(echo "$pr_data" | jq -r --argjson cfg "$bot_config" '
-  (.statusCheckRollup // []) as $roll
-  | ([$cfg.bots[] | (.commit_status_name // "") | select(length > 0) | ascii_downcase]) as $npats
-  | (if ($npats | length) == 0 then [ $roll[] | select((.name // "") != "") ] else
-      [ $roll[] | select(
-          (.name // "") as $cn
-          | ($cn != "")
-            and ([ $npats[] as $p | ($cn | ascii_downcase | contains($p)) ] | any | not)
-        )]
-    end) as $filtered
-  | if ($filtered | length) == 0 then "no_checks"
-  elif [$filtered[] | select(.conclusion == "FAILURE")] | length > 0 then "failure"
-  elif [$filtered[] | select(.status != "COMPLETED")] | length > 0 then "pending"
-  else "success"
-  end
-')
+# --- CI status (exclude bot commit-status checks listed in review-bots.json; SSOT: tools/jq/evidence-ci-gate-defs.jq) ---
+_ci_gate_json=$(_evidence_ci_gate)
+ci_checks=$(echo "$_ci_gate_json" | jq -c '.ci_checks')
+ci_status=$(echo "$_ci_gate_json" | jq -r '.ci_status')
+unset _ci_gate_json
 
 # --- Merge status ---
 mergeable=$(echo "$pr_data" | jq -r '.mergeable // "UNKNOWN"')
@@ -141,8 +107,11 @@ pr_comments=$(gh api "repos/$owner/$repo/issues/$PR/comments" 2>/dev/null || ech
 cr_inline=$(gh api "repos/$owner/$repo/pulls/$PR/comments" 2>/dev/null || echo "[]")
 
 # --- Build bot review objects from config ---
-# _detect_bot_reviews reads config and review data to produce a JSON object
-# for each configured bot.
+# Integration order (SSOT for bot status; Refs: #288):
+# 1) GitHub commit-status row when commit_status_name matches rollup
+# 2) Issue-comment rate_limit_pattern since last_push — overrides (1) when comment proves limit after success completedAt, or when (1) is PENDING
+# 3) Else PR reviews + issue comments (fresh vs rate-limit), when (1) not used
+# 4) invalidate_review_pattern overrides to REVIEW_INVALIDATED
 _detect_bot_reviews() {
   local bot_json="{}"
   local i=0
@@ -164,6 +133,7 @@ _detect_bot_reviews() {
     local submitted=""
     local findings=0
     local review_count=0
+    local rate_limit_meta="null"
 
     # Reviews from this bot (uses --arg to safely pass regex patterns)
     local bot_reviews_all
@@ -228,6 +198,56 @@ _detect_bot_reviews() {
             ;;
         esac
       fi
+    fi
+
+    # When (1) commit-status path ran, still merge issue-comment rate limits (P2: facts on GitHub must appear in JSON).
+    if [ "$used_commit_status" = true ] && [ -n "$rate_limit_pat" ] && [ "$rate_limit_pat" != "null" ]; then
+      local cs_arg
+      cs_arg=$(echo "${cs_row_json:-null}" | jq -c '.')
+      local rl_out
+      rl_out=$(jq -nc \
+        --argjson comments "$pr_comments" \
+        --arg login_pat "$bot_login" \
+        --arg match_type "$match_type" \
+        --arg match_flags "$match_flags" \
+        --arg rlpat "$rate_limit_pat" \
+        --arg last_push "$last_push_at" \
+        --argjson cs_row "$cs_arg" \
+        --arg cur_status "$status" \
+        '
+        def ts($s):
+          if $s == null or $s == "" then null else (try ($s | fromdateiso8601) catch null) end;
+        ($last_push | ts(.)) as $tpush | (if $tpush == null then 0 else $tpush end) as $tp
+        | (if ($rlpat == null or $rlpat == "" or $rlpat == "null") then []
+          elif $match_type == "exact" then
+            [ $comments[] | select(.user.login == $login_pat and (.body | test($rlpat))) ]
+          elif ($match_flags != null and $match_flags != "") then
+            [ $comments[] | select((.user.login | test($login_pat; $match_flags)) and (.body | test($rlpat))) ]
+          else
+            [ $comments[] | select((.user.login | test($login_pat)) and (.body | test($rlpat))) ]
+          end
+          | map(select((.created_at | ts(.)) != null and (.created_at | ts(.)) >= $tp))
+          ) as $rlc
+        | if ($rlc | length) == 0 then {override: false, meta: null}
+          else ($rlc | max_by(.created_at | ts(.))) as $best
+          | ($best.created_at | ts(.)) as $rl_ts
+          | (if ($cs_row | type) == "object" and ($cs_row.conclusion == "SUCCESS")
+             then ($cs_row.completedAt // "" | ts(.)) else null end) as $cs_done_ts
+          | (if $cur_status == "RATE_LIMITED" then false
+            elif $cur_status == "PENDING" then true
+            elif $cur_status == "COMPLETED" and $cs_done_ts != null then ($rl_ts > $cs_done_ts)
+            elif $cur_status == "COMPLETED" then ($rl_ts >= $tp)
+            else false
+            end) as $ov
+          | {override: $ov,
+             meta: (if $ov then {detected: true, source: "issue_comment", detected_at: $best.created_at} else null end)}
+          end
+        ')
+      if [ "$(echo "$rl_out" | jq -r '.override')" = "true" ]; then
+        status="RATE_LIMITED"
+        submitted=""
+      fi
+      rate_limit_meta=$(echo "$rl_out" | jq -c '.meta')
     fi
 
     # Fallback: fresh review (submitted_at >= last push) vs rate-limit comments since last push (timestamp order)
@@ -347,12 +367,14 @@ _detect_bot_reviews() {
       --argjson findings "$findings" \
       --argjson review_count "$review_count" \
       --argjson max_rev "$max_rev" \
+      --argjson rate_limit "$rate_limit_meta" \
       '{
         "status": $status,
         "review_submitted_at": (if $sub == "" then null else $sub end),
         "findings_count": $findings,
         "review_count": $review_count,
-        "max_reviews": $max_rev
+        "max_reviews": $max_rev,
+        "rate_limit": $rate_limit
       }')
 
     bot_json=$(echo "$bot_json" | jq -c --arg key "bot_$bot_id" --argjson val "$bot_entry" \

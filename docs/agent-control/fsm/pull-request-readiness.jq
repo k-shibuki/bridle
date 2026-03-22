@@ -84,6 +84,8 @@ def blockers($rows; $disposition; $threads_u; $mergeable; $merge_state; $ci_stat
      then . + ["required_bot_rereview"] else . end)
   | (if (required_findings_total($rows) > 0) and ($disposition != "approved") then . + ["required_bot_findings"] else . end)
   | (if $pending and $threads_u == 0 then . + ["rereview_response_pending"] else . end)
+  | (if ($rows | any(.required and (.status == "RATE_LIMITED" or .status == "TIMED_OUT")))
+     then . + ["bot_rate_limited"] else . end)
   | (if $threads_truncated then . + ["review_threads_truncated"] else . end);
 
 def pr_state_id($rows; $disposition; $threads_u; $mergeable; $merge_state; $ci_status; $pending; $threads_truncated):
@@ -126,7 +128,9 @@ def pr_state_id($rows; $disposition; $threads_u; $mergeable; $merge_state; $ci_s
         required_bot_findings_total: required_findings_total($rows),
         required_bot_findings_outstanding: ((required_findings_total($rows)) > 0),
         non_thread_bot_findings_outstanding: ((required_findings_total($rows) > 0) and ($tu == 0)),
-        rereview_response_pending: $pend
+        rereview_response_pending: $pend,
+        required_bot_rate_limited: ($rows | any(.required and .status == "RATE_LIMITED")),
+        required_bot_timed_out: ($rows | any(.required and .status == "TIMED_OUT"))
       },
       auto_merge_readiness: (
         (blockers($rows; $d; $tu; $m; $ms; $cs; $pend; $tt)) as $bl

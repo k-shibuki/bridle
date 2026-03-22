@@ -115,6 +115,12 @@ validate_json() {
           return 1
         fi
       done
+      for diagk in required_bot_rate_limited required_bot_timed_out; do
+        if ! echo "$json" | jq -e --arg k "$diagk" '.reviews.diagnostics | has($k) and (.[$k] | type == "boolean")' >/dev/null 2>&1; then
+          echo "FAIL [$target]: reviews.diagnostics.$diagk missing or not boolean" >&2
+          return 1
+        fi
+      done
       if ! echo "$json" | jq -e '.reviews | has("review_threads_truncated") and (.review_threads_truncated | type == "boolean")' >/dev/null 2>&1; then
         echo "FAIL [$target]: reviews.review_threads_truncated missing or not boolean" >&2
         return 1

@@ -248,7 +248,7 @@ into a single JSON document for state classification.
 - `git.stale_branches`: local branches whose upstream tracking ref is `[gone]`
 - `git.commits_ahead_of_remote`: commits not yet pushed (0 if up to date or no upstream)
 - `issues.open[].blocked_by`: Issue numbers referenced in "Depends on" or "Blocks" sections
-- `pull_requests.open[].ci_status`: aggregated from `statusCheckRollup` — `success` only if ALL checks pass
+- `pull_requests.open[].ci_status`: aggregated from `statusCheckRollup` using the **same merge-gate filter** as `evidence-pull-request` (`tools/jq/evidence-ci-gate-defs.jq`): rows whose name matches a bot `commit_status_name` in `docs/agent-control/review-bots.json` are **excluded**, then `success` only if all remaining checks completed without failure. This keeps lightweight list CI aligned with PR-detail CI (P4 SSOT).
 - `pull_requests.open[].review_threads_*`: from GraphQL `reviewThreads` query
 - `environment.container_running`: true when the development container is running. When **false**, `global-workflow.jq` sets `routing.global_state_id` to `EnvironmentIssue` (ST_ENV_ISSUE). Full health diagnosis (renv, R packages, etc.) remains in `evidence-environment` (`errors > 0` also yields `EnvironmentIssue` when merged in `evidence-fsm`).
 - `routing.global_state_id`: global FSM id from `docs/agent-control/fsm/global-workflow.jq` with `env_errors` passed as `0` here; container-down is still evaluated from `.environment.container_running`. `evidence-fsm` recomputes the same jq with real `evidence-environment.errors`.
@@ -374,7 +374,8 @@ review freshness, and bot review status.
       "review_submitted_at": "ISO8601 | null",
       "findings_count": "integer",
       "review_count": "integer",
-      "max_reviews": "integer | null"
+      "max_reviews": "integer | null",
+      "rate_limit": "{ detected: boolean, source: string, detected_at: ISO8601 } | null"
     },
     "threads_total": "integer",
     "threads_unresolved": "integer",
@@ -390,7 +391,9 @@ review freshness, and bot review status.
       "required_bot_findings_total": "integer",
       "required_bot_findings_outstanding": "boolean",
       "non_thread_bot_findings_outstanding": "boolean",
-      "rereview_response_pending": "boolean"
+      "rereview_response_pending": "boolean",
+      "required_bot_rate_limited": "boolean",
+      "required_bot_timed_out": "boolean"
     },
     "re_review_signal": {
       "latest_cr_trigger_created_at": "ISO8601 | null",
@@ -426,6 +429,9 @@ review freshness, and bot review status.
 - `reviews.review_threads_truncated`: `true` when GraphQL `reviewThreads(first: 100)` reports `pageInfo.hasNextPage` — unresolved counts may be incomplete; `pull-request-readiness.jq` adds blocker `review_threads_truncated` and routes `UnresolvedThreads`
 - `reviews.re_review_signal`: detects PR **issue** comments that request CodeRabbit (`@coderabbitai` and `review`, case-insensitive) and compares the latest such `created_at` to (a) `pulls/.../reviews` from `coderabbitai[bot]` with `submitted_at` strictly after that trigger, and (b) `bot_coderabbit.review_submitted_at` when it is derived from commit-status completion (`commit_status_name` in `review-bots.json`) and is also strictly after the trigger. `cr_response_pending_after_latest_trigger` is `true` when a trigger exists and neither signal shows a completion after the trigger. **Always `false`** when `bot_coderabbit.status == REVIEW_INVALIDATED` (avoid deadlock; re-trigger procedurally). Does not add extra pending solely for `RATE_LIMITED` / `PENDING` (those use existing bot blockers).
 - `reviews.re_review_signal.trigger_comment_log`: up to five most recent qualifying trigger comments (same filter as above), newest first, each `{created_at, id}` — debugging / disambiguation when `latest_cr_trigger_created_at` alone is ambiguous
+- `reviews.bot_<id>.rate_limit`: when an issue-comment rate limit was merged into `status` (Refs: #288), non-null with `source: "issue_comment"` and `detected_at`; otherwise null
+- `reviews.diagnostics.required_bot_rate_limited` / `required_bot_timed_out`: derived in `pull-request-readiness.jq` for required bots
+- `auto_merge_readiness.blockers` may include `bot_rate_limited` when any required bot is `RATE_LIMITED` or `TIMED_OUT`
 - `auto_merge_readiness`: merge/consensus gate (`safe_to_enable` requires empty `blockers`); same jq SSOT as `routing.pr_state_id`
 - `traceability.closes_issues`: Issue numbers from `Closes #N` / `Fixes #N` in PR body
 
