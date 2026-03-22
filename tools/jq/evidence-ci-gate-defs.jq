@@ -2,6 +2,16 @@
 # Sourced by concatenation before a program file; expects $cfg with .bots[].
 # SSOT with tools/evidence-pull-request.sh merge-gate rollup.
 
+# GitHub statusCheckRollup may list multiple rows per check name (e.g. check-policy
+# failed then passed on re-run). Collapse to one row per name: prefer the latest
+# COMPLETED row by completedAt; otherwise first row for that name.
+def dedupe_roll($roll):
+  [ $roll[] | select((.name // "") != "") ]
+  | group_by(.name)
+  | map(
+      ( . | map(select(.completedAt != null)) | sort_by(.completedAt) | last) // .[0]
+    );
+
 def filtered_roll($roll; $cfg):
   ([$cfg.bots[] | (.commit_status_name // "") | select(length > 0) | ascii_downcase]) as $npats
   | (if ($npats | length) == 0 then [ $roll[] | select((.name // "") != "") ] else
@@ -13,7 +23,7 @@ def filtered_roll($roll; $cfg):
     end);
 
 def ci_gate($roll; $cfg):
-  filtered_roll($roll; $cfg) as $filtered
+  filtered_roll(dedupe_roll($roll); $cfg) as $filtered
   | {
       ci_status: (
         if ($filtered | length) == 0 then "no_checks"
