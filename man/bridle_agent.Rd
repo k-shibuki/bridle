@@ -28,8 +28,11 @@ to disable logging).}
 \item{sandbox_timeout}{Timeout in seconds for code execution (numeric).}
 }
 \value{
-A list with class \code{"bridle_agent"} containing all runtime
-components and a \code{console()} method.
+A list with class \code{"bridle_agent"} containing graph, knowledge,
+constraints, logger, sandbox, provider, model, and a \code{console()} method.
+The graph engine is accessed with \verb{$engine} (stored in an internal
+\code{.runtime} environment so mutations from helper functions update the same
+runtime instance).
 }
 \description{
 Creates a runtime agent that orchestrates all Phase 2 components:

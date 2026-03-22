@@ -372,7 +372,7 @@ review freshness, and bot review status.
   },
   "reviews": {
     "bot_<id>": {
-      "status": "COMPLETED | COMPLETED_CLEAN | COMPLETED_SILENT | RATE_LIMITED | TIMED_OUT | NOT_TRIGGERED | PENDING | REVIEW_INVALIDATED",
+      "status": "COMPLETED | COMPLETED_CLEAN | COMPLETED_SILENT | SKIPPED_CLEAN | SKIPPED_BLOCKED | RATE_LIMITED | TIMED_OUT | NOT_TRIGGERED | PENDING | REVIEW_INVALIDATED",
       "review_submitted_at": "ISO8601 | null",
       "findings_count": "integer",
       "review_count": "integer",
@@ -400,6 +400,7 @@ review freshness, and bot review status.
     "re_review_signal": {
       "latest_cr_trigger_created_at": "ISO8601 | null",
       "latest_cr_review_submitted_at_after_trigger": "ISO8601 | null",
+      "latest_cr_skip_comment_at_after_trigger": "ISO8601 | null",
       "cr_response_pending_after_latest_trigger": "boolean",
       "trigger_comment_log": [{ "created_at": "ISO8601", "id": "integer" }]
     }
@@ -423,17 +424,18 @@ review freshness, and bot review status.
 - `reviews.bot_<id>.findings_count`: total findings from that reviewer, including both inline review comments and body-embedded "outside diff range" findings (0 for clean/silent)
 - `reviews.bot_<id>.review_count`: total number of review submissions for this PR
 - `reviews.bot_<id>.max_reviews`: copied from `docs/agent-control/review-bots.json` for that bot id (**SSOT** for the per-PR review request cap; `null` if unlimited)
-- Bot registry (`docs/agent-control/review-bots.json`) may set `commit_status_name` (substring matched case-insensitively against `statusCheckRollup[].name`), `invalidate_review_pattern` (regex against PR **issue** comments since `last_push_at` — match yields `REVIEW_INVALIDATED`), `trigger` (`agent` \| `user_only`), and `fallback_priority` (nullable number, lower = earlier in human-invoked fallback). When `commit_status_name` matches a rollup entry, `evidence-pull-request` uses that check as the primary signal for `bot_<id>.status` and excludes it from `ci` aggregation.
+- Bot registry (`docs/agent-control/review-bots.json`) may set `commit_status_name` (substring matched case-insensitively against `statusCheckRollup[].name`), `invalidate_review_pattern` (regex against PR **issue** comments since `last_push_at` — match yields `REVIEW_INVALIDATED`), `skip_patterns` (regex array against PR **issue** comments from the bot since `last_push_at` — first match yields `SKIPPED_CLEAN` or `SKIPPED_BLOCKED` per `skip_policy`), `trigger` (`agent` \| `user_only`), and `fallback_priority` (nullable number, lower = earlier in human-invoked fallback). When `commit_status_name` matches a rollup entry, `evidence-pull-request` uses that check as the primary signal for `bot_<id>.status` and excludes it from `ci` aggregation. Skip detection runs after commit-status resolution and overrides `COMPLETED` when the bot’s issue comment matches a skip pattern (e.g. OSS “Review skipped” / auto-review disabled notices).
+- `reviews.bot_<id>.skip_detected` / `skip_reason` / `skip_detected_at`: set when a `skip_patterns` match occurred for that bot since `last_push_at`; otherwise `skip_detected` is `false` and the other fields are `null`.
 - `reviews.diagnostics.*`: FSM-aligned aggregates derived from configured bots (`review-bots.json`, including `required`) and thread/disposition state — see `docs/agent-control/fsm/pull-request-readiness.jq` and `docs/agent-control/state-model.md` § Review signals
 - `reviews.diagnostics.rereview_response_pending`: same boolean as `reviews.re_review_signal.cr_response_pending_after_latest_trigger`, passed into `pull-request-readiness.jq` as `rereview_response_pending`
 - `reviews.diagnostics.required_bot_findings_outstanding`: `true` when the sum of `findings_count` over **required** bots (`review-bots.json`) is greater than zero (includes body-only / outside-diff-range findings that do not create `reviewThreads`)
 - `reviews.diagnostics.non_thread_bot_findings_outstanding`: `true` when `required_bot_findings_outstanding` and `threads_unresolved == 0` (actionable bot output with no open GitHub review threads — still blocks merge consensus for pending disposition)
 - `reviews.review_threads_truncated`: `true` when GraphQL `reviewThreads(first: 100)` reports `pageInfo.hasNextPage` — unresolved counts may be incomplete; `pull-request-readiness.jq` adds blocker `review_threads_truncated` and routes `UnresolvedThreads`
-- `reviews.re_review_signal`: detects PR **issue** comments that request CodeRabbit (`@coderabbitai` and `review`, case-insensitive) and compares the latest such `created_at` to (a) `pulls/.../reviews` from `coderabbitai[bot]` with `submitted_at` strictly after that trigger, and (b) `bot_coderabbit.review_submitted_at` when it is derived from commit-status completion (`commit_status_name` in `review-bots.json`) and is also strictly after the trigger. `cr_response_pending_after_latest_trigger` is `true` when a trigger exists and neither signal shows a completion after the trigger. **Always `false`** when `bot_coderabbit.status == REVIEW_INVALIDATED` (avoid deadlock; re-trigger procedurally). Does not add extra pending solely for `RATE_LIMITED` / `PENDING` (those use existing bot blockers).
+- `reviews.re_review_signal`: detects PR **issue** comments that request CodeRabbit (`@coderabbitai` and `review`, case-insensitive) and compares the latest such `created_at` to (a) `pulls/.../reviews` from `coderabbitai[bot]` with `submitted_at` strictly after that trigger, (b) `bot_coderabbit.review_submitted_at` when it is derived from commit-status completion (`commit_status_name` in `review-bots.json`) and is also strictly after the trigger, and (c) PR **issue** comments from `coderabbitai[bot]` after the trigger whose body matches any `skip_patterns` entry for the `coderabbit` bot in `review-bots.json` (`latest_cr_skip_comment_at_after_trigger`). The latest completion among (a)–(c) is surfaced as `latest_cr_review_submitted_at_after_trigger`. `cr_response_pending_after_latest_trigger` is `true` when a trigger exists and no completion exists after the trigger. **Always `false`** when `bot_coderabbit.status == REVIEW_INVALIDATED`, or when status is `SKIPPED_CLEAN` / `SKIPPED_BLOCKED` (avoid deadlock; re-trigger procedurally). Does not add extra pending solely for `RATE_LIMITED` / `PENDING` (those use existing bot blockers).
 - `reviews.re_review_signal.trigger_comment_log`: up to five most recent qualifying trigger comments (same filter as above), newest first, each `{created_at, id}` — debugging / disambiguation when `latest_cr_trigger_created_at` alone is ambiguous
 - `reviews.bot_<id>.rate_limit`: when an issue-comment rate limit was merged into `status` (Refs: #288), non-null with `source: "issue_comment"` and `detected_at`; otherwise null
 - `reviews.diagnostics.required_bot_rate_limited` / `required_bot_timed_out`: derived in `pull-request-readiness.jq` for required bots
-- `auto_merge_readiness.blockers` may include `bot_rate_limited` when any required bot is `RATE_LIMITED`, and `bot_timed_out` when any required bot is `TIMED_OUT`
+- `auto_merge_readiness.blockers` may include `bot_rate_limited` when any required bot is `RATE_LIMITED`, `bot_timed_out` when any required bot is `TIMED_OUT`, and `required_bot_skipped_blocked` when any required bot is `SKIPPED_BLOCKED` (policy-configured terminal failure; merge consensus does not treat it as a completed review)
 - `auto_merge_readiness`: merge/consensus gate (`safe_to_enable` requires empty `blockers`); same jq SSOT as `routing.pr_state_id`
 - `traceability.closes_issues`: Issue numbers from `Closes #N` / `Fixes #N` in PR body
 

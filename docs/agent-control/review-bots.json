@@ -7,6 +7,11 @@
       "match_type": "exact",
       "rate_limit_pattern": "Rate limit exceeded",
       "invalidate_review_pattern": "head commit changed during the review",
+      "skip_patterns": [
+        "(?i)Review skipped",
+        "(?i)Auto reviews are disabled"
+      ],
+      "skip_policy": "terminal_clean",
       "max_reviews": 3,
       "required": true,
       "commit_status_name": "CodeRabbit",

@@ -6,10 +6,10 @@
 # Output: { diagnostics, auto_merge_readiness, routing }
 
 def reviewed($s):
-  $s == "COMPLETED" or $s == "COMPLETED_CLEAN" or $s == "COMPLETED_SILENT";
+  $s == "COMPLETED" or $s == "COMPLETED_CLEAN" or $s == "COMPLETED_SILENT" or $s == "SKIPPED_CLEAN";
 
 def failed($s):
-  $s == "RATE_LIMITED" or $s == "TIMED_OUT";
+  $s == "RATE_LIMITED" or $s == "TIMED_OUT" or $s == "SKIPPED_BLOCKED";
 
 def rows($bots_map; $cfg):
   [ $cfg.bots[] | . as $b
@@ -88,6 +88,8 @@ def blockers($rows; $disposition; $threads_u; $mergeable; $merge_state; $ci_stat
      then . + ["bot_rate_limited"] else . end)
   | (if ($rows | any(.required and .status == "TIMED_OUT"))
      then . + ["bot_timed_out"] else . end)
+  | (if ($rows | any(.required and .status == "SKIPPED_BLOCKED"))
+     then . + ["required_bot_skipped_blocked"] else . end)
   | (if $threads_truncated then . + ["review_threads_truncated"] else . end);
 
 def pr_state_id($rows; $disposition; $threads_u; $mergeable; $merge_state; $ci_status; $pending; $threads_truncated):

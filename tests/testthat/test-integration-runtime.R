@@ -179,6 +179,7 @@ test_that("logging produces JSONL output", {
 })
 
 test_that("all four node types are processed", {
+  # Given: an agent fixture that traverses all node types
   agent <- bridle_agent(.plugin_dir())
 
   local_mocked_bindings(
@@ -196,10 +197,13 @@ test_that("all four node types are processed", {
     bridle_readline = .mock_readline_queue(rep("y", 10))
   )
 
+  # When: the console pipeline is executed end-to-end
   expect_no_error(bridle_console(agent))
+  # Then: the run completes without runtime errors
 })
 
 test_that("skip_hint skips node when condition is met", {
+  # Given: a graph where skip_when/skip_hint should skip diagnosis node
   dir <- withr::local_tempdir()
 
   graph_yaml <- '
@@ -235,25 +239,41 @@ variables:
 '
   writeLines(ctx_yaml, file.path(dir, "context_schema.yaml"))
 
+  # And: context has k > 100 so skip condition is true
   agent <- bridle_agent(dir)
 
   dummy_data <- data.frame(x = seq_len(200))
-  agent$engine@context <- update_context(
-    agent$engine@context,
+  eng <- agent$engine
+  eng@context <- update_context(
+    eng@context,
     node_id = "start",
     data = dummy_data
   )
+  agent$engine <- eng
 
+  chat_calls <- 0L
   local_mocked_bindings(
     bridle_runtime_chat = function(...) {
-      .mock_chat(c("Context gathered.", "Final."))
+      list(
+        chat = function(prompt) {
+          chat_calls <<- chat_calls + 1L
+          if (chat_calls == 1L) {
+            "Context gathered."
+          } else {
+            "Final."
+          }
+        }
+      )
     }
   )
   local_mocked_bindings(
     bridle_readline = .mock_readline_queue(rep("y", 5))
   )
 
+  # When: console run is executed
   expect_no_error(bridle_console(agent))
+  # Then: run completes and diagnosis/execution prompts are skipped
+  expect_equal(chat_calls, 1L)
 })
 
 test_that("full pipeline with fixture produces valid agent", {

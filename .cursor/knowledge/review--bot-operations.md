@@ -81,7 +81,9 @@ If the branch is **force-pushed or updated** while CodeRabbit is reviewing, CR m
 
 ### Terminal States
 
-When CodeRabbit `commit_status` is enabled (`.coderabbit.yaml`) and `review-bots.json` sets `commit_status_name`, `make evidence-pull-request` prefers the matching GitHub `statusCheckRollup` check over review/comment heuristics for `bot_coderabbit.status`. That check is excluded from PR `ci.status` so pending bot review does not block the CI-green signal. `REVIEW_INVALIDATED` (from issue comments) **overrides** commit-status/review-derived status when matched.
+When CodeRabbit `commit_status` is enabled (`.coderabbit.yaml`) and `review-bots.json` sets `commit_status_name`, `make evidence-pull-request` prefers the matching GitHub `statusCheckRollup` check over review/comment heuristics for `bot_coderabbit.status`. That check is excluded from PR `ci.status` so pending bot review does not block the CI-green signal. `REVIEW_INVALIDATED` (from issue comments) **overrides** commit-status/review-derived status when matched. `RATE_LIMITED` is not overridden by skip detection.
+
+Per-bot `skip_patterns` and `skip_policy` in `review-bots.json` detect **issue comments from that bot** since `reviews.last_push_at` whose body matches a pattern (e.g. “Review skipped” / auto-review disabled on OSS). The first match sets `SKIPPED_CLEAN` or `SKIPPED_BLOCKED` and fills `skip_detected` / `skip_reason` / `skip_detected_at`. Skip detection runs after commit-status resolution and **overrides** `COMPLETED` when the comment shows the run was skipped — a `@coderabbitai` trigger line in the same thread is **not** a substitute for parsing this outcome.
 
 | State | Detection |
 |---|---|
@@ -91,6 +93,8 @@ When CodeRabbit `commit_status` is enabled (`.coderabbit.yaml`) and `review-bots
 | **COMPLETED_SILENT** | CR incremental review only: trigger acked, > 10 min elapsed, no review object, no inline comments, no rate limit, no new threads |
 | **RATE_LIMITED** | Matching commit status `FAILURE` when present; else PR comment matches bot `rate_limit_pattern` with `created_at` on or after head push time (same cutoff as `reviews.last_push_at`; stale comments from before the push are ignored) |
 | **REVIEW_INVALIDATED** | PR **issue** comment from the bot matches `invalidate_review_pattern` since head push (e.g. head commit changed mid-review) — overrides other signals for that bot |
+| **SKIPPED_CLEAN** | PR **issue** comment from the bot matches `skip_patterns` with `skip_policy: "terminal_clean"` — treated as a completed required-bot outcome for merge consensus (no `required_bot_rereview` for that row) |
+| **SKIPPED_BLOCKED** | Same as above with `skip_policy: "terminal_blocked"` — merge consensus fails; `auto_merge_readiness.blockers` includes `required_bot_skipped_blocked` (fix CodeRabbit settings / policy) |
 | **TIMED_OUT** | 20 min elapsed, no completion signal |
 
 **COMPLETED_SILENT**: When CR's incremental review finds no new issues,
@@ -162,9 +166,13 @@ Deduplicate when both reviewers flag the same issue.
 | Field | Role |
 |-------|------|
 | `reviews.re_review_signal.latest_cr_trigger_created_at` | SSOT moment compared to bot pull reviews / commit-status completion |
+| `reviews.re_review_signal.latest_cr_review_submitted_at_after_trigger` | Latest completion timestamp after the trigger among pull reviews, commit-status completion, and skip-pattern issue comments |
+| `reviews.re_review_signal.latest_cr_skip_comment_at_after_trigger` | Timestamp of the latest `coderabbitai[bot]` issue comment after the trigger that matched `skip_patterns` (diagnostic; also folded into `latest_cr_review_submitted_at_after_trigger`) |
 | `reviews.re_review_signal.trigger_comment_log` | Up to five most recent PR **issue** comments matching `@coderabbitai` + `review` (newest first), each `{created_at, id}` |
 
 **Use `trigger_comment_log` when** the latest trigger time looks wrong (multiple rapid re-triggers, manual comment edits, or suspicion that delegation used a stale `trigger_id`). The log is **diagnostic only** — FSM and blockers still key off `latest_cr_trigger_created_at` and `cr_response_pending_after_latest_trigger`.
+
+**Skip responses:** `cr_response_pending_after_latest_trigger` is `false` when a skip-pattern comment after the trigger is detected, or when `bot_coderabbit.status` is `SKIPPED_CLEAN` / `SKIPPED_BLOCKED`, so `@coderabbitai` + `review` trigger text alone cannot deadlock `BotReviewPending` if CodeRabbit replied with a skip notice.
 
 **Truncation:** `reviews.review_threads_truncated` is `true` when GraphQL `reviewThreads(first:100)` has a next page. While true, treat `threads_unresolved` as **incomplete** for merge consensus; refresh after resolution or use `evidence-review-threads` for targeted enumeration when needed.
 
