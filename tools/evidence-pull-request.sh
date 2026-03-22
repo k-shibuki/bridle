@@ -381,7 +381,7 @@ _detect_bot_reviews() {
             end) as $cand
           | ([ $cand[] | select((.created_at | ts(.)) != null and (.created_at | ts(.)) >= $tp) ]
             | sort_by(.created_at | ts(.))) as $sorted
-          | (first(
+          | (last(
               $sorted[] | . as $c | $patterns[] as $p
               | select(($c.body // "") | test($p))
               | {matched: true, reason: $p, at: $c.created_at}

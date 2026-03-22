@@ -182,6 +182,7 @@ test_that("turn_prepare continues with assembled prompt on decision node", {
 })
 
 test_that("turn_resolve applies accept and updates context", {
+  # Given: a prepared decision turn with a suggested parameter value
   dir <- .orch_stall_plugin()
   agent <- bridle_agent(dir)
   prep <- turn_prepare(agent)
@@ -194,6 +195,7 @@ test_that("turn_resolve applies accept and updates context", {
     prep$node,
     prep$transition_candidates
   )
+  # When: turn_resolve is called with accept action
   turn_resolve(
     agent,
     list(
@@ -202,6 +204,7 @@ test_that("turn_resolve applies accept and updates context", {
       user_action = list(action = "accept")
     )
   )
+  # Then: the suggested value is written to context
   expect_equal(agent$engine@context@parameters_decided$sm, "RR")
 })
 
@@ -359,6 +362,58 @@ constraints:
   txt <- aggregate_knowledge(agent)
   expect_match(txt, "Technical constraints", fixed = TRUE)
   expect_match(txt, "c1", fixed = TRUE)
+})
+
+test_that("turn_resolve rejects parameter_value without prepare", {
+  # Given: a valid agent and malformed parameter_value payload
+  agent <- bridle_agent(.orch_stall_plugin())
+  # When/Then: turn_resolve aborts with class + message checks
+  expect_error(
+    turn_resolve(agent, list(parsed = list(), user_action = list(action = "accept"))),
+    "must be a list containing",
+    class = "rlang_error"
+  )
+})
+
+test_that("turn_resolve rejects parameter_value missing parsed/user_action", {
+  # Given: a valid prepare object but missing parsed/user_action fields
+  agent <- bridle_agent(.orch_stall_plugin())
+  prep <- turn_prepare(agent)
+  # When/Then: turn_resolve aborts with class + message checks
+  expect_error(
+    turn_resolve(agent, list(prepare = prep)),
+    "must contain",
+    class = "rlang_error"
+  )
+})
+
+test_that("turn_resolve keeps current node for invalid transition_choice", {
+  # Given: a decision node with LLM transition candidates
+  dir <- .orch_stall_plugin()
+  agent <- bridle_agent(dir)
+  prep <- turn_prepare(agent)
+  parsed <- parse_response(
+    paste0(
+      "{\"recommendation_text\":\"Use RR.\",",
+      "\"suggested_value\":\"RR\",",
+      "\"transition_signal\":\"end\"}"
+    ),
+    prep$node,
+    prep$transition_candidates
+  )
+  before_node <- agent$engine@.state$current_node
+  # When: transition_choice points to an invalid/non-candidate node
+  turn_resolve(
+    agent,
+    list(
+      prepare = prep,
+      parsed = parsed,
+      user_action = list(action = "accept")
+    ),
+    transition_choice = "invalid_node"
+  )
+  # Then: no transition is applied and current node is unchanged
+  expect_equal(agent$engine@.state$current_node, before_node)
 })
 
 test_that("turn_prepare and turn_resolve reject non-agent", {

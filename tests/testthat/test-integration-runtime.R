@@ -179,6 +179,7 @@ test_that("logging produces JSONL output", {
 })
 
 test_that("all four node types are processed", {
+  # Given: an agent fixture that traverses all node types
   agent <- bridle_agent(.plugin_dir())
 
   local_mocked_bindings(
@@ -196,7 +197,9 @@ test_that("all four node types are processed", {
     bridle_readline = .mock_readline_queue(rep("y", 10))
   )
 
+  # When: the console pipeline is executed end-to-end
   expect_no_error(bridle_console(agent))
+  # Then: the run completes without runtime errors
 })
 
 test_that("skip_hint skips node when condition is met", {
