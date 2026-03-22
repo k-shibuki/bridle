@@ -238,11 +238,13 @@ variables:
   agent <- bridle_agent(dir)
 
   dummy_data <- data.frame(x = seq_len(200))
-  agent$engine@context <- update_context(
-    agent$engine@context,
+  eng <- agent$engine
+  eng@context <- update_context(
+    eng@context,
     node_id = "start",
     data = dummy_data
   )
+  agent$engine <- eng
 
   local_mocked_bindings(
     bridle_runtime_chat = function(...) {

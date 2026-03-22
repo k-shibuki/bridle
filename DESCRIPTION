@@ -48,6 +48,7 @@ Collate:
     'knowledge_retriever.R'
     'prompt_assembler.R'
     'bridle_agent.R'
+    'orchestrator.R'
     'console.R'
     'draft_knowledge.R'
     'fetch_references.R'

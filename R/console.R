@@ -6,6 +6,7 @@
 #'
 #' @name console
 #' @include bridle_agent.R
+#' @include orchestrator.R
 NULL
 
 #' Testable readline wrapper
@@ -41,7 +42,7 @@ bridle_console <- function(agent) {
 
   repeat {
     result <- tryCatch(
-      .process_turn(agent, chat),
+      .console_process_turn(agent, chat),
       error = function(e) {
         cli::cli_alert_danger("Error: {conditionMessage(e)}")
         list(status = "error")
@@ -65,56 +66,45 @@ bridle_console <- function(agent) {
 
 # -- Turn processing -----------------------------------------------------------
 
-.process_turn <- function(agent, chat) {
-  engine <- agent$engine
-  advance_result <- advance(engine) # nolint: object_usage_linter. defined in R/graph_engine.R
-  node_id <- engine_current_node(engine) # nolint: object_usage_linter. defined in R/graph_engine.R
-  node <- agent$graph@nodes[[node_id]]
-
-  if (identical(advance_result@status, "completed")) {
+.console_process_turn <- function(agent, chat) {
+  prep <- turn_prepare(agent)
+  if (identical(prep$status, "completed")) {
     return(list(status = "completed"))
   }
-
-  if (identical(advance_result@status, "skipped")) {
-    cli::cli_alert_info("Skipped node {.val {node_id}}")
+  if (identical(prep$status, "skipped")) {
+    cli::cli_alert_info("Skipped node {.val {prep$node_id}}")
     return(list(status = "continue"))
   }
 
+  node <- prep$node
+  node_id <- prep$node_id
+  context <- agent$engine@context
+
   cli::cli_h2("Node: {node_id} ({node@type})")
 
-  context <- engine@context
-  retrieval <- .retrieve_for_node(agent, node, context)
-  trace <- advance_result@transition_trace
-
-  prompt_result <- assemble_runtime_prompt( # nolint: object_usage_linter. defined in R/prompt_assembler.R
-    node = node,
-    retrieval_result = retrieval,
-    context = context,
-    transition_trace = trace
-  )
-
-  llm_response <- .call_llm(chat, prompt_result@prompt_text)
+  llm_response <- .call_llm(chat, prep$prompt_text)
   if (is.null(llm_response)) {
     return(list(status = "error"))
   }
 
-  candidates <- if (!is.null(trace)) {
-    vapply(trace@candidates, function(c) c@to, character(1))
-  } else {
-    character(0)
-  }
-  parsed <- parse_response(llm_response, node, candidates) # nolint: object_usage_linter. defined in R/response_parser.R
+  parsed <- parse_response( # nolint: object_usage_linter. response_parser.R
+    llm_response,
+    node,
+    prep$transition_candidates
+  )
 
   .display_response(parsed, node)
 
   if (identical(node@type, "execution") && !is.null(parsed@code_block)) {
     code_result <- .run_code(agent, parsed@code_block, context)
     if (!is.null(code_result) && code_result@success) {
-      engine@context <- update_context( # nolint: object_usage_linter. defined in R/session_context.R
-        context,
+      eng <- agent$engine
+      eng@context <- update_context( # nolint: object_usage_linter. session_context.R
+        eng@context,
         node_id = node_id,
         fit_result = code_result@value
       )
+      agent$engine <- eng
     }
   }
 
@@ -141,39 +131,14 @@ bridle_console <- function(agent) {
     }
   }
 
-  param <- node@parameter
-  has_param <- length(param) > 0L && nzchar(param)
-
-  accept_with_param <- identical(user_action$action, "accept") &&
-    !is.null(parsed@suggested_value) && has_param
-  if (accept_with_param) {
-    params <- list()
-    params[[param]] <- parsed@suggested_value
-    engine@context <- update_context( # nolint: object_usage_linter. cross-file ref
-      engine@context,
-      node_id = node_id,
-      parameters = params
+  turn_resolve(
+    agent,
+    list(
+      prepare = prep,
+      parsed = parsed,
+      user_action = user_action
     )
-  }
-
-  reject_with_override <- identical(user_action$action, "reject") &&
-    !is.null(user_action$override) && has_param
-  if (reject_with_override) {
-    params <- list()
-    params[[param]] <- user_action$override
-    engine@context <- update_context( # nolint: object_usage_linter. cross-file ref
-      engine@context,
-      node_id = node_id,
-      parameters = params
-    )
-  }
-
-  if (identical(advance_result@status, "needs_llm") && !is.null(trace)) {
-    llm_choice <- parsed@transition_signal
-    select_transition(engine, trace@candidates, llm_choice) # nolint: object_usage_linter. defined in R/graph_engine.R
-  }
-
-  .log_turn(agent, node_id, node, trace, retrieval, parsed, user_action)
+  )
 
   list(status = "continue")
 }
@@ -193,28 +158,6 @@ bridle_console <- function(agent) {
       cli::cli_abort(conditionMessage(e), parent = e)
     }
   )
-}
-
-.retrieve_for_node <- function(agent, node, context) {
-  topic <- node@topic
-  if (length(topic) == 0L || !nzchar(topic)) {
-    return(RetrievalResult( # nolint: object_usage_linter. S7 class in R/knowledge_retriever.R
-      entries = list(),
-      entry_ids_presented = character(0),
-      constraints = list()
-    ))
-  }
-  retrieval <- retrieve_knowledge( # nolint: object_usage_linter. cross-file ref
-    agent$knowledge, topic, context
-  )
-  param <- node@parameter
-  if (length(param) > 0L && nzchar(param)) {
-    extra_constraints <- retrieve_constraints( # nolint: object_usage_linter. defined in R/constraint_set.R
-      agent$constraints, param, context
-    )
-    retrieval@constraints <- c(retrieval@constraints, extra_constraints)
-  }
-  retrieval
 }
 
 .call_llm <- function(chat, prompt_text) {
@@ -282,54 +225,4 @@ bridle_console <- function(agent) {
     return(list(action = "reject", override = override))
   }
   list(action = "accept")
-}
-
-# -- Logging -------------------------------------------------------------------
-
-.log_turn <- function(agent, node_id, node, trace, retrieval, parsed,
-                      user_action) {
-  if (is.null(agent$logger)) {
-    return(invisible(NULL))
-  }
-
-  trace_list <- if (!is.null(trace)) {
-    list(
-      candidates = lapply(trace@candidates, function(c) {
-        list(
-          to = c@to,
-          when = if (length(c@when) > 0L) c@when else NULL,
-          eval_result = c@eval_result,
-          fallback_to_llm = c@fallback_to_llm
-        )
-      }),
-      selected_transition = trace@selected_transition,
-      selection_basis = trace@selection_basis
-    )
-  } else {
-    NULL
-  }
-
-  knowledge_ctx <- list(
-    entry_ids_presented = retrieval@entry_ids_presented
-  )
-
-  llm_out <- list(
-    recommendation_text = parsed@recommendation_text,
-    suggested_value = parsed@suggested_value
-  )
-
-  user_resp <- list(
-    action = user_action$action,
-    override = user_action$override %||% NULL
-  )
-
-  log_visit( # nolint: object_usage_linter. defined in R/decision_logger.R
-    agent$logger,
-    node_id = node_id,
-    node_type = node@type,
-    transition_trace = trace_list,
-    knowledge_context = knowledge_ctx,
-    llm_output = llm_out,
-    user_response = user_resp
-  )
 }

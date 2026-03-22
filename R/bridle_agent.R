@@ -23,8 +23,11 @@ NULL
 #' @param log_dir Directory for JSONL decision logs (character or NULL
 #'   to disable logging).
 #' @param sandbox_timeout Timeout in seconds for code execution (numeric).
-#' @return A list with class `"bridle_agent"` containing all runtime
-#'   components and a `console()` method.
+#' @return A list with class `"bridle_agent"` containing graph, knowledge,
+#'   constraints, logger, sandbox, provider, model, and a `console()` method.
+#'   The graph engine is accessed with `$engine` (stored in an internal
+#'   `.runtime` environment so mutations from helper functions update the same
+#'   runtime instance).
 #' @export
 bridle_agent <- function(plugin_dir,
                          provider = NULL,
@@ -83,11 +86,14 @@ bridle_agent <- function(plugin_dir,
 
   sandbox <- CodeSandbox(timeout_s = sandbox_timeout) # nolint: object_usage_linter. S7 class in R/code_sandbox.R
 
+  runtime <- new.env(parent = emptyenv(), hash = FALSE)
+  runtime[["engine"]] <- engine
+
   agent <- list(
     graph = graph,
     knowledge = knowledge,
     constraints = constraints,
-    engine = engine,
+    .runtime = runtime,
     logger = logger,
     sandbox = sandbox,
     provider = provider,
@@ -96,6 +102,26 @@ bridle_agent <- function(plugin_dir,
   )
   class(agent) <- "bridle_agent"
   agent
+}
+
+#' @keywords internal
+#' @export
+`$.bridle_agent` <- function(x, name) {
+  if (identical(name, "engine")) {
+    return(.subset2(x, ".runtime")[["engine"]])
+  }
+  NextMethod("$", x)
+}
+
+#' @keywords internal
+#' @export
+`$<-.bridle_agent` <- function(x, name, value) {
+  if (identical(name, "engine")) {
+    rt <- .subset2(x, ".runtime")
+    rt[["engine"]] <- value
+    return(x)
+  }
+  NextMethod("$<-", x)
 }
 
 .load_yaml_list <- function(dir, filename, reader) {
