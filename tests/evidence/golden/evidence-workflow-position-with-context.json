@@ -45,7 +45,7 @@
   "procedure_context": {
     "workflow_phase": "implement",
     "issue_number": 269,
-    "branch": "feat/269-example",
+    "branch": "main",
     "updated_at": "2026-03-22T15:00:00Z",
     "stale": false
   },

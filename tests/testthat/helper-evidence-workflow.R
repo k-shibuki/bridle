@@ -1,0 +1,33 @@
+## Shared helpers for evidence-workflow-position procedure_context tests (Issue #269)
+
+wfp_run <- function(root, script) {
+  withr::local_envvar(PATH = paste(root, Sys.getenv("PATH"), sep = .Platform$path.sep))
+  out <- withr::with_dir(root, system2("bash", args = c(script), stdout = TRUE, stderr = TRUE))
+  text <- paste(out, collapse = "\n")
+  testthat::expect_true(nzchar(text), paste("empty output; stderr may hold:", text))
+  jsonlite::fromJSON(text, simplifyVector = TRUE)
+}
+
+wfp_setup_repo <- function(root, workflow_json) {
+  dir.create(file.path(root, ".cursor", "state"), recursive = TRUE)
+  writeLines(
+    c(
+      "#!/usr/bin/env sh",
+      "if [ \"$1\" = \"issue\" ]; then echo '[]'; exit 0; fi",
+      "if [ \"$1\" = \"pr\" ]; then echo '[]'; exit 0; fi",
+      "if [ \"$1\" = \"api\" ]; then echo '{\"data\":{}}'; exit 0; fi",
+      "exit 0"
+    ),
+    file.path(root, "gh")
+  )
+  Sys.chmod(file.path(root, "gh"), "0700", use_umask = FALSE)
+  writeLines(workflow_json, file.path(root, ".cursor", "state", "workflow-phase.json"))
+
+  system2("git", c("-C", root, "init"), stdout = FALSE, stderr = FALSE)
+  system2("git", c("-C", root, "config", "user.email", "test@example.com"), stdout = FALSE, stderr = FALSE)
+  system2("git", c("-C", root, "config", "user.name", "test"), stdout = FALSE, stderr = FALSE)
+  writeLines("x", file.path(root, "README.md"))
+  system2("git", c("-C", root, "add", "."), stdout = FALSE, stderr = FALSE)
+  system2("git", c("-C", root, "commit", "-m", "init"), stdout = FALSE, stderr = FALSE)
+  system2("git", c("-C", root, "checkout", "-b", "ctx-branch"), stdout = FALSE, stderr = FALSE)
+}

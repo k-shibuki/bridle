@@ -1,39 +1,5 @@
 ## Issue #269: procedure_context + stale detection (evidence-workflow-position.sh)
 
-wfp_run <- function(root, script) {
-  old <- Sys.getenv("PATH")
-  on.exit(Sys.setenv(PATH = old), add = TRUE)
-  Sys.setenv(PATH = paste(root, old, sep = .Platform$path.sep))
-  out <- withr::with_dir(root, system2("bash", args = c(script), stdout = TRUE, stderr = TRUE))
-  text <- paste(out, collapse = "\n")
-  testthat::expect_true(nzchar(text), paste("empty output; stderr may hold:", text))
-  jsonlite::fromJSON(text, simplifyVector = TRUE)
-}
-
-wfp_setup_repo <- function(root, workflow_json) {
-  dir.create(file.path(root, ".cursor", "state"), recursive = TRUE)
-  writeLines(
-    c(
-      "#!/usr/bin/env sh",
-      "if [ \"$1\" = \"issue\" ]; then echo '[]'; exit 0; fi",
-      "if [ \"$1\" = \"pr\" ]; then echo '[]'; exit 0; fi",
-      "if [ \"$1\" = \"api\" ]; then echo '{\"data\":{}}'; exit 0; fi",
-      "exit 0"
-    ),
-    file.path(root, "gh")
-  )
-  Sys.chmod(file.path(root, "gh"), "0700", use_umask = FALSE)
-  writeLines(workflow_json, file.path(root, ".cursor", "state", "workflow-phase.json"))
-
-  system2("git", c("-C", root, "init"), stdout = FALSE, stderr = FALSE)
-  system2("git", c("-C", root, "config", "user.email", "test@example.com"), stdout = FALSE, stderr = FALSE)
-  system2("git", c("-C", root, "config", "user.name", "test"), stdout = FALSE, stderr = FALSE)
-  writeLines("x", file.path(root, "README.md"))
-  system2("git", c("-C", root, "add", "."), stdout = FALSE, stderr = FALSE)
-  system2("git", c("-C", root, "commit", "-m", "init"), stdout = FALSE, stderr = FALSE)
-  system2("git", c("-C", root, "checkout", "-b", "ctx-branch"), stdout = FALSE, stderr = FALSE)
-}
-
 test_that("procedure_context emits all fields when workflow-phase.json exists", {
   skip_on_cran()
   skip_if_not(nzchar(Sys.which("git")), "git not on PATH")
@@ -41,8 +7,8 @@ test_that("procedure_context emits all fields when workflow-phase.json exists", 
   script <- file.path(pkg_root, "tools", "evidence-workflow-position.sh")
   skip_if_not(file.exists(script), "evidence-workflow-position.sh missing")
 
-  root <- tempfile("bridle-wfp-")
-  dir.create(root)
+  # Given: a git repo on ctx-branch with workflow-phase.json matching current branch
+  root <- withr::local_tempdir("bridle-wfp-")
   wfp_setup_repo(
     root,
     '{
@@ -53,8 +19,11 @@ test_that("procedure_context emits all fields when workflow-phase.json exists", 
 }'
   )
 
+  # When: evidence-workflow-position.sh is executed
   ev <- wfp_run(root, script)
   pc <- ev$procedure_context
+
+  # Then: all procedure_context fields are populated and stale is false
   testthat::expect_equal(pc$workflow_phase, "implement")
   testthat::expect_equal(pc$issue_number, 269L)
   testthat::expect_equal(pc$branch, "ctx-branch")
@@ -69,8 +38,8 @@ test_that("procedure_context stale when state branch differs from current branch
   script <- file.path(pkg_root, "tools", "evidence-workflow-position.sh")
   skip_if_not(file.exists(script), "evidence-workflow-position.sh missing")
 
-  root <- tempfile("bridle-wfp-")
-  dir.create(root)
+  # Given: workflow-phase.json names a branch that is not the checked-out branch
+  root <- withr::local_tempdir("bridle-wfp-")
   wfp_setup_repo(
     root,
     '{
@@ -81,7 +50,10 @@ test_that("procedure_context stale when state branch differs from current branch
 }'
   )
 
+  # When: evidence-workflow-position.sh runs in the repo
   ev <- wfp_run(root, script)
+
+  # Then: branch mismatch marks procedure_context stale
   testthat::expect_true(ev$procedure_context$stale)
 })
 
@@ -92,8 +64,8 @@ test_that("procedure_context stale when updated_at is older than 24 hours", {
   script <- file.path(pkg_root, "tools", "evidence-workflow-position.sh")
   skip_if_not(file.exists(script), "evidence-workflow-position.sh missing")
 
-  root <- tempfile("bridle-wfp-")
-  dir.create(root)
+  # Given: workflow-phase.json timestamp is well beyond the 24h threshold
+  root <- withr::local_tempdir("bridle-wfp-")
   wfp_setup_repo(
     root,
     '{
@@ -104,6 +76,40 @@ test_that("procedure_context stale when updated_at is older than 24 hours", {
 }'
   )
 
+  # When: evidence-workflow-position.sh runs in the repo
   ev <- wfp_run(root, script)
+
+  # Then: timestamps older than 24h mark procedure_context stale
+  testthat::expect_true(ev$procedure_context$stale)
+})
+
+test_that("procedure_context stale when updated_at is exactly 24 hours old", {
+  skip_on_cran()
+  skip_if_not(nzchar(Sys.which("git")), "git not on PATH")
+  pkg_root <- normalizePath(test_path("../.."), mustWork = TRUE)
+  script <- file.path(pkg_root, "tools", "evidence-workflow-position.sh")
+  skip_if_not(file.exists(script), "evidence-workflow-position.sh missing")
+
+  # Given: updated_at is ~24h before current wall clock (integer age_hours >= 24 in shell)
+  root <- withr::local_tempdir("bridle-wfp-")
+  boundary <- Sys.time() - 86400
+  updated_at <- strftime(boundary, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  wfp_setup_repo(
+    root,
+    sprintf(
+      '{
+  "workflow_phase": "implement",
+  "issue_number": 269,
+  "branch": "ctx-branch",
+  "updated_at": "%s"
+}',
+      updated_at
+    )
+  )
+
+  # When: evidence-workflow-position.sh runs in the repo
+  ev <- wfp_run(root, script)
+
+  # Then: integer age_hours at the 24h boundary still triggers stale (>= 24)
   testthat::expect_true(ev$procedure_context$stale)
 })
