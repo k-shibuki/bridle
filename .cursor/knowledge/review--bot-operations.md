@@ -155,6 +155,19 @@ Agent re-triggers CR after `review-fix` push, subject to the budget:
 All findings receive equal evaluation (P0/P1) regardless of source.
 Deduplicate when both reviewers flag the same issue.
 
+## Re-review signal telemetry (`evidence-pull-request`)
+
+`make evidence-pull-request` exposes CodeRabbit re-review **detection** beyond the single latest timestamp:
+
+| Field | Role |
+|-------|------|
+| `reviews.re_review_signal.latest_cr_trigger_created_at` | SSOT moment compared to bot pull reviews / commit-status completion |
+| `reviews.re_review_signal.trigger_comment_log` | Up to five most recent PR **issue** comments matching `@coderabbitai` + `review` (newest first), each `{created_at, id}` |
+
+**Use `trigger_comment_log` when** the latest trigger time looks wrong (multiple rapid re-triggers, manual comment edits, or suspicion that delegation used a stale `trigger_id`). The log is **diagnostic only** — FSM and blockers still key off `latest_cr_trigger_created_at` and `cr_response_pending_after_latest_trigger`.
+
+**Truncation:** `reviews.review_threads_truncated` is `true` when GraphQL `reviewThreads(first:100)` has a next page. While true, treat `threads_unresolved` as **incomplete** for merge consensus; refresh after resolution or use `evidence-review-threads` for targeted enumeration when needed.
+
 ## Polling Algorithm
 
 ```text

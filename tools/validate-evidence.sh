@@ -95,14 +95,34 @@ validate_json() {
         echo "FAIL [$target]: reviews.re_review_signal missing" >&2
         return 1
       fi
-      for sub in latest_cr_trigger_created_at latest_cr_review_submitted_at_after_trigger cr_response_pending_after_latest_trigger; do
+      for sub in latest_cr_trigger_created_at latest_cr_review_submitted_at_after_trigger cr_response_pending_after_latest_trigger trigger_comment_log; do
         if ! echo "$json" | jq -e ".reviews.re_review_signal | has(\"$sub\")" >/dev/null 2>&1; then
           echo "FAIL [$target]: reviews.re_review_signal missing '$sub'" >&2
           return 1
         fi
       done
+      if ! echo "$json" | jq -e '.reviews.re_review_signal.trigger_comment_log | type == "array"' >/dev/null 2>&1; then
+        echo "FAIL [$target]: reviews.re_review_signal.trigger_comment_log must be an array" >&2
+        return 1
+      fi
       if ! echo "$json" | jq -e '.reviews.diagnostics | has("rereview_response_pending")' >/dev/null 2>&1; then
         echo "FAIL [$target]: reviews.diagnostics.rereview_response_pending missing" >&2
+        return 1
+      fi
+      for dk in required_bot_findings_outstanding non_thread_bot_findings_outstanding; do
+        if ! echo "$json" | jq -e --arg k "$dk" '.reviews.diagnostics | has($k) and (.[$k] | type == "boolean")' >/dev/null 2>&1; then
+          echo "FAIL [$target]: reviews.diagnostics.$dk missing or not boolean" >&2
+          return 1
+        fi
+      done
+      for diagk in required_bot_rate_limited required_bot_timed_out; do
+        if ! echo "$json" | jq -e --arg k "$diagk" '.reviews.diagnostics | has($k) and (.[$k] | type == "boolean")' >/dev/null 2>&1; then
+          echo "FAIL [$target]: reviews.diagnostics.$diagk missing or not boolean" >&2
+          return 1
+        fi
+      done
+      if ! echo "$json" | jq -e '.reviews | has("review_threads_truncated") and (.review_threads_truncated | type == "boolean")' >/dev/null 2>&1; then
+        echo "FAIL [$target]: reviews.review_threads_truncated missing or not boolean" >&2
         return 1
       fi
       ;;

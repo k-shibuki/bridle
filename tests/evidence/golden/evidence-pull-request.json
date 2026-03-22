@@ -4,13 +4,13 @@
   "head_branch": "feat/42-scanner-layer-3",
   "base_branch": "main",
   "routing": {
-    "pr_state_id": "ReviewDone"
+    "pr_state_id": "UnresolvedThreads"
   },
   "auto_merge_readiness": {
-    "review_consensus_complete": true,
+    "review_consensus_complete": false,
     "ci_all_required_passed": true,
-    "blockers": [],
-    "safe_to_enable": true
+    "blockers": ["merge_state_blocked", "required_bot_findings"],
+    "safe_to_enable": false
   },
   "ci": {
     "status": "success",
@@ -23,7 +23,7 @@
   },
   "merge": {
     "mergeable": "MERGEABLE",
-    "merge_state_status": "CLEAN"
+    "merge_state_status": "BLOCKED"
   },
   "reviews": {
     "bot_coderabbit": {
@@ -31,18 +31,21 @@
       "review_submitted_at": "2026-03-12T09:00:00Z",
       "findings_count": 2,
       "review_count": 1,
-      "max_reviews": 3
+      "max_reviews": 3,
+      "rate_limit": null
     },
     "bot_codex": {
       "status": "NOT_TRIGGERED",
       "review_submitted_at": null,
       "findings_count": 0,
       "review_count": 0,
-      "max_reviews": null
+      "max_reviews": null,
+      "rate_limit": null
     },
     "threads_total": 2,
     "threads_unresolved": 0,
-    "disposition": "approved",
+    "review_threads_truncated": false,
+    "disposition": "pending",
     "last_review_at": "2026-03-12T09:15:00Z",
     "last_push_at": "2026-03-12T08:30:00Z",
     "diagnostics": {
@@ -51,12 +54,17 @@
       "bot_review_terminal": true,
       "bot_review_pending": false,
       "required_bot_findings_total": 2,
-      "rereview_response_pending": false
+      "required_bot_findings_outstanding": true,
+      "non_thread_bot_findings_outstanding": true,
+      "rereview_response_pending": false,
+      "required_bot_rate_limited": false,
+      "required_bot_timed_out": false
     },
     "re_review_signal": {
       "latest_cr_trigger_created_at": null,
       "latest_cr_review_submitted_at_after_trigger": null,
-      "cr_response_pending_after_latest_trigger": false
+      "cr_response_pending_after_latest_trigger": false,
+      "trigger_comment_log": []
     }
   },
   "traceability": {

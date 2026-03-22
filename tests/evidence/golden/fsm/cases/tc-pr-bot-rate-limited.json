@@ -1,11 +1,11 @@
 {
-  "id": "tc-pr-consensus-findings-resolved-no-threads",
+  "id": "tc-pr-bot-rate-limited",
   "kind": "pull_request_readiness",
   "input": {
     "bots_map": {
       "bot_coderabbit": {
-        "status": "COMPLETED",
-        "review_submitted_at": "2026-01-01T00:00:00Z",
+        "status": "RATE_LIMITED",
+        "review_submitted_at": null,
         "findings_count": 0,
         "review_count": 1,
         "max_reviews": 3
@@ -22,12 +22,13 @@
     "threads_unresolved": 0,
     "mergeable": "MERGEABLE",
     "merge_state": "CLEAN",
-    "ci_status": "success"
+    "ci_status": "success",
+    "rereview_response_pending": true
   },
   "expect": {
-    "review_consensus_complete": true,
-    "safe_to_enable": true,
-    "pr_state_id": "ReviewDone",
-    "blockers_empty": true
+    "review_consensus_complete": false,
+    "safe_to_enable": false,
+    "pr_state_id": "BotReviewPending",
+    "blockers_contains": ["rereview_response_pending", "bot_rate_limited"]
   }
 }

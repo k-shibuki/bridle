@@ -87,27 +87,23 @@ _collect_prs() {
     return
   fi
 
-  local raw_prs prs_open pr_numbers prs_count raw_merged prs_merged
+  local raw_prs prs_open pr_numbers prs_count raw_merged prs_merged bot_config jq_dir
+  jq_dir="$(cd "$(dirname "$0")" && pwd)/jq"
+  local bot_cfg_path
+  bot_cfg_path="$(dirname "$0")/../docs/agent-control/review-bots.json"
+  if [ -f "$bot_cfg_path" ]; then
+    bot_config=$(jq -c '.' "$bot_cfg_path" 2>/dev/null || echo '{"bots":[]}')
+  else
+    bot_config='{"bots":[]}'
+  fi
 
   raw_prs=$(gh pr list --state open \
     --json number,title,headRefName,statusCheckRollup,mergeable \
     --limit 10 2>/dev/null || echo "[]")
 
-  prs_open=$(echo "$raw_prs" | jq -c '[.[] | {
-    number: .number,
-    title: .title,
-    head_branch: .headRefName,
-    ci_status: (
-      if (.statusCheckRollup | length) == 0 then "no_checks"
-      elif [.statusCheckRollup[] | select(.conclusion == "FAILURE")] | length > 0 then "failure"
-      elif [.statusCheckRollup[] | select(.status != "COMPLETED")] | length > 0 then "pending"
-      else "success"
-      end
-    ),
-    mergeable: (.mergeable // "UNKNOWN"),
-    review_threads_total: 0,
-    review_threads_unresolved: 0
-  }]')
+  # ci_status: same merge-gate rollup filter as evidence-pull-request (SSOT: tools/jq/evidence-ci-gate-defs.jq)
+  prs_open=$(jq -n --argjson prs "$raw_prs" --argjson cfg "$bot_config" \
+    -f <(cat "$jq_dir/evidence-ci-gate-defs.jq" "$jq_dir/evidence-pr-list-ci.jq"))
 
   # Batched GraphQL: single query for all PRs using aliases
   pr_numbers=$(echo "$prs_open" | jq -r '.[].number')

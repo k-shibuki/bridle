@@ -16,14 +16,14 @@ Run **once** before presenting the full-path proposal in `next-orchestration.md`
 
 1. Run `make evidence-workflow-position` for coarse state (git, issues, PRs, environment).
 2. If `on_main == true` and `open_issues_count > 0`, also run `make evidence-issue` to evaluate Issue quality (test plan, acceptance criteria) for PreFlightReview vs ReadyToStart classification. If the user requested control-system scope or "252 and later", use `make evidence-issue SCOPE=control-system` (or `ISSUE_MIN=252`).
-3. If a PR exists for the current branch, also run `make evidence-pull-request PR=<number>` for detailed CI, merge, and review signals (preferred over workflow-position fallback per `state-model.md` § Signal catalog).
+3. If a PR exists for the current branch, also run `make evidence-pull-request PR=<number>` for detailed CI, merge, and review signals (preferred over workflow-position fallback per `state-model.md` § Signal catalog). **Before routing** `BotReviewPending`, `UnresolvedThreads`, `ReadyForReview`, or `ReviewDone`, correlate that payload: `reviews.threads_unresolved`, `reviews.review_threads_truncated`, required `reviews.bot_* .findings_count`, `reviews.diagnostics` (`required_bot_findings_outstanding`, `non_thread_bot_findings_outstanding`, `rereview_response_pending`), `reviews.re_review_signal` (including `trigger_comment_log` when trigger timing is unclear), and `auto_merge_readiness.blockers`. Do not treat bot wait as done from `bot_review_pending == false` alone while findings, truncation, unresolved threads, or re-review pending still imply work per FSM.
 4. Run `make evidence-fsm` **(mandatory)** — unified `routing.effective_state_id`, embedded PR `auto_merge_readiness` when a PR exists, merged environment errors + workflow position (`docs/agent-control/evidence-schema.md` Target 4b). The proposal must treat this as the **aggregate** orientation layer alongside steps 1–3.
 
 **Tier B:** Before `implement`, `test-create`, or `verify`, if `environment.container_running == false` (from step 1 or the fsm payload), run `make evidence-environment` for detailed checks.
 
 ### After approval (routine refresh)
 
-During the post-approval execution loop, refresh evidence **without** running `make evidence-fsm` on every card unless classification is unclear or a procedure step below requires it. Typically use `make evidence-workflow-position` and `make evidence-pull-request PR=<number>` when a PR exists.
+During the post-approval execution loop, refresh evidence **without** running `make evidence-fsm` on every card unless classification is unclear or a procedure step below requires it. Typically use `make evidence-workflow-position` and `make evidence-pull-request PR=<number>` when a PR exists. After each `evidence-pull-request` refresh affecting review state, apply the same **PR review correlation** checklist as in Sense step 3 before choosing `delegation--review-wait.md` vs `pr-review` / `review-fix` / `pr-merge`.
 
 **Orchestration (mandatory)** — Before executing any action card, follow `docs/agent-control/next-orchestration.md`: present the **full remaining path** through **Per-unit Definition of Done** and obtain **one** user approval per run.
 
@@ -67,7 +67,7 @@ Consult `controls--workflow-state-machine.md` for formal state definitions. When
 Use a **foreground** Tier 1 subagent by default (**omit** `run_in_background`) so the Task blocks until the wait completes — see `subagent-policy.mdc` § Subagent configuration and prompts. Template: `.cursor/templates/delegation--ci-wait-only.md` or `delegation--review-wait.md`; selection: `agent--delegation-decision.md`.
 
 1. Launch the subagent with the appropriate template and PR number.
-2. When the subagent returns, run Sense again: `make evidence-fsm`, then `make evidence-pull-request PR=<N>` and/or `make evidence-workflow-position` as needed, then **re-classify** from § Route to action card — **do not** end the turn while still waiting.
+2. When the subagent returns, run Sense again: `make evidence-fsm`, then `make evidence-pull-request PR=<N>` and/or `make evidence-workflow-position` as needed, then **re-classify** from § Route to action card — **do not** end the turn while still waiting. After `evidence-pull-request`, confirm `review_threads_truncated`, `threads_unresolved`, `reviews.diagnostics.required_bot_findings_outstanding`, and `re_review_signal.cr_response_pending_after_latest_trigger` jointly match the new FSM state (avoid exiting `BotReviewPending` on a single field).
 3. If evidence shows **CIFailed** → fix inline, push, re-enter this recipe (post-approval path; no new user approval).
 4. On CI success, continue to the next routed card (e.g. `ReadyForReview` → `pr-review`).
 

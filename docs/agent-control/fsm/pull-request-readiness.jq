@@ -1,6 +1,7 @@
 # Input: {
 #   bots_map, bot_config, disposition, threads_unresolved, mergeable, merge_state, ci_status,
-#   rereview_response_pending (optional boolean, default false)
+#   rereview_response_pending (optional boolean, default false),
+#   review_threads_truncated (optional boolean, default false) — GraphQL reviewThreads(first:100) hasNextPage
 # }
 # Output: { diagnostics, auto_merge_readiness, routing }
 
@@ -45,12 +46,14 @@ def bot_review_terminal($rows):
 def bot_review_pending($rows):
   (bot_review_terminal($rows) | not);
 
-def review_consensus_complete($rows; $disposition; $threads_u; $pending):
+def review_consensus_complete($rows; $disposition; $threads_u; $pending; $threads_truncated):
   ($disposition == "approved")
   or (
     $disposition == "pending"
     and ($pending | not)
     and $threads_u == 0
+    and ($threads_truncated | not)
+    and (required_findings_total($rows) == 0)
     and ($rows | all(
       if .required then required_bot_done(.)
       else (reviewed(.status) or (.status == "NOT_TRIGGERED"))
@@ -58,7 +61,7 @@ def review_consensus_complete($rows; $disposition; $threads_u; $pending):
     ))
   );
 
-def blockers($rows; $disposition; $threads_u; $mergeable; $merge_state; $ci_status; $pending):
+def blockers($rows; $disposition; $threads_u; $mergeable; $merge_state; $ci_status; $pending; $threads_truncated):
   []
   | (if $ci_status != "success" then . + ["ci_not_green"] else . end)
   | (if $mergeable != "MERGEABLE" then . + ["merge_not_mergeable"] else . end)
@@ -79,24 +82,31 @@ def blockers($rows; $disposition; $threads_u; $mergeable; $merge_state; $ci_stat
         )
       ))
      then . + ["required_bot_rereview"] else . end)
-  | (if (required_findings_total($rows) > 0) and ($threads_u > 0) then . + ["required_bot_findings"] else . end)
-  | (if $pending and $threads_u == 0 then . + ["rereview_response_pending"] else . end);
+  | (if (required_findings_total($rows) > 0) and ($disposition != "approved") then . + ["required_bot_findings"] else . end)
+  | (if $pending and $threads_u == 0 then . + ["rereview_response_pending"] else . end)
+  | (if ($rows | any(.required and .status == "RATE_LIMITED"))
+     then . + ["bot_rate_limited"] else . end)
+  | (if ($rows | any(.required and .status == "TIMED_OUT"))
+     then . + ["bot_timed_out"] else . end)
+  | (if $threads_truncated then . + ["review_threads_truncated"] else . end);
 
-def pr_state_id($rows; $disposition; $threads_u; $mergeable; $merge_state; $ci_status; $pending):
+def pr_state_id($rows; $disposition; $threads_u; $mergeable; $merge_state; $ci_status; $pending; $threads_truncated):
   if $ci_status == "failure" then "CIFailed"
   elif $mergeable == "CONFLICTING" then "DependentChainRebase"
   elif $threads_u > 0 then "UnresolvedThreads"
   elif $disposition == "changes_requested" then "ChangesRequired"
+  elif (required_findings_total($rows) > 0) and ($disposition != "approved") then "UnresolvedThreads"
+  elif $threads_truncated then "UnresolvedThreads"
   elif ($ci_status == "pending" or $ci_status == "no_checks") then "CIPending"
   elif $ci_status == "success" and $pending then "BotReviewPending"
   elif $ci_status == "success" and (bot_review_pending($rows)) then "BotReviewPending"
   elif $ci_status == "success"
-       and (review_consensus_complete($rows; $disposition; $threads_u; $pending))
+       and (review_consensus_complete($rows; $disposition; $threads_u; $pending; $threads_truncated))
        and $mergeable == "MERGEABLE"
        and ($merge_state == "CLEAN" or $merge_state == "HAS_HOOKS")
     then "ReviewDone"
   elif $ci_status == "success" and (bot_review_terminal($rows)) and $threads_u == 0
-       and (review_consensus_complete($rows; $disposition; $threads_u; $pending) | not)
+       and (review_consensus_complete($rows; $disposition; $threads_u; $pending; $threads_truncated) | not)
     then "ReadyForReview"
   elif $ci_status == "success" then "ReadyForReview"
   else "CIPending"
@@ -110,6 +120,7 @@ def pr_state_id($rows; $disposition; $threads_u; $mergeable; $merge_state; $ci_s
   | ($in.merge_state) as $ms
   | ($in.ci_status) as $cs
   | ($in.rereview_response_pending // false) as $pend
+  | ($in.review_threads_truncated // false) as $tt
   | {
       diagnostics: {
         bot_review_completed: bot_review_completed($rows),
@@ -117,12 +128,16 @@ def pr_state_id($rows; $disposition; $threads_u; $mergeable; $merge_state; $ci_s
         bot_review_terminal: bot_review_terminal($rows),
         bot_review_pending: bot_review_pending($rows),
         required_bot_findings_total: required_findings_total($rows),
-        rereview_response_pending: $pend
+        required_bot_findings_outstanding: ((required_findings_total($rows)) > 0),
+        non_thread_bot_findings_outstanding: ((required_findings_total($rows) > 0) and ($tu == 0)),
+        rereview_response_pending: $pend,
+        required_bot_rate_limited: ($rows | any(.required and .status == "RATE_LIMITED")),
+        required_bot_timed_out: ($rows | any(.required and .status == "TIMED_OUT"))
       },
       auto_merge_readiness: (
-        (blockers($rows; $d; $tu; $m; $ms; $cs; $pend)) as $bl
+        (blockers($rows; $d; $tu; $m; $ms; $cs; $pend; $tt)) as $bl
         | {
-            review_consensus_complete: review_consensus_complete($rows; $d; $tu; $pend),
+            review_consensus_complete: review_consensus_complete($rows; $d; $tu; $pend; $tt),
             ci_all_required_passed: ($cs == "success"),
             blockers: $bl
           }
@@ -134,6 +149,6 @@ def pr_state_id($rows; $disposition; $threads_u; $mergeable; $merge_state; $ci_s
              and (.blockers | length == 0))
       ),
       routing: {
-        pr_state_id: pr_state_id($rows; $d; $tu; $m; $ms; $cs; $pend)
+        pr_state_id: pr_state_id($rows; $d; $tu; $m; $ms; $cs; $pend; $tt)
       }
     }
