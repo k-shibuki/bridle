@@ -67,7 +67,7 @@ bridle_console <- function(agent) {
 # -- Turn processing -----------------------------------------------------------
 
 .console_process_turn <- function(agent, chat) {
-  prep <- turn_prepare(agent)
+  prep <- turn_prepare(agent) # nolint: object_usage_linter. orchestrator.R
   if (identical(prep$status, "completed")) {
     return(list(status = "completed"))
   }
@@ -131,7 +131,7 @@ bridle_console <- function(agent) {
     }
   }
 
-  turn_resolve(
+  turn_resolve( # nolint: object_usage_linter. orchestrator.R
     agent,
     list(
       prepare = prep,
