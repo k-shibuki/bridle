@@ -89,13 +89,13 @@ procedure context for in-progress local work.
 | `review_threads_truncated` | boolean | `evidence-pull-request.reviews.review_threads_truncated` | `reviewThreads(first:100)` has more pages — treat unresolved count as incomplete; merge consensus false while true |
 | `required_bot_findings_outstanding` | boolean | `evidence-pull-request.reviews.diagnostics.required_bot_findings_outstanding` | Required bots still report `findings_count > 0` (includes body-only findings) |
 | `non_thread_bot_findings_outstanding` | boolean | `evidence-pull-request.reviews.diagnostics.non_thread_bot_findings_outstanding` | Findings outstanding with zero unresolved threads (outside-diff / body findings) |
-| `bot_coderabbit_status` | enum | `evidence-pull-request.reviews.bot_coderabbit.status` | `"COMPLETED"` \| `"COMPLETED_CLEAN"` \| `"COMPLETED_SILENT"` \| `"RATE_LIMITED"` \| `"TIMED_OUT"` \| `"NOT_TRIGGERED"` \| `"PENDING"` \| `"REVIEW_INVALIDATED"` |
-| `bot_codex_status` | enum | `evidence-pull-request.reviews.bot_codex.status` | `"COMPLETED"` \| `"COMPLETED_CLEAN"` \| `"RATE_LIMITED"` \| `"TIMED_OUT"` \| `"NOT_TRIGGERED"` \| `"PENDING"` \| `"REVIEW_INVALIDATED"` |
+| `bot_coderabbit_status` | enum | `evidence-pull-request.reviews.bot_coderabbit.status` | `"COMPLETED"` \| `"COMPLETED_CLEAN"` \| `"COMPLETED_SILENT"` \| `"SKIPPED_CLEAN"` \| `"SKIPPED_BLOCKED"` \| `"RATE_LIMITED"` \| `"TIMED_OUT"` \| `"NOT_TRIGGERED"` \| `"PENDING"` \| `"REVIEW_INVALIDATED"` |
+| `bot_codex_status` | enum | `evidence-pull-request.reviews.bot_codex.status` | `"COMPLETED"` \| `"COMPLETED_CLEAN"` \| `"SKIPPED_CLEAN"` \| `"SKIPPED_BLOCKED"` \| `"RATE_LIMITED"` \| `"TIMED_OUT"` \| `"NOT_TRIGGERED"` \| `"PENDING"` \| `"REVIEW_INVALIDATED"` |
 | `bot_review_completed` | boolean | `evidence-pull-request.reviews.diagnostics.bot_review_completed` | All required bots in a **Reviewed** tier state; optional (`required: false`) bots may be `NOT_TRIGGERED` or Reviewed |
-| `bot_review_failed` | boolean | `evidence-pull-request.reviews.diagnostics.bot_review_failed` | Any **required** bot is in **Failed** tier (`RATE_LIMITED`, `TIMED_OUT`) |
+| `bot_review_failed` | boolean | `evidence-pull-request.reviews.diagnostics.bot_review_failed` | Any **required** bot is in **Failed** tier (`RATE_LIMITED`, `TIMED_OUT`, `SKIPPED_BLOCKED`) |
 | `bot_review_terminal` | boolean | `evidence-pull-request.reviews.diagnostics.bot_review_terminal` | `bot_review_completed OR bot_review_failed` — polling may stop; **never** sufficient alone for merge consensus |
 | `bot_review_pending` | boolean | `evidence-pull-request.reviews.diagnostics.bot_review_pending` | `NOT bot_review_terminal` — still waiting on a required bot outcome |
-| `rereview_response_pending` | boolean | `evidence-pull-request.reviews.re_review_signal.cr_response_pending_after_latest_trigger` (same value as `reviews.diagnostics.rereview_response_pending`) | Latest PR issue comment requesting CodeRabbit re-review (`@coderabbitai` + `review`) is not yet followed by any `coderabbitai[bot]` pull review with `submitted_at` after that comment; avoids treating review as settled while CR may still post threads (`pull-request-readiness.jq` adds blocker `rereview_response_pending` and can route `BotReviewPending` even when `bot_review_pending` is false) |
+| `rereview_response_pending` | boolean | `evidence-pull-request.reviews.re_review_signal.cr_response_pending_after_latest_trigger` (same value as `reviews.diagnostics.rereview_response_pending`) | Latest PR issue comment requesting CodeRabbit re-review (`@coderabbitai` + `review`) is not yet followed by a completion after that comment (pull review, commit-status completion, or `skip_patterns` issue comment); `false` when `bot_coderabbit.status` is `SKIPPED_CLEAN` / `SKIPPED_BLOCKED` or `REVIEW_INVALIDATED` (`pull-request-readiness.jq` adds blocker `rereview_response_pending` and can route `BotReviewPending` even when `bot_review_pending` is false) |
 | `review_disposition` | enum | `evidence-pull-request.reviews.disposition` | `"approved"` \| `"changes_requested"` \| `"pending"` |
 | `review_consensus_complete` | boolean | `evidence-pull-request.auto_merge_readiness.review_consensus_complete` | Merge consensus: approved human review, or pending disposition with required bots reviewed, **zero required-bot `findings_count` total**, zero unresolved threads, **not** `review_threads_truncated`, and no pending re-review response (`rereview_response_pending`) |
 | `safe_to_enable` | boolean | `evidence-pull-request.auto_merge_readiness.safe_to_enable` | Safe to enable auto-merge: consensus + CI + mergeable + merge state (see `docs/agent-control/fsm/pull-request-readiness.jq`) |
@@ -104,8 +104,8 @@ procedure context for in-progress local work.
 
 | Tier | `bot_*_status` values | Meaning |
 |------|------------------------|---------|
-| **Reviewed** | `COMPLETED`, `COMPLETED_CLEAN`, `COMPLETED_SILENT` | Bot produced a review for the current head |
-| **Failed** | `RATE_LIMITED`, `TIMED_OUT` | Bot could not complete a review |
+| **Reviewed** | `COMPLETED`, `COMPLETED_CLEAN`, `COMPLETED_SILENT`, `SKIPPED_CLEAN` | Bot produced a review for the current head, or policy marks a skip as terminal-clean (`skip_policy: terminal_clean` in `review-bots.json`) |
+| **Failed** | `RATE_LIMITED`, `TIMED_OUT`, `SKIPPED_BLOCKED` | Bot could not complete a review, or policy marks a skip as blocking (`skip_policy: terminal_blocked`) |
 | **In-progress** | `PENDING`, `NOT_TRIGGERED`, `REVIEW_INVALIDATED` | No valid Reviewed outcome for the current head (`REVIEW_INVALIDATED`: bot voided its run, e.g. head commit moved during review — re-trigger; `NOT_TRIGGERED` on a **required** bot still blocks `bot_review_completed`) |
 
 ### Environment signals

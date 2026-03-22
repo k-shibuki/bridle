@@ -54,7 +54,9 @@ if ! echo "$bot_config" | jq -e '
     ((.required | type) == "boolean") and
     (.commit_status_name == null or ((.commit_status_name | type) == "string")) and
     ((.trigger | type) == "string") and (.trigger == "agent" or .trigger == "user_only") and
-    (.fallback_priority == null or ((.fallback_priority | type) == "number"))
+    (.fallback_priority == null or ((.fallback_priority | type) == "number")) and
+    (.skip_patterns == null or ((.skip_patterns | type) == "array" and all(.skip_patterns[]; (type == "string")))) and
+    (.skip_policy == null or .skip_policy == "terminal_clean" or .skip_policy == "terminal_blocked")
   )
 ' >/dev/null 2>&1; then
   evidence_error "config" "Invalid bot config schema: $BOT_CONFIG" true
@@ -133,6 +135,9 @@ _detect_bot_reviews() {
     local findings=0
     local review_count=0
     local rate_limit_meta="null"
+    local skip_detected=false
+    local skip_reason=""
+    local skip_detected_at=""
 
     # Reviews from this bot (uses --arg to safely pass regex patterns)
     local bot_reviews_all
@@ -349,6 +354,59 @@ _detect_bot_reviews() {
       fi
     fi
 
+    # Bot-configured skip markers on PR issue comments (e.g. CodeRabbit "Review skipped")
+    if [ "$status" != "REVIEW_INVALIDATED" ] && [ "$status" != "RATE_LIMITED" ]; then
+      local skip_patterns_json skip_pol
+      skip_patterns_json=$(echo "$bot_config" | jq -c ".bots[$i].skip_patterns // null")
+      skip_pol=$(echo "$bot_config" | jq -r ".bots[$i].skip_policy // \"null\"")
+      if [ "$skip_patterns_json" != "null" ] && [ "$(echo "$skip_patterns_json" | jq 'length')" -gt 0 ] && [ "$skip_pol" != "null" ]; then
+        local skip_hit
+        skip_hit=$(jq -nc \
+          --argjson comments "$pr_comments" \
+          --arg login_pat "$bot_login" \
+          --arg match_type "$match_type" \
+          --arg match_flags "$match_flags" \
+          --arg lp "$last_push_at" \
+          --argjson patterns "$skip_patterns_json" \
+          '
+          def ts($s):
+            if $s == null or $s == "" then null else (try ($s | fromdateiso8601) catch null) end;
+          ($lp | ts(.)) as $tpush | (if $tpush == null then 0 else $tpush end) as $tp
+          | (if $match_type == "exact" then
+              [ $comments[] | select(.user.login == $login_pat) ]
+            elif ($match_flags != null and $match_flags != "") then
+              [ $comments[] | select(.user.login | test($login_pat; $match_flags)) ]
+            else
+              [ $comments[] | select(.user.login | test($login_pat)) ]
+            end) as $cand
+          | ([ $cand[] | select((.created_at | ts(.)) != null and (.created_at | ts(.)) >= $tp) ]
+            | sort_by(.created_at | ts(.))) as $sorted
+          | (first(
+              $sorted[] | . as $c | $patterns[] as $p
+              | select(($c.body // "") | test($p))
+              | {matched: true, reason: $p, at: $c.created_at}
+            ) // {matched: false, reason: null, at: null})
+          ')
+        if [ "$(echo "$skip_hit" | jq -r '.matched')" = "true" ]; then
+          skip_detected=true
+          skip_reason=$(echo "$skip_hit" | jq -r '.reason')
+          skip_detected_at=$(echo "$skip_hit" | jq -r '.at')
+          case "$skip_pol" in
+            terminal_clean)
+              status="SKIPPED_CLEAN"
+              submitted=""
+              ;;
+            terminal_blocked)
+              status="SKIPPED_BLOCKED"
+              submitted=""
+              ;;
+            *)
+              ;;
+          esac
+        fi
+      fi
+    fi
+
     # Inline findings: top-level comments only, since head commit (ignore pre-push review noise)
     if [ "$match_type" = "exact" ]; then
       findings=$(echo "$cr_inline" | jq --arg login "$bot_login" --arg lp "$last_push_at" '
@@ -404,7 +462,12 @@ _detect_bot_reviews() {
     findings=$((findings + body_count))
 
     # Compose bot entry
-    local bot_entry
+    local bot_entry skip_d_json
+    if [ "$skip_detected" = true ]; then
+      skip_d_json=true
+    else
+      skip_d_json=false
+    fi
     bot_entry=$(jq -nc \
       --arg status "$status" \
       --arg sub "$submitted" \
@@ -412,13 +475,19 @@ _detect_bot_reviews() {
       --argjson review_count "$review_count" \
       --argjson max_rev "$max_rev" \
       --argjson rate_limit "$rate_limit_meta" \
+      --argjson skip_d "$skip_d_json" \
+      --arg skip_r "${skip_reason:-}" \
+      --arg skip_a "${skip_detected_at:-}" \
       '{
         "status": $status,
         "review_submitted_at": (if $sub == "" then null else $sub end),
         "findings_count": $findings,
         "review_count": $review_count,
         "max_reviews": $max_rev,
-        "rate_limit": $rate_limit
+        "rate_limit": $rate_limit,
+        "skip_detected": $skip_d,
+        "skip_reason": (if $skip_r == "" then null else $skip_r end),
+        "skip_detected_at": (if $skip_a == "" then null else $skip_a end)
       }')
 
     bot_json=$(echo "$bot_json" | jq -c --arg key "bot_$bot_id" --argjson val "$bot_entry" \
@@ -441,12 +510,14 @@ if [ "$coderabbit_submitted" = "null" ]; then
 fi
 coderabbit_rc=$(echo "$bot_reviews" | jq '.bot_coderabbit.review_count // 0')
 coderabbit_mx=$(echo "$bot_reviews" | jq -c 'if .bot_coderabbit.max_reviews == null then null else .bot_coderabbit.max_reviews end')
+cr_skip_patterns=$(echo "$bot_config" | jq -c '[.bots[] | select(.id == "coderabbit")][0].skip_patterns // []')
 re_review_signal=$(
   jq -nc \
     --argjson comments "$pr_comments" \
     --argjson revs "$reviews" \
     --argjson rc "$coderabbit_rc" \
     --argjson mx "$coderabbit_mx" \
+    --argjson cr_skip_patterns "$cr_skip_patterns" \
     --arg cr_status "$coderabbit_status" \
     --arg cr_sub "$coderabbit_submitted" \
     '
@@ -474,13 +545,20 @@ re_review_signal=$(
        elif (($cr_sub | ts(.)) != null and ($cr_sub | ts(.)) > $trig_ts) then $cr_sub
        else null
        end) as $ans_cs
-    | (if $ans_rev == null and $ans_cs == null then null
-       elif $ans_rev == null then $ans_cs
-       elif $ans_cs == null then $ans_rev
-       elif ($ans_rev | ts(.)) >= ($ans_cs | ts(.)) then $ans_rev
-       else $ans_cs
-       end) as $ans_at
+    | (if $trig_ts == null or (($cr_skip_patterns | length) == 0) then null
+       else
+         ([ $comments[]
+            | select(.user.login == "coderabbitai[bot]")
+            | select((.created_at | ts(.)) != null and (.created_at | ts(.)) > $trig_ts)
+            | select(any($cr_skip_patterns[]; . as $p | (.body | test($p))))
+          ]
+          | if length == 0 then null
+            else (max_by(.created_at | ts(.)) | .created_at)
+            end)
+       end) as $ans_skip
+    | ([$ans_rev, $ans_cs, $ans_skip] | map(select(. != null)) | sort_by(ts(.)) | last) as $ans_at
     | (if $cr_status == "REVIEW_INVALIDATED" then false
+       elif ($cr_status == "SKIPPED_CLEAN" or $cr_status == "SKIPPED_BLOCKED") then false
        elif $trig_at == null then false
        elif $ans_at == null then true
        else false
@@ -494,6 +572,7 @@ re_review_signal=$(
     | {
         latest_cr_trigger_created_at: $trig_at,
         latest_cr_review_submitted_at_after_trigger: $ans_at,
+        latest_cr_skip_comment_at_after_trigger: $ans_skip,
         cr_response_pending_after_latest_trigger: $pend2,
         trigger_comment_log: $trig_log
       }

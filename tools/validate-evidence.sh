@@ -95,7 +95,7 @@ validate_json() {
         echo "FAIL [$target]: reviews.re_review_signal missing" >&2
         return 1
       fi
-      for sub in latest_cr_trigger_created_at latest_cr_review_submitted_at_after_trigger cr_response_pending_after_latest_trigger trigger_comment_log; do
+      for sub in latest_cr_trigger_created_at latest_cr_review_submitted_at_after_trigger latest_cr_skip_comment_at_after_trigger cr_response_pending_after_latest_trigger trigger_comment_log; do
         if ! echo "$json" | jq -e ".reviews.re_review_signal | has(\"$sub\")" >/dev/null 2>&1; then
           echo "FAIL [$target]: reviews.re_review_signal missing '$sub'" >&2
           return 1

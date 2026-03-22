@@ -32,7 +32,10 @@
       "findings_count": 2,
       "review_count": 1,
       "max_reviews": 3,
-      "rate_limit": null
+      "rate_limit": null,
+      "skip_detected": false,
+      "skip_reason": null,
+      "skip_detected_at": null
     },
     "bot_codex": {
       "status": "NOT_TRIGGERED",
@@ -40,7 +43,10 @@
       "findings_count": 0,
       "review_count": 0,
       "max_reviews": null,
-      "rate_limit": null
+      "rate_limit": null,
+      "skip_detected": false,
+      "skip_reason": null,
+      "skip_detected_at": null
     },
     "threads_total": 2,
     "threads_unresolved": 0,
@@ -63,6 +69,7 @@
     "re_review_signal": {
       "latest_cr_trigger_created_at": null,
       "latest_cr_review_submitted_at_after_trigger": null,
+      "latest_cr_skip_comment_at_after_trigger": null,
       "cr_response_pending_after_latest_trigger": false,
       "trigger_comment_log": []
     }
