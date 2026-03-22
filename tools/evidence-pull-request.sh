@@ -349,17 +349,44 @@ _detect_bot_reviews() {
       fi
     fi
 
-    # Inline findings count (top-level only, excluding reply comments)
+    # Inline findings: top-level comments only, since head commit (ignore pre-push review noise)
     if [ "$match_type" = "exact" ]; then
-      findings=$(echo "$cr_inline" | jq --arg login "$bot_login" \
-        '[.[] | select(.user.login == $login and (.in_reply_to_id // null) == null)] | length')
+      findings=$(echo "$cr_inline" | jq --arg login "$bot_login" --arg lp "$last_push_at" '
+        def ts($s):
+          if $s == null or $s == "" then null else (try ($s | fromdateiso8601) catch null) end;
+        ($lp | ts(.)) as $tpush | (if $tpush == null then 0 else $tpush end) as $tp
+        | [.[] | select(
+            .user.login == $login
+            and (.in_reply_to_id // null) == null
+            and ((.created_at | ts(.)) != null and (.created_at | ts(.)) >= $tp)
+          )]
+        | length
+      ')
     else
       if [ -n "$match_flags" ]; then
-        findings=$(echo "$cr_inline" | jq --arg pat "$bot_login" --arg flags "$match_flags" \
-          '[.[] | select((.user.login | test($pat; $flags)) and (.in_reply_to_id // null) == null)] | length')
+        findings=$(echo "$cr_inline" | jq --arg pat "$bot_login" --arg flags "$match_flags" --arg lp "$last_push_at" '
+          def ts($s):
+            if $s == null or $s == "" then null else (try ($s | fromdateiso8601) catch null) end;
+          ($lp | ts(.)) as $tpush | (if $tpush == null then 0 else $tpush end) as $tp
+          | [.[] | select(
+              (.user.login | test($pat; $flags))
+              and (.in_reply_to_id // null) == null
+              and ((.created_at | ts(.)) != null and (.created_at | ts(.)) >= $tp)
+            )]
+          | length
+        ')
       else
-        findings=$(echo "$cr_inline" | jq --arg pat "$bot_login" \
-          '[.[] | select((.user.login | test($pat)) and (.in_reply_to_id // null) == null)] | length')
+        findings=$(echo "$cr_inline" | jq --arg pat "$bot_login" --arg lp "$last_push_at" '
+          def ts($s):
+            if $s == null or $s == "" then null else (try ($s | fromdateiso8601) catch null) end;
+          ($lp | ts(.)) as $tpush | (if $tpush == null then 0 else $tpush end) as $tp
+          | [.[] | select(
+              (.user.login | test($pat))
+              and (.in_reply_to_id // null) == null
+              and ((.created_at | ts(.)) != null and (.created_at | ts(.)) >= $tp)
+            )]
+          | length
+        ')
       fi
     fi
 
