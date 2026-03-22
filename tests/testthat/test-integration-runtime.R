@@ -200,6 +200,7 @@ test_that("all four node types are processed", {
 })
 
 test_that("skip_hint skips node when condition is met", {
+  # Given: a graph where skip_when/skip_hint should skip diagnosis node
   dir <- withr::local_tempdir()
 
   graph_yaml <- '
@@ -235,6 +236,7 @@ variables:
 '
   writeLines(ctx_yaml, file.path(dir, "context_schema.yaml"))
 
+  # And: context has k > 100 so skip condition is true
   agent <- bridle_agent(dir)
 
   dummy_data <- data.frame(x = seq_len(200))
@@ -255,6 +257,7 @@ variables:
     bridle_readline = .mock_readline_queue(rep("y", 5))
   )
 
+  # When/Then: console run completes without error while skipping node
   expect_no_error(bridle_console(agent))
 })
 

@@ -148,24 +148,33 @@ entries:
 }
 
 test_that("turn_prepare returns completed for terminal entry graph", {
+  # Given: a plugin whose entry node is terminal
   dir <- .orch_make_terminal_plugin()
   agent <- bridle_agent(dir)
+  # When: turn_prepare is executed
   p <- turn_prepare(agent)
+  # Then: the turn is marked as completed
   expect_identical(p$status, "completed")
 })
 
 test_that("turn_prepare returns skipped when skip_hint is TRUE", {
+  # Given: a plugin with skip_when/skip_hint policy
   dir <- .orch_make_skip_plugin()
   agent <- bridle_agent(dir)
+  # When: turn_prepare is executed
   p <- turn_prepare(agent)
+  # Then: the node is skipped at prepare time
   expect_identical(p$status, "skipped")
   expect_equal(p$node_id, "start")
 })
 
 test_that("turn_prepare continues with assembled prompt on decision node", {
+  # Given: a plugin that reaches a decision node requiring LLM input
   dir <- .orch_stall_plugin()
   agent <- bridle_agent(dir)
+  # When: turn_prepare is executed
   p <- turn_prepare(agent)
+  # Then: execution continues with a non-empty prompt
   expect_identical(p$status, "continue")
   expect_equal(p$node_id, "dec")
   expect_true(nzchar(p$prompt_text))
@@ -197,6 +206,7 @@ test_that("turn_resolve applies accept and updates context", {
 })
 
 test_that("turn_resolve applies reject override", {
+  # Given: a prepared decision turn with a reject override value
   dir <- .orch_stall_plugin()
   agent <- bridle_agent(dir)
   prep <- turn_prepare(agent)
@@ -208,6 +218,7 @@ test_that("turn_resolve applies reject override", {
     prep$node,
     prep$transition_candidates
   )
+  # When: turn_resolve is called with reject + override
   turn_resolve(
     agent,
     list(
@@ -216,7 +227,70 @@ test_that("turn_resolve applies reject override", {
       user_action = list(action = "reject", override = "OR")
     )
   )
+  # Then: the override value is written to context
   expect_equal(agent$engine@context@parameters_decided$sm, "OR")
+})
+
+test_that("turn_resolve uses transition_choice override when provided", {
+  # Given: a decision node with multiple valid transition targets
+  dir <- withr::local_tempdir()
+  graph_yaml <- "
+graph:
+  entry_node: dec
+  nodes:
+    dec:
+      type: decision
+      topic: effect_measure
+      parameter: sm
+      transitions:
+        - to: end
+          when: choose terminal
+        - to: alt
+          when: choose alternate
+    alt:
+      type: execution
+      transitions: []
+    end:
+      type: execution
+      transitions: []
+"
+  writeLines(graph_yaml, file.path(dir, "decision_graph.yaml"))
+  writeLines(
+    .orch_write_knowledge("effect_measure", "e1"),
+    file.path(dir, "knowledge.yaml")
+  )
+  writeLines(
+    "variables:
+  - name: k
+    description: studies
+    available_from: data_loaded
+    source_expression: nrow(data)
+",
+    file.path(dir, "context_schema.yaml")
+  )
+  agent <- bridle_agent(dir)
+  prep <- turn_prepare(agent)
+  parsed <- parse_response(
+    paste0(
+      "{\"recommendation_text\":\"Use RR.\",",
+      "\"suggested_value\":\"RR\",",
+      "\"transition_signal\":\"alt\"}"
+    ),
+    prep$node,
+    prep$transition_candidates
+  )
+  # When: transition_choice is explicitly overridden to end
+  turn_resolve(
+    agent,
+    list(
+      prepare = prep,
+      parsed = parsed,
+      user_action = list(action = "accept")
+    ),
+    transition_choice = "end"
+  )
+  # Then: the engine transitions using the override
+  expect_equal(agent$engine@.state$current_node, "end")
 })
 
 test_that("aggregate_knowledge includes graph for empty knowledge list", {
@@ -288,9 +362,14 @@ constraints:
 })
 
 test_that("turn_prepare and turn_resolve reject non-agent", {
-  expect_error(turn_prepare(list()), "bridle_agent")
+  expect_error(
+    turn_prepare(list()),
+    "bridle_agent",
+    class = "rlang_error"
+  )
   expect_error(
     turn_resolve(list(), list(prepare = list())),
-    "bridle_agent"
+    "bridle_agent",
+    class = "rlang_error"
   )
 })

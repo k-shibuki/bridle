@@ -372,7 +372,7 @@ review freshness, and bot review status.
   },
   "reviews": {
     "bot_<id>": {
-      "status": "COMPLETED | COMPLETED_CLEAN | COMPLETED_SILENT | RATE_LIMITED | TIMED_OUT | NOT_TRIGGERED | PENDING | REVIEW_INVALIDATED",
+      "status": "COMPLETED | COMPLETED_CLEAN | COMPLETED_SILENT | SKIPPED_CLEAN | SKIPPED_BLOCKED | RATE_LIMITED | TIMED_OUT | NOT_TRIGGERED | PENDING | REVIEW_INVALIDATED",
       "review_submitted_at": "ISO8601 | null",
       "findings_count": "integer",
       "review_count": "integer",

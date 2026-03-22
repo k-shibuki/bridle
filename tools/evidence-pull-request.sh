@@ -550,7 +550,8 @@ re_review_signal=$(
          ([ $comments[]
             | select(.user.login == "coderabbitai[bot]")
             | select((.created_at | ts(.)) != null and (.created_at | ts(.)) > $trig_ts)
-            | select(any($cr_skip_patterns[]; . as $p | (.body | test($p))))
+           | select((.body // "") as $body
+                    | any($cr_skip_patterns[]; $body | test(.)))
           ]
           | if length == 0 then null
             else (max_by(.created_at | ts(.)) | .created_at)
