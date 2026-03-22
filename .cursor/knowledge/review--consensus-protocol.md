@@ -20,9 +20,9 @@ until the reviewer's final response confirms the disposition.
 For threads whose root review comment is from **CodeRabbit** (e.g.
 `coderabbitai[bot]`):
 
-- The agent **must not** call GraphQL `resolveReviewThread` in the **same
-  turn** as posting the disposition reply, nor before observing CodeRabbit's
-  reaction (`HS-REVIEW-RESOLVE` — consensus is not "reply only").
+- **If consensus evidence is not confirmed, `resolveReviewThread` is prohibited.**
+- **Same-turn resolve is allowed** when consensus evidence is already available
+  in that turn after posting the disposition reply.
 - **Resolve only after** evidence (e.g. `make evidence-review-threads PR=<N>`,
   optionally after `delegation--review-wait.md`) shows at least one of:
   - CodeRabbit **auto-resolved** the thread; or
@@ -31,8 +31,9 @@ For threads whose root review comment is from **CodeRabbit** (e.g.
     `review--bot-operations.md` § Agreement / terminal states supports
     treating the finding as agreed.
 - **Delegation**: A foreground Tier 1 subagent running `delegation--review-wait.md`
-  is the compliant way to wait for the above; then refresh thread evidence and
-  resolve threads that still need an explicit resolve and meet consensus.
+  is the compliant way to wait when same-turn evidence is not yet available;
+  then refresh thread evidence and resolve threads that still need an explicit
+  resolve and meet consensus.
 - **Exception**: **Reviewer Unavailable** (§ Reviewer Unavailable below) —
   document the reason in the disposition path before resolving.
 
