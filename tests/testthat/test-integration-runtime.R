@@ -251,17 +251,29 @@ variables:
   )
   agent$engine <- eng
 
+  chat_calls <- 0L
   local_mocked_bindings(
     bridle_runtime_chat = function(...) {
-      .mock_chat(c("Context gathered.", "Final."))
+      list(
+        chat = function(prompt) {
+          chat_calls <<- chat_calls + 1L
+          if (chat_calls == 1L) {
+            "Context gathered."
+          } else {
+            "Final."
+          }
+        }
+      )
     }
   )
   local_mocked_bindings(
     bridle_readline = .mock_readline_queue(rep("y", 5))
   )
 
-  # When/Then: console run completes without error while skipping node
+  # When: console run is executed
   expect_no_error(bridle_console(agent))
+  # Then: run completes and diagnosis/execution prompts are skipped
+  expect_equal(chat_calls, 1L)
 })
 
 test_that("full pipeline with fixture produces valid agent", {

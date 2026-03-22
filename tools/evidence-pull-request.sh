@@ -108,6 +108,33 @@ reviews=$(gh api "repos/$owner/$repo/pulls/$PR/reviews" 2>/dev/null || echo "[]"
 pr_comments=$(gh api "repos/$owner/$repo/issues/$PR/comments" 2>/dev/null || echo "[]")
 cr_inline=$(gh api "repos/$owner/$repo/pulls/$PR/comments" 2>/dev/null || echo "[]")
 
+# Normalize and trim large payload fields so downstream jq --argjson calls stay
+# under OS argument-size limits on large PR threads.
+reviews=$(echo "$reviews" | jq -c '
+  [ .[] | {
+      user: { login: (.user.login // "") },
+      submitted_at,
+      body: ((.body // "")[0:4000]),
+      state
+    } ]
+')
+pr_comments=$(echo "$pr_comments" | jq -c '
+  [ .[] | {
+      user: { login: (.user.login // "") },
+      created_at,
+      body: ((.body // "")[0:4000]),
+      id,
+      reactions
+    } ]
+')
+cr_inline=$(echo "$cr_inline" | jq -c '
+  [ .[] | {
+      user: { login: (.user.login // "") },
+      in_reply_to_id,
+      created_at
+    } ]
+')
+
 # --- Build bot review objects from config ---
 # Status resolution order: (1) commit-status row whose name equals commit_status_name (case-insensitive);
 # (2) issue comments matching rate_limit_pattern since head commit may override (1) for stale success or pending;
@@ -355,12 +382,12 @@ _detect_bot_reviews() {
     fi
 
     # Bot-configured skip markers on PR issue comments (e.g. CodeRabbit "Review skipped")
-    if [ "$status" != "REVIEW_INVALIDATED" ] && [ "$status" != "RATE_LIMITED" ]; then
+    if [ "$status" != "REVIEW_INVALIDATED" ]; then
       local skip_patterns_json skip_pol
       skip_patterns_json=$(echo "$bot_config" | jq -c ".bots[$i].skip_patterns // null")
       skip_pol=$(echo "$bot_config" | jq -r ".bots[$i].skip_policy // \"null\"")
       if [ "$skip_patterns_json" != "null" ] && [ "$(echo "$skip_patterns_json" | jq 'length')" -gt 0 ] && [ "$skip_pol" != "null" ]; then
-        local skip_hit
+        local skip_hit apply_skip
         skip_hit=$(jq -nc \
           --argjson comments "$pr_comments" \
           --arg login_pat "$bot_login" \
@@ -387,7 +414,27 @@ _detect_bot_reviews() {
               | {matched: true, reason: $p, at: $c.created_at}
             ) // {matched: false, reason: null, at: null})
           ')
-        if [ "$(echo "$skip_hit" | jq -r '.matched')" = "true" ]; then
+        apply_skip=$(jq -n \
+          --argjson skip "$skip_hit" \
+          --arg status "$status" \
+          --arg submitted "$submitted" \
+          --argjson rate_meta "$rate_limit_meta" \
+          '
+          def ts($s):
+            if $s == null or $s == "" then null else (try ($s | fromdateiso8601) catch null) end;
+          ($skip.at | ts(.)) as $skip_ts
+          | if ($skip.matched // false) | not then false
+            else
+              (
+                if $status == "COMPLETED" then ($submitted | ts(.))
+                elif $status == "RATE_LIMITED" then (($rate_meta.detected_at // null) | ts(.))
+                else null
+                end
+              ) as $current_ts
+              | if $current_ts == null then true else ($skip_ts >= $current_ts) end
+            end
+          ')
+        if [ "$apply_skip" = "true" ]; then
           skip_detected=true
           skip_reason=$(echo "$skip_hit" | jq -r '.reason')
           skip_detected_at=$(echo "$skip_hit" | jq -r '.at')
@@ -559,7 +606,6 @@ re_review_signal=$(
        end) as $ans_skip
     | ([$ans_rev, $ans_cs, $ans_skip] | map(select(. != null)) | sort_by(ts(.)) | last) as $ans_at
     | (if $cr_status == "REVIEW_INVALIDATED" then false
-       elif ($cr_status == "SKIPPED_CLEAN" or $cr_status == "SKIPPED_BLOCKED") then false
        elif $trig_at == null then false
        elif $ans_at == null then true
        else false

@@ -297,15 +297,19 @@ graph:
 })
 
 test_that("aggregate_knowledge includes graph for empty knowledge list", {
+  # Given: an agent with graph metadata and no loaded knowledge entries
   dir <- .orch_make_terminal_plugin()
   agent <- bridle_agent(dir)
+  # When: aggregate_knowledge is executed
   txt <- aggregate_knowledge(agent)
+  # Then: graph information is present and knowledge block is absent
   expect_match(txt, "Decision graph", fixed = TRUE)
   expect_match(txt, "Entry: done", fixed = TRUE)
   expect_false(grepl("# Knowledge", txt))
 })
 
 test_that("aggregate_knowledge includes multiple knowledge topics", {
+  # Given: an agent with two topic knowledge stores
   dir <- withr::local_tempdir()
   graph_yaml <- "
 graph:
@@ -339,12 +343,15 @@ graph:
     file.path(dir, "context_schema.yaml")
   )
   agent <- bridle_agent(dir)
+  # When: aggregate_knowledge is executed
   txt <- aggregate_knowledge(agent)
+  # Then: both topic sections are present in the aggregate text
   expect_match(txt, "topic_a", fixed = TRUE)
   expect_match(txt, "topic_b", fixed = TRUE)
 })
 
 test_that("aggregate_knowledge includes constraints when present", {
+  # Given: an agent with technical constraints defined
   dir <- .orch_make_plugin_dir()
   cons <- "
 package: meta
@@ -359,7 +366,9 @@ constraints:
 "
   writeLines(cons, file.path(dir, "constraints.yaml"))
   agent <- bridle_agent(dir)
+  # When: aggregate_knowledge is executed
   txt <- aggregate_knowledge(agent)
+  # Then: the constraints section and constraint ID are included
   expect_match(txt, "Technical constraints", fixed = TRUE)
   expect_match(txt, "c1", fixed = TRUE)
 })
