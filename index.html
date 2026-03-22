@@ -134,7 +134,7 @@
 <div class="section level3">
 <h3 id="directory-layout">Directory Layout<a class="anchor" aria-label="anchor" href="#directory-layout"></a>
 </h3>
-<pre><code>bridle.meta/
+<pre class="text"><code>bridle.meta/
 ├── inst/
 │   └── bridle/
 │       ├── manifest.yaml              # plugin metadata
@@ -238,7 +238,7 @@
 <span></span>
 <span><span class="va">agent</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/bridle_agent.html">bridle_agent</a></span><span class="op">(</span>plugins <span class="op">=</span> <span class="st">"metafor"</span>, provider <span class="op">=</span> <span class="st">"anthropic"</span><span class="op">)</span></span>
 <span><span class="va">agent</span><span class="op">$</span><span class="fu">console</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<pre><code>╔══════════════════════════════════════════════╗
+<pre class="text"><code>╔══════════════════════════════════════════════╗
 ║  bridle + bridle.metafor v0.1                ║
 ║  Type your question or paste data.           ║
 ║  Ctrl+C to exit.                             ║
@@ -349,24 +349,24 @@
 <p>This project uses an <strong>Issue-driven AI workflow</strong>. AI agents autonomously select, implement, test, and submit changes through a structured command chain.</p>
 <ul>
 <li>
-<strong>Workflow entry point</strong>: <a href=".cursor/README.html"><code>.cursor/README.md</code></a> — commands, rules, and knowledge map</li>
+<strong>Control system design</strong>: <a href="docs/agent-control/"><code>docs/agent-control/</code></a> — architecture, FSM state model, evidence schema</li>
 <li>
 <strong>Available commands</strong>: <code>make help</code> for build targets; <code>.cursor/commands/</code> for AI workflow commands</li>
 <li>
-<strong>Design documents</strong>: <a href="docs/"><code>docs/</code></a> — ADRs and YAML schemas</li>
+<strong>Design documents</strong>: <a href="docs/"><code>docs/</code></a> — ADRs, YAML schemas, and control system design</li>
 <li>
 <strong>Open tasks</strong>: <code>gh issue list --state open</code>
 </li>
 </ul>
-<p>See <a href=".cursor/README.html"><code>.cursor/README.md</code></a> for the full development workflow.</p>
+<p>See <a href="docs/agent-control/architecture.html"><code>docs/agent-control/architecture.md</code></a> for the control system architecture.</p>
 </div>
 <div class="section level2">
 <h2 id="development-environment">Development Environment<a class="anchor" aria-label="anchor" href="#development-environment"></a>
 </h2>
 <p>Development uses a containerized R environment. No local R installation is required.</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">make</span> container-build   <span class="co"># Build container (rocker/tidyverse + renv)</span></span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">make</span> container-up      <span class="co"># Start container</span></span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="fu">make</span> renv-init         <span class="co"># Initialize renv (first time only)</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">make</span> container-start   <span class="co"># Start container</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="fu">make</span> package-init      <span class="co"># Initialize renv (first time only)</span></span>
 <span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="fu">make</span> doctor            <span class="co"># Verify environment</span></span></code></pre></div>
 <p>R package dependencies are managed by <a href="https://rstudio.github.io/renv/" class="external-link">renv</a> (<code>renv.lock</code> is the single source of truth). RStudio Server is available at <code>http://localhost:8787</code> when the container is running.</p>
 <p>Run <code>make help</code> for all available targets.</p>

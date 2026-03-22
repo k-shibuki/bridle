@@ -49,19 +49,19 @@
 <h2 id="setup">Setup<a class="anchor" aria-label="anchor" href="#setup"></a></h2>
 <p>See the <a href="README.html#development-environment">Development Environment</a> section in the README.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">make</span> container-build</span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">make</span> container-up</span>
-<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">make</span> renv-init</span>
-<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">make</span> install-hooks   <span class="co"># Install git hooks (pre-commit, pre-push, commit-msg)</span></span>
-<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="fu">make</span> doctor          <span class="co"># Verify everything works</span></span></code></pre></div>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">make</span> container-start</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">make</span> package-init</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">make</span> git-install-hooks   <span class="co"># Install git hooks (pre-commit, pre-push, commit-msg)</span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="fu">make</span> doctor              <span class="co"># Verify everything works</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="issue-driven-workflow">Issue-Driven Workflow<a class="anchor" aria-label="anchor" href="#issue-driven-workflow"></a></h2>
 <p>All changes follow an <strong>Issue-driven workflow</strong>. Every task starts as a GitHub Issue and results in a PR that closes it.</p>
 <div class="section level3">
 <h3 id="for-ai-agents">For AI Agents<a class="anchor" aria-label="anchor" href="#for-ai-agents"></a></h3>
-<p>The full AI workflow (commands, rules, knowledge map) is documented in <a href=".cursor/README.html"><code>.cursor/README.md</code></a>. The standard flow is:</p>
-<pre><code>doctor → issue-create → implement → test-create → quality-check
-  → test-regression → docs-discover → commit → pr-create → [CI] → pr-review → pr-merge</code></pre>
+<p>The full AI workflow is documented in <a href="../docs/agent-control/"><code>docs/agent-control/</code></a>. The standard flow is:</p>
+<pre class="text"><code>doctor → issue-create → implement → test-create → verify
+  → commit → pr-create → [CI] → pr-review → review-fix → pr-merge</code></pre>
 </div>
 <div class="section level3">
 <h3 id="for-human-contributors">For Human Contributors<a class="anchor" aria-label="anchor" href="#for-human-contributors"></a></h3>
@@ -75,7 +75,7 @@
 <li>
 <strong>Lint</strong>: configured in <a href=".lintr"><code>.lintr</code></a>. Run <code>make lint</code> to check, <code>make format</code> to auto-fix formatting.</li>
 <li>
-<strong>Quality gate</strong>: <code>make check</code> must pass with 0 errors, 0 warnings, 0 notes.</li>
+<strong>R CMD check</strong>: <code>make check</code> must pass with 0 errors, 0 warnings, 0 notes. For the full quality gate (lint + test + check), use <code>make gate-quality</code>.</li>
 </ul></div>
 <div class="section level2">
 <h2 id="make-targets">Make Targets<a class="anchor" aria-label="anchor" href="#make-targets"></a></h2>
@@ -86,13 +86,19 @@
 <td><code>make doctor</code></td>
 </tr><tr class="even"><td>Run tests</td>
 <td><code>make test</code></td>
-</tr><tr class="odd"><td>Lint</td>
+</tr><tr class="odd"><td>Lint (R)</td>
 <td><code>make lint</code></td>
-</tr><tr class="even"><td>Format</td>
+</tr><tr class="even"><td>Lint (Markdown)</td>
+<td><code>make markdown-lint</code></td>
+</tr><tr class="odd"><td>Format</td>
 <td><code>make format</code></td>
-</tr><tr class="odd"><td>Full CI locally</td>
-<td><code>make ci</code></td>
-</tr><tr class="even"><td>R CMD check</td>
+</tr><tr class="even"><td>Full quality gate</td>
+<td><code>make gate-quality</code></td>
+</tr><tr class="odd"><td>Fast gate</td>
+<td><code>make gate-fast</code></td>
+</tr><tr class="even"><td>Full CI locally</td>
+<td><code>make gate-full</code></td>
+</tr><tr class="odd"><td>R CMD check</td>
 <td><code>make check</code></td>
 </tr></tbody></table></div>
 <div class="section level2">

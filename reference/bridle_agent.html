@@ -97,8 +97,11 @@ to disable logging).</p></dd>
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>A list with class <code>"bridle_agent"</code> containing all runtime
-components and a <code><a href="console.html">console()</a></code> method.</p>
+    <p>A list with class <code>"bridle_agent"</code> containing graph, knowledge,
+constraints, logger, sandbox, provider, model, and a <code><a href="console.html">console()</a></code> method.
+The graph engine is accessed with <code>$engine</code> (stored in an internal
+<code>.runtime</code> environment so mutations from helper functions update the same
+runtime instance).</p>
     </div>
 
   </div>

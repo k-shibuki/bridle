@@ -132,11 +132,11 @@
 <td>
 <code>pre-push</code> hook</td>
 <td>Fail-fast filter</td>
-<td>Differential: <code>format-check</code>, <code>changed-lint</code>, <code>changed-test</code> for R; validators for schemas/renv/kb</td>
+<td>Differential: <code>format-verify</code>, <code>lint-changed</code>, <code>test-changed</code> for R; validators for schemas/renv/kb</td>
 </tr><tr class="even"><td>PR CI</td>
 <td><code>ci.yaml</code></td>
 <td>Merge gate</td>
-<td>Full: parallel <code>lint</code> | <code>test</code> | <code>check --no-tests</code> + validators</td>
+<td>Full: parallel <code>lint</code> | <code>test-unit</code> | <code>test-e2e</code> | <code>check --no-tests</code> + validators</td>
 </tr><tr class="odd"><td>Main push</td>
 <td><code>R-CMD-check.yaml</code></td>
 <td>Full verification</td>
@@ -155,7 +155,7 @@
 <h3 id="knowledge-atoms-cursorknowledge">Knowledge atoms (<code>.cursor/knowledge/</code>)<a class="anchor" aria-label="anchor" href="#knowledge-atoms-cursorknowledge"></a></h3>
 <p>Each atom is a focused document on a specific pattern or decision. Naming convention: <code>&lt;category&gt;--&lt;topic&gt;.md</code>. Categories relevant to review:</p>
 <ul><li>
-<code>review--*</code>: patterns learned from past reviews (false positives, idioms)</li>
+<code>review--*</code>: review patterns — includes <code>review--bot-operations.md</code> (trigger, detection, timing, polling, re-review), <code>review--consensus-protocol.md</code> (disposition, consensus, resolve), and accumulated false-positive patterns</li>
 <li>
 <code>test--*</code>: mock strategies, snapshot guidelines, scope constraints</li>
 <li>
@@ -167,8 +167,14 @@
 </ul></div>
 <div class="section level3">
 <h3 id="commands-cursorcommands">Commands (<code>.cursor/commands/</code>)<a class="anchor" aria-label="anchor" href="#commands-cursorcommands"></a></h3>
-<p>Workflow procedures readable by any agent: - <code>pr-review.md</code>: full review procedure with category table - <code>review-fix.md</code>: procedure for addressing review findings - <code>pr-create.md</code>: PR creation with quality gates</p>
-</div>
+<p>Workflow procedures readable by any agent:</p>
+<ul><li>
+<code>pr-review.md</code>: full review procedure with category table</li>
+<li>
+<code>review-fix.md</code>: procedure for addressing review findings</li>
+<li>
+<code>pr-create.md</code>: PR creation with quality gates</li>
+</ul></div>
 </div>
 </div>
 

@@ -36,6 +36,7 @@
 <url><loc>/reference/TransitionTrace.html</loc></url>
 <url><loc>/reference/ValidationResult.html</loc></url>
 <url><loc>/reference/advance.html</loc></url>
+<url><loc>/reference/aggregate_knowledge.html</loc></url>
 <url><loc>/reference/analyze_log.html</loc></url>
 <url><loc>/reference/assemble_draft_prompt.html</loc></url>
 <url><loc>/reference/assemble_function_prompt.html</loc></url>
@@ -131,6 +132,7 @@
 <url><loc>/reference/merge_template.html</loc></url>
 <url><loc>/reference/merge_valid_values.html</loc></url>
 <url><loc>/reference/openalex_get.html</loc></url>
+<url><loc>/reference/orchestrator.html</loc></url>
 <url><loc>/reference/parse_draft_response.html</loc></url>
 <url><loc>/reference/parse_match_arg.html</loc></url>
 <url><loc>/reference/parse_openalex_response.html</loc></url>
@@ -162,6 +164,8 @@
 <url><loc>/reference/scan_result.html</loc></url>
 <url><loc>/reference/select_transition.html</loc></url>
 <url><loc>/reference/session_context.html</loc></url>
+<url><loc>/reference/turn_prepare.html</loc></url>
+<url><loc>/reference/turn_resolve.html</loc></url>
 <url><loc>/reference/update_context.html</loc></url>
 <url><loc>/reference/update_deprecated_params.html</loc></url>
 <url><loc>/reference/upgrade_confidence.html</loc></url>
