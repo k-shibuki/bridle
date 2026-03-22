@@ -9,14 +9,18 @@ test_that("procedure_context emits all fields when workflow-phase.json exists", 
 
   # Given: a git repo on ctx-branch with workflow-phase.json matching current branch
   root <- withr::local_tempdir("bridle-wfp-")
+  recent_updated_at <- strftime(Sys.time() - 60, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
   wfp_setup_repo(
     root,
-    '{
+    sprintf(
+      '{
   "workflow_phase": "implement",
   "issue_number": 269,
   "branch": "ctx-branch",
-  "updated_at": "2026-03-22T12:00:00Z"
-}'
+  "updated_at": "%s"
+}',
+      recent_updated_at
+    )
   )
 
   # When: evidence-workflow-position.sh is executed
@@ -27,7 +31,7 @@ test_that("procedure_context emits all fields when workflow-phase.json exists", 
   testthat::expect_equal(pc$workflow_phase, "implement")
   testthat::expect_equal(pc$issue_number, 269L)
   testthat::expect_equal(pc$branch, "ctx-branch")
-  testthat::expect_equal(pc$updated_at, "2026-03-22T12:00:00Z")
+  testthat::expect_equal(pc$updated_at, recent_updated_at)
   testthat::expect_false(pc$stale)
 })
 
@@ -40,14 +44,18 @@ test_that("procedure_context stale when state branch differs from current branch
 
   # Given: workflow-phase.json names a branch that is not the checked-out branch
   root <- withr::local_tempdir("bridle-wfp-")
+  recent_updated_at <- strftime(Sys.time() - 60, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
   wfp_setup_repo(
     root,
-    '{
+    sprintf(
+      '{
   "workflow_phase": "implement",
   "issue_number": 269,
   "branch": "other-branch",
-  "updated_at": "2026-03-22T12:00:00Z"
-}'
+  "updated_at": "%s"
+}',
+      recent_updated_at
+    )
   )
 
   # When: evidence-workflow-position.sh runs in the repo

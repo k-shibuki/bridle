@@ -9,6 +9,11 @@ wfp_run <- function(root, script) {
 }
 
 wfp_setup_repo <- function(root, workflow_json) {
+  run_git <- function(...) {
+    status <- system2("git", c("-C", root, ...), stdout = FALSE, stderr = FALSE)
+    testthat::expect_equal(status, 0L, info = paste("git", paste(c(...), collapse = " ")))
+  }
+
   dir.create(file.path(root, ".cursor", "state"), recursive = TRUE)
   writeLines(
     c(
@@ -23,11 +28,11 @@ wfp_setup_repo <- function(root, workflow_json) {
   Sys.chmod(file.path(root, "gh"), "0700", use_umask = FALSE)
   writeLines(workflow_json, file.path(root, ".cursor", "state", "workflow-phase.json"))
 
-  system2("git", c("-C", root, "init"), stdout = FALSE, stderr = FALSE)
-  system2("git", c("-C", root, "config", "user.email", "test@example.com"), stdout = FALSE, stderr = FALSE)
-  system2("git", c("-C", root, "config", "user.name", "test"), stdout = FALSE, stderr = FALSE)
+  run_git("init")
+  run_git("config", "user.email", "test@example.com")
+  run_git("config", "user.name", "test")
   writeLines("x", file.path(root, "README.md"))
-  system2("git", c("-C", root, "add", "."), stdout = FALSE, stderr = FALSE)
-  system2("git", c("-C", root, "commit", "-m", "init"), stdout = FALSE, stderr = FALSE)
-  system2("git", c("-C", root, "checkout", "-b", "ctx-branch"), stdout = FALSE, stderr = FALSE)
+  run_git("add", ".")
+  run_git("commit", "-m", "init")
+  run_git("checkout", "-b", "ctx-branch")
 }
