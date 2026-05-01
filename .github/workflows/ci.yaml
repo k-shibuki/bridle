@@ -49,7 +49,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -88,7 +88,7 @@ jobs:
 
       # Incremental R-related paths for this push only (parent..HEAD). Used to avoid
       # skipping tests after a failing run when a later push only touches docs.
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter_push
         with:
           base: ${{ github.event.before != '0000000000000000000000000000000000000000' && github.event.before || github.event.pull_request.base.sha }}
@@ -478,7 +478,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
-      - uses: DavidAnson/markdownlint-cli2-action@v19
+      - uses: DavidAnson/markdownlint-cli2-action@v23
 
   # Required status check that always runs.
   # Use this as the single required check in branch protection settings.
@@ -519,7 +519,7 @@ jobs:
     steps:
       - name: Post failure summary
         if: contains(needs.*.result, 'failure')
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const jobs = {
