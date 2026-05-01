@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Check PR policy compliance
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const run = async () => {
